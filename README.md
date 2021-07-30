@@ -20,7 +20,7 @@ Table of Contents
    
 # Quick Start
 
-1. copy `aci-preupgrade-validation-script.py` on your APIC (`/data/techsupport`)
+1. copy `aci-preupgrade-validation-script.py` ([link](https://raw.githubusercontent.com/datacenter/ACI-Pre-Upgrade-Validation-Script/master/aci-preupgrade-validation-script.py?token=AJD5RRLZ5LVFDIW6Z6ZDIMTBBW5X6)) on your APIC (`/data/techsupport`)
 2. `cd /data/techsupport`
 3. `python aci-preupgrade-validation-script.py` 
 4. follow recommendations for all checks that have been flagged as `FAIL` or `MANUAL CHECK REQUIRED`
@@ -39,7 +39,7 @@ For every check that has been flagged as `FAIL`, a general recommended action ha
 
 # Preparation
 
-Download the script from here: < URL HERE >
+Download the script from here: [aci-preupgrade-validation-script.py](https://raw.githubusercontent.com/datacenter/ACI-Pre-Upgrade-Validation-Script/master/aci-preupgrade-validation-script.py?token=AJD5RRLZ5LVFDIW6Z6ZDIMTBBW5X6)
 
 ## ssh copy/paste and vi
 
