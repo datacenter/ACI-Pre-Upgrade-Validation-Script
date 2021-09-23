@@ -1142,8 +1142,8 @@ def bd_duplicate_subnet_check(index, total_checks, **kwargs):
     return result
 
 
-def hw_program_fail_check(index, total_checks, **kwargs):
-    title = 'HW Programming Failure (F3544 L3Out Prefixes, F3545 Contracts, actrl-resource-unavailable)'
+def hw_program_fail_check(index, total_checks, cversion, **kwargs):
+    title = 'HW Programming Failure (F3544 L3Out Pfxs, F3545 Contracts, actrl-resource-unavailable)'
     result = FAIL_O
     msg = ''
     headers = ["Fault", "Pod", "Node", "Fault Description", "Recommended Action"]
@@ -1155,24 +1155,29 @@ def hw_program_fail_check(index, total_checks, **kwargs):
         'F3545': 'Ensure that Policy CAM usage is below the capacity and resolve the fault'
     }
     print_title(title, index, total_checks)
+    cfw = AciVersion(cversion)
 
-    faultInsts = icurl('class',
-                       'faultInst.json?query-target-filter=or(eq(faultInst.code,"F3544"),eq(faultInst.code,"F3545"))')
-    for faultInst in faultInsts:
-        fc = faultInst['faultInst']['attributes']['code']
-        dn = re.search(node_regex, faultInst['faultInst']['attributes']['dn'])
-        if dn:
-            data.append([fc, dn.group('pod'), dn.group('node'),
-                         faultInst['faultInst']['attributes']['descr'],
-                         recommended_action.get(fc, 'Resolve the fault')])
-        else:
-            unformatted_data.append([
-                fc, faultInst['faultInst']['attributes']['dn'],
-                faultInst['faultInst']['attributes']['descr'],
-                recommended_action.get(fc, 'Resolve the fault')])
+    if not is_firstver_gt_secondver(cfw.version, "4.1(1a)"):
+        result = MANUAL
+        msg = 'Cver LT 4.1'
+    else:
+        faultInsts = icurl('class',
+                           'faultInst.json?query-target-filter=or(eq(faultInst.code,"F3544"),eq(faultInst.code,"F3545"))')
+        for faultInst in faultInsts:
+            fc = faultInst['faultInst']['attributes']['code']
+            dn = re.search(node_regex, faultInst['faultInst']['attributes']['dn'])
+            if dn:
+                data.append([fc, dn.group('pod'), dn.group('node'),
+                             faultInst['faultInst']['attributes']['descr'],
+                             recommended_action.get(fc, 'Resolve the fault')])
+            else:
+                unformatted_data.append([
+                    fc, faultInst['faultInst']['attributes']['dn'],
+                    faultInst['faultInst']['attributes']['descr'],
+                    recommended_action.get(fc, 'Resolve the fault')])
 
-    if not data and not unformatted_data:
-        result = PASS
+        if not data and not unformatted_data:
+            result = PASS
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
