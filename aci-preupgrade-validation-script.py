@@ -590,6 +590,14 @@ class AciVersion():
             elif self.regex.group(i) < v.group(i): return True
         return False
 
+    def newer_than(self, version):
+        v = re.search(self.v_regex, version)
+        if not v: return None
+        for i in range(len(v.groups())):
+            if self.regex.group(i) < v.group(i): return False
+            elif self.regex.group(i) > v.group(i): return True
+        return False
+
     def same_as(self, version):
         v = re.search(self.v_regex, version)
         ver = ('{major1}.{major2}.{maint}{patch}'
@@ -2044,23 +2052,22 @@ def gen1_switch_compatibility_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def filter_22_defect_check(index, total_checks, tversion, **kwargs):
+def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Contract Port 22 Defect Check'
-    result = NA
+    result = PASS
     msg = ''
     headers = ["Potential Defect", "Reason"]
     data = []
     recommended_action = 'Review Software Advisory for details'
     doc_url = 'Cisco Software Advisory Notices for CSCvz65560 - http://cs.co/9007yh22H'
-
+    cfw = AciVersion(cversion)
     print_title(title, index, total_checks)
 
     if tversion:
         tfw = AciVersion(tversion)
-        if is_firstver_gt_secondver(tfw.version, "5.0(1a)"):
+        if cfw.older_than("5.0(1a)") and tfw.newer_than("5.0(1a)"):
             result = FAIL_O
             data.append(["CSCvz65560", "Target Version susceptible to Defect"])
-
     else:
         result = NA
         msg = 'Target version not supplied. Skipping.'
@@ -2130,7 +2137,7 @@ if __name__ == "__main__":
         # Bugs
         ep_announce_check,
         eventmgr_db_defect_check,
-        filter_22_defect_check,
+        contract_22_defect_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
