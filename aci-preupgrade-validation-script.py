@@ -2044,6 +2044,30 @@ def gen1_switch_compatibility_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def filter_22_defect_check(index, total_checks, tversion, **kwargs):
+    title = 'Contract Port 22 Defect Check'
+    result = NA
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'Review Software Advisory for details'
+    doc_url = 'Cisco Software Advisory Notices for CSCvz65560 - http://cs.co/9007yh22H'
+
+    print_title(title, index, total_checks)
+
+    if tversion:
+        tfw = AciVersion(tversion)
+        if is_firstver_gt_secondver(tfw.version, "5.0(1a)"):
+            result = FAIL_O
+            data.append(["CSCvz65560", "Target Version susceptible to Defect"])
+
+    else:
+        result = NA
+        msg = 'Target version not supplied. Skipping.'
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
     username, password = get_credentials()
@@ -2106,6 +2130,7 @@ if __name__ == "__main__":
         # Bugs
         ep_announce_check,
         eventmgr_db_defect_check,
+        filter_22_defect_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
