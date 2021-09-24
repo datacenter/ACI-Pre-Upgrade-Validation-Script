@@ -1649,7 +1649,7 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     print_title(title, index, total_checks)
 
     checked_stby = []
-    infraSnNodes = icurl('class', 'infraSnNode.json')
+    infraSnNodes = icurl('class', 'infraSnNode.json?query-target-filter=eq(infraSnNode.cntrlSbstState,"approved")')
     for stby_apic in infraSnNodes:
         stb = stby_apic['infraSnNode']['attributes']
         if stb['addr'] in checked_stby:
