@@ -543,7 +543,8 @@ def get_target_version():
     response_json = icurl('class', 'firmwareFirmware.json?&query-target-filter=eq(firmwareFirmware.type,"controller")')
     if response_json:
         for version in response_json:
-            repo_list.append(version['firmwareFirmware']['attributes']['isoname'])
+            if 'aci-apic' in version['firmwareFirmware']['attributes']['isoname']:
+                repo_list.append(version['firmwareFirmware']['attributes']['isoname'])
         repo_list.sort()
         # Display version info to User
         for i, value in enumerate(repo_list):
