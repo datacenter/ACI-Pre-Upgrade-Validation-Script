@@ -1153,16 +1153,23 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Fault Description', 'Recommended Action']
     unformatted_data = []
-    recommended_action = {
+    recommended_action = ""
+    recommended_action_map = {
         'F3544': 'Ensure that LPM and host routes usage are below the capacity and resolve the fault',
         'F3545': 'Ensure that Policy CAM usage is below the capacity and resolve the fault'
     }
     print_title(title, index, total_checks)
     cfw = AciVersion(cversion)
 
-    if not is_firstver_gt_secondver(cfw.version, "4.1(1a)"):
+    if cfw.older_than("4.1(1a)"):
+        headers = ["Object Class", "Recommended Action"]
+        classes = ["actrlRule", "actrlPrefix"]
+        recommended_action = "Check the 'operSt' parameter to ensure they are enabled"
         result = MANUAL
         msg = 'Cver LT 4.1'
+
+        for entry in classes:
+            data.append([entry, recommended_action])
     else:
         faultInsts = icurl('class',
                            'faultInst.json?query-target-filter=or(eq(faultInst.code,"F3544"),eq(faultInst.code,"F3545"))')
@@ -1172,15 +1179,17 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
             if dn:
                 data.append([fc, dn.group('pod'), dn.group('node'),
                              faultInst['faultInst']['attributes']['descr'],
-                             recommended_action.get(fc, 'Resolve the fault')])
+                             recommended_action_map.get(fc, 'Resolve the fault')])
             else:
                 unformatted_data.append([
                     fc, faultInst['faultInst']['attributes']['dn'],
                     faultInst['faultInst']['attributes']['descr'],
-                    recommended_action.get(fc, 'Resolve the fault')])
+                    recommended_action_map.get(fc, 'Resolve the fault')])
 
         if not data and not unformatted_data:
             result = PASS
+
+
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
