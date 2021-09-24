@@ -540,11 +540,10 @@ def get_target_version():
     """ Returns: aci-apic-dk9.x.y.z.bin """
     prints("Gathering APIC Versions from Firmware Repository...\n")
     repo_list = []
-    response_json = icurl('class', 'firmwareFirmware.json?&query-target-filter=eq(firmwareFirmware.type,"controller")')
+    response_json = icurl('class', 'firmwareFirmware.json?query-target-filter=wcard(firmwareFirmware.isoname,"aci-apic-")')
     if response_json:
         for version in response_json:
-            if 'aci-apic' in version['firmwareFirmware']['attributes']['isoname']:
-                repo_list.append(version['firmwareFirmware']['attributes']['isoname'])
+            repo_list.append(version['firmwareFirmware']['attributes']['isoname'])
         repo_list.sort()
         # Display version info to User
         for i, value in enumerate(repo_list):
