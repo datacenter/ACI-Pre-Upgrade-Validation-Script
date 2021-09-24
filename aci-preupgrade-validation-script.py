@@ -1154,7 +1154,8 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
     unformatted_headers = ['Fault', 'Fault DN', 'Fault Description', 'Recommended Action']
     unformatted_data = []
     recommended_action = {
-        'N/A': 'Check that "operSt" are set to "enabled". Fault code does not exist on this version.',
+        'actrlRule': 'Check that "operSt" are set to "enabled". F3545 does not exist on this version.',
+        'actrlPrefix': 'Check that "operSt" are set to "enabled". F3544 does not exist on this version.',
         'F3544': 'Ensure that LPM and host routes usage are below the capacity and resolve the fault',
         'F3545': 'Ensure that Policy CAM usage is below the capacity and resolve the fault'
     }
@@ -1168,7 +1169,7 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
         result = MANUAL
 
         for entry in classes:
-            data.append([entry, recommended_action.get("N/A", "")])
+            data.append([entry, recommended_action.get(entry, "")])
     else:
         faultInsts = icurl('class',
                            'faultInst.json?query-target-filter=or(eq(faultInst.code,"F3544"),eq(faultInst.code,"F3545"))')
