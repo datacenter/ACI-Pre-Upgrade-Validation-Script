@@ -585,22 +585,17 @@ class AciVersion():
     def older_than(self, version):
         v = re.search(self.v_regex, version)
         if not v: return None
-        for i in range(len(v.groups())):
+        for i in range(1, len(v.groups())):
             if self.regex.group(i) > v.group(i): return False
             elif self.regex.group(i) < v.group(i): return True
         return False
 
     def newer_than(self, version):
-        v = re.search(self.v_regex, version)
-        if not v: return None
-        for i in range(len(v.groups())):
-            if self.regex.group(i) < v.group(i): return False
-            elif self.regex.group(i) > v.group(i): return True
-        return False
+        return not self.older_than(version) and not self.same_as(version)
 
     def same_as(self, version):
         v = re.search(self.v_regex, version)
-        ver = ('{major1}.{major2}.{maint}{patch}'
+        ver = ('{major1}.{major2}({maint}{patch})'
                .format(**v.groupdict()) if v else None)
         return self.version == ver
 
