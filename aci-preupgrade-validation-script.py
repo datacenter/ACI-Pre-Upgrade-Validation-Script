@@ -2064,7 +2064,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
             result = FAIL_O
             data.append(["CSCvz65560", "Target Version susceptible to Defect"])
     else:
-        result = NA
+        result = MANUAL
         msg = 'Target version not supplied. Skipping.'
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
