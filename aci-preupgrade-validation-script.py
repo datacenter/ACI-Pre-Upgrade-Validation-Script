@@ -1739,31 +1739,46 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
             data.append([attr['id'], attr['name'], '-', '-', '-', '-', e])
             continue
 
-        openssl_check = "passed"
-        cert_format_check = "passed"
-        ssh_check = "passed"
-        all_check = "passed"
+        openssl_check = "N/A"
+        cert_format_check = "N/A"
+        ssh_check = "N/A"
+        all_check = "N/A"
 
         tv = AciVersion(tversion)
 
         for line in c.output.split("\n"):
-            if "serialNumber" in line and "APIC-SERVER" not in line:
-                cert_format_check = "FAIL"
-                checked_apic[attr['address']] = 0
+            if "serialNumber" in line:
+                if "APIC-SERVER" not in line:
+                    cert_format_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    cert_format_check = "passed"
             elif "openssl_check" in line and "certificate" in line:
                 continue
-            elif "openssl_check" in line and "passed" not in line:
-                openssl_check = "FAIL"
-                checked_apic[attr['address']] = 0
-            elif "apic_cert_format_check" in line and "passed" not in line:
-                cert_format_check = "FAIL"
-                checked_apic[attr['address']] = 0
-            elif "ssh_check" in line and "passed" not in line:
-                ssh_check = "FAIL"
-                checked_apic[attr['address']] = 0
-            elif "all_checks" in line and "passed" not in line:
-                all_check = "FAIL"
-                checked_apic[attr['address']] = 0
+            elif "openssl_check" in line:
+                if "passed" not in line:
+                    openssl_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    openssl_check = "passed"
+            elif "apic_cert_format_check" in line:
+                if "passed" not in line:
+                    cert_format_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    cert_format_check = "passed"
+            elif "ssh_check" in line:
+                if "passed" not in line:
+                    ssh_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    ssh_check = "passed"
+            elif "all_checks" in line:
+                if "passed" not in line:
+                    all_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    all_check = "passed"
         print_result(node_title, DONE)
         if checked_apic[attr['address']] == 0:
             data.append(
