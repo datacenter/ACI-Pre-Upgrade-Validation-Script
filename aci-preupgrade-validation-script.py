@@ -587,8 +587,10 @@ class AciVersion():
         v = re.search(self.v_regex, version)
         if not v: return None
         for i in range(1, len(v.groups())):
-            if self.regex.group(i) > v.group(i): return False
-            elif self.regex.group(i) < v.group(i): return True
+            if self.regex.group(i) > v.group(i):
+                return False
+            elif self.regex.group(i) < v.group(i):
+                return True
         return False
 
     def newer_than(self, version):
@@ -1702,6 +1704,85 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     return result
 
 
+def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kwargs):
+    title = 'APIC SSL Certificate and SSH key Check'
+    result = FAIL_UF
+    msg = ''
+    headers = ['Node-Id', 'Name', 'OpenSSL-Check', 'Cert-format-check', 'SSH-check', 'All-check', 'Recommended Action']
+    data = []
+    recommended_action = 'Contact Cisco TAC'
+    print_title(title, index, total_checks)
+
+    checked_apic = {}
+    prints('')
+    controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+    for apic in controller:
+        attr = apic['topSystem']['attributes']
+        if attr['address'] in checked_apic:
+            continue
+        checked_apic = {attr['address']: 1}
+        node_title = 'Checking %s...' % attr['name']
+        print_title(node_title)
+        try:
+            c = Connection(attr['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([attr['id'], attr['name'], '-', '-', '-', '-', e])
+            continue
+
+        try:
+            c.cmd("acidiag verifyapic")
+        except Exception as e:
+            data.append([attr['id'], attr['name'], '-', '-', '-', '-', e])
+            continue
+
+        openssl_check = "passed"
+        cert_format_check = "passed"
+        ssh_check = "passed"
+        all_check = "passed"
+
+        tv = AciVersion(tversion)
+
+        for line in c.output.split("\n"):
+            if "serialNumber" in line and "APIC-SERVER" not in line:
+                cert_format_check = "FAIL"
+                checked_apic[attr['address']] = 0
+            elif "openssl_check" in line and "certificate" in line:
+                continue
+            elif "openssl_check" in line and "passed" not in line:
+                openssl_check = "FAIL"
+                checked_apic[attr['address']] = 0
+            elif "apic_cert_format_check" in line and "passed" not in line:
+                cert_format_check = "FAIL"
+                checked_apic[attr['address']] = 0
+            elif "ssh_check" in line and "passed" not in line:
+                ssh_check = "FAIL"
+                checked_apic[attr['address']] = 0
+            elif "all_checks" in line and "passed" not in line:
+                all_check = "FAIL"
+                checked_apic[attr['address']] = 0
+        print_result(node_title, DONE)
+        if checked_apic[attr['address']] == 0:
+            data.append(
+                [attr['id'], attr['name'], openssl_check, cert_format_check, ssh_check, all_check, recommended_action])
+
+    if not controller:
+        result = NA
+        msg = 'Failed to Query Controllers'
+    elif len(checked_apic) >= 1 and not data:
+        result = PASS
+    elif tversion and tv.same_as('3.2(7f)') or tv.same_as('4.1(1i)') or tv.newer_than('3.2(7f)') or tv.newer_than('4.1(1i)'):
+        result = FAIL_UF
+    else:
+        result = PASS
+        msg = "At least one APIC has SSL Cert/SSH key issue"
+    print_result(title, result, msg, headers, data, adjust_title=True)
+    return result
+
+
 def r_leaf_compatibility_check(index, total_checks, tversion, **kwargs):
     title = 'Remote Leaf Compatibility'
     result = PASS
@@ -2106,6 +2187,7 @@ if __name__ == "__main__":
     checks = [
         # General Checks
         apic_version_md5_check,
+        apic_ssl_certs_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
         r_leaf_compatibility_check,
