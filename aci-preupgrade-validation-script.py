@@ -1708,7 +1708,7 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
     title = 'APIC SSL Certificate and SSH key Check'
     result = FAIL_UF
     msg = ''
-    headers = ['Node-Id', 'Name', 'OpenSSL-Check', 'Cert-format-check', 'SSH-check', 'All-check', 'Recommended Action']
+    headers = ['Node-Id', 'Name', 'OpenSSL-Check', 'Cert-format-check', 'SSH-check', 'Recommended Action']
     data = []
     recommended_action = 'Contact Cisco TAC'
     print_title(title, index, total_checks)
@@ -1732,13 +1732,13 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([attr['id'], attr['name'], '-', '-', '-', '-', e])
+            data.append([attr['id'], attr['name'], '-', '-', '-',  e])
             continue
 
         try:
             c.cmd("acidiag verifyapic")
         except Exception as e:
-            data.append([attr['id'], attr['name'], '-', '-', '-', '-', e])
+            data.append([attr['id'], attr['name'], '-', '-', '-',  e])
             continue
 
         openssl_check = "N/A"
@@ -1774,16 +1774,10 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
                     checked_apic[attr['address']] = 0
                 else:
                     ssh_check = "passed"
-            elif "all_checks" in line:
-                if "passed" not in line:
-                    all_check = "FAIL"
-                    checked_apic[attr['address']] = 0
-                else:
-                    all_check = "passed"
         print_result(node_title, DONE)
         if checked_apic[attr['address']] == 0:
             data.append(
-                [attr['id'], attr['name'], openssl_check, cert_format_check, ssh_check, all_check, recommended_action])
+                [attr['id'], attr['name'], openssl_check, cert_format_check, ssh_check, recommended_action])
 
     if not controller:
         result = NA
