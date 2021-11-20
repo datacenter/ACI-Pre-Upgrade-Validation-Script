@@ -1715,6 +1715,8 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
 
     checked_apic = {}
     prints('')
+    if tversion:
+        tv = AciVersion(tversion)
     controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
     for apic in controller:
         attr = apic['topSystem']['attributes']
@@ -1744,7 +1746,6 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
         ssh_check = "N/A"
         all_check = "N/A"
 
-        tv = AciVersion(tversion)
 
         for line in c.output.split("\n"):
             if "serialNumber" in line:
@@ -1789,7 +1790,7 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
         msg = 'Failed to Query Controllers'
     elif len(checked_apic) >= 1 and not data:
         result = PASS
-    elif tversion and tv.same_as('3.2(7f)') or tv.same_as('4.1(1i)') or tv.newer_than('3.2(7f)') or tv.newer_than('4.1(1i)'):
+    elif tv and tv.same_as('3.2(7f)') or tv.same_as('4.1(1i)') or tv.newer_than('3.2(7f)') or tv.newer_than('4.1(1i)'):
         result = FAIL_UF
     else:
         result = PASS
