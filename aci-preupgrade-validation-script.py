@@ -1706,7 +1706,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
     msg = ''
-    headers = ['APIC', 'Firmware', 'md5sum', 'Failure', 'Recommended Action']
+    headers = ['APIC', 'Firmware', 'md5sum', 'CCO_md5sum', 'Failure', 'Recommended Action']
     data = []
     recommended_action = 'Delete the firmware from APIC and re-download'
     print_title(title, index, total_checks)
@@ -1743,12 +1743,12 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         try:
             c.cmd("ls -aslh /firmware/fwrepos/fwrepo/%s" % tversion)
         except Exception as e:
-            data.append([apic_name, '-', '-',
+            data.append([apic_name, '-', '-','-',
                          'ls command via ssh failed due to:{}'.format(e), '-'])
             print_result(node_title, ERROR)
             continue
         if "No such file or directory" in c.output:
-            data.append([apic_name, tversion, '-', 'image not found', recommended_action])
+            data.append([apic_name, tversion, '-', '-',  'image not found', recommended_action])
             print_result(node_title, FAIL_UF)
             continue
 
@@ -1766,12 +1766,12 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 if md5 is not None:
                     md5s.append(md5.group(0))
                     if cco_md5 and md5 != cco_md5:
-                        data.append([apic_name, tversion, md5.group(0), 'Corrupted image md5 not matching CCO', "Delete and redownload from CCO"])
+                        data.append([apic_name, tversion, md5.group(0), cco_md5, 'Corrupted image', "Delete and redownload from CCO"])
                     md5_names.append(c.hostname)
         print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
-            data.append([name, tversion, md5, 'md5sum do not match on all APICs', recommended_action])
+            data.append([name, tversion, md5, cco_md5, 'md5sum do not match on all APICs', recommended_action])
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data, adjust_title=True)
