@@ -23,6 +23,124 @@ NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
 ver_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
 
+cco_md5_sum = {'aci-apic-dk9.2.2.1k.bin': '20202e6b2a72fc12904e89e79ff6d867',
+            'aci-apic-dk9.2.2.1n.bin': 'bd03c72b489220612d806c22af583d64',
+            'aci-apic-dk9.2.2.1o.bin': '24ba669e0f879862735f40cc5256529c',
+            'aci-apic-dk9.2.2.2e.bin': '1fed95f6f3cac83312e74c7a921a52b8',
+            'aci-apic-dk9.2.2.2f.bin': '864d1f2d69b214974e50eb2b09de0afb',
+            'aci-apic-dk9.2.2.2i.bin': 'fb12d0a6213a1272b15f052c9bfcd0d0',
+            'aci-apic-dk9.2.2.2j.bin': '13ed969f3b4da07d32951654d53f3e25',
+            'aci-apic-dk9.2.2.2k.bin': '92d1d8d12899eadace960967a10d272f',
+            'aci-apic-dk9.2.2.2q.bin': '6aa77815401a50582ea6c2fdc25aa47a',
+            'aci-apic-dk9.2.2.3j.bin': 'e47cc213e24ae5e09e31a6cc2baf0d58',
+            'aci-apic-dk9.2.2.3p.bin': 'bffc74e0159167094ac8dc4e585b6d0e',
+            'aci-apic-dk9.2.2.3r.bin': '471195928dd5dc07dfc01ed108012182',
+            'aci-apic-dk9.2.2.3s.bin': '7d24356b124bce9bb9484225ac23aef0',
+            'aci-apic-dk9.2.2.3t.bin': 'cb597fdfbc7bcdb4e7b6044dd378ff67',
+            'aci-apic-dk9.2.2.4f.bin': '9817de2462ce158b6fb852077d445f4f',
+            'aci-apic-dk9.2.2.4p.bin': '5cd0f68413ee1eb75226831bca565321',
+            'aci-apic-dk9.2.2.4q.bin': '2c9d33c5ab22bb854341b52fb4491356',
+            'aci-apic-dk9.2.2.4r.bin': '2d5d06705328e74417a30d88a6550c6b',
+            'aci-apic-dk9.2.3.1e.bin': 'f58f528367036a7aa2b62cbeccd3eca1',
+            'aci-apic-dk9.2.3.1f.bin': 'dd9a1404ddf2f0c709eee48d5ddda608',
+            'aci-apic-dk9.2.3.1i.bin': 'b0b1b9588cce61083d0daa47cd5b0570',
+            'aci-apic-dk9.2.3.1l.bin': 'ad520f11b121f63737a4c3e2013bd1b7',
+            'aci-apic-dk9.2.3.1o.bin': 'ead77a978005a7da0130e75e7b731536',
+            'aci-apic-dk9.2.3.1p.bin': 'b5eea6c422cea82b8a1cce76249dbf28',
+            'aci-apic-dk9.3.0.1k.bin': 'caf3a603694a527497b2e2c54eae2c11',
+            'aci-apic-dk9.3.0.2h.bin': '28fc59bf04aa82d8d0bab5e0db54df49',
+            'aci-apic-dk9.3.0.2k.bin': '3807db0698718d63207c088148324e57',
+            'aci-apic-dk9.3.0.2n.bin': '1e384f35a6bc28edfac4fcc42607e7b4',
+            'aci-apic-dk9.3.1.1i.bin': '062abd202a2410ada11107a00c4dd226',
+            'aci-apic-dk9.3.1.2m.bin': '80bb69cb864983f0321df10ebfeeaee1',
+            'aci-apic-dk9.3.1.2o.bin': '17cbbd32ce0f503543c433a0e88db7a7',
+            'aci-apic-dk9.3.1.2p.bin': 'f2771fdacd651d81f35a161180833070',
+            'aci-apic-dk9.3.1.2q.bin': '134318a66dd287151ee6e26d88eb0495',
+            'aci-apic-dk9.3.1.2s.bin': '923594431496fa77764b57191d4d60e6',
+            'aci-apic-dk9.3.1.2t.bin': '7b2d4ab96418b9d54152b582cd6b716d',
+            'aci-apic-dk9.3.1.2u.bin': '93b3699e98b8d0de83bcb0a7a8e08335',
+            'aci-apic-dk9.3.1.2v.bin': '9c357e38bb3ffc5543319c049e83dcef',
+            'aci-apic-dk9.3.2.10e.bin': 'f10322ac8853e7f369208a47a1bef794',
+            'aci-apic-dk9.3.2.10f.bin': 'e269b9167281989d7222dadab8e1403f',
+            'aci-apic-dk9.3.2.1l.bin': 'a8661788d13a57f046567c6c5b8895ab',
+            'aci-apic-dk9.3.2.1m.bin': '1324c126561a3175a422bb51fe03abb4',
+            'aci-apic-dk9.3.2.2l.bin': '5562dd838742bb100ea944f16c482762',
+            'aci-apic-dk9.3.2.2o.bin': 'a8ef1b1c808421abf1024e18fde82b2e',
+            'aci-apic-dk9.3.2.3i.bin': '223123dd0d6e69d277c1e951938ce6bd',
+            'aci-apic-dk9.3.2.3n.bin': 'f6c7cc42ab1e59f54d07c48b467831fa',
+            'aci-apic-dk9.3.2.3o.bin': '6a72b7ea54eea444bc70b571d2d0f1f8',
+            'aci-apic-dk9.3.2.3r.bin': '513a8ea89c1e416d8933e4f266d07ef8',
+            'aci-apic-dk9.3.2.3s.bin': '307cf15cbc10655e6a81c339bb5f6e28',
+            'aci-apic-dk9.3.2.4d.bin': 'a1658a7a9e5af858b6b5ba7951398d80',
+            'aci-apic-dk9.3.2.4e.bin': '8d307c9051b1393c88aa99f7fd1e9b41',
+            'aci-apic-dk9.3.2.5d.bin': '321b640db93e7a8adfcfa8f157f630a0',
+            'aci-apic-dk9.3.2.5e.bin': '908db1ec003337e803ce66f0ecea319b',
+            'aci-apic-dk9.3.2.5f.bin': '6a72cfb04b0d4357adf519a16abf8024',
+            'aci-apic-dk9.3.2.6i.bin': '9b6a04e364bf85fb20107067b6d0780f',
+            'aci-apic-dk9.3.2.7f.bin': '8a5ba193ed6f0d9e4bd3ed4ed80b1fcc',
+            'aci-apic-dk9.3.2.7k.bin': 'd760860b4bc3199d2c031bec5cd6a8b3',
+            'aci-apic-dk9.3.2.8d.bin': '4c475f5cf8a7418058d4ff6bf9019643',
+            'aci-apic-dk9.3.2.9b.bin': 'e4fc495daad013552540fe43776ae638',
+            'aci-apic-dk9.3.2.9f.bin': 'fb676f8a17831f632e03457c1bac5f70',
+            'aci-apic-dk9.3.2.9h.bin': '3f0de3f08de2c8f1c27740a1fee7f13b',
+            'aci-apic-dk9.4.0.1h.bin': 'e41cf40686528c6fa6befd9a6dcb7d50',
+            'aci-apic-dk9.4.0.2c.bin': 'bebe0dc38ed91171aad9ff6b215b7624',
+            'aci-apic-dk9.4.0.3c.bin': 'd0f35eed9df060386f935d2373a06c92',
+            'aci-apic-dk9.4.0.3d.bin': '22eb03f5d1c0a9399effab0aac2dc731',
+            'aci-apic-dk9.4.1.1i.bin': 'db7022e843dd58b7e9c0769c3a538a7b',
+            'aci-apic-dk9.4.1.1j.bin': 'd4cef7210f4f53f75cf651140118721c',
+            'aci-apic-dk9.4.1.1k.bin': 'cf602fd16193b1bb2b12ad31794ccfaf',
+            'aci-apic-dk9.4.1.1l.bin': '386cabd6cac5db198e7421fa25e48a47',
+            'aci-apic-dk9.4.1.2g.bin': '3054a7054cd1da536549e6d5e6fb7722',
+            'aci-apic-dk9.4.1.2m.bin': '0ff66d4e9946c1d83a977f0807152fc6',
+            'aci-apic-dk9.4.1.2o.bin': '64d4682486a8cba583775f640ba32589',
+            'aci-apic-dk9.4.1.2s.bin': '3f567b83a83dd68d53a04488d238c0ca',
+            'aci-apic-dk9.4.1.2u.bin': '278b7742a1e7adc84491c89c95447091',
+            'aci-apic-dk9.4.1.2w.bin': '028234e177faffb82f00f0446f7e1ddc',
+            'aci-apic-dk9.4.1.2x.bin': '923828595f3821dfbfddf0b485b53488',
+            'aci-apic-dk9.4.2.1i.bin': '991aac53cae06fee3c261df237d4091b',
+            'aci-apic-dk9.4.2.1j.bin': 'fb9dc07ec905a302dc79d5d6b736b162',
+            'aci-apic-dk9.4.2.1l.bin': '1e9baa53f7d681574c92d58e634fa121',
+            'aci-apic-dk9.4.2.2e.bin': '6a1a061fdf6c01f46fc9af09b603c882',
+            'aci-apic-dk9.4.2.2f.bin': '81e83c51a7c79c850d13182d56d7044c',
+            'aci-apic-dk9.4.2.3j.bin': 'b561d46467557b1e2457c456c6e48e67',
+            'aci-apic-dk9.4.2.3l.bin': '26d21beddb374e00f43357f2d492ded2',
+            'aci-apic-dk9.4.2.3n.bin': '0990fec361f6d9a7b92d270a3c0fcbcc',
+            'aci-apic-dk9.4.2.3q.bin': '6642e631835647de75bbbf420a7bda0a',
+            'aci-apic-dk9.4.2.4i.bin': '6f24f1f2d011046e5e851e97ce48692f',
+            'aci-apic-dk9.4.2.4k.bin': '18e43d54f016a0d7423be67031d0be4a',
+            'aci-apic-dk9.4.2.4o.bin': '9a896ba01917b2d33163e0a78aecc273',
+            'aci-apic-dk9.4.2.4p.bin': '94bfed99024ead9a3d90d8346c4eef48',
+            'aci-apic-dk9.4.2.5k.bin': 'a1f9ea609400205271a5a1a0112ab6a3',
+            'aci-apic-dk9.4.2.5l.bin': '46fa1d86a4f6a46a88c35e37af5139a5',
+            'aci-apic-dk9.4.2.5n.bin': '3111da2ee1b62d9679b0b43677c97201',
+            'aci-apic-dk9.4.2.6d.bin': '92e7713d2d9d5b0e7ef17337ea672131',
+            'aci-apic-dk9.4.2.6g.bin': '8e1201397db0aaa3238909a50d13fc8c',
+            'aci-apic-dk9.4.2.6h.bin': '3621e75da8b36dc48da6258ed949eb86',
+            'aci-apic-dk9.4.2.6l.bin': '1a5be7378720172536f5c53a82fbf053',
+            'aci-apic-dk9.4.2.6o.bin': 'ce14ffe6f396566905cdab95e0062dbe',
+            'aci-apic-dk9.4.2.7f.bin': '2177042b8f5e2ed11d731196f7045d72',
+            'aci-apic-dk9.4.2.7l.bin': '75e316df7fea6f51d820a04b0c26f82c',
+            'aci-apic-dk9.4.2.7q.bin': 'e7effd7f270f29bfa1d0f4b7f417912b',
+            'aci-apic-dk9.5.0.1k.bin': '4d2c8f3bb6a6851a720107368acbabd3',
+            'aci-apic-dk9.5.0.1l.bin': 'f1d3a51795964c509784c5f79f46a900',
+            'aci-apic-dk9.5.0.2e.bin': 'eebfee269ce0243925a0c52531f6d77d',
+            'aci-apic-dk9.5.0.2h.bin': '741bb04bf2a28a293317ef75975ac5bc',
+            'aci-apic-dk9.5.0.2i.bin': '07fc18bfc230ff0a903a32e015f4fb84',
+            'aci-apic-dk9.5.0.2j.bin': '39f593a40bffbdd83293ff348b307a42',
+            'aci-apic-dk9.5.1.1h.bin': '1b312d58d39432bc34bbeac0d16ccf39',
+            'aci-apic-dk9.5.1.2e.bin': '09bd8493666110d563efbcb5ae7434c4',
+            'aci-apic-dk9.5.1.3e.bin': 'c01ffdb7d18d2bfe59e6906096fd4cd0',
+            'aci-apic-dk9.5.1.4c.bin': '81e404745c0058dd0526abf310ba2c92',
+            'aci-apic-dk9.5.2.1g.bin': 'f4c79ac1bb3070b4555e507c3d310826',
+            'aci-apic-dk9.5.2.1h.bin': '06060f0ae1ca8cc3fa49239c3d94bed5',
+            'aci-apic-dk9.5.2.2e.bin': 'e1614cb85fbc244ae2e876c30068abc1',
+            'aci-apic-dk9.5.2.2f.bin': 'ffd287454694b780ad1d256c2c986b18',
+            'aci-apic-dk9.5.2.2g.bin': '95ef341b64080d26b0cc7b913f6dcc4d',
+            'aci-apic-dk9.5.2.2h.bin': 'daf36310cfad2d2c7b37d6432952ca9d',
+            'aci-apic-dk9.5.2.3e.bin': '8c3fb4b0b541e7bca022f9557df349b5',
+            }
+
 tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
 DIR = 'preupgrade_validator_logs/'
@@ -1597,6 +1715,11 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         return MANUAL
     prints('')
 
+    if tversion in cco_md5_sum:
+        cco_md5 = cco_md5_sum[tversion]
+    else:
+        cco_md5 = None
+
     md5s = []
     md5_names = []
     nodes_response_json = icurl('class', 'topSystem.json')
@@ -1642,6 +1765,8 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 md5 = re.search(md5_regex, line)
                 if md5 is not None:
                     md5s.append(md5.group(0))
+                    if cco_md5 and md5 != cco_md5:
+                        data.append([apic_name, tversion, md5.group(0), 'Corrupted image md5 not matching CCO', "Delete and redownload from CCO"])
                     md5_names.append(c.hostname)
         print_result(node_title, DONE)
     if len(set(md5s)) > 1:
