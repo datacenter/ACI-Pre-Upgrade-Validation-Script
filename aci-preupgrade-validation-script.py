@@ -1765,8 +1765,12 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 md5 = re.search(md5_regex, line)
                 if md5 is not None:
                     md5s.append(md5.group(0))
-                    if cco_md5 and md5 != cco_md5:
-                        data.append([apic_name, tversion, md5.group(0), cco_md5, 'Corrupted image', "Delete and redownload from CCO"])
+                    if cco_md5:
+                        if md5 != cco_md5:
+                            data.append([apic_name, tversion, md5.group(0), cco_md5, 'Corrupted image', "Delete and redownload from CCO"])
+                    else:
+                        data.append([apic_name, tversion, md5.group(0), cco_md5, 'Unknown release',
+                                     "Manual md5sum required"])
                     md5_names.append(c.hostname)
         print_result(node_title, DONE)
     if len(set(md5s)) > 1:
