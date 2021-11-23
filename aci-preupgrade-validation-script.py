@@ -1702,7 +1702,7 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
     return result
 
 
-def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
+def apic_version_md5_check(index, total_checks, cversion, tversion, username, password, **kwargs):
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
     msg = ''
@@ -1714,6 +1714,9 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
     prints('')
+
+    if cversion:
+        cv = AciVersion(cversion)
 
     if tversion in cco_md5_sum:
         cco_md5 = cco_md5_sum[tversion]
@@ -1768,7 +1771,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                     if cco_md5:
                         if md5 != cco_md5:
                             data.append([apic_name, tversion, md5.group(0), cco_md5, 'Corrupted Image', "Delete and re-download from CCO"])
-                    else:
+                    elif cv and cv.older_than("4.2(5k)") or cv.older_than("5.1(1h)"):
                         data.append([apic_name, tversion, md5.group(0), cco_md5, 'Unknown Release',
                                      "Manual md5sum-check recommended"])
                     md5_names.append(c.hostname)
