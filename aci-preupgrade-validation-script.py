@@ -1769,7 +1769,7 @@ def apic_version_md5_check(index, total_checks, cversion, tversion, username, pa
                 if md5 is not None:
                     md5s.append(md5.group(0))
                     if cco_md5:
-                        if md5 != cco_md5:
+                        if md5.group(0) != cco_md5:
                             data.append([apic_name, tversion, md5.group(0), cco_md5, 'Corrupted Image',
                                          "Delete and re-download from CCO"])
                     md5_names.append(c.hostname)
@@ -1777,7 +1777,7 @@ def apic_version_md5_check(index, total_checks, cversion, tversion, username, pa
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, tversion, md5, cco_md5, 'md5sum do not match on all APICs', recommended_action])
-    elif len(set(md5s)) == 1 and cv and (
+    elif len(set(md5s)) == 1 and cco_md5 is None and  cv and (
             cv.older_than("4.2(5k)") or (cv.newer_than("5.0(1a)") and cv.older_than("5.1(1h)"))):
         data.append(["All APICs", tversion, md5s[0], "N/A", 'Unknown', "Manual md5sum-check recommended"])
         result = PASS
