@@ -139,6 +139,7 @@ cco_md5_sum = {'aci-apic-dk9.2.2.1k.bin': '20202e6b2a72fc12904e89e79ff6d867',
                'aci-apic-dk9.5.2.2g.bin': '95ef341b64080d26b0cc7b913f6dcc4d',
                'aci-apic-dk9.5.2.2h.bin': 'daf36310cfad2d2c7b37d6432952ca9d',
                'aci-apic-dk9.5.2.3e.bin': '8c3fb4b0b541e7bca022f9557df349b5',
+               'aci-apic-dk9.5.2.3f.bin': '9aeb929e2fb3ecfcd9b8c9c8127f33ff',
                }
 
 tz = time.strftime('%z')
@@ -1777,7 +1778,7 @@ def apic_version_md5_check(index, total_checks, cversion, tversion, username, pa
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, tversion, md5, cco_md5, 'md5sum do not match on all APICs', recommended_action])
-    elif len(set(md5s)) == 1 and cco_md5 is None and  cv and (
+    elif len(set(md5s)) == 1 and cco_md5 is None and cv and (
             cv.older_than("4.2(5k)") or (cv.newer_than("5.0(1a)") and cv.older_than("5.1(1h)"))):
         data.append(["All APICs", tversion, md5s[0], "N/A", 'Unknown', "Manual md5sum-check recommended"])
         result = PASS
