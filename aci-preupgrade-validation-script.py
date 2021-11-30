@@ -1582,6 +1582,94 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
     return result
 
 
+def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kwargs):
+    title = 'APIC SSL Certificate and SSH key Check'
+    result = FAIL_UF
+    msg = ''
+    headers = ['Node-Id', 'Name', 'OpenSSL-Check', 'Cert-format-check', 'SSH-check', 'Recommended Action']
+    data = []
+    recommended_action = 'Contact Cisco TAC'
+    print_title(title, index, total_checks)
+
+    checked_apic = {}
+    prints('')
+    if tversion:
+        tv = AciVersion(tversion)
+    controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+    for apic in controller:
+        attr = apic['topSystem']['attributes']
+        if attr['address'] in checked_apic:
+            continue
+        checked_apic = {attr['address']: 1}
+        node_title = 'Checking %s...' % attr['name']
+        print_title(node_title)
+        try:
+            c = Connection(attr['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([attr['id'], attr['name'], '-', '-', '-',  e])
+            continue
+
+        try:
+            c.cmd("acidiag verifyapic")
+        except Exception as e:
+            data.append([attr['id'], attr['name'], '-', '-', '-',  e])
+            continue
+
+        openssl_check = "N/A"
+        cert_format_check = "N/A"
+        ssh_check = "N/A"
+        all_check = "N/A"
+
+        for line in c.output.split("\n"):
+            if "serialNumber" in line:
+                if "APIC-SERVER" not in line:
+                    cert_format_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    cert_format_check = "passed"
+            elif "openssl_check" in line and "certificate" in line:
+                continue
+            elif "openssl_check" in line:
+                if "passed" not in line:
+                    openssl_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    openssl_check = "passed"
+            elif "apic_cert_format_check" in line:
+                if "passed" not in line:
+                    cert_format_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    cert_format_check = "passed"
+            elif "ssh_check" in line:
+                if "passed" not in line:
+                    ssh_check = "FAIL"
+                    checked_apic[attr['address']] = 0
+                else:
+                    ssh_check = "passed"
+        print_result(node_title, DONE)
+        if checked_apic[attr['address']] == 0:
+            data.append(
+                [attr['id'], attr['name'], openssl_check, cert_format_check, ssh_check, recommended_action])
+
+    if not controller:
+        result = NA
+        msg = 'Failed to Query Controllers'
+    elif len(checked_apic) >= 1 and not data:
+        result = PASS
+    elif tv and (tv.same_as('3.2(7f)') or tv.same_as('4.1(1i)') or (
+                    tv.newer_than('3.2(7f)') and tv.older_than('4.0(1a)')) or tv.newer_than('4.1(1i)')):
+        result = FAIL_UF
+    else:
+        result = PASS
+        msg = "At least one APIC has SSL Cert/SSH key issue"
+    print_result(title, result, msg, headers, data, adjust_title=True)
+    return result
+
 def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
@@ -2107,6 +2195,7 @@ if __name__ == "__main__":
         # General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
+        apic_ssl_certs_check,
         gen1_switch_compatibility_check,
         r_leaf_compatibility_check,
         cimc_compatibilty_check,
