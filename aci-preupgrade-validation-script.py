@@ -1595,6 +1595,10 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
     prints('')
     if tversion:
         tv = AciVersion(tversion)
+    else:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
     controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
     for apic in controller:
         attr = apic['topSystem']['attributes']
@@ -1611,18 +1615,19 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
             c.connect()
         except Exception as e:
             data.append([attr['id'], attr['name'], '-', '-', '-',  e])
+            print_result(node_title, ERROR)
             continue
 
         try:
             c.cmd("acidiag verifyapic")
         except Exception as e:
             data.append([attr['id'], attr['name'], '-', '-', '-',  e])
+            print_result(node_title, ERROR)
             continue
 
         openssl_check = "N/A"
         cert_format_check = "N/A"
         ssh_check = "N/A"
-        all_check = "N/A"
 
         for line in c.output.split("\n"):
             if "serialNumber" in line:
@@ -1659,14 +1664,10 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
     if not controller:
         result = NA
         msg = 'Failed to Query Controllers'
-    elif len(checked_apic) >= 1 and not data:
+    elif len(checked_apic) == len(controller) and not data:
         result = PASS
-    elif tv and (tv.same_as('3.2(7f)') or tv.same_as('4.1(1i)') or (
-                    tv.newer_than('3.2(7f)') and tv.older_than('4.0(1a)')) or tv.newer_than('4.1(1i)')):
-        result = FAIL_UF
     else:
-        result = PASS
-        msg = "At least one APIC has SSL Cert/SSH key issue"
+        result = FAIL_UF
     print_result(title, result, msg, headers, data, adjust_title=True)
     return result
 
