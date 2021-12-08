@@ -1590,84 +1590,80 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
     data = []
     recommended_action = 'Contact Cisco TAC'
     print_title(title, index, total_checks)
-
-    checked_apic = {}
     prints('')
-    if tversion:
-        tv = AciVersion(tversion)
-    else:
+
+    if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-    for apic in controller:
-        attr = apic['topSystem']['attributes']
-        if attr['address'] in checked_apic:
-            continue
-        checked_apic = {attr['address']: 1}
-        node_title = 'Checking %s...' % attr['name']
-        print_title(node_title)
-        try:
-            c = Connection(attr['address'])
-            c.username = username
-            c.password = password
-            c.log = LOG_FILE
-            c.connect()
-        except Exception as e:
-            data.append([attr['id'], attr['name'], '-', '-', '-',  e])
-            print_result(node_title, ERROR)
-            continue
-
-        try:
-            c.cmd("acidiag verifyapic")
-        except Exception as e:
-            data.append([attr['id'], attr['name'], '-', '-', '-',  e])
-            print_result(node_title, ERROR)
-            continue
-
-        openssl_check = "N/A"
-        cert_format_check = "N/A"
-        ssh_check = "N/A"
-
-        for line in c.output.split("\n"):
-            if "serialNumber" in line:
-                if "APIC-SERVER" not in line:
-                    cert_format_check = "FAIL"
-                    checked_apic[attr['address']] = 0
-                else:
-                    cert_format_check = "passed"
-            elif "openssl_check" in line and "certificate" in line:
-                continue
-            elif "openssl_check" in line:
-                if "passed" not in line:
-                    openssl_check = "FAIL"
-                    checked_apic[attr['address']] = 0
-                else:
-                    openssl_check = "passed"
-            elif "apic_cert_format_check" in line:
-                if "passed" not in line:
-                    cert_format_check = "FAIL"
-                    checked_apic[attr['address']] = 0
-                else:
-                    cert_format_check = "passed"
-            elif "ssh_check" in line:
-                if "passed" not in line:
-                    ssh_check = "FAIL"
-                    checked_apic[attr['address']] = 0
-                else:
-                    ssh_check = "passed"
-        print_result(node_title, DONE)
-        if checked_apic[attr['address']] == 0:
-            data.append(
-                [attr['id'], attr['name'], openssl_check, cert_format_check, ssh_check, recommended_action])
-
     if not controller:
-        result = NA
-        msg = 'Failed to Query Controllers'
-    elif len(checked_apic) == len(controller) and not data:
-        result = PASS
+        print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+        return ERROR
     else:
-        result = FAIL_UF
+        checked_apics = {}
+        for apic in controller:
+            attr = apic['topSystem']['attributes']
+            if attr['address'] in checked_apics: continue
+            checked_apics[attr['address']] = 1
+            node_title = 'Checking %s...' % attr['name']
+            print_title(node_title)
+            try:
+                c = Connection(attr['address'])
+                c.username = username
+                c.password = password
+                c.log = LOG_FILE
+                c.connect()
+            except Exception as e:
+                data.append([attr['id'], attr['name'], '-', '-', '-',  e])
+                print_result(node_title, ERROR)
+                continue
+
+            try:
+                c.cmd("acidiag verifyapic")
+            except Exception as e:
+                data.append([attr['id'], attr['name'], '-', '-', '-',  e])
+                print_result(node_title, ERROR)
+                continue
+
+            openssl_check = "N/A"
+            cert_format_check = "N/A"
+            ssh_check = "N/A"
+
+            for line in c.output.split("\n"):
+                if "serialNumber" in line:
+                    if "APIC-SERVER" not in line:
+                        cert_format_check = "FAIL"
+                        checked_apics[attr['address']] = 0
+                    else:
+                        cert_format_check = "passed"
+                elif "openssl_check" in line and "certificate" in line:
+                    continue
+                elif "openssl_check" in line:
+                    if "passed" not in line:
+                        openssl_check = "FAIL"
+                        checked_apics[attr['address']] = 0
+                    else:
+                        openssl_check = "passed"
+                elif "apic_cert_format_check" in line:
+                    if "passed" not in line:
+                        cert_format_check = "FAIL"
+                        checked_apics[attr['address']] = 0
+                    else:
+                        cert_format_check = "passed"
+                elif "ssh_check" in line:
+                    if "passed" not in line:
+                        ssh_check = "FAIL"
+                        checked_apics[attr['address']] = 0
+                    else:
+                        ssh_check = "passed"
+            print_result(node_title, DONE)
+            if checked_apics[attr['address']] == 0:
+                data.append(
+                    [attr['id'], attr['name'], openssl_check, cert_format_check, ssh_check, recommended_action])
+
+        if len(checked_apics) == len(controller) and not data:
+            result = PASS
     print_result(title, result, msg, headers, data, adjust_title=True)
     return result
 
