@@ -1582,7 +1582,7 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
     return result
 
 
-def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kwargs):
+def apic_ssl_certs_check(index, total_checks, username, password, **kwargs):
     title = 'APIC SSL Certificate and SSH key Check'
     result = FAIL_UF
     msg = ''
@@ -1591,10 +1591,6 @@ def apic_ssl_certs_check(index, total_checks, tversion, username, password, **kw
     recommended_action = 'Contact Cisco TAC'
     print_title(title, index, total_checks)
     prints('')
-
-    if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
-        return MANUAL
 
     controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
     if not controller:
