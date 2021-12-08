@@ -129,6 +129,7 @@ Key:
 |-------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------------------------|
 | APIC Target version image and MD5 hash                | Requires CREDS and TVER.<br> Logs into each APIC and checks image md5 file |  MD5Sum Check for APIC and Switch Firmware + APIC Firmware Synchronization Across APICs |
 | Target version compatibility                          | Requires TVER. Checks catalogue objects for TVER compatibility given CVER | Compatibility (Target ACI Version) |
+| APIC Certificate Validity                             | Checks `acidiag verifyapic` of all APICs for valid certs | None |
 | Gen 1 switch compatibility                            | Checks for gen1 hardware and flags incompatibility if TVER >= 5.0 | Compatibility (Switch Hardware) |
 | Remote Leaf Compatibility                             | Checks for "Direct Traffic Forwarding" requirement | Compatibility (Remote Leaf Switch) |
 | APIC CIMC Compatibility                               | Checks running CIMC against minimum recommended CIMC from CApability catalogue given TVER | Compatibility (CIMC Version) |
