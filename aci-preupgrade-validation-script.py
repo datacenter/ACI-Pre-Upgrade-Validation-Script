@@ -1231,7 +1231,7 @@ def switch_ssd_check(index, total_checks, **kwargs):
     return result
 
 
-def apic_ssd_check(index, total_checks, **kwargs):
+def apic_ssd_check(index, total_checks,cversion, **kwargs):
     title = 'APIC SSD Health (F2731 equipment-wearout)'
     result = FAIL_UF
     msg = ''
@@ -1244,15 +1244,58 @@ def apic_ssd_check(index, total_checks, **kwargs):
 
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
-    for faultInst in faultInsts:
-        dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-        lifetime_remaining = "1%"
-        if dn_array:
-            data.append(['F2731', dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
-                         lifetime_remaining, recommended_action])
+    cfw = AciVersion(cversion)
+    if len(faultInsts)==0 and cversion and (cfw.older_than("4.2(7f)") or cfw.older_than("5.2(1g)")):
+        controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+        if not controller:
+            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+            return ERROR
         else:
-            unformatted_data.append(
-                ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
+            checked_apics = {}
+            for apic in controller:
+                attr = apic['topSystem']['attributes']
+                if attr['address'] in checked_apics: continue
+                checked_apics[attr['address']] = 1
+                pod_id = attr['podId']
+                node_id = attr['id']
+                prints('')
+                node_title = 'Checking %s...' % attr['name']
+                print_title(node_title)
+                try:
+                    c = Connection(attr['address'])
+                    c.username = username
+                    c.password = password
+                    c.log = LOG_FILE
+                    c.connect()
+                except Exception as e:
+                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                    print_result(node_title, ERROR)
+                    continue
+                try:
+                    c.cmd(
+                        'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
+                except Exception as e:
+                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                    print_result(node_title, ERROR)
+                    continue
+
+                wearout_ind = re.search(r'SSD Wearout Indicator is (?P<wearout>[0-9]+)', c.output)
+                if wearout_ind is not None:
+                    wearout = wearout_ind.group('wearout')
+                if int(wearout) < 5:
+                    data.append(['F2731', pod_id, node_id, "Solid State Disk",
+                                 wearout, recommended_action])
+    else:
+        for faultInst in faultInsts:
+            dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+            lifetime_remaining = "1%"
+            if dn_array:
+                data.append(['F2731', dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
+                             lifetime_remaining, recommended_action])
+            else:
+
+                    unformatted_data.append(
+                        ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
