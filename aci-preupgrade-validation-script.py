@@ -1282,9 +1282,9 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                 wearout_ind = re.search(r'SSD Wearout Indicator is (?P<wearout>[0-9]+)', c.output)
                 if wearout_ind is not None:
                     wearout = wearout_ind.group('wearout')
-                if int(wearout) < 5:
-                    data.append(['F2731', pod_id, node_id, "Solid State Disk",
-                                 wearout, recommended_action])
+                    if int(wearout) < 5:
+                        data.append(['F2731', pod_id, node_id, "Solid State Disk",
+                                     wearout, recommended_action])
     else:
         for faultInst in faultInsts:
             dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
