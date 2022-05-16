@@ -1232,21 +1232,22 @@ def switch_ssd_check(index, total_checks, **kwargs):
 
 
 def apic_ssd_check(index, total_checks,cversion, **kwargs):
-    title = 'APIC SSD Health (F2731 equipment-wearout)'
+    title = 'APIC SSD Health'
     result = FAIL_UF
     msg = ''
-    headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
+    headers = ["Pod","Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
-    unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
+    unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
     print_title(title, index, total_checks)
-
+    print('')
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
     cfw = AciVersion(cversion)
-    if len(faultInsts)==0 and cversion and (cfw.older_than("4.2(7f)") or cfw.older_than("5.2(1g)")):
+    if len(faultInsts) == 0 and cversion and (cfw.older_than("4.2(7f)") or cfw.older_than("5.2(1g)")):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+        report_other=False
         if not controller:
             print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
             return ERROR
@@ -1258,7 +1259,6 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                 checked_apics[attr['address']] = 1
                 pod_id = attr['podId']
                 node_id = attr['id']
-                prints('')
                 node_title = 'Checking %s...' % attr['name']
                 print_title(node_title)
                 try:
@@ -1283,22 +1283,28 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                 if wearout_ind is not None:
                     wearout = wearout_ind.group('wearout')
                     if int(wearout) < 5:
-                        data.append(['F2731', pod_id, node_id, "Solid State Disk",
+                        data.append([pod_id, node_id, "Solid State Disk",
                                      wearout, recommended_action])
+                        report_other = True
+                        print_result(node_title, DONE)
+                        continue
+                    if report_other:
+                        data.append([pod_id, node_id, "Solid State Disk",
+                                     wearout, "No Action Required"])
+                print_result(node_title, DONE)
     else:
         for faultInst in faultInsts:
             dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-            lifetime_remaining = "1%"
+            lifetime_remaining = "<5%"
             if dn_array:
-                data.append(['F2731', dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
+                data.append([dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
                              lifetime_remaining, recommended_action])
             else:
-
-                    unformatted_data.append(
-                        ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
+                unformatted_data.append(
+                    [faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,adjust_title=True)
     return result
 
 
