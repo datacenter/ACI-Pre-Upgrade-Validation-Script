@@ -1241,11 +1241,14 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
     print_title(title, index, total_checks)
-    print('')
+
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
+    adjust_title = False
     cfw = AciVersion(cversion)
     if len(faultInsts) == 0 and cversion and (cfw.older_than("4.2(7f)") or cfw.older_than("5.2(1g)")):
+        print('')
+        adjust_title = True
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         report_other=False
         if not controller:
@@ -1286,6 +1289,7 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                         data.append([pod_id, node_id, "Solid State Disk",
                                      wearout, recommended_action])
                         report_other = True
+
                         print_result(node_title, DONE)
                         continue
                     if report_other:
@@ -1304,7 +1308,7 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                     [faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,adjust_title=True)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,adjust_title=adjust_title)
     return result
 
 
