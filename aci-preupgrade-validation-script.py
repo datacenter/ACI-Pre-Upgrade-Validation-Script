@@ -1297,15 +1297,17 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                                      wearout, "No Action Required"])
                 print_result(node_title, DONE)
     else:
+        headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
+        unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
         for faultInst in faultInsts:
             dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
             lifetime_remaining = "<5%"
             if dn_array:
-                data.append([dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
+                data.append(['F2731', dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
                              lifetime_remaining, recommended_action])
             else:
                 unformatted_data.append(
-                    [faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
+                    ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,adjust_title=adjust_title)

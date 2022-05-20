@@ -146,7 +146,7 @@ Key:
 | APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)                                 | -- | APIC DIsk Space Usage (F1527, F1528, F1529) |
 | Switch Node /bootflash usage                                                               | Checks /bootflash usage object, flags if over 50% | ACI Switch bootflash Usage  |
 | Standby APIC Disk Space Usage                                                              | Login to Standby APICs and checks `df -h` | Filesystem on Standby APICs |
-| APIC SSD Health (F2731 equipment-wearout)                                                  | -- | SSD health status on APICs |
+| APIC SSD Health                                                                            | Check F2731, if not found, for version earlier than 4.2(7f) and 5.2(1g), get SSD lifetime from AE log  | SSD health status on APICs |
 | Switch SSD Health (F3073, F3074 equipment-flash-warning)                                   | -- | SSD health status on ACI switches |
 | Config On APIC Connected Port (F0467 port-configured-for-apic)                             | --| EPG config on ports connected to APICs |
 | L3 Port Config (F0467 port-configured-as-l2)                                               | -- | Conflicting interface L2/L3 mode|
