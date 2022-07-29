@@ -2038,6 +2038,50 @@ def intersight_upgrade_status_check(index, total_checks, **kwargs):
     return result
 
 
+def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
+    title = 'ISIS Redistribution metric for multi-pod/multi-site'
+    result = FAIL_UF
+    msg = ''
+    headers = ["ISIS Redistribution Metric", "MPOD Deployment", "MSite Deployment","Recommendation" ]
+    data = []
+    recommended_action = 'Change ISIS Redistribution Metric to 32'
+    doc_url = '"ISIS Redistribution Metric" from Pre-Upgrade Checklists'
+    print_title(title, index, total_checks)
+    mpod_miste_mo = icurl('class', 'l3extInfraNodeP.json?query-target-filter=or(eq('
+                                          'l3extInfraNodeP.fabricExtCtrlPeering,"yes"),'
+                                          'eq(l3extInfraNodeP.fabricExtIntersiteCtrlPeering,"yes"))')
+
+    if mpod_miste_mo:
+        pods_list = []
+        msite = False
+        mpod = False
+        try:
+            for mo in mpod_miste_mo:
+                if mo['l3extInfraNodeP']['attributes']['dn']:
+                    dn = mo['l3extInfraNodeP']['attributes']['dn']
+                    if dn.startswith("uni/tn-infra"):
+                        pod_string = re.search(r'topology/pod-(?P<podid>[0-9]+)/node-', dn)
+                        if pod_string is not None:
+                            pods_list.append(pod_string.group('podid'))
+                        if mo['l3extInfraNodeP']['attributes']['fabricExtIntersiteCtrlPeering'] == "yes":
+                            msite = True
+                    continue
+        except KeyError:
+            result = MANUAL
+            msg = 'required property is not found on this version'
+        mpod = (len(pods_list) > 1)
+        if mpod or msite:
+            isis_mo = icurl('mo','uni/fabric/isisDomP-default.json')
+            redistribMetric = isis_mo[0]['isisDomPol']['attributes']['redistribMetric']
+            if int(redistribMetric) >= 63:
+                data.append([redistribMetric, mpod, msite, recommended_action])
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    return result
+
+
 def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     title = 'Eventmgr DB size defect susceptibility'
     result = PASS
@@ -2212,6 +2256,7 @@ if __name__ == "__main__":
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
         intersight_upgrade_status_check,
+        isis_redis_metric_mpod_msite_check,
 
         # Bugs
         ep_announce_check,
