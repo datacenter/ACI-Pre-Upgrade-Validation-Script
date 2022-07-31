@@ -2040,7 +2040,7 @@ def intersight_upgrade_status_check(index, total_checks, **kwargs):
 
 def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
     title = 'ISIS Redistribution metric for multi-pod/multi-site'
-    result = FAIL_UF
+    result = FAIL_O
     msg = ''
     headers = ["ISIS Redistribution Metric", "MPOD Deployment", "MSite Deployment","Recommendation" ]
     data = []
@@ -2061,8 +2061,9 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
                     dn = mo['l3extInfraNodeP']['attributes']['dn']
                     if dn.startswith("uni/tn-infra"):
                         pod_string = re.search(r'topology/pod-(?P<podid>[0-9]+)/node-', dn)
-                        if pod_string is not None:
-                            pods_list.append(pod_string.group('podid'))
+                        podid = pod_string.group('podid')
+                        if pod_string is not None and podid not in pods_list:
+                            pods_list.append(podid)
                         if mo['l3extInfraNodeP']['attributes']['fabricExtIntersiteCtrlPeering'] == "yes":
                             msite = True
                     continue
