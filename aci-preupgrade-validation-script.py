@@ -2039,45 +2039,41 @@ def intersight_upgrade_status_check(index, total_checks, **kwargs):
 
 
 def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
-    title = 'ISIS Redistribution metric for multi-pod/multi-site'
+    title = 'ISIS Redistribution metric for MPod/MSite'
     result = FAIL_O
     msg = ''
     headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment","Recommendation" ]
     data = []
-    recommended_action = 'Change ISIS Redistribution Metric to 32'
-    doc_url = '"ISIS Redistribution Metric" from Pre-Upgrade Checklists'
+    recommended_action = None
+    doc_url = '"ISIS Redistribution Metric" from ACI Best Practices Quick Summary - http://cs.co/9001zNNr7'
     print_title(title, index, total_checks)
 
     isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
-    redistribMetric = isis_mo[0]['isisDomPol']['attributes']['redistribMetric']
-    if int(redistribMetric) >= 63:
-        mpod_msite_mo = icurl('class',
-                              'l3extInfraNodeP.json?query-target-filter=or('
-                              'eq(l3extInfraNodeP.fabricExtCtrlPeering,"yes"),'
-                              'eq(l3extInfraNodeP.fabricExtIntersiteCtrlPeering,"yes"))')
+    redistribMetric = isis_mo[0]['isisDomPol']['attributes'].get('redistribMetric')
 
+    msite = False
+    mpod = False
+
+    if (redistribMetric is None):
+        recommended_action = 'Upgrade to 2.2(4f)+ or 3.0(1k)+ to support configurable ISIS Redistribution Metric'
+    else:
+        if int(redistribMetric) >= 63:
+            recommended_action = 'Change ISIS Redistribution Metric to 32'
+    if recommended_action:
+        mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
         if mpod_msite_mo:
             pods_list = []
-            msite = False
-            mpod = False
-            try:
-                for mo in mpod_msite_mo:
-                    if mo['l3extInfraNodeP']['attributes']['dn']:
-                        dn = mo['l3extInfraNodeP']['attributes']['dn']
-                        if dn.startswith("uni/tn-infra"):
-                            pod_string = re.search(node_regex, dn)
-                            if pod_string is not None:
-                                podid = pod_string.group('pod')
-                                if podid not in pods_list:
-                                    pods_list.append(podid)
-                            if mo['l3extInfraNodeP']['attributes']['fabricExtIntersiteCtrlPeering'] == "yes":
-                                msite = True
-            except KeyError:
-                msg = 'Multi-Site Not Supported in this version '
-            mpod = (len(pods_list) > 1)
-            if mpod or msite:
-                data.append([redistribMetric, mpod, msite, recommended_action])
 
+            for mo in mpod_msite_mo:
+                if mo.get('fvSiteConnP'):
+                    msite = True
+                elif mo.get('fvPodConnP'):
+                    podid = mo['fvPodConnP']['attributes'].get('id')
+                    if podid and podid not in pods_list:
+                        pods_list.append(podid)
+            mpod = (len(pods_list) > 1)
+    if mpod or msite:
+        data.append([redistribMetric, mpod, msite, recommended_action])
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data, doc_url=doc_url)
