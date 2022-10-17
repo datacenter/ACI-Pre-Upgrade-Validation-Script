@@ -7,10 +7,6 @@ import importlib
 script = importlib.import_module("aci-preupgrade-validation-script")
 
 
-node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
-ver_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
-
-
 def icurl(apitype, query):
     if apitype not in ['class', 'mo']:
         print('invalid API type - %s' % apitype)
@@ -116,7 +112,7 @@ def test_switch_bootflash_usage_check():
     response_json = icurl('class',
                           'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
     for i, eqptcapacityFSPartition in enumerate(response_json):
-        dn = re.search(node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
+        dn = re.search(script.node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
         pod = dn.group("pod")
         node = dn.group("node")
         avail = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['avail'])
