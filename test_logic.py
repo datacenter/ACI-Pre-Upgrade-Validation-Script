@@ -20,28 +20,17 @@ def icurl(apitype, query):
     else:
         return imdata
 
+
 # Overwrite to local for file test
 script.icurl = icurl
 
 
 @pytest.fixture
-def upgradeOne():
-    return {"cversion": "4.2(1a)", "tversion": "5.2(4d)"}
-
-
-@pytest.fixture
-def upgradeTwo():
-    return {"cversion": "3.2(1a)", "tversion": "4.2(4d)"}
-
-
-@pytest.fixture
-def upgradeThree():
-    return {"cversion": "3.2(1a)", "tversion": "5.2(6a)"}
-
-
-@pytest.fixture
-def upgradeFour():
-    return {"cversion": "4.2(3a)", "tversion": "4.2(7d)"}
+def upgradePaths():
+    return [{"cversion": "4.2(1a)", "tversion": "5.2(4d)"},
+            {"cversion": "3.2(1a)", "tversion": "4.2(4d)"},
+            {"cversion": "3.2(1a)", "tversion": "5.2(6a)"},
+            {"cversion": "4.2(3a)", "tversion": "4.2(7d)"}]
 
 
 def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None, **kwargs):
@@ -50,8 +39,8 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     msg = ''
     headers = ["Current version", "Target Version", "Warning"]
     data = []
-    recommended_action = ''
-    doc_url = 'APIC Upgrade/Downgrade Support Matrix - http://cs.co/9005ydMQP'
+    recommended_action = 'Manually change Transmit(send) Flow Control to off prior to switch Upgrade'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
     script.print_title(title, index, total_checks)
 
     if not cversion:
@@ -70,58 +59,27 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     return result
 
 
-def test_llfc_susceptibility_check_one(upgradeOne):
-    assert llfc_susceptibility_check(1, 1, **upgradeOne) == "MANUAL CHECK REQUIRED"
-
-
-def test_llfc_susceptibility_check_two(upgradeTwo):
-    assert llfc_susceptibility_check(1, 1, **upgradeTwo) == "MANUAL CHECK REQUIRED"
-
-
-def test_llfc_susceptibility_check_three(upgradeThree):
-    assert llfc_susceptibility_check(1, 1, **upgradeThree) == "PASS"
-
-
-def test_llfc_susceptibility_check_four(upgradeFour):
-    assert llfc_susceptibility_check(1, 1, **upgradeFour) == "PASS"
-
-
-def test_get_current_version_old():
-    """ Returns: x.y(z) """
-    firmwares = icurl('class', 'firmwareCtrlrRunning.json')
-    for firmware in firmwares:
-        if 'node-1' in firmware['firmwareCtrlrRunning']['attributes']['dn']:
-            current_version = firmware['firmwareCtrlrRunning']['attributes']['version']
-            break
-    assert current_version == "5.2(4d)"
+def test_llfc_susceptibility_check(upgradePaths):
+    script.print_title("Starting test_llfc_susceptibility_check\n")
+    for pathnum, versions in enumerate(upgradePaths):
+        if pathnum == 0:
+            assert llfc_susceptibility_check(1, 1, **versions) == "MANUAL CHECK REQUIRED"
+        if pathnum == 1:
+            assert llfc_susceptibility_check(1, 1, **versions) == "MANUAL CHECK REQUIRED"
+        if pathnum == 2:
+            assert llfc_susceptibility_check(1, 1, **versions) == "PASS"
+        if pathnum == 3:
+            assert llfc_susceptibility_check(1, 1, **versions) == "PASS"  
 
 
 def test_get_current_version():
+    script.print_title("Starting test_get_current_version\n")
     res = script.get_current_version()
-    print("test123")
     assert res == "5.2(4d)"
 
 
 def test_switch_bootflash_usage_check_new():
+    script.print_title("Starting test_switch_bootflash_usage_check_new\n")
     res = script.switch_bootflash_usage_check(1, 1)
-    print(res)
     assert res == "FAIL - UPGRADE FAILURE!!"
-
-
-def test_switch_bootflash_usage_check():
-    response_json = icurl('class',
-                          'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
-    for i, eqptcapacityFSPartition in enumerate(response_json):
-        dn = re.search(script.node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
-        pod = dn.group("pod")
-        node = dn.group("node")
-        avail = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['avail'])
-        used = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['used'])
-
-        usage = (used / (avail + used)) * 100
-        print([pod, node, usage,])
-        if i == 10:
-            assert pod == "1"
-            assert node == "101"
-            assert usage == 51.279232107240844
 
