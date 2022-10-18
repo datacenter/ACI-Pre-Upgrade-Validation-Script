@@ -30,7 +30,8 @@ def upgradePaths():
     return [{"cversion": "4.2(1a)", "tversion": "5.2(4d)"},
             {"cversion": "3.2(1a)", "tversion": "4.2(4d)"},
             {"cversion": "3.2(1a)", "tversion": "5.2(6a)"},
-            {"cversion": "4.2(3a)", "tversion": "4.2(7d)"}]
+            {"cversion": "4.2(3a)", "tversion": "4.2(7d)"},
+            {"cversion": "2.2(3a)", "tversion": "2.2(4r)"}]
 
 
 # New Check, migrate to script once logic confirmed
@@ -66,13 +67,13 @@ def test_llfc_susceptibility_check(upgradePaths):
     for i, testdata in enumerate(upgradePaths):
         pathnum = i+1
         if pathnum == 1:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "MANUAL CHECK REQUIRED"
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 2:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "MANUAL CHECK REQUIRED"
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 3:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "PASS"
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 4:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "PASS"  
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
 
 
 
@@ -114,13 +115,13 @@ def test_pos_stale_nir_object_check(upgradePaths):
     for i, testdata in enumerate(upgradePaths):
         pathnum = i+1
         if pathnum == 1:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "FAIL - OUTAGE WARNING!!"
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 2:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "PASS"
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "FAIL - OUTAGE WARNING!!"
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 4:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "PASS"  
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
 
 
 def test_neg_stale_nir_object_check(upgradePaths):
@@ -135,13 +136,110 @@ def test_neg_stale_nir_object_check(upgradePaths):
         pathnum = i+1
 
         if pathnum == 1:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "PASS"
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 2:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "PASS"
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "PASS"
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 4:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == "PASS"  
+            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+
+
+def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
+    title = 'ISIS Redistribution metric for MPod/MSite'
+    result = script.FAIL_O
+    msg = ''
+    headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment","Recommendation" ]
+    data = []
+    recommended_action = None
+    doc_url = '"ISIS Redistribution Metric" from ACI Best Practices Quick Summary - http://cs.co/9001zNNr7'
+    script.print_title(title, index, total_checks)
+
+    isis_mo = kwargs.get("uni/fabric/isisDomP-default.json", None)
+    mpod_msite_mo = kwargs.get("telemetryStatsServerP.json", None)
+
+    if not isis_mo:
+        isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
+    redistribMetric = isis_mo[0]['isisDomPol']['attributes'].get('redistribMetric')
+
+    msite = False
+    mpod = False
+
+    if not redistribMetric:
+        recommended_action = 'Upgrade to 2.2(4f)+ or 3.0(1k)+ to support configurable ISIS Redistribution Metric'
+    else:
+        if int(redistribMetric) >= 63:
+            recommended_action = 'Change ISIS Redistribution Metric to less than 63'
+
+    if recommended_action:
+        mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
+        if mpod_msite_mo:
+            pods_list = []
+
+            for mo in mpod_msite_mo:
+                if mo.get('fvSiteConnP'):
+                    msite = True
+                elif mo.get('fvPodConnP'):
+                    podid = mo['fvPodConnP']['attributes'].get('id')
+                    if podid and podid not in pods_list:
+                        pods_list.append(podid)
+            mpod = (len(pods_list) > 1)
+    if mpod or msite:
+        data.append([redistribMetric, mpod, msite, recommended_action])
+    if not data:
+        result = script.PASS
+    script.print_result(title, result, msg, headers, data, doc_url=doc_url)
+    return result
+
+
+def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
+    script.print_title("Starting test_pos_isis_redis_metric_mpod_msite_check\n")
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+        with open("tests/isisDomP-default_pos.json","r") as file:
+            testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
+        pathnum = i+1
+        if pathnum == 1:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+        if pathnum == 2:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+        if pathnum == 3:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+        if pathnum == 4:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+
+
+def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
+    script.print_title("Starting test_neg_isis_redis_metric_mpod_msite_check\n")
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+
+        with open("tests/isisDomP-default_neg.json","r") as file:
+            testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
+
+        pathnum = i+1
+        if pathnum == 1:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 2:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 3:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 4:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+
+
+def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
+    script.print_title("Starting test_missing_isis_redis_metric_mpod_msite_check\n")
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+
+        with open("tests/isisDomP-default_missing.json","r") as file:
+            testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
+
+        pathnum = i+1
+        if pathnum == 5:
+            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O 
+
 
 def test_get_current_version():
     script.print_title("Starting test_get_current_version\n")
@@ -152,5 +250,5 @@ def test_get_current_version():
 def test_switch_bootflash_usage_check_new():
     script.print_title("Starting test_switch_bootflash_usage_check_new\n")
     res = script.switch_bootflash_usage_check(1, 1)
-    assert res == "FAIL - UPGRADE FAILURE!!"
+    assert res == script.FAIL_UF
 
