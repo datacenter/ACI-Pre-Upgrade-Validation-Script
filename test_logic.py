@@ -62,15 +62,17 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
 
 def test_llfc_susceptibility_check(upgradePaths):
     script.print_title("Starting test_llfc_susceptibility_check\n")
-    for pathnum, versions in enumerate(upgradePaths):
-        if pathnum == 0:
-            assert llfc_susceptibility_check(1, 1, **versions) == "MANUAL CHECK REQUIRED"
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+        pathnum = i+1
         if pathnum == 1:
-            assert llfc_susceptibility_check(1, 1, **versions) == "MANUAL CHECK REQUIRED"
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "MANUAL CHECK REQUIRED"
         if pathnum == 2:
-            assert llfc_susceptibility_check(1, 1, **versions) == "PASS"
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "MANUAL CHECK REQUIRED"
         if pathnum == 3:
-            assert llfc_susceptibility_check(1, 1, **versions) == "PASS"  
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "PASS"
+        if pathnum == 4:
+            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == "PASS"  
 
 
 
