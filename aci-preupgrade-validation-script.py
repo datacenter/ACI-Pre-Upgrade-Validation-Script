@@ -2205,6 +2205,32 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'Link Level Flow Control Check'
+    result = PASS
+    msg = ''
+    headers = ["Current version", "Target Version", "Warning"]
+    data = []
+    recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
+    print_title(title, index, total_checks)
+
+    if not cversion:
+        cversion = kwargs.get("cversion", None)
+    if not tversion:
+        tversion = kwargs.get("tversion", None)
+    cfw = AciVersion(cversion)
+    tfw = AciVersion(tversion)
+
+    if cfw and tfw:
+        if (cfw.newer_than("2.2(10a)") and cfw.older_than("4.2(2a)")) and (tfw.older_than("5.2(5a)")):
+            result = MANUAL
+            data.append([cfw, tfw, 'Affected Path Found, Check Bug RNE'])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
     username, password = get_credentials()
@@ -2269,6 +2295,7 @@ if __name__ == "__main__":
         ep_announce_check,
         eventmgr_db_defect_check,
         contract_22_defect_check,
+        llfc_susceptibility_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
