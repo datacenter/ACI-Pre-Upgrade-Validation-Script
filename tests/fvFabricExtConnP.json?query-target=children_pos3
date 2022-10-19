@@ -1,0 +1,27 @@
+{
+    "totalCount": "3",
+    "imdata": [
+        {
+            "fvPodConnP": {
+                "attributes": {
+                    "annotation": "",
+                    "assocIntersitePodId": "0",
+                    "dn": "uni/tn-infra/fabricExtConnP-1/podConnP-1",
+                    "id": "1"
+
+                }
+            }
+        },
+        {
+            "fvSiteConnP": {
+                "attributes": {
+                    "annotation": "orchestrator:msc",
+                    "bgpAsn": "65001",
+                    "dn": "uni/tn-infra/fabricExtConnP-1/siteConnP-2",
+                    "id": "2",
+                    "name": "Calo-d"
+                }
+            }
+        }
+    ]
+}
