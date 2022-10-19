@@ -156,7 +156,7 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
     script.print_title(title, index, total_checks)
 
     isis_mo = kwargs.get("uni/fabric/isisDomP-default.json", None)
-    mpod_msite_mo = kwargs.get("telemetryStatsServerP.json", None)
+    mpod_msite_mo = kwargs.get("fvFabricExtConnP.json?query-target=children", None)
 
     if not isis_mo:
         isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
@@ -172,7 +172,8 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
             recommended_action = 'Change ISIS Redistribution Metric to less than 63'
 
     if recommended_action:
-        mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
+        if not mpod_msite_mo:
+            mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
         if mpod_msite_mo:
             pods_list = []
 
@@ -198,14 +199,23 @@ def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
     for i, testdata in enumerate(upgradePaths):
         with open("tests/isisDomP-default_pos.json","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
+
         pathnum = i+1
         if pathnum == 1:
+            with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 2:
+            with open("tests/fvFabricExtConnP.json?query-target=children_pos2","r") as file:
+                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 3:
+            with open("tests/fvFabricExtConnP.json?query-target=children_pos3","r") as file:
+                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 4:
+            with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
 
 
@@ -216,6 +226,8 @@ def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
 
         with open("tests/isisDomP-default_neg.json","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
+        with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+            testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
 
         pathnum = i+1
         if pathnum == 1:
@@ -235,7 +247,9 @@ def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
 
         with open("tests/isisDomP-default_missing.json","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
-
+        with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+            testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
+            
         pathnum = i+1
         if pathnum == 5:
             assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O 
