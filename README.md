@@ -171,6 +171,7 @@ Key:
 | BGP Peer Profile at node level without Loopback | See Pre-Upgrade Checklist| L3Out BGP Peer Connectivity Profile under a node profile without a loopback |
 | L3Out Route Map import/export direction         | See Pre-Upgrade Checklist | L3Out incorrect route map direction |
 | Intersight Device Connector upgrade status      | Flags if APIC Intersight Connector is upgrading| Intersight Device Connector is upgrading |
+| ISIS Redistribution Metric for MPOD/Msite       | For multi-pod/multi-site deployment, whether isis redistribute metric is less than 63 |Switch Graceful Upgrade Guidelines|
 
 ## Defect Condition Checks
 
