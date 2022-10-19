@@ -1,7 +1,13 @@
 # content of test_class_demo.py
+import os
+import sys
 import pytest
 import json
 import re
+
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(TEST_DIR)
+sys.path.append(PROJECT_DIR)
 
 import importlib  
 script = importlib.import_module("aci-preupgrade-validation-script")
