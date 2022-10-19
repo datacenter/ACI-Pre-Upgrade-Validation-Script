@@ -7,24 +7,6 @@ import importlib
 script = importlib.import_module("aci-preupgrade-validation-script")
 
 
-def icurl(apitype, query):
-    if apitype not in ['class', 'mo']:
-        print('invalid API type - %s' % apitype)
-        return []
-
-    with open("tests/"+query,"r") as file:
-        imdata = json.loads(file.read())['imdata']
-        
-    if imdata and "error" in imdata[0].keys():
-        raise Exception('API call failed! Check debug log')
-    else:
-        return imdata
-
-
-# Overwrite to local for file test
-script.icurl = icurl
-
-
 @pytest.fixture
 def upgradePaths():
     return [{"cversion": "4.2(1a)", "tversion": "5.2(4d)"},
@@ -111,8 +93,9 @@ def stale_nir_object_check(index, total_checks, cversion=None, tversion=None, **
 def test_pos_stale_nir_object_check(upgradePaths):
     script.print_title("Starting Positive stale_nir_object_check\n")
     pathlen = len(upgradePaths)
-    # POS - with affected object in json
     for i, testdata in enumerate(upgradePaths):
+        with open("tests/telemetryStatsServerP.json_pos","r") as file:
+            testdata.update({"telemetryStatsServerP.json": json.loads(file.read())['imdata']})
         pathnum = i+1
         if pathnum == 1:
             assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
@@ -127,8 +110,6 @@ def test_pos_stale_nir_object_check(upgradePaths):
 def test_neg_stale_nir_object_check(upgradePaths):
     script.print_title("Starting Negative stale_nir_object_check\n")
     pathlen = len(upgradePaths)
-    # NEG - without affected object in json
-
     for i, testdata in enumerate(upgradePaths):
         neg_json = {"totalCount":"0","imdata":[]}
         testdata.update({"telemetryStatsServerP.json": neg_json['imdata']})
@@ -197,7 +178,7 @@ def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
     script.print_title("Starting test_pos_isis_redis_metric_mpod_msite_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
-        with open("tests/isisDomP-default_pos.json","r") as file:
+        with open("tests/isisDomP-default.json_pos","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
 
         pathnum = i+1
@@ -224,7 +205,7 @@ def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
 
-        with open("tests/isisDomP-default_neg.json","r") as file:
+        with open("tests/isisDomP-default.json_neg","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
         with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
             testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
@@ -245,7 +226,7 @@ def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
 
-        with open("tests/isisDomP-default_missing.json","r") as file:
+        with open("tests/isisDomP-default.json_missing","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
         with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
             testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
@@ -255,14 +236,10 @@ def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
             assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O 
 
 
-def test_get_current_version():
-    script.print_title("Starting test_get_current_version\n")
-    res = script.get_current_version()
-    assert res == "5.2(4d)"
-
-
 def test_switch_bootflash_usage_check_new():
     script.print_title("Starting test_switch_bootflash_usage_check_new\n")
-    res = script.switch_bootflash_usage_check(1, 1)
+    with open("tests/eqptcapacityFSPartition.json_pos","r") as file:
+        testdata = {"eqptcapacityFSPartition.json": json.loads(file.read())['imdata']}
+    res = script.switch_bootflash_usage_check(1, 1, **testdata)
     assert res == script.FAIL_UF
 
