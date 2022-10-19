@@ -2051,19 +2051,25 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
     doc_url = '"ISIS Redistribution Metric" from ACI Best Practices Quick Summary - http://cs.co/9001zNNr7'
     print_title(title, index, total_checks)
 
-    isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
+    isis_mo = kwargs.get("uni/fabric/isisDomP-default.json", None)
+    mpod_msite_mo = kwargs.get("fvFabricExtConnP.json?query-target=children", None)
+
+    if not isis_mo:
+        isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
     redistribMetric = isis_mo[0]['isisDomPol']['attributes'].get('redistribMetric')
 
     msite = False
     mpod = False
 
-    if (redistribMetric is None):
+    if not redistribMetric:
         recommended_action = 'Upgrade to 2.2(4f)+ or 3.0(1k)+ to support configurable ISIS Redistribution Metric'
     else:
         if int(redistribMetric) >= 63:
-            recommended_action = 'Change ISIS Redistribution Metric to 32'
+            recommended_action = 'Change ISIS Redistribution Metric to less than 63'
+
     if recommended_action:
-        mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
+        if not mpod_msite_mo:
+            mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
         if mpod_msite_mo:
             pods_list = []
 

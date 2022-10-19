@@ -132,54 +132,6 @@ def test_neg_stale_nir_object_check(upgradePaths):
             assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
 
 
-def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
-    title = 'ISIS Redistribution metric for MPod/MSite'
-    result = script.FAIL_O
-    msg = ''
-    headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment","Recommendation" ]
-    data = []
-    recommended_action = None
-    doc_url = '"ISIS Redistribution Metric" from ACI Best Practices Quick Summary - http://cs.co/9001zNNr7'
-    script.print_title(title, index, total_checks)
-
-    isis_mo = kwargs.get("uni/fabric/isisDomP-default.json", None)
-    mpod_msite_mo = kwargs.get("fvFabricExtConnP.json?query-target=children", None)
-
-    if not isis_mo:
-        isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
-    redistribMetric = isis_mo[0]['isisDomPol']['attributes'].get('redistribMetric')
-
-    msite = False
-    mpod = False
-
-    if not redistribMetric:
-        recommended_action = 'Upgrade to 2.2(4f)+ or 3.0(1k)+ to support configurable ISIS Redistribution Metric'
-    else:
-        if int(redistribMetric) >= 63:
-            recommended_action = 'Change ISIS Redistribution Metric to less than 63'
-
-    if recommended_action:
-        if not mpod_msite_mo:
-            mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
-        if mpod_msite_mo:
-            pods_list = []
-
-            for mo in mpod_msite_mo:
-                if mo.get('fvSiteConnP'):
-                    msite = True
-                elif mo.get('fvPodConnP'):
-                    podid = mo['fvPodConnP']['attributes'].get('id')
-                    if podid and podid not in pods_list:
-                        pods_list.append(podid)
-            mpod = (len(pods_list) > 1)
-    if mpod or msite:
-        data.append([redistribMetric, mpod, msite, recommended_action])
-    if not data:
-        result = script.PASS
-    script.print_result(title, result, msg, headers, data, doc_url=doc_url)
-    return result
-
-
 def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
     script.print_title("Starting test_pos_isis_redis_metric_mpod_msite_check\n")
     pathlen = len(upgradePaths)
@@ -191,19 +143,19 @@ def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
         if pathnum == 1:
             with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 2:
             with open("tests/fvFabricExtConnP.json?query-target=children_pos2","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 3:
             with open("tests/fvFabricExtConnP.json?query-target=children_pos3","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 4:
             with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
 
 
 def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
@@ -218,13 +170,13 @@ def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
 
         pathnum = i+1
         if pathnum == 1:
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 2:
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 4:
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
 
 
 def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
@@ -239,7 +191,7 @@ def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
             
         pathnum = i+1
         if pathnum == 5:
-            assert isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O 
+            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O 
 
 
 def test_switch_bootflash_usage_check_new():
