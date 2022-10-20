@@ -19,7 +19,8 @@ def upgradePaths():
             {"cversion": "3.2(1a)", "tversion": "4.2(4d)"},
             {"cversion": "3.2(1a)", "tversion": "5.2(6a)"},
             {"cversion": "4.2(3a)", "tversion": "4.2(7d)"},
-            {"cversion": "2.2(3a)", "tversion": "2.2(4r)"}]
+            {"cversion": "2.2(3a)", "tversion": "2.2(4r)"},
+            {"cversion": "5.2(1a)", "tversion": None}]
 
 
 # New Check, migrate to script once logic confirmed
@@ -64,72 +65,44 @@ def test_llfc_susceptibility_check(upgradePaths):
             assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
 
 
-
-# New Check, migrate to script once logic confirmed
-def stale_nir_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'NIR App Stale Object Check'
-    result = script.PASS
-    msg = ''
-    headers = ["Current version", "Target Version", "Warning"]
-    data = []
-    recommended_action = 'Manually delete the telemetryStatsServerP object prior to switch upgrade'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
-    script.print_title(title, index, total_checks)
-
-    telemetryStatsServerP_json = kwargs.get("telemetryStatsServerP.json", None)
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-    cfw = script.AciVersion(cversion)
-    tfw = script.AciVersion(tversion)
-
-    if cfw and tfw:
-        if cfw.older_than("4.2(4d)") and tfw.newer_than("5.2(2d)"):
-            if not isinstance(telemetryStatsServerP_json, list):
-                telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
-            if len(telemetryStatsServerP_json) > 0:
-                result = script.FAIL_O
-                data.append([cversion, tversion, 'telemetryStatsServerP Found'])
-
-    script.print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
-
-
-def test_pos_stale_nir_object_check(upgradePaths):
-    script.print_title("Starting Positive stale_nir_object_check\n")
+def test_pos_telemetryStatsServerP_object_check(upgradePaths):
+    script.print_title("Starting test_pos_telemetryStatsServerP_object_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         with open("tests/telemetryStatsServerP.json_pos","r") as file:
             testdata.update({"telemetryStatsServerP.json": json.loads(file.read())['imdata']})
         pathnum = i+1
         if pathnum == 1:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 2:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 4:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
 
 
-def test_neg_stale_nir_object_check(upgradePaths):
+def test_neg_telemetryStatsServerP_object_check(upgradePaths):
     script.print_title("Starting Negative stale_nir_object_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
-        neg_json = {"totalCount":"0","imdata":[]}
-        testdata.update({"telemetryStatsServerP.json": neg_json['imdata']})
-        
         pathnum = i+1
-
         if pathnum == 1:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+            neg_json = {"totalCount":"0","imdata":[]}
+            testdata.update({"telemetryStatsServerP.json": neg_json['imdata']})
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 2:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+            with open("tests/telemetryStatsServerP.json_neg","r") as file:
+                testdata.update({"telemetryStatsServerP.json": json.loads(file.read())['imdata']})
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 4:
-            assert stale_nir_object_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 5:
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 6:
+            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.MANUAL
 
 
 def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
