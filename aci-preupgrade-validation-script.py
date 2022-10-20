@@ -2205,6 +2205,42 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'telemetryStatsServerP Object Check'
+    result = PASS
+    msg = ''
+    headers = ["Current version", "Target Version", "Warning"]
+    data = []
+    recommended_action = 'Change telemetryStatsServerP.collectorLocation to "none" prior to upgrade'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
+    print_title(title, index, total_checks)
+
+    telemetryStatsServerP_json = kwargs.get("telemetryStatsServerP.json", None)
+    if not cversion:
+        cversion = kwargs.get("cversion", None)
+    if not tversion:
+        tversion = kwargs.get("tversion", None)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+    
+    cfw = AciVersion(cversion)
+    tfw = AciVersion(tversion)
+
+    if cfw and tfw:
+        if cfw.older_than("4.2(4d)") and tfw.newer_than("5.2(2d)"):
+            if not isinstance(telemetryStatsServerP_json, list):
+                telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
+            for serverp in telemetryStatsServerP_json:
+                if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
+                    result = FAIL_O
+                    data.append([cversion, tversion, 'telemetryStatsServerP.collectorLocation = "apic" Found'])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
     username, password = get_credentials()
@@ -2269,6 +2305,7 @@ if __name__ == "__main__":
         ep_announce_check,
         eventmgr_db_defect_check,
         contract_22_defect_check,
+        telemetryStatsServerP_object_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
