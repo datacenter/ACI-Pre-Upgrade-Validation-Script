@@ -586,7 +586,7 @@ class AciVersion():
     def older_than(self, version):
         v = re.search(self.v_regex, version)
         if not v: return None
-        for i in range(1, len(v.groups())):
+        for i in range(1, len(v.groups())+1):
             if self.regex.group(i) > v.group(i): return False
             elif self.regex.group(i) < v.group(i): return True
         return False
@@ -2194,7 +2194,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
 
     if tversion:
         tfw = AciVersion(tversion)
-        if cfw.older_than("5.0(1a)") and tfw.newer_than("5.0(1a)"):
+        if cfw.older_than("5.0(1a)") and (tfw.newer_than("5.0(1a)") and tfw.older_than("5.2(2g)")):
             result = FAIL_O
             data.append(["CSCvz65560", "Target Version susceptible to Defect"])
     else:
