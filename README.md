@@ -180,7 +180,9 @@ Key:
 | EP Announce Compatibility              | Checks if TVER and CVER are affected by CSCvi76161   | EP Announce version mismatch |
 | Eventmgr DB size defect susceptibility | Check if CVER is affected by CSCvn20175 | None, Contact TAC for verification |
 | Contract Port 22 defect susceptibility | Check if TVER is affected by CSCvz65560 | None  |
+| telemetryStatsServerP defect susceptibility | Check for CVER, TVER and object in CSCvt47850 | None  |
 | Link Level Flow Control susceptibility | Check if CVER and TVER are affected by CSCvo27498 | None  |
+
 
 ## Log Files
 
