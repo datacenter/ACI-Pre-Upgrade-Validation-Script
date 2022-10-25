@@ -569,6 +569,22 @@ def get_target_version():
         return ''
 
 
+def get_vpc_nodes(**kwargs):
+    """ Returns list of VPC Node IDs; ['101', '102', etc...] """
+    prints("Collecting VPC Node IDs...", end='')
+    vpc_nodes = []
+
+    prot_pols = kwargs.get("fabricNodePEp.json", None)
+    if not prot_pols:
+        prot_pols = icurl('class', 'fabricNodePEp.json')
+
+    if prot_pols:
+        for vpc_node in prot_pols:
+            vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
+
+    return vpc_nodes
+
+
 class AciVersion():
     v_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
 
@@ -2205,7 +2221,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=[] ,**kwargs):
     title = 'Link Level Flow Control Check'
     result = PASS
     msg = ''
@@ -2219,11 +2235,24 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
         cversion = kwargs.get("cversion", None)
     if not tversion:
         tversion = kwargs.get("tversion", None)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    if not vpc_node_ids:
+        vpc_node_ids = kwargs.get("vpc_node_ids", [])
+
+    if not vpc_node_ids:
+        print_result(title, result, 'No VPC Nodes found. Not susceptible.')
+
     cfw = AciVersion(cversion)
     tfw = AciVersion(tversion)
 
     if cfw and tfw:
-        if (cfw.newer_than("2.2(10a)") and cfw.older_than("4.2(2a)")) and (tfw.older_than("5.2(5a)")):
+        if cfw.older_than("4.2(6d)") and tfw.older_than("4.2(5d)"):
+            # Check for VPC nodes
+            
             result = MANUAL
             data.append([cfw, tfw, 'Affected Path Found, Check Bug RNE'])
 
@@ -2231,7 +2260,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     return result
 
 
-def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None,**kwargs):
     title = 'telemetryStatsServerP Object Check'
     result = PASS
     msg = ''
@@ -2273,6 +2302,7 @@ if __name__ == "__main__":
     try:
         cversion = get_current_version()
         tversion = get_target_version()
+        vpc_nodes = get_vpc_nodes()
     except Exception as e:
         prints('')
         err = 'Error: %s' % e
@@ -2282,7 +2312,8 @@ if __name__ == "__main__":
         logging.exception(e)
         sys.exit()
     inputs = {'username': username, 'password': password,
-              'cversion': cversion, 'tversion': tversion}
+              'cversion': cversion, 'tversion': tversion,
+              'vpc_node_ids': vpc_nodes}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
                 "check_details": [], 'cversion': cversion, 'tversion': tversion}
     checks = [
