@@ -48,10 +48,20 @@ def test_aciversion(upgradePaths):
             assert cfw.same_as("4.2(1b)") == True # Same
 
 
+def test_get_vpc_nodes():
+    script.print_title("Starting test_get_vpc_nodes\n")
+
+    with open("tests/fabricNodePEp.json_pos","r") as file:
+        testdata = {"fabricNodePEp.json": json.loads(file.read())['imdata']}
+
+    assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
+
+
 def test_llfc_susceptibility_check(upgradePaths):
     script.print_title("Starting test_llfc_susceptibility_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
+        testdata.update({"vpc_node_ids": ["101", "103", "204", "206"]})
         pathnum = i+1
         if pathnum == 1:
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
