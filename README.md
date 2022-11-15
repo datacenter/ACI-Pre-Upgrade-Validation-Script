@@ -181,7 +181,7 @@ Key:
 | Eventmgr DB size defect susceptibility | Check if CVER is affected by CSCvn20175 | None, Contact TAC for verification |
 | Contract Port 22 defect susceptibility | Check if TVER is affected by CSCvz65560 | None  |
 | telemetryStatsServerP defect susceptibility | Check for CVER, TVER and object in CSCvt47850 | None  |
-| Link Level Flow Control susceptibility | Check if CVER and TVER are affected by CSCvo27498 | None  |
+| Link Level Flow Control defect susceptibility | Check if CVER and TVER are susceptible to CSCvv33100 and CSCwd37387 | None  |
 
 
 ## Log Files
