@@ -2226,7 +2226,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     title = 'Link Level Flow Control Check'
     result = PASS
     msg = ''
-    headers = ["Pod", "NodeId", "Int", "bugId", "Warning"]
+    headers = ["Pod", "NodeId", "Int", "Type", "BugId", "Warning"]
     data = []
     sx_affected  = t_affected = False
     recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
@@ -2276,10 +2276,10 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
                 int = m.group('int')
 
                 if sx_affected and typeName == "1000base-SX":
-                    data.append([podid, nodeid, int, 'CSCvv33100', 'Check Peer Device LLFC behavior'])
+                    data.append([podid, nodeid, int, typeName, 'CSCvv33100', 'Check Peer Device LLFC behavior'])
 
                 if t_affected and typeName == "1000base-T":
-                    data.append([podid, nodeid, int, 'CSCwd37387', 'Check Peer Device LLFC behavior'])
+                    data.append([podid, nodeid, int, typeName, 'CSCwd37387', 'Check Peer Device LLFC behavior'])
 
 
 
