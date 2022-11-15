@@ -1944,29 +1944,30 @@ def vmm_controller_adj_check(index, total_checks, **kwargs):
     return result
 
 
-def vpc_paired_switches_check(index, total_checks, **kwargs):
+def vpc_paired_switches_check(index, total_checks, vpc_node_ids=[], **kwargs):
     title = 'VPC-paired Leaf switches'
     result = FAIL_O
     msg = ''
     headers = ["Node ID", "Node Name", "Recommended Action"]
     data = []
-    vpc_nodes = []
     recommended_action = 'Determine if dataplane redundancy is available if this node goes down'
     doc_url = '"All switch nodes in vPC" from Pre-Upgrade Check Lists'
     print_title(title, index, total_checks)
 
-    top_system = icurl('class', 'topSystem.json')
-    prot_pols = icurl('class', 'fabricNodePEp.json')
-    if prot_pols:
-        for vpc_node in prot_pols:
-            vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
-    else:
+    if not vpc_node_ids:
+        vpc_node_ids = kwargs.get("vpc_node_ids", [])
+
+    if not vpc_node_ids:
         msg = 'No VPC definitions found!'
+
+    top_system = kwargs.get("topSystem.json")
+    if not top_system:
+        top_system = icurl('class', 'topSystem.json')
 
     for node in top_system:
         node_id = node['topSystem']['attributes']['id']
         role = node['topSystem']['attributes']['role']
-        if role == 'leaf' and (node_id not in vpc_nodes):
+        if role == 'leaf' and (node_id not in vpc_node_ids):
             result = MANUAL
             name = node['topSystem']['attributes']['name']
             data.append([node_id, name, recommended_action])
@@ -2225,8 +2226,9 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     title = 'Link Level Flow Control Check'
     result = PASS
     msg = ''
-    headers = ["Current version", "Target Version", "Warning"]
+    headers = ["Pod", "NodeId", "Int", "bugId", "Warning"]
     data = []
+    sx_affected  = t_affected = False
     recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
     print_title(title, index, total_checks)
@@ -2245,22 +2247,50 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
 
     if not vpc_node_ids:
         print_result(title, result, 'No VPC Nodes found. Not susceptible.')
+        return result
 
     cfw = AciVersion(cversion)
     tfw = AciVersion(tversion)
 
     if cfw and tfw:
-        if cfw.older_than("4.2(6d)") and tfw.older_than("4.2(5d)"):
-            # Check for VPC nodes
+        # Check for Fiber 1000base-SX, CSCvv33100
+        if cfw.older_than("4.2(6d)") and tfw.newer_than("4.2(6c)"):
+            sx_affected = True
             
-            result = MANUAL
-            data.append([cfw, tfw, 'Affected Path Found, Check Bug RNE'])
+        # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
+        if cfw.older_than("4.1(1i)") and tfw.newer_than("4.1(1h)"):
+            t_affected = True
+        
+        if sx_affected or t_affected:
+            ethpmFcot = kwargs.get("ethpmFcot.json")
+            if not ethpmFcot:
+                ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
+
+            for fcot in ethpmFcot:
+                typeName = fcot['ethpmFcot']['attributes']['typeName']
+                dn = fcot['ethpmFcot']['attributes']['dn']
+
+                m = re.match(r'topology/pod-(?P<podid>\d+)/node-(?P<nodeid>\d+)/.+/phys-\[(?P<int>eth\d/\d+)\]', dn)
+                podid = m.group('podid')
+                nodeid = m.group('nodeid')
+                int = m.group('int')
+
+                if sx_affected and typeName == "1000base-SX":
+                    data.append([podid, nodeid, int, 'CSCvv33100', 'Check Peer Device LLFC behavior'])
+
+                if t_affected and typeName == "1000base-T":
+                    data.append([podid, nodeid, int, 'CSCwd37387', 'Check Peer Device LLFC behavior'])
+
+
+
+    if data:
+        result = MANUAL
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
-def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None,**kwargs):
+def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
     title = 'telemetryStatsServerP Object Check'
     result = PASS
     msg = ''

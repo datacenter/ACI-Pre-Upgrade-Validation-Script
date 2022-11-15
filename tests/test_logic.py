@@ -57,20 +57,45 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
+def test_vpc_paired_switches_check(upgradePaths):
+    script.print_title("Starting vpc_paired_switches_check\n")
+    pathlen = len(upgradePaths)
+
+    for i, testdata in enumerate(upgradePaths):
+        with open("tests/topSystem.json_pos","r") as file:
+            testdata.update({"topSystem.json": json.loads(file.read())['imdata']})
+        pathnum = i+1
+        if pathnum == 1:
+            testdata.update({"vpc_node_ids": ["101", "102", "103", "204", "206"]})
+            assert script.vpc_paired_switches_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 2:
+            testdata.update({"vpc_node_ids": ["101", "103", "204", "206"]})
+            assert script.vpc_paired_switches_check(pathnum, pathlen, **testdata) == script.MANUAL
+
+
 def test_llfc_susceptibility_check(upgradePaths):
     script.print_title("Starting test_llfc_susceptibility_check\n")
     pathlen = len(upgradePaths)
+
     for i, testdata in enumerate(upgradePaths):
         testdata.update({"vpc_node_ids": ["101", "103", "204", "206"]})
+
+        with open("tests/ethpmFcot.json_pos","r") as file:
+            testdata.update({"ethpmFcot.json": json.loads(file.read())['imdata']})
+
         pathnum = i+1
         if pathnum == 1:
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 2:
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 3:
-            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 4:
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
+        if pathnum == 5:
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 6:
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
 
 
 def test_pos_telemetryStatsServerP_object_check(upgradePaths):
