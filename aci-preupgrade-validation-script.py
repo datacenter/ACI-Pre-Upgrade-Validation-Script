@@ -2258,7 +2258,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
             sx_affected = True
             
         # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
-        if cfw.older_than("4.1(1i)") and tfw.newer_than("4.1(1h)"):
+        if cfw.older_than("4.1(1i)") and tfw.newer_than("4.1(1h)") and tfw.older_than("5.2(7f)"):
             t_affected = True
         
         if sx_affected or t_affected:
