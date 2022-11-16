@@ -20,7 +20,8 @@ def upgradePaths():
             {"cversion": "3.2(1a)", "tversion": "5.2(6a)"},
             {"cversion": "4.2(3a)", "tversion": "4.2(7d)"},
             {"cversion": "2.2(3a)", "tversion": "2.2(4r)"},
-            {"cversion": "5.2(1a)", "tversion": None}]
+            {"cversion": "5.2(1a)", "tversion": None},
+            {"cversion": "4.1(1a)", "tversion": "5.2(7f)"}]
 
 
 def test_aciversion(upgradePaths):
@@ -48,47 +49,56 @@ def test_aciversion(upgradePaths):
             assert cfw.same_as("4.2(1b)") == True # Same
 
 
-# New Check, migrate to script once logic confirmed
-def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'CSCvo27498 Check'
-    result = script.PASS
-    msg = ''
-    headers = ["Current version", "Target Version", "Warning"]
-    data = []
-    recommended_action = 'Manually change Transmit(send) Flow Control to off prior to switch Upgrade'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
-    script.print_title(title, index, total_checks)
+def test_get_vpc_nodes():
+    script.print_title("Starting test_get_vpc_nodes\n")
 
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-    cfw = script.AciVersion(cversion)
-    tfw = script.AciVersion(tversion)
+    with open("tests/fabricNodePEp.json_pos","r") as file:
+        testdata = {"fabricNodePEp.json": json.loads(file.read())['imdata']}
 
-    if cfw and tfw:
-        if (cfw.newer_than("2.2(10a)") and cfw.older_than("4.2(2a)")) and (tfw.older_than("5.2(5a)")):
-            result = script.MANUAL
-            data.append([cversion, tversion, 'Affected Path Found, Check Bug RNE'])
+    assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
-    script.print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
+
+def test_vpc_paired_switches_check(upgradePaths):
+    script.print_title("Starting vpc_paired_switches_check\n")
+    pathlen = len(upgradePaths)
+
+    for i, testdata in enumerate(upgradePaths):
+        with open("tests/topSystem.json_pos","r") as file:
+            testdata.update({"topSystem.json": json.loads(file.read())['imdata']})
+        pathnum = i+1
+        if pathnum == 1:
+            testdata.update({"vpc_node_ids": ["101", "102", "103", "204", "206"]})
+            assert script.vpc_paired_switches_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 2:
+            testdata.update({"vpc_node_ids": ["101", "103", "204", "206"]})
+            assert script.vpc_paired_switches_check(pathnum, pathlen, **testdata) == script.MANUAL
 
 
 def test_llfc_susceptibility_check(upgradePaths):
     script.print_title("Starting test_llfc_susceptibility_check\n")
     pathlen = len(upgradePaths)
+
     for i, testdata in enumerate(upgradePaths):
+        testdata.update({"vpc_node_ids": ["101", "103", "204", "206"]})
+
+        with open("tests/ethpmFcot.json_pos","r") as file:
+            testdata.update({"ethpmFcot.json": json.loads(file.read())['imdata']})
+
         pathnum = i+1
         if pathnum == 1:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 2:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 3:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 4:
-            assert llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
-
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
+        if pathnum == 5:
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 6:
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
+        if pathnum == 7:
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
 
 def test_pos_telemetryStatsServerP_object_check(upgradePaths):
     script.print_title("Starting test_pos_telemetryStatsServerP_object_check\n")
@@ -139,19 +149,19 @@ def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
 
         pathnum = i+1
         if pathnum == 1:
-            with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+            with open("tests/fvFabricExtConnP.json_pos1","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 2:
-            with open("tests/fvFabricExtConnP.json?query-target=children_pos2","r") as file:
+            with open("tests/fvFabricExtConnP.json_pos2","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 3:
-            with open("tests/fvFabricExtConnP.json?query-target=children_pos3","r") as file:
+            with open("tests/fvFabricExtConnP.json_pos3","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 4:
-            with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+            with open("tests/fvFabricExtConnP.json_pos1","r") as file:
                 testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
 
@@ -163,7 +173,7 @@ def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
 
         with open("tests/isisDomP-default.json_neg","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
-        with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+        with open("tests/fvFabricExtConnP.json_pos1","r") as file:
             testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
 
         pathnum = i+1
@@ -184,7 +194,7 @@ def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
 
         with open("tests/isisDomP-default.json_missing","r") as file:
             testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
-        with open("tests/fvFabricExtConnP.json?query-target=children_pos1","r") as file:
+        with open("tests/fvFabricExtConnP.json_pos1","r") as file:
             testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
             
         pathnum = i+1
