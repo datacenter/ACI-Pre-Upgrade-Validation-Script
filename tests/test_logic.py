@@ -20,7 +20,8 @@ def upgradePaths():
             {"cversion": "3.2(1a)", "tversion": "5.2(6a)"},
             {"cversion": "4.2(3a)", "tversion": "4.2(7d)"},
             {"cversion": "2.2(3a)", "tversion": "2.2(4r)"},
-            {"cversion": "5.2(1a)", "tversion": None}]
+            {"cversion": "5.2(1a)", "tversion": None},
+            {"cversion": "4.1(1a)", "tversion": "5.2(7f)"}]
 
 
 def test_aciversion(upgradePaths):
@@ -96,7 +97,8 @@ def test_llfc_susceptibility_check(upgradePaths):
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 6:
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
-
+        if pathnum == 7:
+            assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
 
 def test_pos_telemetryStatsServerP_object_check(upgradePaths):
     script.print_title("Starting test_pos_telemetryStatsServerP_object_check\n")
