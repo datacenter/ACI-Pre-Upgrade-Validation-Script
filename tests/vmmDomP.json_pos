@@ -1,0 +1,87 @@
+{
+  "totalCount": "2",
+  "imdata": [
+    {
+      "vmmDomP": {
+        "attributes": {
+          "accessMode": "read-write",
+          "annotation": "",
+          "arpLearning": "",
+          "aveTimeOut": "30",
+          "childAction": "",
+          "configInfraPg": "no",
+          "configIssues": "",
+          "ctrlKnob": "epDpVerify",
+          "delimiter": "",
+          "dn": "uni/vmmp-VMware/dom-jr-ave",
+          "enableAVE": "no",
+          "enableTag": "no",
+          "enableVmFolder": "no",
+          "encapMode": "vxlan",
+          "enfPref": "sw",
+          "epInventoryType": "on-link",
+          "epRetTime": "0",
+          "extMngdBy": "",
+          "hvAvailMonitor": "yes",
+          "lagPolicyName": "",
+          "lcOwn": "local",
+          "mcastAddr": "239.1.1.1",
+          "modTs": "2021-04-20T14:52:27.404-05:00",
+          "mode": "default",
+          "monPolDn": "uni/fabric/monfab-default",
+          "name": "jr-ave",
+          "nameAlias": "",
+          "ownerKey": "",
+          "ownerTag": "",
+          "prefEncapMode": "vxlan",
+          "status": "",
+          "txId": "3458764513832453119",
+          "uid": "15374",
+          "uniqueId": "6909",
+          "userdom": "all"
+        }
+      }
+    },
+    {
+      "vmmDomP": {
+        "attributes": {
+          "accessMode": "read-write",
+          "annotation": "",
+          "arpLearning": "",
+          "aveTimeOut": "30",
+          "childAction": "",
+          "configInfraPg": "no",
+          "configIssues": "",
+          "ctrlKnob": "epDpVerify",
+          "delimiter": "",
+          "dn": "uni/vmmp-VMware/dom-jr-dvs",
+          "enableAVE": "no",
+          "enableTag": "no",
+          "enableVmFolder": "no",
+          "encapMode": "unknown",
+          "enfPref": "hw",
+          "epInventoryType": "on-link",
+          "epRetTime": "0",
+          "extMngdBy": "",
+          "hvAvailMonitor": "no",
+          "lagPolicyName": "",
+          "lcOwn": "local",
+          "mcastAddr": "0.0.0.0",
+          "modTs": "2021-07-19T22:31:58.605-05:00",
+          "mode": "default",
+          "monPolDn": "uni/fabric/monfab-default",
+          "name": "jr-dvs",
+          "nameAlias": "",
+          "ownerKey": "",
+          "ownerTag": "",
+          "prefEncapMode": "unspecified",
+          "status": "",
+          "txId": "13835058055287371636",
+          "uid": "15374",
+          "uniqueId": "8595",
+          "userdom": "all"
+        }
+      }
+    }
+  ]
+}
