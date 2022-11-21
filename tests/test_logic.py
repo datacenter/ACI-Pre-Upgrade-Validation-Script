@@ -218,62 +218,6 @@ def test_contract_22_defect_check(upgradePaths):
         if pathnum == 6:
             assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.MANUAL
             
-               
-# New Check, migrate to script once logic confirmed
-def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
-    title = 'Internal VLAN Pool Check'
-    result = script.PASS
-    msg = ''
-    headers = ["Target Version", "VLAN Pool", "Warning"]
-    data = []
-    recommended_action = 'Ensure any VLAN Encap blocks explicitly used for leaf front panel VLAN programming are set to "external (on the wire)"'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
-    script.print_title(title, index, total_checks)
-
-    fvnsVlanInstP_json = kwargs.get("fvnsVlanInstP.json", None)
-    vmmDomP_json = kwargs.get("vmmDomP.json", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-    tfw = script.AciVersion(tversion)
-
-    if tfw:
-        if tfw.newer_than("4.2(6a)"):
-            if not isinstance(fvnsVlanInstP_json, list):
-                fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
-            # Dict with key = vlan pool name, values = list of associated domains
-            dom_rel = {}
-            # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
-            encap_list = []
-            for vlanInstP in fvnsVlanInstP_json:
-                vlanInstP_name = vlanInstP['fvnsVlanInstP']["attributes"]["name"]
-                dom_list = []
-                for vlan_child in vlanInstP['fvnsVlanInstP']['children']:
-                    if vlan_child.get('fvnsRtVlanNs'):
-                        dom_list.append({"dn":vlan_child['fvnsRtVlanNs']['attributes']['tDn'], "tCl":vlan_child['fvnsRtVlanNs']['attributes']['tCl']})
-                    elif vlan_child.get('fvnsEncapBlk'):
-                        if vlan_child['fvnsEncapBlk']['attributes']['role'] == "internal":
-                            encap_list.append(vlanInstP_name)
-                dom_rel[vlanInstP_name] = dom_list
-            if len(encap_list) > 0:
-                # Check if internal vlan pool is associated to a domain which isnt AVE
-                # List of domains which are associated to a vlan pool that contains an encap block with role "internal"
-                assoc_doms = []
-                for vlanInstP_name in encap_list:
-                    for dom in dom_rel[vlanInstP_name]:
-                        if dom["tCl"] != "vmmDomP":
-                            result = script.FAIL_O
-                            data.append([tversion, vlanInstP_name, 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
-                        assoc_doms.append(dom["dn"])
-                if not isinstance(vmmDomP_json, list):
-                    vmmDomP_json = icurl('class', 'vmmDomP.json')
-                for vmmDomP in vmmDomP_json:
-                    if vmmDomP["vmmDomP"]["attributes"]["dn"] in assoc_doms:
-                        if vmmDomP["vmmDomP"]["attributes"]["enableAVE"] != "yes":
-                            result = script.FAIL_O
-                            data.append([tversion, vlanInstP_name, 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
-
-    script.print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
     
 def test_pos_internal_vlanpool_check(upgradePaths):
     script.print_title("Starting Positive internal_vlanpool_check\n")
@@ -285,15 +229,15 @@ def test_pos_internal_vlanpool_check(upgradePaths):
             testdata.update({"vmmDomP.json": json.loads(file.read())['imdata']})
         pathnum = i+1
         if pathnum == 1:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 2:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 4:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 5:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
             
 def test_neg_internal_vlanpool_check(upgradePaths):
     script.print_title("Starting Negative internal_vlanpool_check\n")
@@ -306,12 +250,12 @@ def test_neg_internal_vlanpool_check(upgradePaths):
         pathnum = i+1
 
         if pathnum == 1:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 2:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 3:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 4:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 5:
-            assert internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
