@@ -2254,8 +2254,12 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     vmmDomP_json = kwargs.get("vmmDomP.json", None)
     if not tversion:
         tversion = kwargs.get("tversion", None)
+        
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+    
     tfw = AciVersion(tversion)
-
     if tfw:
         if tfw.newer_than("4.2(6a)"):
             if not isinstance(fvnsVlanInstP_json, list):
