@@ -2325,6 +2325,77 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
+    title = 'Internal VLAN Pool Check'
+    result = PASS
+    msg = ''
+    headers = ["VLAN Pool", "Internal VLAN Block(s)", "Non-AVE Domain", "Warning"]
+    data = []
+    recommended_action = 'Ensure Leaf Front-Panel VLAN Blocks are explicitly set to "external (on the wire)"'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
+    print_title(title, index, total_checks)
+
+    fvnsVlanInstP_json = kwargs.get("fvnsVlanInstP.json", None)
+    vmmDomP_json = kwargs.get("vmmDomP.json", None)
+    if not tversion:
+        tversion = kwargs.get("tversion", None)
+        
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+    
+    tfw = AciVersion(tversion)
+    if tfw:
+        if tfw.newer_than("4.2(6a)"):
+            if not isinstance(fvnsVlanInstP_json, list):
+                fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
+            # Dict with key = vlan pool name, values = list of associated domains
+            dom_rel = {}
+            # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
+            encap_list = []
+            encap_blk_dict = {}
+            for vlanInstP in fvnsVlanInstP_json:
+                encap_blk_list = []
+                vlanInstP_name = vlanInstP['fvnsVlanInstP']["attributes"]["name"]
+                dom_list = []
+                for vlan_child in vlanInstP['fvnsVlanInstP']['children']:
+                    if vlan_child.get('fvnsRtVlanNs'):
+                        dom_list.append({"dn":vlan_child['fvnsRtVlanNs']['attributes']['tDn'], "tCl":vlan_child['fvnsRtVlanNs']['attributes']['tCl']})
+                    elif vlan_child.get('fvnsEncapBlk'):
+                        if vlan_child['fvnsEncapBlk']['attributes']['role'] == "internal":
+                            encap_list.append(vlanInstP_name)
+                            encap_blk_list.append(vlan_child['fvnsEncapBlk']['attributes']['rn'])
+                dom_rel[vlanInstP_name] = dom_list
+                if encap_blk_list != []:
+                    encap_blk_dict[vlanInstP_name] = encap_blk_list
+            if len(encap_list) > 0:
+                # Check if internal vlan pool is associated to a domain which isnt AVE
+                # List of domains which are associated to a vlan pool that contains an encap block with role "internal"
+                assoc_doms = []
+                for vlanInstP_name in encap_list:
+                    for dom in dom_rel[vlanInstP_name]:
+                        if dom["tCl"] != "vmmDomP":
+                            result = FAIL_O
+                            # Deduplicate results for multiple encap blks and/or multiple domains
+                            if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
+                                data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
+                        assoc_doms.append(dom["dn"])
+                if not isinstance(vmmDomP_json, list):
+                    vmmDomP_json = icurl('class', 'vmmDomP.json')
+                for vmmDomP in vmmDomP_json:
+                    if vmmDomP["vmmDomP"]["attributes"]["dn"] in assoc_doms:
+                        if vmmDomP["vmmDomP"]["attributes"]["enableAVE"] != "yes":
+                            result = FAIL_O
+                            # For each non-AVE vmm domain, check if vmm dom is associated to an internal pool
+                            for vlanInstP_name in encap_list:
+                                for dom in dom_rel[vlanInstP_name]:
+                                    if vmmDomP["vmmDomP"]["attributes"]["dn"] == dom["dn"]:
+                                        # Deduplicate results for multiple encap blks and/or multiple domains
+                                        if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
+                                            data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
@@ -2394,6 +2465,7 @@ if __name__ == "__main__":
         contract_22_defect_check,
         telemetryStatsServerP_object_check,
         llfc_susceptibility_check,
+        internal_vlanpool_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
