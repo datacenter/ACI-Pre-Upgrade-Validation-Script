@@ -1,0 +1,137 @@
+{
+    "totalCount": "11",
+    "imdata": [
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1/sys",
+                    "id": "1",
+                    "name": "apic1",
+                    "podId": "1",
+                    "role": "controller"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-3/sys",
+                    "id": "3",
+                    "name": "apic3",
+                    "podId": "2",
+                    "role": "controller"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-2/sys",
+                    "id": "2",
+                    "name": "apic2",
+                    "podId": "1",
+                    "role": "controller"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-101/sys",
+                    "id": "101",
+                    "name": "leaf101",
+                    "podId": "1",
+                    "role": "leaf"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-102/sys",
+                    "id": "102",
+                    "name": "leaf102",
+                    "podId": "1",
+                    "role": "leaf"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-103/sys",
+                    "id": "103",
+                    "name": "leaf103",
+                    "podId": "1",
+                    "role": "leaf"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-204/sys",
+                    "id": "204",
+                    "name": "leaf204",
+                    "podId": "2",
+                    "role": "leaf"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-206/sys",
+                    "id": "206",
+                    "name": "leaf206",
+                    "podId": "2",
+                    "role": "leaf"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-2002/sys",
+                    "id": "2002",
+                    "name": "spine2002",
+                    "podId": "2",
+                    "role": "spine"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-2001/sys",
+                    "id": "2001",
+                    "name": "spine2001",
+                    "podId": "2",
+                    "role": "spine"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1002/sys",
+                    "id": "1002",
+                    "name": "spine1002",
+                    "podId": "1",
+                    "role": "spine"
+                }
+            }
+        },
+        {
+            "topSystem": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1001/sys",
+                    "id": "1001",
+                    "name": "spine1001",
+                    "podId": "1",
+                    "role": "spine"
+                }
+            }
+        }
+    ]
+}
