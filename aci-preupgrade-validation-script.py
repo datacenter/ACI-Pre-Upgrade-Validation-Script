@@ -2331,7 +2331,7 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     msg = ''
     headers = ["VLAN Pool", "Internal VLAN Block(s)", "Non-AVE Domain", "Warning"]
     data = []
-    recommended_action = 'Ensure any VLAN Encap blocks explicitly used for leaf front panel VLAN programming are set to "external (on the wire)"'
+    recommended_action = 'Ensure Leaf Front-Panel VLAN Blocks are explicitly set to "external (on the wire)"'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
     print_title(title, index, total_checks)
 
@@ -2377,8 +2377,8 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                         if dom["tCl"] != "vmmDomP":
                             result = FAIL_O
                             # Deduplicate results for multiple encap blks and/or multiple domains
-                            if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'] not in data:
-                                data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
+                            if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
+                                data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
                         assoc_doms.append(dom["dn"])
                 if not isinstance(vmmDomP_json, list):
                     vmmDomP_json = icurl('class', 'vmmDomP.json')
@@ -2391,8 +2391,8 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                                 for dom in dom_rel[vlanInstP_name]:
                                     if vmmDomP["vmmDomP"]["attributes"]["dn"] == dom["dn"]:
                                         # Deduplicate results for multiple encap blks and/or multiple domains
-                                        if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'] not in data:
-                                            data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
+                                        if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
+                                            data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
