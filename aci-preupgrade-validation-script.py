@@ -2244,7 +2244,7 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     title = 'Internal VLAN Pool Check'
     result = PASS
     msg = ''
-    headers = ["Target Version", "VLAN Pool", "Warning"]
+    headers = ["VLAN Pool", "Internal VLAN Block(s)", "Non-AVE Domain", "Warning"]
     data = []
     recommended_action = 'Ensure any VLAN Encap blocks explicitly used for leaf front panel VLAN programming are set to "external (on the wire)"'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
@@ -2268,7 +2268,9 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
             dom_rel = {}
             # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
             encap_list = []
+            encap_blk_dict = {}
             for vlanInstP in fvnsVlanInstP_json:
+                encap_blk_list = []
                 vlanInstP_name = vlanInstP['fvnsVlanInstP']["attributes"]["name"]
                 dom_list = []
                 for vlan_child in vlanInstP['fvnsVlanInstP']['children']:
@@ -2277,7 +2279,10 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                     elif vlan_child.get('fvnsEncapBlk'):
                         if vlan_child['fvnsEncapBlk']['attributes']['role'] == "internal":
                             encap_list.append(vlanInstP_name)
+                            encap_blk_list.append(vlan_child['fvnsEncapBlk']['attributes']['rn'])
                 dom_rel[vlanInstP_name] = dom_list
+                if encap_blk_list != []:
+                    encap_blk_dict[vlanInstP_name] = encap_blk_list
             if len(encap_list) > 0:
                 # Check if internal vlan pool is associated to a domain which isnt AVE
                 # List of domains which are associated to a vlan pool that contains an encap block with role "internal"
@@ -2286,7 +2291,9 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                     for dom in dom_rel[vlanInstP_name]:
                         if dom["tCl"] != "vmmDomP":
                             result = FAIL_O
-                            data.append([tversion, vlanInstP_name, 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
+                            # Deduplicate results for multiple encap blks and/or multiple domains
+                            if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'] not in data:
+                                data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
                         assoc_doms.append(dom["dn"])
                 if not isinstance(vmmDomP_json, list):
                     vmmDomP_json = icurl('class', 'vmmDomP.json')
@@ -2298,7 +2305,9 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                             for vlanInstP_name in encap_list:
                                 for dom in dom_rel[vlanInstP_name]:
                                     if vmmDomP["vmmDomP"]["attributes"]["dn"] == dom["dn"]:
-                                        data.append([tversion, vlanInstP_name, 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
+                                        # Deduplicate results for multiple encap blks and/or multiple domains
+                                        if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'] not in data:
+                                            data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLAN Pool contains an encap block with role "internal" and is associated to a non-AVE domain'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
