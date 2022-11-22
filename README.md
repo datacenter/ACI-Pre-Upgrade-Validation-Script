@@ -182,7 +182,7 @@ Key:
 | Contract Port 22 defect susceptibility | Check if TVER is affected by CSCvz65560 | None  |
 | telemetryStatsServerP defect susceptibility | Check for CVER, TVER and object in CSCvt47850 | None  |
 | Link Level Flow Control defect susceptibility | Check if CVER and TVER are susceptible to CSCvv33100 and CSCwd37387 | None  |
-
+| Non-AVE VLAN Blocks set to "Internal" | Check if CVER, TVER and VLAN Blocks are susceptible to CSCvw33061 | None  |
 
 ## Log Files
 
