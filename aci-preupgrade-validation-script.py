@@ -2139,13 +2139,13 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
                     globalname = ''
                     vrfdn = vrf['fvCtx']['attributes']['dn']
                     for child in vrf['fvCtx']['children']:
-                        if 'l3extGlobalCtxName' in child:
+                        if child.get('l3extGlobalCtxName'):
                             globalname = child['l3extGlobalCtxName']['attributes'].get('name')
-                        elif 'bgpRtTargetP' in child:
-                            for bgprt in child['bgpRtTargetP']['children']:
-                                if 'bgpRtTarget' in bgprt and not bgprt['bgpRtTarget']['attributes']['rt'].startswith('route-target:'):
-                                    if globalname is not '':
-                                        # when globalname is not '', it indicate this vrf is extended to GOLF
+                    if globalname != '':
+                        for child in vrf['fvCtx']['children']:
+                            if child.get('bgpRtTargetP'):
+                                for bgprt in child['bgpRtTargetP']['children']:
+                                    if bgprt.get('bgpRtTarget') and not bgprt['bgpRtTarget']['attributes']['rt'].startswith('route-target:'):
                                         vrf_rt.append((vrfdn,globalname,bgprt['bgpRtTarget']['attributes']['rt']))
 
         if len(vrf_rt) >=1:
