@@ -100,6 +100,7 @@ def test_llfc_susceptibility_check(upgradePaths):
         if pathnum == 7:
             assert script.llfc_susceptibility_check(pathnum, pathlen, **testdata) == script.MANUAL
 
+
 def test_pos_telemetryStatsServerP_object_check(upgradePaths):
     script.print_title("Starting test_pos_telemetryStatsServerP_object_check\n")
     pathlen = len(upgradePaths)
@@ -227,8 +228,8 @@ def test_contract_22_defect_check(upgradePaths):
             assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 6:
             assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.MANUAL
-            
-    
+
+
 def test_pos_internal_vlanpool_check(upgradePaths):
     script.print_title("Starting Positive internal_vlanpool_check\n")
     pathlen = len(upgradePaths)
@@ -248,7 +249,8 @@ def test_pos_internal_vlanpool_check(upgradePaths):
             assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
         if pathnum == 5:
             assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-            
+
+
 def test_neg_internal_vlanpool_check(upgradePaths):
     script.print_title("Starting Negative internal_vlanpool_check\n")
     pathlen = len(upgradePaths)
@@ -269,3 +271,26 @@ def test_neg_internal_vlanpool_check(upgradePaths):
             assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
         if pathnum == 5:
             assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
+
+
+def test_bgp_golf_route_target_type_check(upgradePaths):
+    script.print_title("Starting bgp_golf_route_target_type_check tests\n")
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+        with open("tests/fvCtx.json_pos","r") as file:
+            testdata.update({"fvCtx.json": json.loads(file.read())['imdata']})
+        pathnum = i+1
+        if pathnum == 1:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 2:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.FAIL_O
+        if pathnum == 3:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.FAIL_O
+        if pathnum == 4:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 5:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 6:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.MANUAL
+        if pathnum == 7:
+            assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.FAIL_O

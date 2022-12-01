@@ -2105,6 +2105,7 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, doc_url=doc_url)
     return result
 
+
 def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversion=None, **kwargs):
     title = 'BGP route target type for GOLF over L2EVPN'
     result = FAIL_O
@@ -2127,30 +2128,28 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
     cfw = AciVersion(cversion)
     tfw = AciVersion(tversion)
 
-    if (cfw and tfw) and cfw.older_than("4.2(1a)") and tfw.newer_than("4.2(1a)"):
+    if cfw.older_than("4.2(1a)") and tfw.newer_than("4.2(1a)"):
         vrf_rt = []
 
-        fvctx_mo = kwargs.get("fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required", None)
-
+        fvctx_mo = kwargs.get("fvCtx.json", None)
+        print(fvctx_mo)
         if not fvctx_mo:
             fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
-            if fvctx_mo:
-                for vrf in fvctx_mo:
-                    globalname = ''
-                    vrfdn = vrf['fvCtx']['attributes']['dn']
+        
+        if fvctx_mo:
+            for vrf in fvctx_mo:
+                globalname = ''
+                vrfdn = vrf['fvCtx']['attributes']['dn']
+                for child in vrf['fvCtx']['children']:
+                    if child.get('l3extGlobalCtxName'):
+                        globalname = child['l3extGlobalCtxName']['attributes'].get('name')
+                if globalname != '':
                     for child in vrf['fvCtx']['children']:
-                        if child.get('l3extGlobalCtxName'):
-                            globalname = child['l3extGlobalCtxName']['attributes'].get('name')
-                    if globalname != '':
-                        for child in vrf['fvCtx']['children']:
-                            if child.get('bgpRtTargetP'):
-                                for bgprt in child['bgpRtTargetP']['children']:
-                                    if bgprt.get('bgpRtTarget') and not bgprt['bgpRtTarget']['attributes']['rt'].startswith('route-target:'):
-                                        vrf_rt.append((vrfdn,globalname,bgprt['bgpRtTarget']['attributes']['rt']))
+                        if child.get('bgpRtTargetP'):
+                            for bgprt in child['bgpRtTargetP']['children']:
+                                if bgprt.get('bgpRtTarget') and not bgprt['bgpRtTarget']['attributes']['rt'].startswith('route-target:'):
+                                    data.append([vrfdn, globalname, bgprt['bgpRtTarget']['attributes']['rt'], recommended_action])
 
-        if len(vrf_rt) >=1:
-            for item in vrf_rt:
-                data.append([item[0], item[1], item[2], recommended_action])
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data, doc_url=doc_url)
