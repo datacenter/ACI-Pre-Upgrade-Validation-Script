@@ -2106,6 +2106,56 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
     return result
 
 
+def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'BGP route target type for GOLF over L2EVPN'
+    result = FAIL_O
+    msg = ''
+    headers = ["VRF DN","Global Name", "Route Target", "Recommendation" ]
+    data = []
+    recommended_action = "Reconfigure extended: RT with prefix route-target: "
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvm23100'
+    print_title(title, index, total_checks)
+
+    if not cversion:
+        cversion = kwargs.get("cversion", None)
+    if not tversion:
+        tversion = kwargs.get("tversion", None)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    cfw = AciVersion(cversion)
+    tfw = AciVersion(tversion)
+
+    if cfw.older_than("4.2(1a)") and tfw.newer_than("4.2(1a)"):
+        vrf_rt = []
+
+        fvctx_mo = kwargs.get("fvCtx.json", None)
+        print(fvctx_mo)
+        if not fvctx_mo:
+            fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
+        
+        if fvctx_mo:
+            for vrf in fvctx_mo:
+                globalname = ''
+                vrfdn = vrf['fvCtx']['attributes']['dn']
+                for child in vrf['fvCtx']['children']:
+                    if child.get('l3extGlobalCtxName'):
+                        globalname = child['l3extGlobalCtxName']['attributes'].get('name')
+                if globalname != '':
+                    for child in vrf['fvCtx']['children']:
+                        if child.get('bgpRtTargetP'):
+                            for bgprt in child['bgpRtTargetP']['children']:
+                                if bgprt.get('bgpRtTarget') and not bgprt['bgpRtTarget']['attributes']['rt'].startswith('route-target:'):
+                                    data.append([vrfdn, globalname, bgprt['bgpRtTarget']['attributes']['rt'], recommended_action])
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    return result
+
+
 def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     title = 'Eventmgr DB size defect susceptibility'
     result = PASS
@@ -2458,6 +2508,7 @@ if __name__ == "__main__":
         l3out_route_map_direction_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
+        bgp_golf_route_target_type_check,
 
         # Bugs
         ep_announce_check,

@@ -1,0 +1,53 @@
+{
+    "totalCount": "1",
+    "imdata": [
+        {
+            "fvCtx": {
+                "attributes": {
+                    "annotation": "orchestrator:msc-shadow:no",
+                    "bdEnforcedEnable": "no",
+                    "dn": "uni/tn-welkin/ctx-qa",
+                    "knwMcastAct": "permit",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "qa",
+                    "pcEnfDir": "ingress",
+                    "pcEnfDirUpdated": "yes",
+                    "pcEnfPref": "enforced",
+                    "pcTag": "16386",
+                    "scope": "3080192",
+                    "seg": "3080192"
+                },
+                "children": [
+                    {
+                        "l3extGlobalCtxName": {
+                            "attributes": {
+                                "name": "welkinqa",
+                                "rn": "globalctxname"
+                            }
+                        }
+                    },
+                    {
+                        "bgpRtTargetP": {
+                            "attributes": {
+                                "af": "ipv4-ucast",
+                                "rn": "rtp-ipv4-ucast"
+                            },
+                            "children": [
+                                {
+                                    "bgpRtTarget": {
+                                        "attributes": {
+                                            "rn": "rt-[extended:as2-nn2:100:2000]-import",
+                                            "rt": "extended:as2-nn2:100:2000",
+                                            "targetAf": "l2vpn-evpn",
+                                            "type": "import"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
