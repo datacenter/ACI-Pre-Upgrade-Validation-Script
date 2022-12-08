@@ -58,6 +58,26 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
+@pytest.mark.parametrize(
+    "cversion,tversion,expected_fail_type",
+    [
+        # Non-affected version combination
+        ("3.2(5e)", "4.2(4r)", script.PASS),
+        ("3.2(10g)", "4.2(4r)", script.PASS),
+        ("4.1(2a)", "4.2(7a)", script.PASS),
+        # Affected versio combination
+        ("3.2(4a)", "5.2(2a)", script.FAIL_UF),
+        ("4.0(1a)", "5.2(3a)", script.FAIL_UF),
+    ],
+)
+def test_defect_eventmgr_db(cversion, tversion, expected_fail_type):
+    testdata = {
+        "cversion": cversion,
+        "tversion": tversion
+    }
+    assert script.eventmgr_db_defect_check(1, 1, **testdata) == expected_fail_type
+
+
 def test_vpc_paired_switches_check(upgradePaths):
     script.print_title("Starting vpc_paired_switches_check\n")
     pathlen = len(upgradePaths)

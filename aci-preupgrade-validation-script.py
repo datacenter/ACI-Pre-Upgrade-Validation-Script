@@ -603,8 +603,12 @@ class AciVersion():
         v = re.search(self.v_regex, version)
         if not v: return None
         for i in range(1, len(v.groups())+1):
-            if self.regex.group(i) > v.group(i): return False
-            elif self.regex.group(i) < v.group(i): return True
+            if i < 4:
+                if int(self.regex.group(i)) > int(v.group(i)): return False
+                elif int(self.regex.group(i)) < int(v.group(i)): return True
+            if i == 4:
+                if self.regex.group(i) > v.group(i): return False
+                elif self.regex.group(i) < v.group(i): return True
         return False
 
     def newer_than(self, version):
