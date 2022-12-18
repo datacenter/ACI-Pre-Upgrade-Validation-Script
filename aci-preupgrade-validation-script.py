@@ -2507,7 +2507,7 @@ def apic_ca_cert_validation(index, total_checks, tversion=None, **kwargs):
             hmac = f.read().strip().split(' ')[-1]
         with open(csr_pem) as f:
             certreq = f.read().strip()
-        subprocess.check_output(['rm', '-rf', "temp.sign", "temp.csr.pem", "temp.key.pem", "gen.cnf"])
+        subprocess.check_output(['rm', '-rf', sign, csr_pem, key_pem, cert_gen_filename])
         url = 'https://127.0.0.1/raca/certreq.json'
         payload = '{"aaaCertGenReq":{"attributes":{"type":"csvc","hmac":"%s", "certreq": "%s", ' \
                   '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
