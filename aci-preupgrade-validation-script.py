@@ -2136,7 +2136,6 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
         vrf_rt = []
 
         fvctx_mo = kwargs.get("fvCtx.json", None)
-        print(fvctx_mo)
         if not fvctx_mo:
             fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
         
@@ -2451,6 +2450,84 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
+def apic_ca_cert_validation(index, total_checks, tversion=None, **kwargs):
+    title = 'APIC CA Cert Validation'
+    result = FAIL_O
+    msg = ''
+    headers = ["Target", "CA Cert Valid", "Recommendation"]
+    data = []
+    recommended_action = "Contact Cisco TAC for resolution "
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvy35257'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        tversion = kwargs.get("tversion", None)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    tfw = AciVersion(tversion)
+
+    pki_fabric_ca_mo = kwargs.get("pkiFabricSelfCAEp.json", None)
+    if not pki_fabric_ca_mo:
+        pki_fabric_ca_mo = icurl('class','pkiFabricSelfCAEp.json')
+    if pki_fabric_ca_mo:
+        passphrase = pki_fabric_ca_mo[0]['pkiFabricSelfCAEp']['attributes']['currCertReqPassphrase']
+        cert_gen_filename = "gen.cnf"
+        key_pem = 'temp.key.pem'
+        csr_pem = 'temp.csr.pem'
+        sign = 'temp.sign'
+        cert_gen_cnf = '''
+        [ req ]
+        default_bits        = 2048
+        distinguished_name  = req_distinguished_name
+        string_mask         = utf8only
+        default_md          = sha512
+        prompt              = no
+        
+        [ req_distinguished_name ]
+        commonName                      = aci_pre_upgrade
+        '''
+        with open(cert_gen_filename, 'w') as f:
+            f.write(cert_gen_cnf)
+
+        cmd = '/bin/openssl genrsa -out ' + key_pem + ' 2048'
+        cmd = cmd + ' && /bin/openssl req -config ' + cert_gen_filename + ' -new -key ' + key_pem + ' -out ' + csr_pem
+        cmd = cmd + ' && /bin/openssl dgst -sha256 -hmac ' + passphrase + ' -out ' + sign + ' ' + csr_pem
+        logging.info('cmd = '+''.join(cmd))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        out = proc.communicate()[0].strip()
+        if proc.returncode != 0:
+            return MANUAL
+        hmac = ''
+        certreq = ''
+        with open(sign) as f:
+            hmac = f.read().strip().split(' ')[-1]
+        with open(csr_pem) as f:
+            certreq = f.read().strip()
+        subprocess.check_output(['rm', '-rf', "temp.sign", "temp.csr.pem", "temp.key.pem", "gen.cnf"])
+        url = 'https://127.0.0.1/raca/certreq.json'
+        payload = '{"aaaCertGenReq":{"attributes":{"type":"csvc","hmac":"%s", "certreq": "%s", ' \
+                  '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
+        cmd = 'icurl -kX POST %s -d \' %s \'' %(url,payload)
+        logging.info('cmd = ' + ''.join(cmd))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        out = proc.communicate()[0].strip()
+        logging.info(out)
+        if '"error":{"attributes"' in out:
+            if tfw.newer_than("5.2(6d)"):
+                data.append([tversion, "False", recommended_action])
+            else:
+                result = ERROR
+                data.append([tversion, "False", recommended_action])
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
     username, password = get_credentials()
@@ -2521,6 +2598,7 @@ if __name__ == "__main__":
         telemetryStatsServerP_object_check,
         llfc_susceptibility_check,
         internal_vlanpool_check,
+        apic_ca_cert_validation,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
