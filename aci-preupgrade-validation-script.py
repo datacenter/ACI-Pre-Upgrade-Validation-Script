@@ -2451,6 +2451,71 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def apic_boot_mode_check(index, total_checks, cversion, **kwargs):
+    title = 'APIC Boot Mode Check'
+    result = FAIL_UF
+    msg = ''
+    headers = ["Pod", "Node", "Boot Mode", "Recommended Action"]
+    data = []
+    recommended_action = 'UEFI is not supported. Install APIC in Legacy Boot Mode'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd03879'
+    print_title(title, index, total_checks)
+
+    adjust_title = True
+    cv = AciVersion(cversion)
+    if not cv.version:
+        result = ERROR
+        msg = 'Failed to parse the current firmware version'
+    # For future use when UEFI will be supported
+    #elif cv.same_as('x.x(x)') or  cv.newer_than('x.x(x)'):
+    #    msg = 'APIC support BIOS and UEFI'
+    #    result = NA
+    #    adjust_title = False
+    else:
+        prints('')
+        checked_apics = []
+        controllers = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')    
+        for apic in controllers:
+            attr = apic['topSystem']['attributes']
+            if attr['address'] in checked_apics: continue
+            checked_apics.append(attr['address'])
+            pod_id = attr['podId']
+            node_id = attr['id']
+            node_title = 'Checking %s...' % attr['name']
+            print_title(node_title)
+    
+            try:
+                c = Connection(attr['address'])
+                c.username = username
+                c.password = password
+                c.log = LOG_FILE
+                c.connect()
+            except Exception as e:
+                data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                print_result(node_title, ERROR)
+                continue
+    
+            try:
+                c.cmd('test -d  /sys/firmware/efi && echo UEFI || echo BIOS')
+            except Exception as e:
+                data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                print_result(node_title, ERROR)
+                continue
+    
+            boot_mode = c.output.split("\n")[1]
+            if 'UEFI' in boot_mode:
+                data.append([pod_id, node_id, "UEFI", recommended_action])
+                print_result(node_title, DONE)
+            elif 'BIOS' in boot_mode:
+                print_result(node_title, DONE)
+
+        if not data:
+            result = PASS
+
+    print_result(title, result, msg, headers, data, doc_url=doc_url, adjust_title=adjust_title)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
     username, password = get_credentials()
@@ -2490,6 +2555,7 @@ if __name__ == "__main__":
         switch_bootflash_usage_check,
         standby_apic_disk_space_check,
         apic_ssd_check,
+        apic_boot_mode_check,
         switch_ssd_check,
         port_configured_for_apic_check,
         port_configured_as_l2_check,
