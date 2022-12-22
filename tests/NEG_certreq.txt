@@ -1,0 +1,11 @@
+{"totalCount":"1","imdata":[{"aaaApplianceCertRes":{"attributes":{"blobres":"","certres":"-----BEGIN CERTIFICATE-----
+MII...
+-----END CERTIFICATE-----
+
+","childAction":"","dn":"","hmac":"","keyres":"","lcOwn":"local","modTs":"never","rootres":"-----BEGIN CERTIFICATE-----
+MII...
+-----END CERTIFICATE-----
+
+
+
+","status":"","type":"csvc"}}}]}
