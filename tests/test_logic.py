@@ -50,7 +50,7 @@ def test_aciversion(upgradePaths):
 
 
 def test_get_vpc_nodes():
-    script.print_title("Starting test_get_vpc_nodes\n")
+    script.prints("=====Starting test_get_vpc_nodes\n")
 
     with open("tests/fabricNodePEp.json_pos","r") as file:
         testdata = {"fabricNodePEp.json": json.loads(file.read())['imdata']}
@@ -71,6 +71,7 @@ def test_get_vpc_nodes():
     ],
 )
 def test_defect_eventmgr_db(cversion, tversion, expected_fail_type):
+    script.prints("=====Starting test_defect_eventmgr_db\n")
     testdata = {
         "cversion": cversion,
         "tversion": tversion
@@ -78,8 +79,28 @@ def test_defect_eventmgr_db(cversion, tversion, expected_fail_type):
     assert script.eventmgr_db_defect_check(1, 1, **testdata) == expected_fail_type
 
 
+@pytest.mark.parametrize(
+    "cversion,tversion,certreq_resp,expected_fail_type",
+    [
+        # FAIL - certreq returns error
+        ("4.2(5e)", "5.2(6e)", "POS_certreq.txt", script.FAIL_O),
+        # PASS - certreq returns cert info
+        ("4.2(4a)", "5.2(2a)", "NEG_certreq.txt",script.PASS)
+    ],
+)
+def test_apic_ca_cert_validation(cversion, tversion, certreq_resp, expected_fail_type):
+    script.prints("=====Starting apic_ca_cert_validation\n")
+    testdata = {
+        "cversion": cversion,
+        "tversion": tversion
+    }
+    with open("tests/"+certreq_resp,"r") as file:
+        testdata.update({"certreq_out": file.read()})
+    assert script.apic_ca_cert_validation(1, 1, **testdata) == expected_fail_type
+
+
 def test_vpc_paired_switches_check(upgradePaths):
-    script.print_title("Starting vpc_paired_switches_check\n")
+    script.prints("=====Starting vpc_paired_switches_check\n")
     pathlen = len(upgradePaths)
 
     for i, testdata in enumerate(upgradePaths):
@@ -122,7 +143,7 @@ def test_llfc_susceptibility_check(upgradePaths):
 
 
 def test_pos_telemetryStatsServerP_object_check(upgradePaths):
-    script.print_title("Starting test_pos_telemetryStatsServerP_object_check\n")
+    script.prints("=====Starting test_pos_telemetryStatsServerP_object_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         with open("tests/telemetryStatsServerP.json_pos","r") as file:
@@ -139,7 +160,7 @@ def test_pos_telemetryStatsServerP_object_check(upgradePaths):
 
 
 def test_neg_telemetryStatsServerP_object_check(upgradePaths):
-    script.print_title("Starting Negative stale_nir_object_check\n")
+    script.prints("=====Starting Negative stale_nir_object_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         pathnum = i+1
@@ -162,7 +183,7 @@ def test_neg_telemetryStatsServerP_object_check(upgradePaths):
 
 
 def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
-    script.print_title("Starting test_pos_isis_redis_metric_mpod_msite_check\n")
+    script.prints("=====Starting test_pos_isis_redis_metric_mpod_msite_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         with open("tests/isisDomP-default.json_pos","r") as file:
@@ -188,7 +209,7 @@ def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
 
 
 def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
-    script.print_title("Starting test_neg_isis_redis_metric_mpod_msite_check\n")
+    script.prints("=====Starting test_neg_isis_redis_metric_mpod_msite_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
 
@@ -209,7 +230,7 @@ def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
 
 
 def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
-    script.print_title("Starting test_missing_isis_redis_metric_mpod_msite_check\n")
+    script.prints("=====Starting test_missing_isis_redis_metric_mpod_msite_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
 
@@ -224,7 +245,7 @@ def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
 
 
 def test_switch_bootflash_usage_check_new():
-    script.print_title("Starting test_switch_bootflash_usage_check_new\n")
+    script.prints("=====Starting test_switch_bootflash_usage_check_new\n")
     with open("tests/eqptcapacityFSPartition.json_pos","r") as file:
         testdata = {"eqptcapacityFSPartition.json": json.loads(file.read())['imdata']}
     res = script.switch_bootflash_usage_check(1, 1, **testdata)
@@ -232,7 +253,7 @@ def test_switch_bootflash_usage_check_new():
 
 
 def test_contract_22_defect_check(upgradePaths):
-    script.print_title("Starting test_llfc_susceptibility_check\n")
+    script.prints("=====Starting test_llfc_susceptibility_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         pathnum = i+1
@@ -251,7 +272,7 @@ def test_contract_22_defect_check(upgradePaths):
 
 
 def test_pos_internal_vlanpool_check(upgradePaths):
-    script.print_title("Starting Positive internal_vlanpool_check\n")
+    script.prints("=====Starting Positive internal_vlanpool_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         with open("tests/fvnsVlanInstP.json_pos","r") as file:
@@ -272,7 +293,7 @@ def test_pos_internal_vlanpool_check(upgradePaths):
 
 
 def test_neg_internal_vlanpool_check(upgradePaths):
-    script.print_title("Starting Negative internal_vlanpool_check\n")
+    script.prints("=====Starting Negative internal_vlanpool_check\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         with open("tests/fvnsVlanInstP.json_neg","r") as file:
@@ -294,7 +315,7 @@ def test_neg_internal_vlanpool_check(upgradePaths):
 
 
 def test_bgp_golf_route_target_type_check(upgradePaths):
-    script.print_title("Starting bgp_golf_route_target_type_check tests\n")
+    script.prints("=====Starting bgp_golf_route_target_type_check tests\n")
     pathlen = len(upgradePaths)
     for i, testdata in enumerate(upgradePaths):
         with open("tests/fvCtx.json_pos","r") as file:

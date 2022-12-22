@@ -2136,7 +2136,6 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
         vrf_rt = []
 
         fvctx_mo = kwargs.get("fvCtx.json", None)
-        print(fvctx_mo)
         if not fvctx_mo:
             fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
         
@@ -2379,6 +2378,7 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     title = 'Internal VLAN Pool Check'
     result = PASS
@@ -2451,6 +2451,81 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
+def apic_ca_cert_validation(index, total_checks, **kwargs):
+    title = 'APIC CA Cert Validation'
+    result = FAIL_O
+    msg = ''
+    headers = ["Certreq Response"]
+    data = []
+    recommended_action = "Contact Cisco TAC to fix APIC CA Certs"
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvy35257'
+    print_title(title, index, total_checks)
+
+    certreq_out = kwargs.get("certreq_out")
+    if not certreq_out:
+        pki_fabric_ca_mo = icurl('class','pkiFabricSelfCAEp.json')
+        if pki_fabric_ca_mo:
+            # Prep csr
+            passphrase = pki_fabric_ca_mo[0]['pkiFabricSelfCAEp']['attributes']['currCertReqPassphrase']
+            cert_gen_filename = "gen.cnf"
+            key_pem = 'temp.key.pem'
+            csr_pem = 'temp.csr.pem'
+            sign = 'temp.sign'
+            cert_gen_cnf = '''
+            [ req ]
+            default_bits        = 2048
+            distinguished_name  = req_distinguished_name
+            string_mask         = utf8only
+            default_md          = sha512
+            prompt              = no
+            
+            [ req_distinguished_name ]
+            commonName                      = aci_pre_upgrade
+            '''
+            with open(cert_gen_filename, 'w') as f:
+                f.write(cert_gen_cnf)
+
+            # Generate csr for certreq
+            cmd = '/bin/openssl genrsa -out ' + key_pem + ' 2048'
+            cmd = cmd + ' && /bin/openssl req -config ' + cert_gen_filename + ' -new -key ' + key_pem + ' -out ' + csr_pem
+            cmd = cmd + ' && /bin/openssl dgst -sha256 -hmac ' + passphrase + ' -out ' + sign + ' ' + csr_pem
+            logging.debug('cmd = '+''.join(cmd))
+            genrsa_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+            genrsa_proc.communicate()[0].strip()
+            if genrsa_proc.returncode != 0:
+                msg = 'openssl cmd issue, send logs to TAC'
+                return ERROR
+            
+            # Prep certreq
+            with open(sign) as f:
+                hmac = f.read().strip().split(' ')[-1]
+            with open(csr_pem) as f:
+                certreq = f.read().strip()
+            
+            # file cleanup
+            subprocess.check_output(['rm', '-rf', sign, csr_pem, key_pem, cert_gen_filename])
+
+            # Perform test certreq
+            url = 'https://127.0.0.1/raca/certreq.json'
+            payload = '{"aaaCertGenReq":{"attributes":{"type":"csvc","hmac":"%s", "certreq": "%s", ' \
+                    '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
+            cmd = 'icurl -kX POST %s -d \' %s \'' %(url,payload)
+            logging.debug('cmd = ' + ''.join(cmd))
+            certreq_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+            certreq_out = certreq_proc.communicate()[0].strip()
+
+    logging.debug(certreq_out)
+    if '"error":{"attributes"' in certreq_out:
+        # Spines can crash on 5.2(6e)+, but APIC CA Certs should be fixed regardless of tver
+        data.append([certreq_out])
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s ====\n' % (ts, tz))
     username, password = get_credentials()
@@ -2521,6 +2596,7 @@ if __name__ == "__main__":
         telemetryStatsServerP_object_check,
         llfc_susceptibility_check,
         internal_vlanpool_check,
+        apic_ca_cert_validation,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
