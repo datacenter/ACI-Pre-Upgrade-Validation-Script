@@ -1078,7 +1078,7 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     data = []
     unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
     unformatted_data = []
-    recommended_action = 'Resolve the conflict by removing this config or other configs using this port as L3'
+    recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping prefix'
     print_title(title, index, total_checks)
 
     desc_regex = r'Configuration failed for (?P<failedEpg>.+) due.+Prefix entry sys/ctx-\[vxlan-(?P<vrfvnid>\d+)\]/pfx-\[(?P<prefixInUse>.+)\] is'
@@ -1100,6 +1100,61 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
                 data.append([fc, desc_array.group("failedEpg"), desc_array.group("vrfvnid"),
                              vrf_dict.get(desc_array.group("vrfvnid"), '??'), desc_array.group("prefixInUse"),
                              recommended_action])
+            else:
+                unformatted_data.append(
+                    [fc, faultInst['faultInst']['attributes']['descr'], recommended_action])
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    return result
+
+
+def encap_already_in_use_check(index, total_checks, **kwargs):
+    title = 'Encap Already In Use (F0467 encap-already-in-use)'
+    result = FAIL_O
+    msg = ''
+    headers = ["Fault", "DN of Faulted EPG", "In Use by EPG", "Node", "Overlapping Encap(s)", "Recommended Action"]
+    data = []
+    unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
+    unformatted_data = []
+    recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping encap(s)'
+    print_title(title, index, total_checks)
+
+    desc_regex = r'Configuration failed for.*encap-already-in-use: Encap is already in use by (?P<failedToEpg>.+);'
+    dn_regex = r'.*/node-(?P<nodeId>[0-9]+)/.*epp/fv-\[(?P<failedEpgDn>.*)\]/node.*'
+    faultInsts = icurl('class',
+                       'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
+    if faultInsts:
+       
+        for faultInst in faultInsts:
+            fc = faultInst['faultInst']['attributes']['code']
+            desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+            if desc_array:
+            	dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+            	use_epg_list = desc_array.group("failedToEpg").split(":")
+
+            	failed_epg_dn = dn_array.group("failedEpgDn")
+            	use_epg_dn = "uni/tn-" + use_epg_list[0] + "/ap-" + use_epg_list[1] + "/epg-" + use_epg_list[2]
+            	nodeId = dn_array.group("nodeId")
+            	
+            	# To find encap that is overlapping, query fvIfConn for both EPGs and filter on node ID
+            	failed_epg_fvIfConn = icurl('mo',
+                       'uni/epp/fv-[' + failed_epg_dn + '].json?query-target=subtree&target-subtree-class=fvIfConn&query-target-filter=wcard(fvIfConn.dn,"node-' + nodeId + '")')
+                use_epg_fvIfConn = icurl('mo',
+                       'uni/epp/fv-[' + use_epg_dn + '].json?query-target=subtree&target-subtree-class=fvIfConn&query-target-filter=wcard(fvIfConn.dn,"node-' + nodeId + '")')
+                
+                failed_epg_encap_list = []
+                for fvIfConn in failed_epg_fvIfConn:
+                	if fvIfConn['fvIfConn']['attributes']['encap'] not in failed_epg_encap_list:
+                		failed_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
+
+                use_epg_encap_list = []
+                for fvIfConn in use_epg_fvIfConn:
+                	if fvIfConn['fvIfConn']['attributes']['encap'] not in use_epg_encap_list:
+                		use_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
+                
+                overlapping_encaps = [x for x in use_epg_encap_list if x in failed_epg_encap_list]
+                data.append([fc, failed_epg_dn, use_epg_dn, nodeId, ','.join(overlapping_encaps), recommended_action])
             else:
                 unformatted_data.append(
                     [fc, faultInst['faultInst']['attributes']['descr'], recommended_action])
@@ -2570,6 +2625,7 @@ if __name__ == "__main__":
         port_configured_as_l2_check,
         port_configured_as_l3_check,
         prefix_already_in_use_check,
+        encap_already_in_use_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,
