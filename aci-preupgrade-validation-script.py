@@ -1120,39 +1120,45 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
     recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping encap(s)'
     print_title(title, index, total_checks)
 
+    faultInsts = kwargs.get("faultInst.json", None)
+    failed_epg_fvIfConn = kwargs.get("fvIfConn-failed-encap.json", None)
+    use_epg_fvIfConn = kwargs.get("fvIfConn-use-encap.json", None)
+
     desc_regex = r'Configuration failed for.*encap-already-in-use: Encap is already in use by (?P<failedToEpg>.+);'
     dn_regex = r'.*/node-(?P<nodeId>[0-9]+)/.*epp/fv-\[(?P<failedEpgDn>.*)\]/node.*'
-    faultInsts = icurl('class',
+    if not isinstance(faultInsts, list):
+        faultInsts = icurl('class',
                        'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
     if faultInsts:
-       
         for faultInst in faultInsts:
             fc = faultInst['faultInst']['attributes']['code']
             desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
             if desc_array:
-            	dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-            	use_epg_list = desc_array.group("failedToEpg").split(":")
+                dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+                use_epg_list = desc_array.group("failedToEpg").split(":")
 
-            	failed_epg_dn = dn_array.group("failedEpgDn")
-            	use_epg_dn = "uni/tn-" + use_epg_list[0] + "/ap-" + use_epg_list[1] + "/epg-" + use_epg_list[2]
-            	nodeId = dn_array.group("nodeId")
-            	
-            	# To find encap that is overlapping, query fvIfConn for both EPGs and filter on node ID
-            	failed_epg_fvIfConn = icurl('mo',
+                failed_epg_dn = dn_array.group("failedEpgDn")
+                use_epg_dn = "uni/tn-" + use_epg_list[0] + "/ap-" + use_epg_list[1] + "/epg-" + use_epg_list[2]
+                nodeId = dn_array.group("nodeId")
+
+                # To find encap that is overlapping, query fvIfConn for both EPGs and filter on node ID
+                if not isinstance(failed_epg_fvIfConn, list):
+                    failed_epg_fvIfConn = icurl('mo',
                        'uni/epp/fv-[' + failed_epg_dn + '].json?query-target=subtree&target-subtree-class=fvIfConn&query-target-filter=wcard(fvIfConn.dn,"node-' + nodeId + '")')
-                use_epg_fvIfConn = icurl('mo',
+                if not isinstance(use_epg_fvIfConn, list):
+                    use_epg_fvIfConn = icurl('mo',
                        'uni/epp/fv-[' + use_epg_dn + '].json?query-target=subtree&target-subtree-class=fvIfConn&query-target-filter=wcard(fvIfConn.dn,"node-' + nodeId + '")')
-                
+
                 failed_epg_encap_list = []
                 for fvIfConn in failed_epg_fvIfConn:
-                	if fvIfConn['fvIfConn']['attributes']['encap'] not in failed_epg_encap_list:
-                		failed_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
+                    if fvIfConn['fvIfConn']['attributes']['encap'] not in failed_epg_encap_list:
+                        failed_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
 
                 use_epg_encap_list = []
                 for fvIfConn in use_epg_fvIfConn:
-                	if fvIfConn['fvIfConn']['attributes']['encap'] not in use_epg_encap_list:
-                		use_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
-                
+                    if fvIfConn['fvIfConn']['attributes']['encap'] not in use_epg_encap_list:
+                        use_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
+
                 overlapping_encaps = [x for x in use_epg_encap_list if x in failed_epg_encap_list]
                 data.append([fc, failed_epg_dn, use_epg_dn, nodeId, ','.join(overlapping_encaps), recommended_action])
             else:
@@ -2193,7 +2199,7 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
         fvctx_mo = kwargs.get("fvCtx.json", None)
         if not fvctx_mo:
             fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
-        
+
         if fvctx_mo:
             for vrf in fvctx_mo:
                 globalname = ''
@@ -2364,11 +2370,11 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
         # Check for Fiber 1000base-SX, CSCvv33100
         if cfw.older_than("4.2(6d)") and tfw.newer_than("4.2(6c)"):
             sx_affected = True
-            
+
         # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
         if cfw.older_than("4.1(1i)") and tfw.newer_than("4.1(1h)") and tfw.older_than("5.2(7f)"):
             t_affected = True
-        
+
         if sx_affected or t_affected:
             ethpmFcot = kwargs.get("ethpmFcot.json")
             if not ethpmFcot:
@@ -2417,7 +2423,7 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    
+
     cfw = AciVersion(cversion)
     tfw = AciVersion(tversion)
 
@@ -2448,11 +2454,11 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     vmmDomP_json = kwargs.get("vmmDomP.json", None)
     if not tversion:
         tversion = kwargs.get("tversion", None)
-        
+
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    
+
     tfw = AciVersion(tversion)
     if tfw:
         if tfw.newer_than("4.2(6a)"):
@@ -2534,7 +2540,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             string_mask         = utf8only
             default_md          = sha512
             prompt              = no
-            
+
             [ req_distinguished_name ]
             commonName                      = aci_pre_upgrade
             '''
@@ -2551,13 +2557,13 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             if genrsa_proc.returncode != 0:
                 msg = 'openssl cmd issue, send logs to TAC'
                 return ERROR
-            
+
             # Prep certreq
             with open(sign) as f:
                 hmac = f.read().strip().split(' ')[-1]
             with open(csr_pem) as f:
                 certreq = f.read().strip()
-            
+
             # file cleanup
             subprocess.check_output(['rm', '-rf', sign, csr_pem, key_pem, cert_gen_filename])
 
