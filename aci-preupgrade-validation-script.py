@@ -1148,11 +1148,11 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
                 for fvIfConn in fvIfConns:
                     dn = fvIfConn['fvIfConn']['attributes']['dn']
                     encap = fvIfConn['fvIfConn']['attributes']['encap']
-                    if faulted_epg_dn in dn:
+                    if (faulted_epg_dn in dn) and ("node-"+nodeId in dn):
                         if encap not in faulted_epg_encaps:
                             faulted_epg_encaps.append(encap)
 
-                    if in_use_epg_dn in dn:
+                    if (in_use_epg_dn in dn) and ("node-"+nodeId in dn):
                         if encap not in in_use_epg_encaps:
                             in_use_epg_encaps.append(encap)
 

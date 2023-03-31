@@ -36,10 +36,18 @@
       {
           "fvIfConn": {
               "attributes": {
-                  "dn": "uni/epp/fv-[uni/tn-test/ap-app/epg-epg1]/node-102/stpathatt-[L101-eth1-1]/conndef/conn-[vlan-777]-[0.0.0.0]",
-                  "encap": "vlan-777"
+                  "dn": "uni/epp/fv-[uni/tn-test/ap-app/epg-epg1]/node-102/stpathatt-[L102-eth1-1]/conndef/conn-[vlan-778]-[0.0.0.0]",
+                  "encap": "vlan-778"
               }
           }
-      }
+      },
+      {
+        "fvIfConn": {
+            "attributes": {
+                "dn": "uni/epp/fv-[uni/tn-test2/ap-app2/epg-epg2]/node-102/stpathatt-[eth1/2]/conndef/conn-[vlan-778]-[0.0.0.0]",
+                "encap": "vlan-778"
+            }
+        }
+    }
   ]
 }
