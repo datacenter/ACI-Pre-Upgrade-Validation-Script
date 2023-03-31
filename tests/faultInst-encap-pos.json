@@ -1,0 +1,21 @@
+{
+    "totalCount": "1",
+    "imdata": [
+        {
+            "faultInst": {
+                "attributes": {
+                    "descr": "Configuration failed for uni/tn-bw/ap-mcast/epg-mcast1 node 104 bw-9k-L103-104-eth1-1 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap is already in use by bw:physical:phys3;",
+                    "dn": "topology/pod-1/node-104/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-bw/ap-mcast/epg-mcast1]/node-104/stpathatt-[bw-9k-L103-104-eth1-1]/nwissues/fault-F0467"
+                }
+            }
+        },
+        {
+            "faultInst": {
+                "attributes": {
+                    "descr": "Configuration failed for uni/tn-test/ap-app/epg-epg1 node 101 L101-eth1-1 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap is already in use by test2:app2:epg2;",
+                    "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-test/ap-app/epg-epg1]/node-101/stpathatt-[L101-eth1-1]/nwissues/fault-F0467"
+                }
+            }
+        }
+    ]
+}

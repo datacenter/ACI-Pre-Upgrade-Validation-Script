@@ -1113,60 +1113,58 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
     title = 'Encap Already In Use (F0467 encap-already-in-use)'
     result = FAIL_O
     msg = ''
-    headers = ["Fault", "DN of Faulted EPG", "In Use by EPG", "Node", "Overlapping Encap(s)", "Recommended Action"]
+    headers = ["DN of Faulted EPG", "In Use by EPG", "Node", "Overlapping Encap(s)"]
     data = []
-    unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
+    unformatted_headers = ['Fault Description']
     unformatted_data = []
-    recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping encap(s)'
+    recommended_action = 'Resolve the overlapping encap configuration prior to upgrade'
     print_title(title, index, total_checks)
 
-    faultInsts = kwargs.get("faultInst.json", None)
-    failed_epg_fvIfConn = kwargs.get("fvIfConn-failed-encap.json", None)
-    use_epg_fvIfConn = kwargs.get("fvIfConn-use-encap.json", None)
+    faultInsts = kwargs.get("faultInst")
+    fvIfConns = kwargs.get("fvIfConn")
 
-    desc_regex = r'Configuration failed for.*encap-already-in-use: Encap is already in use by (?P<failedToEpg>.+);'
-    dn_regex = r'.*/node-(?P<nodeId>[0-9]+)/.*epp/fv-\[(?P<failedEpgDn>.*)\]/node.*'
-    if not isinstance(faultInsts, list):
+    desc_regex = r'Encap is already in use by (?P<inUseEpgStr>.+);'
+    nwissues_dn_regex = node_regex + r'/.*epp/fv-\[(?P<faultedEpgDn>.*)\]/node.*'
+
+    if "pytest" not in sys.modules:
         faultInsts = icurl('class',
                        'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
     if faultInsts:
+        if "pytest" not in sys.modules:
+            fvIfConns = icurl('class', 'fvIfConn.json')
         for faultInst in faultInsts:
-            fc = faultInst['faultInst']['attributes']['code']
             desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+
             if desc_array:
-                dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-                use_epg_list = desc_array.group("failedToEpg").split(":")
+                inuse_epg_list = desc_array.group("inUseEpgStr").split(":")
+                in_use_epg_dn = "uni/tn-" + inuse_epg_list[0] + "/ap-" + inuse_epg_list[1] + "/epg-" + inuse_epg_list[2]
 
-                failed_epg_dn = dn_array.group("failedEpgDn")
-                use_epg_dn = "uni/tn-" + use_epg_list[0] + "/ap-" + use_epg_list[1] + "/epg-" + use_epg_list[2]
-                nodeId = dn_array.group("nodeId")
+                dn_array = re.search(nwissues_dn_regex, faultInst['faultInst']['attributes']['dn'])
+                faulted_epg_dn = dn_array.group("faultedEpgDn")
+                nodeId = dn_array.group("node")
 
-                # To find encap that is overlapping, query fvIfConn for both EPGs and filter on node ID
-                if not isinstance(failed_epg_fvIfConn, list):
-                    failed_epg_fvIfConn = icurl('mo',
-                       'uni/epp/fv-[' + failed_epg_dn + '].json?query-target=subtree&target-subtree-class=fvIfConn&query-target-filter=wcard(fvIfConn.dn,"node-' + nodeId + '")')
-                if not isinstance(use_epg_fvIfConn, list):
-                    use_epg_fvIfConn = icurl('mo',
-                       'uni/epp/fv-[' + use_epg_dn + '].json?query-target=subtree&target-subtree-class=fvIfConn&query-target-filter=wcard(fvIfConn.dn,"node-' + nodeId + '")')
+                faulted_epg_encaps = []
+                in_use_epg_encaps = []
+                for fvIfConn in fvIfConns:
+                    dn = fvIfConn['fvIfConn']['attributes']['dn']
+                    encap = fvIfConn['fvIfConn']['attributes']['encap']
+                    if faulted_epg_dn in dn:
+                        if encap not in faulted_epg_encaps:
+                            faulted_epg_encaps.append(encap)
 
-                failed_epg_encap_list = []
-                for fvIfConn in failed_epg_fvIfConn:
-                    if fvIfConn['fvIfConn']['attributes']['encap'] not in failed_epg_encap_list:
-                        failed_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
+                    if in_use_epg_dn in dn:
+                        if encap not in in_use_epg_encaps:
+                            in_use_epg_encaps.append(encap)
 
-                use_epg_encap_list = []
-                for fvIfConn in use_epg_fvIfConn:
-                    if fvIfConn['fvIfConn']['attributes']['encap'] not in use_epg_encap_list:
-                        use_epg_encap_list.append(fvIfConn['fvIfConn']['attributes']['encap'])
-
-                overlapping_encaps = [x for x in use_epg_encap_list if x in failed_epg_encap_list]
-                data.append([fc, failed_epg_dn, use_epg_dn, nodeId, ','.join(overlapping_encaps), recommended_action])
+                overlapping_encaps = [x for x in in_use_epg_encaps if x in faulted_epg_encaps]
+                data.append([faulted_epg_dn, in_use_epg_dn, nodeId, ','.join(overlapping_encaps)])
             else:
                 unformatted_data.append(
-                    [fc, faultInst['faultInst']['attributes']['descr'], recommended_action])
+                    [faultInst['faultInst']['attributes']['descr']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, 
+                 unformatted_headers, unformatted_data, recommended_action=recommended_action)
     return result
 
 
