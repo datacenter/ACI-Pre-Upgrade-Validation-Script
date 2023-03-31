@@ -1078,7 +1078,7 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     data = []
     unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
     unformatted_data = []
-    recommended_action = 'Resolve the conflict by removing this config or other configs using this port as L3'
+    recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping prefix'
     print_title(title, index, total_checks)
 
     desc_regex = r'Configuration failed for (?P<failedEpg>.+) due.+Prefix entry sys/ctx-\[vxlan-(?P<vrfvnid>\d+)\]/pfx-\[(?P<prefixInUse>.+)\] is'
@@ -1106,6 +1106,65 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     if not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    return result
+
+
+def encap_already_in_use_check(index, total_checks, **kwargs):
+    title = 'Encap Already In Use (F0467 encap-already-in-use)'
+    result = FAIL_O
+    msg = ''
+    headers = ["DN of Faulted EPG", "In Use by EPG", "Node", "Overlapping Encap(s)"]
+    data = []
+    unformatted_headers = ['Fault Description']
+    unformatted_data = []
+    recommended_action = 'Resolve the overlapping encap configuration prior to upgrade'
+    print_title(title, index, total_checks)
+
+    faultInsts = kwargs.get("faultInst")
+    fvIfConns = kwargs.get("fvIfConn")
+
+    desc_regex = r'Encap is already in use by (?P<inUseEpgStr>.+);'
+    nwissues_dn_regex = node_regex + r'/.*epp/fv-\[(?P<faultedEpgDn>.*)\]/node.*'
+
+    if "pytest" not in sys.modules:
+        faultInsts = icurl('class',
+                       'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
+    if faultInsts:
+        if "pytest" not in sys.modules:
+            fvIfConns = icurl('class', 'fvIfConn.json')
+        for faultInst in faultInsts:
+            desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+
+            if desc_array:
+                inuse_epg_list = desc_array.group("inUseEpgStr").split(":")
+                in_use_epg_dn = "uni/tn-" + inuse_epg_list[0] + "/ap-" + inuse_epg_list[1] + "/epg-" + inuse_epg_list[2]
+
+                dn_array = re.search(nwissues_dn_regex, faultInst['faultInst']['attributes']['dn'])
+                faulted_epg_dn = dn_array.group("faultedEpgDn")
+                nodeId = dn_array.group("node")
+
+                faulted_epg_encaps = []
+                in_use_epg_encaps = []
+                for fvIfConn in fvIfConns:
+                    dn = fvIfConn['fvIfConn']['attributes']['dn']
+                    encap = fvIfConn['fvIfConn']['attributes']['encap']
+                    if (faulted_epg_dn in dn) and ("node-"+nodeId in dn):
+                        if encap not in faulted_epg_encaps:
+                            faulted_epg_encaps.append(encap)
+
+                    if (in_use_epg_dn in dn) and ("node-"+nodeId in dn):
+                        if encap not in in_use_epg_encaps:
+                            in_use_epg_encaps.append(encap)
+
+                overlapping_encaps = [x for x in in_use_epg_encaps if x in faulted_epg_encaps]
+                data.append([faulted_epg_dn, in_use_epg_dn, nodeId, ','.join(overlapping_encaps)])
+            else:
+                unformatted_data.append(
+                    [faultInst['faultInst']['attributes']['descr']])
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, 
+                 unformatted_headers, unformatted_data, recommended_action=recommended_action)
     return result
 
 
@@ -2138,7 +2197,7 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
         fvctx_mo = kwargs.get("fvCtx.json", None)
         if not fvctx_mo:
             fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
-        
+
         if fvctx_mo:
             for vrf in fvctx_mo:
                 globalname = ''
@@ -2309,11 +2368,11 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
         # Check for Fiber 1000base-SX, CSCvv33100
         if cfw.older_than("4.2(6d)") and tfw.newer_than("4.2(6c)"):
             sx_affected = True
-            
+
         # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
         if cfw.older_than("4.1(1i)") and tfw.newer_than("4.1(1h)") and tfw.older_than("5.2(7f)"):
             t_affected = True
-        
+
         if sx_affected or t_affected:
             ethpmFcot = kwargs.get("ethpmFcot.json")
             if not ethpmFcot:
@@ -2362,7 +2421,7 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    
+
     cfw = AciVersion(cversion)
     tfw = AciVersion(tversion)
 
@@ -2393,11 +2452,11 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     vmmDomP_json = kwargs.get("vmmDomP.json", None)
     if not tversion:
         tversion = kwargs.get("tversion", None)
-        
+
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    
+
     tfw = AciVersion(tversion)
     if tfw:
         if tfw.newer_than("4.2(6a)"):
@@ -2479,7 +2538,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             string_mask         = utf8only
             default_md          = sha512
             prompt              = no
-            
+
             [ req_distinguished_name ]
             commonName                      = aci_pre_upgrade
             '''
@@ -2496,13 +2555,13 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             if genrsa_proc.returncode != 0:
                 msg = 'openssl cmd issue, send logs to TAC'
                 return ERROR
-            
+
             # Prep certreq
             with open(sign) as f:
                 hmac = f.read().strip().split(' ')[-1]
             with open(csr_pem) as f:
                 certreq = f.read().strip()
-            
+
             # file cleanup
             subprocess.check_output(['rm', '-rf', sign, csr_pem, key_pem, cert_gen_filename])
 
@@ -2570,6 +2629,7 @@ if __name__ == "__main__":
         port_configured_as_l2_check,
         port_configured_as_l3_check,
         prefix_already_in_use_check,
+        encap_already_in_use_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,
