@@ -1,0 +1,7 @@
+# Addtional modules installed on APIC versions with py3.8
+six == 1.14
+pexpect == 4.8
+
+
+# For testing
+pytest
