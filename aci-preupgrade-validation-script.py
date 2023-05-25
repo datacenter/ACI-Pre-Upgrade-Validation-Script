@@ -1,5 +1,7 @@
 from __future__ import division
 from __future__ import print_function
+from six import iteritems
+from six.moves import input
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
@@ -506,7 +508,7 @@ def icurl(apitype, query):
     cmd = ['icurl', '-gs', uri]
     logging.info('cmd = ' + ' '.join(cmd))
     response = subprocess.check_output(cmd)
-    logging.debug('response: ' + response)
+    logging.debug('response: ' + str(response))
     imdata = json.loads(response)['imdata']
     if imdata and "error" in imdata[0].keys():
         raise Exception('API call failed! Check debug log')
@@ -516,7 +518,7 @@ def icurl(apitype, query):
 
 def get_credentials():
     while True:
-        usr = raw_input('Enter username for APIC login          : ')
+        usr = input('Enter username for APIC login          : ')
         if usr: break
     while True:
         pwd = getpass('Enter password for corresponding User  : ')
@@ -554,7 +556,7 @@ def get_target_version():
 
         version_choice = None
         while version_choice is None:
-            version_choice = raw_input("What is the Target Version?     : ")
+            version_choice = input("What is the Target Version?     : ")
             try:
                 version_choice = int(version_choice)
                 if version_choice < 1 or version_choice > len(repo_list): raise ValueError("")
@@ -648,11 +650,11 @@ def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     unformatted_data = []
     doc_url = 'ACI Troubleshooting Guide 2nd Edition - http://cs.co/9003ybZ1d'
     print_title(title, index, total_checks)
-    v = re.search(ver_regex, cversion)
-    if v and ((v.group('major1') == 4 and v.group('major2') >= 2) or v.group('major1') >= 5):
-        recommended_action = 'Troubleshoot by running "acidiag cluster" on APIC CLI'
-    else:
+    cv = AciVersion(cversion)
+    if cv.version and cv.older_than("4.2"):
         recommended_action = 'Follow "Initial Fabric Setup" in ACI Troubleshooting Guide 2nd Edition'
+    else:
+        recommended_action = 'Troubleshoot by running "acidiag cluster" on APIC CLI'
 
     dn_regex = node_regex + r'/av/node-(?P<winode>\d)'
     infraWiNodes = icurl('class', 'infraWiNode.json')
@@ -1525,7 +1527,7 @@ def vnid_mismatch_check(index, total_checks, **kwargs):
         epg_encap_dict[epg_dn][access_encap].append({'node': node, 'fabEncap': fab_encap})
 
     # Iterate through, check for overlaps, and print
-    for key, epg in epg_encap_dict.iteritems():
+    for key, epg in iteritems(epg_encap_dict):
         for vlanKey, vlan in epg.iteritems():
             fab_encap_to_check = ""
             for deployment in vlan:
@@ -2608,7 +2610,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             certreq_out = certreq_proc.communicate()[0].strip()
 
     logging.debug(certreq_out)
-    if '"error":{"attributes"' in certreq_out:
+    if '"error":{"attributes"' in str(certreq_out):
         # Spines can crash on 5.2(6e)+, but APIC CA Certs should be fixed regardless of tver
         data.append([certreq_out])
 
