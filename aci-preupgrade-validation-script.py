@@ -2234,14 +2234,14 @@ def docker0_subnet_overlap_check(index, total_checks, **kwargs):
     if not dhcpSubnets:
         print_result(title, ERROR, "Infra TEP (dhcpSubnet) not found")
         return ERROR
-    tep = IPv4Network(dhcpSubnets[0]["dhcpSubnet"]["attributes"]["ip"].decode("utf-8"))
+    tep = IPv4Network(dhcpSubnets[0]["dhcpSubnet"]["attributes"]["ip"])
 
     containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
     if not containerPols:
         bip = IPv4Network(u"172.17.0.0/16")
     else:
         bip = IPv4Network(
-            containerPols[0]["apContainerPol"]["attributes"]["containerBip"].decode("utf-8"),
+            containerPols[0]["apContainerPol"]["attributes"]["containerBip"],
             strict=False
         )
 
