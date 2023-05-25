@@ -1,0 +1,41 @@
+[
+    {
+        "dhcpSubnet": {
+            "attributes": {
+                "childAction": "",
+                "dn": "prov-1/net-[172.17.0.0/16]",
+                "ip": "172.17.0.0/16",
+                "lcOwn": "local",
+                "modTs": "2023-05-24T09:56:27.883-07:00",
+                "podId": "1",
+                "status": ""
+            }
+        }
+    },
+    {
+        "dhcpSubnet": {
+            "attributes": {
+                "childAction": "",
+                "dn": "prov-2/net-[172.17.0.0/16]",
+                "ip": "172.17.0.0/16",
+                "lcOwn": "local",
+                "modTs": "2023-05-24T09:56:27.789-07:00",
+                "podId": "1",
+                "status": ""
+            }
+        }
+    },
+    {
+        "dhcpSubnet": {
+            "attributes": {
+                "childAction": "",
+                "dn": "prov-3/net-[172.17.0.0/16]",
+                "ip": "172.17.0.0/16",
+                "lcOwn": "local",
+                "modTs": "2023-05-24T09:56:27.881-07:00",
+                "podId": "1",
+                "status": ""
+            }
+        }
+    }
+]
