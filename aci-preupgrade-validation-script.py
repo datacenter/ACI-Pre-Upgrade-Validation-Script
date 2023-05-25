@@ -4,6 +4,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
+from ipaddress import IPv4Network
 import time
 import pexpect
 import logging
@@ -2218,6 +2219,38 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
     return result
 
 
+def docker0_subnet_overlap_check(index, total_checks, **kwargs):
+    title = 'APIC Container Bridge IP Overlap with Infra TEP'
+    result = PASS
+    msg = ''
+    headers = ["Infra TEP", "Container Bridge IP", "Recommended Action"]
+    data = []
+    recommended_action = 'Change the container bridge IP via "Apps > Settings" on the APIC GUI'
+    print_title(title, index, total_checks)
+
+    dhcpSubnets = icurl('class', 'dhcpSubnet.json?query-target-filter=eq(dhcpSubnet.podId,"1")')
+    if not dhcpSubnets:
+        print_result(title, ERROR, "Infra TEP (dhcpSubnet) not found")
+        return ERROR
+    tep = IPv4Network(dhcpSubnets[0]["dhcpSubnet"]["attributes"]["ip"].decode("utf-8"))
+
+    containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
+    if not containerPols:
+        bip = IPv4Network(u"172.17.0.0/16")
+    else:
+        bip = IPv4Network(
+            containerPols[0]["apContainerPol"]["attributes"]["containerBip"].decode("utf-8"),
+            strict=False
+        )
+
+    if tep.overlaps(bip):
+        result = FAIL_UF
+        data.append([str(tep), str(bip), recommended_action])
+
+    print_result(title, result, msg, headers, data)
+    return result
+
+
 def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     title = 'Eventmgr DB size defect susceptibility'
     result = PASS
@@ -2648,6 +2681,7 @@ if __name__ == "__main__":
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
+        docker0_subnet_overlap_check,
 
         # Bugs
         ep_announce_check,
