@@ -6,7 +6,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Network
+from ipaddress import IPv4Address, IPv4Network
 import time
 import pexpect
 import logging
@@ -2222,32 +2222,32 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
 
 
 def docker0_subnet_overlap_check(index, total_checks, **kwargs):
-    title = 'APIC Container Bridge IP Overlap with Infra TEP'
+    title = 'APIC Container Bridge IP Overlap with APIC TEP'
     result = PASS
     msg = ''
-    headers = ["Infra TEP", "Container Bridge IP", "Recommended Action"]
+    headers = ["Container Bridge IP", "APIC TEP", "Recommended Action"]
     data = []
     recommended_action = 'Change the container bridge IP via "Apps > Settings" on the APIC GUI'
     print_title(title, index, total_checks)
 
-    dhcpSubnets = icurl('class', 'dhcpSubnet.json?query-target-filter=eq(dhcpSubnet.podId,"1")')
-    if not dhcpSubnets:
-        print_result(title, ERROR, "Infra TEP (dhcpSubnet) not found")
-        return ERROR
-    tep = IPv4Network(dhcpSubnets[0]["dhcpSubnet"]["attributes"]["ip"])
-
     containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
     if not containerPols:
-        bip = IPv4Network(u"172.17.0.0/16")
+        bip = u"172.17.0.1/16"
     else:
-        bip = IPv4Network(
-            containerPols[0]["apContainerPol"]["attributes"]["containerBip"],
-            strict=False
-        )
+        bip = containerPols[0]["apContainerPol"]["attributes"]["containerBip"]
 
-    if tep.overlaps(bip):
-        result = FAIL_UF
-        data.append([str(tep), str(bip), recommended_action])
+    teps = []
+    infraWiNodes = icurl('class', 'infraWiNode.json')
+    for infraWiNode in infraWiNodes:
+        if infraWiNode["infraWiNode"]["attributes"]["addr"] not in teps:
+            teps.append(infraWiNode["infraWiNode"]["attributes"]["addr"])
+
+    # podman on APICs ignores the host IP of containerBip and always uses .1
+    bip_subnet = IPv4Network(bip, strict=False)
+    for tep in teps:
+        if IPv4Address(tep) in bip_subnet:
+            result = FAIL_UF
+            data.append([tep, bip, recommended_action])
 
     print_result(title, result, msg, headers, data)
     return result
