@@ -1528,7 +1528,7 @@ def vnid_mismatch_check(index, total_checks, **kwargs):
 
     # Iterate through, check for overlaps, and print
     for key, epg in iteritems(epg_encap_dict):
-        for vlanKey, vlan in epg.iteritems():
+        for vlanKey, vlan in iteritems(epg):
             fab_encap_to_check = ""
             for deployment in vlan:
                 if fab_encap_to_check == "" or deployment["fabEncap"] == fab_encap_to_check:
@@ -1546,7 +1546,7 @@ def vnid_mismatch_check(index, total_checks, **kwargs):
 
     mismatch_hits.sort()
     for epg in mismatch_hits:
-        for access_encap, nodeFabEncaps in epg["epgDeployment"].iteritems():
+        for access_encap, nodeFabEncaps in iteritems(epg["epgDeployment"]):
             for nodeFabEncap in nodeFabEncaps:
                 node_id = nodeFabEncap['node']
                 fabric_encap = nodeFabEncap['fabEncap']
