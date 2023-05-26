@@ -6,7 +6,6 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address, IPv4Network
 import time
 import pexpect
 import logging
@@ -2242,10 +2241,23 @@ def docker0_subnet_overlap_check(index, total_checks, **kwargs):
         if infraWiNode["infraWiNode"]["attributes"]["addr"] not in teps:
             teps.append(infraWiNode["infraWiNode"]["attributes"]["addr"])
 
-    # podman on APICs ignores the host IP of containerBip and always uses .1
-    bip_subnet = IPv4Network(bip, strict=False)
+    def ip_to_binary(ip):
+        octets = ip.split(".")
+        octets_bin = [format(int(octet), "08b") for octet in octets]
+        return "".join(octets_bin)
+
+    def get_network_binary(ip, pfxlen):
+        ip_bin = ip_to_binary(ip)
+        return ip_bin[0:32-(32-int(pfxlen))]
+
+    def ip_in_subnet(ip, subnet):
+        subnet_ip, subnet_pfxlen = subnet.split("/")
+        subnet_network = get_network_binary(subnet_ip, subnet_pfxlen)
+        ip_network = get_network_binary(ip, subnet_pfxlen)
+        return ip_network == subnet_network
+
     for tep in teps:
-        if IPv4Address(tep) in bip_subnet:
+        if ip_in_subnet(tep, bip):
             result = FAIL_UF
             data.append([tep, bip, recommended_action])
 

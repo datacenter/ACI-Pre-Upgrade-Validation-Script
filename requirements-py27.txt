@@ -1,6 +1,5 @@
 # Addtional modules installed on APIC versions with py2.7
 pexpect == 2.4  # APIC uses 2.3 which is no longer available in pypi
-ipaddress == 1.0.16
 
 
 # For testing
