@@ -341,6 +341,28 @@ class Connection(object):
         return result
 
 
+class IPAddress:
+    """Custom IP handling class since old APICs do not have `ipaddress` module.
+    """
+    @staticmethod
+    def ip_to_binary(ip):
+        octets = ip.split(".")
+        octets_bin = [format(int(octet), "08b") for octet in octets]
+        return "".join(octets_bin)
+
+    @classmethod
+    def get_network_binary(cls, ip, pfxlen):
+        ip_bin = cls.ip_to_binary(ip)
+        return ip_bin[0:32-(32-int(pfxlen))]
+
+    @classmethod
+    def ip_in_subnet(cls, ip, subnet):
+        subnet_ip, subnet_pfxlen = subnet.split("/")
+        subnet_network = cls.get_network_binary(subnet_ip, subnet_pfxlen)
+        ip_network = cls.get_network_binary(ip, subnet_pfxlen)
+        return ip_network == subnet_network
+
+
 def format_table(headers, data,
                  min_width=5, left_padding=2, hdr_sp='-', col_sp='  '):
     """ get string results in table format
@@ -2231,7 +2253,7 @@ def docker0_subnet_overlap_check(index, total_checks, **kwargs):
 
     containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
     if not containerPols:
-        bip = u"172.17.0.1/16"
+        bip = "172.17.0.1/16"
     else:
         bip = containerPols[0]["apContainerPol"]["attributes"]["containerBip"]
 
@@ -2241,23 +2263,8 @@ def docker0_subnet_overlap_check(index, total_checks, **kwargs):
         if infraWiNode["infraWiNode"]["attributes"]["addr"] not in teps:
             teps.append(infraWiNode["infraWiNode"]["attributes"]["addr"])
 
-    def ip_to_binary(ip):
-        octets = ip.split(".")
-        octets_bin = [format(int(octet), "08b") for octet in octets]
-        return "".join(octets_bin)
-
-    def get_network_binary(ip, pfxlen):
-        ip_bin = ip_to_binary(ip)
-        return ip_bin[0:32-(32-int(pfxlen))]
-
-    def ip_in_subnet(ip, subnet):
-        subnet_ip, subnet_pfxlen = subnet.split("/")
-        subnet_network = get_network_binary(subnet_ip, subnet_pfxlen)
-        ip_network = get_network_binary(ip, subnet_pfxlen)
-        return ip_network == subnet_network
-
     for tep in teps:
-        if ip_in_subnet(tep, bip):
+        if IPAddress.ip_in_subnet(tep, bip):
             result = FAIL_UF
             data.append([tep, bip, recommended_action])
 
