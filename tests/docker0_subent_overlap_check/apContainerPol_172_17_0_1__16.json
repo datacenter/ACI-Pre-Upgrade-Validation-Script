@@ -1,0 +1,23 @@
+[
+    {
+        "apContainerPol": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "containerBip": "172.17.0.1/16",
+                "descr": "",
+                "dn": "pluginPolContr/ContainerPol",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2023-05-24T07:37:11.463-07:00",
+                "name": "",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "status": "",
+                "uid": "0",
+                "userdom": "all"
+            }
+        }
+    }
+]

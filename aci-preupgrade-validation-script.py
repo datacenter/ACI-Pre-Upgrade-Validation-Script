@@ -341,6 +341,28 @@ class Connection(object):
         return result
 
 
+class IPAddress:
+    """Custom IP handling class since old APICs do not have `ipaddress` module.
+    """
+    @staticmethod
+    def ip_to_binary(ip):
+        octets = ip.split(".")
+        octets_bin = [format(int(octet), "08b") for octet in octets]
+        return "".join(octets_bin)
+
+    @classmethod
+    def get_network_binary(cls, ip, pfxlen):
+        ip_bin = cls.ip_to_binary(ip)
+        return ip_bin[0:32-(32-int(pfxlen))]
+
+    @classmethod
+    def ip_in_subnet(cls, ip, subnet):
+        subnet_ip, subnet_pfxlen = subnet.split("/")
+        subnet_network = cls.get_network_binary(subnet_ip, subnet_pfxlen)
+        ip_network = cls.get_network_binary(ip, subnet_pfxlen)
+        return ip_network == subnet_network
+
+
 def format_table(headers, data,
                  min_width=5, left_padding=2, hdr_sp='-', col_sp='  '):
     """ get string results in table format
@@ -2220,6 +2242,36 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
     return result
 
 
+def docker0_subnet_overlap_check(index, total_checks, **kwargs):
+    title = 'APIC Container Bridge IP Overlap with APIC TEP'
+    result = PASS
+    msg = ''
+    headers = ["Container Bridge IP", "APIC TEP", "Recommended Action"]
+    data = []
+    recommended_action = 'Change the container bridge IP via "Apps > Settings" on the APIC GUI'
+    print_title(title, index, total_checks)
+
+    containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
+    if not containerPols:
+        bip = "172.17.0.1/16"
+    else:
+        bip = containerPols[0]["apContainerPol"]["attributes"]["containerBip"]
+
+    teps = []
+    infraWiNodes = icurl('class', 'infraWiNode.json')
+    for infraWiNode in infraWiNodes:
+        if infraWiNode["infraWiNode"]["attributes"]["addr"] not in teps:
+            teps.append(infraWiNode["infraWiNode"]["attributes"]["addr"])
+
+    for tep in teps:
+        if IPAddress.ip_in_subnet(tep, bip):
+            result = FAIL_UF
+            data.append([tep, bip, recommended_action])
+
+    print_result(title, result, msg, headers, data)
+    return result
+
+
 def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     title = 'Eventmgr DB size defect susceptibility'
     result = PASS
@@ -2650,6 +2702,7 @@ if __name__ == "__main__":
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
+        docker0_subnet_overlap_check,
 
         # Bugs
         ep_announce_check,

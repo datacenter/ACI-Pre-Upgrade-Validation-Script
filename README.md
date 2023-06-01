@@ -173,6 +173,7 @@ Key:
 | Intersight Device Connector upgrade status      | Flags if APIC Intersight Connector is upgrading| Intersight Device Connector is upgrading |
 | ISIS Redistribution Metric for MPOD/Msite       | For multi-pod/multi-site deployment, whether isis redistribute metric is less than 63 |Switch Graceful Upgrade Guidelines|
 | BGP Route-target Type for GOLF over L2EVPN	  | For GOLF deployment, whether BGP route-target type starts with route-target: |Switch Graceful Upgrade Guidelines|
+| APIC Container Bridge IP Overlap with APIC TEP | Checks if the container bridge IP (docker0) for appCenter on APICs is overlapping with APIC TEP IP | TBD |
 
 ## Defect Condition Checks
 
