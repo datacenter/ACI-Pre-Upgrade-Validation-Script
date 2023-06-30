@@ -15,6 +15,7 @@ import sys
 import os
 import re
 
+SCRIPT_VERSION = "v1.4.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
@@ -2640,7 +2641,8 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
 
 
 if __name__ == "__main__":
-    prints('    ==== %s%s ====\n' % (ts, tz))
+    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
+    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
     username, password = get_credentials()
     try:
         cversion = get_current_version()
@@ -2753,5 +2755,6 @@ if __name__ == "__main__":
 
       Result Bundle: {bundle}
     """.format(bundle=bundle_loc))
+    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
     subprocess.check_output(['rm', '-rf', DIR])
