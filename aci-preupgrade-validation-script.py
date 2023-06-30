@@ -1566,7 +1566,7 @@ def vnid_mismatch_check(index, total_checks, **kwargs):
     if not mismatch_hits:
         result = PASS
 
-    mismatch_hits.sort()
+    mismatch_hits.sort(key=lambda d: d.get("epgDn", ""))
     for epg in mismatch_hits:
         for access_encap, nodeFabEncaps in iteritems(epg["epgDeployment"]):
             for nodeFabEncap in nodeFabEncaps:
