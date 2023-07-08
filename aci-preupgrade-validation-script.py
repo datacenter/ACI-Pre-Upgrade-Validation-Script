@@ -596,7 +596,7 @@ def get_target_version():
 
 def get_vpc_nodes(**kwargs):
     """ Returns list of VPC Node IDs; ['101', '102', etc...] """
-    prints("Collecting VPC Node IDs...", end='')
+    prints("Collecting VPC Node IDs...\n")
     vpc_nodes = []
 
     prot_pols = kwargs.get("fabricNodePEp.json", None)
