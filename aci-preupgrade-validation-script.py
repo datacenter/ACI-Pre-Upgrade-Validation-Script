@@ -2608,7 +2608,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             genrsa_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             genrsa_proc.communicate()[0].strip()
             if genrsa_proc.returncode != 0:
-                msg = 'openssl cmd issue, send logs to TAC'
+                print_result(title, ERROR, 'openssl cmd issue, send logs to TAC')
                 return ERROR
 
             # Prep certreq
