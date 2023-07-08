@@ -1,0 +1,14 @@
+# Addtional modules installed on APIC versions with py3.8
+six == 1.14.0
+pexpect==4.8.0
+
+# For testing
+pytest==7.4.0
+
+# Depencencies
+exceptiongroup==1.1.2
+iniconfig==2.0.0
+packaging==23.1
+pluggy==1.2.0
+ptyprocess==0.7.0
+tomli==2.0.1

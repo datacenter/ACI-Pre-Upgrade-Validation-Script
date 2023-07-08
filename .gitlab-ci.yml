@@ -1,0 +1,91 @@
+---
+# Change pip's cache directory to be inside the project directory
+# since gitlab ci can only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+stages:
+  - unit_test
+  - integration_test
+
+test:py27:
+  stage: unit_test
+  image: python:2.7.11-slim
+  before_script:
+    # pip 21.0 does not support py2 but the default pip in this container
+    # is too old and fails. Hence the pip version must be 20.3.4.
+    - pip install --upgrade pip==20.3.4
+    - python --version ; pip --version
+    - pip install virtualenv
+    - virtualenv venv27
+    - source venv27/bin/activate
+  script:
+    - pip install -r tests/requirements-py27.txt
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+  cache:
+    key:
+      files:
+        - tests/requirements-py27.txt
+    paths:
+      - venv27/
+      - .cache/pip
+
+
+test:py38:
+  stage: unit_test
+  image: python:3.8.10-slim
+  before_script:
+    - pip install --upgrade pip
+    - python --version ; pip --version
+    - pip install virtualenv
+    - virtualenv venv38
+    - source venv38/bin/activate
+  script:
+    - pip install -r tests/requirements-py38.txt
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+  cache:
+    key:
+      files:
+        - tests/requirements-py38.txt
+    paths:
+      - venv38/
+      - .cache/pip
+
+
+test:integration:
+  stage: integration_test
+  image: python:3.8.10-slim
+  before_script:
+    - apt update
+    - apt install -y curl
+    - pip install --upgrade pip
+    - python --version ; pip --version
+    - pip install virtualenv
+    - virtualenv venv38-integration
+    - source venv38-integration/bin/activate
+  script:
+    - cd tests
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/requirements.txt/raw?ref=main" -o requirements.txt'
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/runner.py/raw?ref=main" -o runner.py'
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - pip install -r requirements.txt
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key
+  artifacts:
+    when: always
+    paths:
+      - $CI_PROJECT_DIR/tests/*.log
+  cache:
+    key:
+      files:
+        - tests/requirements.txt
+    paths:
+      - venv38-integration/
+      - .cache/pip
