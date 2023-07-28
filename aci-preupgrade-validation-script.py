@@ -2640,6 +2640,44 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
     return result
 
 
+def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'FabricDomain Name Check'
+    result = FAIL_O
+    msg = ''
+    headers = ["FabricDomain", "Reason"]
+    data = []
+    recommended_action = "Do not upgrade to 6.0(2)"
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf80352'
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    cfw = AciVersion(cversion)
+    tfw = AciVersion(tversion)
+    print(cversion)
+    print(tversion)
+
+    if tfw.same_as("6.0(2h)"):
+        controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+        print(controller)
+        if not controller:
+            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+            return ERROR
+        
+        fabricDomain = controller['imdata'][0]['topSystem']['attributes']['fabricDomain']
+        if re.search(r'#|;', fabricDomain):
+            data.append([fabricDomain, "Contains a special character"])
+
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2714,6 +2752,7 @@ if __name__ == "__main__":
         llfc_susceptibility_check,
         internal_vlanpool_check,
         apic_ca_cert_validation,
+        fabricdomain_name_check
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
