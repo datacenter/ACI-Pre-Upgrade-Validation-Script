@@ -1,41 +1,37 @@
-Table of Contents
-=================
+# Table of Contents
 
-* [Table of Contents](#table-of-contents)
-* [Quick Start](#quick-start)
-* [Introduction](#introduction)
-* [Preparation](#preparation)
-   * [ssh copy/paste and vi](#ssh-copypaste-and-vi)
-   * [local file transfer client](#local-file-transfer-client)
-* [Usage](#usage)
-* [Details](#details)
-   * [Results](#results)
-   * [General Checks](#general-checks)
-   * [Fault Checks](#fault-checks)
-   * [Configuration Checks](#configuration-checks)
-   * [Defect Condition Checks](#defect-condition-checks)
-   * [Log Files](#log-files)
-* [Example run output](#example-run-output)
+- [Table of Contents](#table-of-contents)
+- [Quick Start](#quick-start)
+- [Introduction](#introduction)
+- [Preparation](#preparation)
+  - [ssh copy/paste and vi](#ssh-copypaste-and-vi)
+  - [local file transfer client](#local-file-transfer-client)
+- [Usage](#usage)
+- [Details](#details)
+  - [Results](#results)
+  - [General Checks](#general-checks)
+  - [Fault Checks](#fault-checks)
+  - [Configuration Checks](#configuration-checks)
+  - [Defect Condition Checks](#defect-condition-checks)
+  - [Log Files](#log-files)
+- [Example run output](#example-run-output)
 
-   
 # Quick Start
 
 1. copy `aci-preupgrade-validation-script.py` ([link](https://raw.githubusercontent.com/datacenter/ACI-Pre-Upgrade-Validation-Script/master/aci-preupgrade-validation-script.py?token=AJD5RRLZ5LVFDIW6Z6ZDIMTBBW5X6)) on your APIC (`/data/techsupport`)
 2. `cd /data/techsupport`
-3. `python aci-preupgrade-validation-script.py` 
+3. `python aci-preupgrade-validation-script.py`
 4. follow recommendations for all checks that have been flagged as `FAIL` or `MANUAL CHECK REQUIRED`
-
 
 # Introduction
 
-The Goal of this script is to provide you with an automated list of proactive checks before performing an ACI fabric upgrade.  Each check is documented in the "Cisco ACI Upgrade guide - Pre-upgrade CheckLists" with a detailed explanation of the importance to resolve each issue before upgrading.
+The Goal of this script is to provide you with an automated list of proactive checks before performing an ACI fabric upgrade. Each check is documented in the "Cisco ACI Upgrade guide - Pre-upgrade CheckLists" with a detailed explanation of the importance to resolve each issue before upgrading.
 
 [ACI Upgrade Documentation](https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/all/apic-installation-upgrade-downgrade/Cisco-APIC-Installation-Upgrade-Downgrade-Guide.html)
 
 Failure to address an affected issue before an upgrade is known to cause challenges during or post upgrade.
 
-For every check that has been flagged as `FAIL`, a general recommended action has been provided to guide next steps.  There is also a summary with the number of checks that matched a given status.
-
+For every check that has been flagged as `FAIL`, a general recommended action has been provided to guide next steps. There is also a summary with the number of checks that matched a given status.
 
 # Preparation
 
@@ -64,27 +60,28 @@ Download the script from here: [aci-preupgrade-validation-script.py](https://raw
 
 When run, the script will prompt for user credentials.
 
-The script will then present a list of firmware from the APIC firmware repository and ask which one is the target 
-version for the next 
-planned upgrade. Ensure you have the desired ACI Firmware uploaded to the APIC Firmware Repository before 
+The script will then present a list of firmware from the APIC firmware repository and ask which one is the target
+version for the next
+planned upgrade. Ensure you have the desired ACI Firmware uploaded to the APIC Firmware Repository before
 running this script.
 
 Notes:
-1. If the APIC FIrmware Repository is empty, the script will proceed but will mark checks that required the target version as 
-`MANUAL CHECK REQUIRED`
 
-2. `admin` level privileges are recommended. User permissions are important as most of these checks rely on API query responses. 
-Non-admin remote user credentials can result in RBAC causing queries to return empty responses.
-This can result in inconsistent script results.
+1. If the APIC FIrmware Repository is empty, the script will proceed but will mark checks that required the target version as
+   `MANUAL CHECK REQUIRED`
 
-3. This script only performs read operations and will not modify any config or filesystem properties. 
+2. `admin` level privileges are recommended. User permissions are important as most of these checks rely on API query responses.
+   Non-admin remote user credentials can result in RBAC causing queries to return empty responses.
+   This can result in inconsistent script results.
+
+3. This script only performs read operations and will not modify any config or filesystem properties.
 
 ```
-admin@f2-apic1:techsupport> python aci-preupgrade-validation-script.py 
+admin@f2-apic1:techsupport> python aci-preupgrade-validation-script.py
     ==== 2021-07-30T13-28-25-0700 ====
 
 Enter username for APIC login          : admin
-Enter password for corresponding User  : 
+Enter password for corresponding User  :
 
 Checking current APIC version (switch nodes are assumed to be on the same version)...5.0(1g)
 
@@ -97,7 +94,7 @@ What is the Target Version?     : 1
 
 You have chosen version "aci-apic-dk9.5.2.1d.bin"
 
-[Check  1/36] APIC Target version image and MD5 hash... 
+[Check  1/36] APIC Target version image and MD5 hash...
               Checking f2-apic1......                                                                                                 DONE
                                                                                                                                       PASS
 [Check  2/36] Target version compatibility...                                                                                         PASS
@@ -107,7 +104,7 @@ You have chosen version "aci-apic-dk9.5.2.1d.bin"
 
 ## Results
 
-Each check has a unique result which will help determine how to proceed.  The results are explained as follows:
+Each check has a unique result which will help determine how to proceed. The results are explained as follows:
 
 - **PASS** - The check has completed, and the ACI Fabric is not affected by the issue.
 - **FAIL - OUTAGE WARNING** - The check has completed, and the ACI Fabric is currently affected by an issue which may cause an outage.
@@ -121,71 +118,74 @@ Each check has a unique result which will help determine how to proceed.  The re
 aci-preupgrade-validation-script.py currently performs the following checks:
 
 Key:
+
 - **CREDS** = credentials; uname/pw supplied on script run
 - **CVER** = current version; Version on APIC during run
 - **TVER** = Target Version; selected on run if found
 
-| Check Name                                            | What is this check doing                                                                       | Pre-upgrade Checklist Mapping |
-|-------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------------------------|
-| APIC Target version image and MD5 hash                | Requires CREDS and TVER.<br> Logs into each APIC and checks image md5 file |  MD5Sum Check for APIC and Switch Firmware + APIC Firmware Synchronization Across APICs |
-| Target version compatibility                          | Requires TVER. Checks catalogue objects for TVER compatibility given CVER | Compatibility (Target ACI Version) |
-| Gen 1 switch compatibility                            | Checks for gen1 hardware and flags incompatibility if TVER >= 5.0 | Compatibility (Switch Hardware) |
-| Remote Leaf Compatibility                             | Checks for "Direct Traffic Forwarding" requirement | Compatibility (Remote Leaf Switch) |
-| APIC CIMC Compatibility                               | Checks running CIMC against minimum recommended CIMC from CApability catalogue given TVER | Compatibility (CIMC Version) |
-| APIC Cluster is Fully-Fit                             | -- | All Your APICs Are In a Fully Fit State |
-| Switches are all in Active state                      | -- | All Your Switches Are In an Active State |
-| NTP Status                                            | Checks that NTP is running on the fabric, and that all nodes synchronized to configured NTP server | NTP (Clocks are synchronized Across the Fabric) |
-| Firmware/Maintenance Groups when crossing 4.0 Release | Checks for existing FW/maint groups | Implementation Change for Firmware Update Groups on APICs from Release 4.0(1) |
-| Features that need to be Disabled prior to Upgrade    | See Pre-Upgrade Checklist  | Configurations That Must Be Disabled Prior To Upgrades |
-| Switch Upgrade Group Guidelines                       | See Pre-Upgrade Checklist | Grouping Rules 1, 2 and 3 + Switch Graceful Upgrade Guidelines |
+| Check Name                                            | What is this check doing                                                                           | Pre-upgrade Checklist Mapping                                                          |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| APIC Target version image and MD5 hash                | Requires CREDS and TVER.<br> Logs into each APIC and checks image md5 file                         | MD5Sum Check for APIC and Switch Firmware + APIC Firmware Synchronization Across APICs |
+| Target version compatibility                          | Requires TVER. Checks catalogue objects for TVER compatibility given CVER                          | Compatibility (Target ACI Version)                                                     |
+| Gen 1 switch compatibility                            | Checks for gen1 hardware and flags incompatibility if TVER >= 5.0                                  | Compatibility (Switch Hardware)                                                        |
+| Remote Leaf Compatibility                             | Checks for "Direct Traffic Forwarding" requirement                                                 | Compatibility (Remote Leaf Switch)                                                     |
+| APIC CIMC Compatibility                               | Checks running CIMC against minimum recommended CIMC from CApability catalogue given TVER          | Compatibility (CIMC Version)                                                           |
+| APIC Cluster is Fully-Fit                             | --                                                                                                 | All Your APICs Are In a Fully Fit State                                                |
+| Switches are all in Active state                      | --                                                                                                 | All Your Switches Are In an Active State                                               |
+| NTP Status                                            | Checks that NTP is running on the fabric, and that all nodes synchronized to configured NTP server | NTP (Clocks are synchronized Across the Fabric)                                        |
+| Firmware/Maintenance Groups when crossing 4.0 Release | Checks for existing FW/maint groups                                                                | Implementation Change for Firmware Update Groups on APICs from Release 4.0(1)          |
+| Features that need to be Disabled prior to Upgrade    | See Pre-Upgrade Checklist                                                                          | Configurations That Must Be Disabled Prior To Upgrades                                 |
+| Switch Upgrade Group Guidelines                       | See Pre-Upgrade Checklist                                                                          | Grouping Rules 1, 2 and 3 + Switch Graceful Upgrade Guidelines                         |
 
 ## Fault Checks
 
-| Check Name                                                                                 | What is this check doing                  | Pre-upgrade Checklist Mapping |
-|--------------------------------------------------------------------------------------------|-------------------------------------------|-------------------------------|
-| APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)                                 | -- | APIC DIsk Space Usage (F1527, F1528, F1529) |
-| Switch Node /bootflash usage                                                               | Checks /bootflash usage object, flags if over 50% | ACI Switch bootflash Usage  |
-| Standby APIC Disk Space Usage                                                              | Login to Standby APICs and checks `df -h` | Filesystem on Standby APICs |
-| APIC SSD Health                                                                            | Check F2731, if not found, for version earlier than 4.2(7f) and 5.2(1g), get SSD lifetime from AE log  | SSD health status on APICs |
-| Switch SSD Health (F3073, F3074 equipment-flash-warning)                                   | -- | SSD health status on ACI switches |
-| Config On APIC Connected Port (F0467 port-configured-for-apic)                             | --| EPG config on ports connected to APICs |
-| L3 Port Config (F0467 port-configured-as-l2)                                               | -- | Conflicting interface L2/L3 mode|
-| L2 Port Config (F0467 port-configured-as-l3)                                               | -- | Conflicting interface L2/L3 mode |
-| L3Out Subnets (F0467 prefix-entry-already-in-use)                                          | -- | Conflicting L3Out subnets for contracts |
-| BD Subnets (F1425 subnet-overlap)                                                          |  -- | Overlapping BD subnets in the same VRF |
-| BD Subnets (F0469 duplicate-subnets-within-ctx)                                            | -- | Overlapping BD subnets in the same VRF|
-| VMM Domain Controller Status                                                               | -- | VMM Controller Connectivity |
-| VMM Domain LLDP/CDP Adjacency Status                                                       | -- | Missing LLDP/CDP adjacency between leaf nodes and VMM hypervisors |
-| Different infra VLAN via LLDP (F0454 infra-vlan-mismatch)                                  | -- | Different infra VLAN being injected via LLDP |
-| HW Programming Failure (F3544 L3Out Prefixes, F3545 Contracts, actrl-resource-unavailable) | -- | Policy CAM + L3Out Subnets programming for contracts |
-| Scalability (faults related to Capacity Dashboard)                                         | -- | General Scalability Limits |
+| Check Name                                                                                 | What is this check doing                                                                              | Pre-upgrade Checklist Mapping                                     |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)                                 | --                                                                                                    | APIC DIsk Space Usage (F1527, F1528, F1529)                       |
+| Switch Node /bootflash usage                                                               | Checks /bootflash usage object, flags if over 50%                                                     | ACI Switch bootflash Usage                                        |
+| Standby APIC Disk Space Usage                                                              | Login to Standby APICs and checks `df -h`                                                             | Filesystem on Standby APICs                                       |
+| APIC SSD Health                                                                            | Check F2731, if not found, for version earlier than 4.2(7f) and 5.2(1g), get SSD lifetime from AE log | SSD health status on APICs                                        |
+| Switch SSD Health (F3073, F3074 equipment-flash-warning)                                   | --                                                                                                    | SSD health status on ACI switches                                 |
+| Config On APIC Connected Port (F0467 port-configured-for-apic)                             | --                                                                                                    | EPG config on ports connected to APICs                            |
+| L3 Port Config (F0467 port-configured-as-l2)                                               | --                                                                                                    | Conflicting interface L2/L3 mode                                  |
+| L2 Port Config (F0467 port-configured-as-l3)                                               | --                                                                                                    | Conflicting interface L2/L3 mode                                  |
+| L3Out Subnets (F0467 prefix-entry-already-in-use)                                          | --                                                                                                    | Conflicting L3Out subnets for contracts                           |
+| BD Subnets (F1425 subnet-overlap)                                                          | --                                                                                                    | Overlapping BD subnets in the same VRF                            |
+| BD Subnets (F0469 duplicate-subnets-within-ctx)                                            | --                                                                                                    | Overlapping BD subnets in the same VRF                            |
+| VMM Domain Controller Status                                                               | --                                                                                                    | VMM Controller Connectivity                                       |
+| VMM Domain LLDP/CDP Adjacency Status                                                       | --                                                                                                    | Missing LLDP/CDP adjacency between leaf nodes and VMM hypervisors |
+| Different infra VLAN via LLDP (F0454 infra-vlan-mismatch)                                  | --                                                                                                    | Different infra VLAN being injected via LLDP                      |
+| HW Programming Failure (F3544 L3Out Prefixes, F3545 Contracts, actrl-resource-unavailable) | --                                                                                                    | Policy CAM + L3Out Subnets programming for contracts              |
+| Scalability (faults related to Capacity Dashboard)                                         | --                                                                                                    | General Scalability Limits                                        |
 
 ## Configuration Checks
 
-| Check Name                                      | What is this check doing                                         | Pre-upgrade Checklist Mapping |
-|-------------------------------------------------|------------------------------------------------------------------|-------------------------------|
-| VPC-paired Leaf switches                        | Flags any Leaf switches not in a VPC| All Switch Nodes In vPC |
-| Overlapping VLAN Pools                          | Checks for multiple domains attached to EPGs, then looks up the corresponding VLAN pools for VLAN overlap | Overlapping VLAN Pool |
-| VNID Mismatch                                   | For a given VLAN, flags the VLAN if found to have different VNIDS across different leaves  | Overlapping VLAN Pool |
-| L3Out MTU                                       | Grabs all MTU defined on L3outs for manual peer MTU verification | L3Out MTU mismatch |
-| BGP Peer Profile at node level without Loopback | See Pre-Upgrade Checklist| L3Out BGP Peer Connectivity Profile under a node profile without a loopback |
-| L3Out Route Map import/export direction         | See Pre-Upgrade Checklist | L3Out incorrect route map direction |
-| Intersight Device Connector upgrade status      | Flags if APIC Intersight Connector is upgrading| Intersight Device Connector is upgrading |
-| ISIS Redistribution Metric for MPOD/Msite       | For multi-pod/multi-site deployment, whether isis redistribute metric is less than 63 |Switch Graceful Upgrade Guidelines|
-| BGP Route-target Type for GOLF over L2EVPN	  | For GOLF deployment, whether BGP route-target type starts with route-target: |Switch Graceful Upgrade Guidelines|
-| APIC Container Bridge IP Overlap with APIC TEP | Checks if the container bridge IP (docker0) for appCenter on APICs is overlapping with APIC TEP IP | TBD |
+| Check Name                                      | What is this check doing                                                                                  | Pre-upgrade Checklist Mapping                                               |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| VPC-paired Leaf switches                        | Flags any Leaf switches not in a VPC                                                                      | All Switch Nodes In vPC                                                     |
+| Overlapping VLAN Pools                          | Checks for multiple domains attached to EPGs, then looks up the corresponding VLAN pools for VLAN overlap | Overlapping VLAN Pool                                                       |
+| VNID Mismatch                                   | For a given VLAN, flags the VLAN if found to have different VNIDS across different leaves                 | Overlapping VLAN Pool                                                       |
+| L3Out MTU                                       | Grabs all MTU defined on L3outs for manual peer MTU verification                                          | L3Out MTU mismatch                                                          |
+| BGP Peer Profile at node level without Loopback | See Pre-Upgrade Checklist                                                                                 | L3Out BGP Peer Connectivity Profile under a node profile without a loopback |
+| L3Out Route Map import/export direction         | See Pre-Upgrade Checklist                                                                                 | L3Out incorrect route map direction                                         |
+| Intersight Device Connector upgrade status      | Flags if APIC Intersight Connector is upgrading                                                           | Intersight Device Connector is upgrading                                    |
+| ISIS Redistribution Metric for MPOD/Msite       | For multi-pod/multi-site deployment, whether isis redistribute metric is less than 63                     | Switch Graceful Upgrade Guidelines                                          |
+| BGP Route-target Type for GOLF over L2EVPN      | For GOLF deployment, whether BGP route-target type starts with route-target:                              | Switch Graceful Upgrade Guidelines                                          |
+| APIC Container Bridge IP Overlap with APIC TEP  | Checks if the container bridge IP (docker0) for appCenter on APICs is overlapping with APIC TEP IP        | TBD                                                                         |
 
 ## Defect Condition Checks
 
-| Check Name                             | What is this check doing                                  | Pre-upgrade Checklist Mapping |
-|----------------------------------------|-----------------------------------------------------------|-------------------------------|
-| EP Announce Compatibility              | Checks if TVER and CVER are affected by CSCvi76161   | EP Announce version mismatch |
-| Eventmgr DB size defect susceptibility | Check if CVER is affected by CSCvn20175 | None, Contact TAC for verification |
-| Contract Port 22 defect susceptibility | Check if TVER is affected by CSCvz65560 | None  |
-| telemetryStatsServerP defect susceptibility | Check for CVER, TVER and object in CSCvt47850 | None  |
-| Link Level Flow Control defect susceptibility | Check if CVER and TVER are susceptible to CSCvv33100 and CSCwd37387 | None  |
-| Non-AVE VLAN Blocks set to "Internal" | Check if CVER, TVER and VLAN Blocks are susceptible to CSCvw33061 | None  |
-| APIC CA Certificate Validation          | Check if pkiFabricSelfCAEp was corrupted by CSCvy35257 | None
+| Check Name                                    | What is this check doing                                                          | Pre-upgrade Checklist Mapping      |
+| --------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
+| EP Announce Compatibility                     | Checks if TVER and CVER are affected by CSCvi76161                                | EP Announce version mismatch       |
+| Eventmgr DB size defect susceptibility        | Check if CVER is affected by CSCvn20175                                           | None, Contact TAC for verification |
+| Contract Port 22 defect susceptibility        | Check if TVER is affected by CSCvz65560                                           | None                               |
+| telemetryStatsServerP defect susceptibility   | Check for CVER, TVER and object in CSCvt47850                                     | None                               |
+| Link Level Flow Control defect susceptibility | Check if CVER and TVER are susceptible to CSCvv33100 and CSCwd37387               | None                               |
+| Non-AVE VLAN Blocks set to "Internal"         | Check if CVER, TVER and VLAN Blocks are susceptible to CSCvw33061                 | None                               |
+| APIC CA Certificate Validation                | Check if pkiFabricSelfCAEp was corrupted by CSCvy35257                            | None                               |
+| FabricDomain Name check                       | Check if fabricDomain name contains a special character which triggers CSCwf80352 | None                               |
+
 ## Log Files
 
 A single log bundle will be generated with each run of the script
@@ -193,7 +193,9 @@ A single log bundle will be generated with each run of the script
 ```
 Result Bundle: /data/techsupport/preupgrade_validator_2021-07-27T17-13-12+0000.tgz
 ```
+
 This bundle contains 3 inner files; debug.log, .json and .txt.
+
 ```
 admin@APIC-1:techsupport> tar -xvf preupgrade_validator_2021-07-27T17-13-12+0000.tgz
 preupgrade_validator_logs/
@@ -204,17 +206,17 @@ preupgrade_validator_logs/preupgrade_validator_2021-07-27T17-13-12+0000.txt
 
 the `preupgrade_validator_*.txt` file contains a dump of the resulting output which can be referenced for check results post-run.
 
-If there are any issues with the script or run results which require TAC assistance, open a proactive TAC case for the 
+If there are any issues with the script or run results which require TAC assistance, open a proactive TAC case for the
 upgrade and upload the result bundle for analysis.
 
 # Example run output
 
 ```
-admin@f2-apic1:techsupport> python aci-preupgrade-validation-script.py 
+admin@f2-apic1:techsupport> python aci-preupgrade-validation-script.py
     ==== 2021-07-30T13-28-25-0700 ====
 
 Enter username for APIC login          : admin
-Enter password for corresponding User  : 
+Enter password for corresponding User  :
 
 Checking current APIC version (switch nodes are assumed to be on the same version)...5.0(1g)
 
@@ -227,7 +229,7 @@ What is the Target Version?     : 1
 
 You have chosen version "aci-apic-dk9.5.2.1d.bin"
 
-[Check  1/36] APIC Target version image and MD5 hash... 
+[Check  1/36] APIC Target version image and MD5 hash...
               Checking f2-apic1......                                                                                                 DONE
                                                                                                                                       PASS
 [Check  2/36] Target version compatibility...                                                                                         PASS
@@ -329,4 +331,3 @@ TOTAL                    : 36
 
       Result Bundle: /data/techsupport/preupgrade_validator_2021-07-30T13-28-25-0700.tgz
 ```
-
