@@ -15,7 +15,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v1.4.0"
+SCRIPT_VERSION = "v1.5.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
