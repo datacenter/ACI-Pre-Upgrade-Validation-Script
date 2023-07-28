@@ -2657,8 +2657,6 @@ def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, *
 
     cfw = AciVersion(cversion)
     tfw = AciVersion(tversion)
-    print(cversion)
-    print(tversion)
 
     if tfw.same_as("6.0(2h)"):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
