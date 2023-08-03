@@ -2660,7 +2660,6 @@ def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, *
 
     if tfw.same_as("6.0(2h)"):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-        print(controller)
         if not controller:
             print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
             return ERROR
@@ -2673,6 +2672,42 @@ def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, *
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'Spine SUP HW Revision Check'
+    result = FAIL_O
+    msg = ''
+    headers = ["Pod", "Node", "Sup Slot", "Part Number"]
+    data = []
+    recommended_action = "Do not upgrade yet, please contact your account team"
+
+    print_title(title, index, total_checks)
+
+    cfw = AciVersion(cversion)
+    # tfw = AciVersion(tversion)
+
+    if cfw.newer_than("5.2(1a)") and cfw.older_than("6.0(1a)"):
+        sup_re = r'/.+(?P<supslot>supslot-\d+)'
+        sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
+        if not sups:
+            print_result(title, ERROR, 'No sups found. This is unlikely.')
+            return ERROR
+        
+        for sup in sups:
+            print(sup)
+            prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
+            if prtNum in ['73-18562-02', '73-18570-02']:
+                dn = re.search(node_regex+sup_re, sup['eqptSpCmnBlk']['attributes']['dn'])
+                pod_id = dn.group("pod")
+                node_id = dn.group("node")
+                supslot = dn.group("supslot")
+                data.append([pod_id, node_id, supslot, prtNum])
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action)
     return result
 
 
@@ -2750,7 +2785,9 @@ if __name__ == "__main__":
         llfc_susceptibility_check,
         internal_vlanpool_check,
         apic_ca_cert_validation,
-        fabricdomain_name_check
+        fabricdomain_name_check,
+        sup_hwrev_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
