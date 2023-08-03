@@ -2696,7 +2696,6 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
             return ERROR
         
         for sup in sups:
-            print(sup)
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
             if prtNum in ['73-18562-02', '73-18570-02']:
                 dn = re.search(node_regex+sup_re, sup['eqptSpCmnBlk']['attributes']['dn'])
