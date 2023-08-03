@@ -2681,7 +2681,7 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
     msg = ''
     headers = ["Pod", "Node", "Sup Slot", "Part Number"]
     data = []
-    recommended_action = "Do not upgrade yet, please contact your account team"
+    recommended_action = "Do not upgrade yet. Contact TAC and share these results."
 
     print_title(title, index, total_checks)
 
