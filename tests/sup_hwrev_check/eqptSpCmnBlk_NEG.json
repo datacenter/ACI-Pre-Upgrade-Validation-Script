@@ -1,0 +1,42 @@
+[
+  {
+    "eqptSpCmnBlk": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1201/sys/ch/supslot-1/sup/spsup/spcmn",
+        "oem": "Cisco Systems, Inc.",
+        "pdNum": "N9K-SUP-A",
+        "prtNum": "73-15279-05"
+      }
+    }
+  },
+  {
+    "eqptSpCmnBlk": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1201/sys/ch/supslot-2/sup/spsup/spcmn",
+        "oem": "Cisco Systems, Inc.",
+        "pdNum": "N9K-SUP-A",
+        "prtNum": "73-15279-05"
+      }
+    }
+  },
+  {
+    "eqptSpCmnBlk": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1202/sys/ch/supslot-1/sup/spsup/spcmn",
+        "oem": "Cisco Systems, Inc.",
+        "pdNum": "N9K-SUP-A",
+        "prtNum": "73-15279-05"
+      }
+    }
+  },
+  {
+    "eqptSpCmnBlk": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1202/sys/ch/supslot-1/sup/spsup/spcmn",
+        "oem": "Cisco Systems, Inc.",
+        "pdNum": "N9K-SUP-A",
+        "prtNum": "73-15279-05"
+      }
+    }
+  }
+]
