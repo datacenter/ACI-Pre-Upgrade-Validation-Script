@@ -2698,6 +2698,7 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
     headers = ["Pod", "Node", "Sup Slot", "Part Number"]
     data = []
     recommended_action = "Do not upgrade yet. Contact TAC and share these results."
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706'
 
 
     print_title(title, index, total_checks)
@@ -2723,7 +2724,7 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 

@@ -184,7 +184,8 @@ Key:
 | Link Level Flow Control defect susceptibility | Check if CVER and TVER are susceptible to CSCvv33100 and CSCwd37387               | None                               |
 | Non-AVE VLAN Blocks set to "Internal"         | Check if CVER, TVER and VLAN Blocks are susceptible to CSCvw33061                 | None                               |
 | APIC CA Certificate Validation                | Check if pkiFabricSelfCAEp was corrupted by CSCvy35257                            | None                               |
-| FabricDomain Name check                       | Check if fabricDomain name contains a special character which triggers CSCwf80352 | None                               |
+| FabricDomain Name Validation                  | Check if fabricDomain name contains a special character which triggers CSCwf80352 | None                               |
+| Spine Sup PartNumber Validation               | Check if Modular Spine Sups are affected by CSCwb86706                            | None                               |
 
 ## Log Files
 
