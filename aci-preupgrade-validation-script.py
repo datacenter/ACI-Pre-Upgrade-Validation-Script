@@ -2382,7 +2382,7 @@ def gen1_switch_compatibility_check(index, total_checks, tversion, **kwargs):
 
 
 def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Contract Port 22 Defect Check'
+    title = 'Contract Port 22 Defect'
     result = PASS
     msg = ''
     headers = ["Potential Defect", "Reason"]
@@ -2406,7 +2406,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
 
 
 def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=[] ,**kwargs):
-    title = 'Link Level Flow Control Check'
+    title = 'Link Level Flow Control'
     result = PASS
     msg = ''
     headers = ["Pod", "NodeId", "Int", "Type", "BugId", "Warning"]
@@ -2474,7 +2474,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
 
 
 def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'telemetryStatsServerP Object Check'
+    title = 'telemetryStatsServerP Object'
     result = PASS
     msg = ''
     headers = ["Current version", "Target Version", "Warning"]
@@ -2510,7 +2510,7 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
 
 
 def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
-    title = 'Internal VLAN Pool Check'
+    title = 'Internal VLAN Pool'
     result = PASS
     msg = ''
     headers = ["VLAN Pool", "Internal VLAN Block(s)", "Non-AVE Domain", "Warning"]
@@ -2657,7 +2657,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
 
 
 def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'FabricDomain Name Check'
+    title = 'FabricDomain Name'
     result = FAIL_O
     msg = ''
     headers = ["FabricDomain", "Reason"]
@@ -2692,12 +2692,13 @@ def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, *
 
 
 def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'Spine SUP HW Revision Check'
+    title = 'Spine SUP HW Revision'
     result = FAIL_O
     msg = ''
     headers = ["Pod", "Node", "Sup Slot", "Part Number"]
     data = []
     recommended_action = "Do not upgrade yet. Contact TAC and share these results."
+
 
     print_title(title, index, total_checks)
 
