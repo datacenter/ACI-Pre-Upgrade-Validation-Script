@@ -1,0 +1,35 @@
+site_name: ACI Pre-Upgrade Validation Script
+site_url: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
+repo_url: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
+nav:
+  - Introduction: index.md
+  - Getting Started: getting_started.md
+  - Usage: usage.md
+  - Validation Reference: validations.md
+theme:
+  name: material
+  palette:
+    primary: blue
+  features:
+    - content.code.copy
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+markdown_extensions:
+  - admonition
+
+  # code blocks
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+  # emoji 
+  - pymdownx.emoji:
+      emoji_index: !!python/name:pymdownx.emoji.gemoji
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+
+extra_css:
+  - css/style.css
