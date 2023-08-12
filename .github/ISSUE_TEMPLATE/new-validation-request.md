@@ -2,7 +2,7 @@
 name: New Validation Request
 about: Suggest an idea for a new pre-upgrade validation
 title: 'NewValidation: '
-labels: enhancement
+labels: new_validation
 assignees: ''
 
 ---
