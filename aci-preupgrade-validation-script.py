@@ -2633,7 +2633,7 @@ def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
             print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
             return ERROR
 
-        fabricDomain = controller['imdata'][0]['topSystem']['attributes']['fabricDomain']
+        fabricDomain = controller[0]['topSystem']['attributes']['fabricDomain']
         if re.search(r'#|;', fabricDomain):
             data.append([fabricDomain, "Contains a special character"])
 
