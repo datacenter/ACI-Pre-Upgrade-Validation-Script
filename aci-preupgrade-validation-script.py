@@ -22,6 +22,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
+import warnings
 import time
 import pexpect
 import logging
@@ -52,6 +53,7 @@ LOG_FILE = DIR + 'preupgrade_validator_debug.log'
 fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %(message)s'.format(tz)
 subprocess.check_output(['mkdir', '-p', DIR])
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class Connection(object):
@@ -139,7 +141,7 @@ class Connection(object):
             # if self.log is a string, then attempt to open file pointer (do not catch exception, we want it
             # to die if there's an error opening the logfile)
             if isinstance(self.log, str) or isinstance(self.log, unicode):
-                self._log = file(self.log, "a")
+                self._log = open(self.log, "ab")
             else:
                 self._log = self.log
             logging.debug("setting logfile to %s" % self._log.name)
