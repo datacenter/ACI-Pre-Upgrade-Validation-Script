@@ -15,19 +15,18 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 @pytest.fixture
 def upgradePaths():
-    return [{"cversion": "4.2(1b)", "tversion": "5.2(2a)"},
-            {"cversion": "3.2(1a)", "tversion": "4.2(4d)"},
-            {"cversion": "3.2(1a)", "tversion": "5.2(6a)"},
-            {"cversion": "4.2(3a)", "tversion": "4.2(7d)"},
-            {"cversion": "2.2(3a)", "tversion": "2.2(4r)"},
-            {"cversion": "5.2(1a)", "tversion": None},
-            {"cversion": "4.1(1a)", "tversion": "5.2(7f)"}]
+    return [{"cversion": script.AciVersion("4.2(1b)"), "tversion": script.AciVersion("5.2(2a)")},
+            {"cversion": script.AciVersion("3.2(1a)"), "tversion": script.AciVersion("4.2(4d)")},
+            {"cversion": script.AciVersion("3.2(1a)"), "tversion": script.AciVersion("5.2(6a)")},
+            {"cversion": script.AciVersion("4.2(3a)"), "tversion": script.AciVersion("4.2(7d)")},
+            {"cversion": script.AciVersion("2.2(3a)"), "tversion": script.AciVersion("2.2(4r)")},
+            {"cversion": script.AciVersion("5.2(1a)"), "tversion": None},
+            {"cversion": script.AciVersion("4.1(1a)"), "tversion": script.AciVersion("5.2(7f)")}]
 
 
 def test_aciversion(upgradePaths):
     for i, testdata in enumerate(upgradePaths):
-        cversion = testdata.get("cversion", None)
-        cfw = script.AciVersion(cversion)
+        cfw = testdata.get("cversion", None)
         pathnum = i+1
         if pathnum == 1: # cfw = 4.2(1a)
             assert cfw.older_than("4.1(10b)") == False
@@ -73,8 +72,8 @@ def test_get_vpc_nodes():
 def test_defect_eventmgr_db(cversion, tversion, expected_fail_type):
     script.prints("=====Starting test_defect_eventmgr_db\n")
     testdata = {
-        "cversion": cversion,
-        "tversion": tversion
+        "cversion": script.AciVersion(cversion),
+        "tversion": script.AciVersion(tversion)
     }
     assert script.eventmgr_db_defect_check(1, 1, **testdata) == expected_fail_type
 
@@ -116,8 +115,8 @@ def test_encap_already_in_use_check(faultInst, fvIfConn, expected_fail_type):
 def test_apic_ca_cert_validation(cversion, tversion, certreq_resp, expected_fail_type):
     script.prints("=====Starting apic_ca_cert_validation\n")
     testdata = {
-        "cversion": cversion,
-        "tversion": tversion
+        "cversion": script.AciVersion(cversion),
+        "tversion": script.AciVersion(tversion)
     }
     with open("tests/"+certreq_resp,"r") as file:
         testdata.update({"certreq_out": file.read()})
