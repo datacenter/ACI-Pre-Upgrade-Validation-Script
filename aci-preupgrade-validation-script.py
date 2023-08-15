@@ -2702,7 +2702,6 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
     recommended_action = "Do not upgrade yet. Contact TAC and share these results."
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706'
 
-
     print_title(title, index, total_checks)
 
     cfw = AciVersion(cversion)
@@ -2726,6 +2725,42 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
 
     if not data:
         result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def uplink_limit_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'Pre-Leaf Fabric Uplink Limit Validation'
+    result = PASS
+    msg = ''
+    headers = ["Node", "Uplink Count"]
+    data = []
+    recommended_action = "Reduce Per-Leaf Port Profile Uplinks to supported scale; 56 or less."
+    doc_url = 'http://cs.co/ACI_Access_Interfaces_Config_Guide'
+
+    print_title(title, index, total_checks)
+
+    cfw = AciVersion(cversion)
+    tfw = AciVersion(tversion)
+
+    if cfw.older_than("6.0(1a)") and tfw.newer_than("6.0(1a)"):
+        port_profiles = icurl('class', 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")')
+        if not port_profiles or (len(port_profiles) < 57):
+            return result
+
+        node_count = {}
+        for pp in port_profiles:
+            dn = re.search(node_regex, pp['eqptPortP']['attributes']['dn'])
+            node_id = dn.group("node")
+            node_count.setdefault(node_id, 0)
+            node_count[node_id] += 1
+
+        for node, count in node_count.items():
+            if count > 56:
+                data.append([node_id, count])
+
+    if data:
+        result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
@@ -2796,6 +2831,8 @@ if __name__ == "__main__":
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
+        uplink_limit_check,
+
 
         # Bugs
         ep_announce_check,
@@ -2806,7 +2843,7 @@ if __name__ == "__main__":
         internal_vlanpool_check,
         apic_ca_cert_validation,
         fabricdomain_name_check,
-        sup_hwrev_check,
+
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
