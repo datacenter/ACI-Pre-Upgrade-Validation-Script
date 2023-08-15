@@ -2791,7 +2791,7 @@ if __name__ == "__main__":
         internal_vlanpool_check,
         apic_ca_cert_validation,
         fabricdomain_name_check,
-
+        sup_hwrev_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
