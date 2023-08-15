@@ -382,6 +382,68 @@ class IPAddress:
         return ip_network == subnet_network
 
 
+class AciVersion():
+    v_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
+
+    def __init__(self, version):
+        self.original = version
+        v = re.search(self.v_regex, version)
+        self.version = ('{major1}.{major2}({maint}{patch})'
+                        .format(**v.groupdict()) if v else None)
+        self.dot_version = ("{major1}.{major2}.{maint}{patch}"
+                            .format(**v.groupdict()) if v else None)
+        self.simple_version = ("{major1}.{major2}({maint})"
+                               .format(**v.groupdict()) if v else None)
+        self.major1 = v.group('major1') if v else None
+        self.major2 = v.group('major2') if v else None
+        self.maint = v.group('maint') if v else None
+        self.patch = v.group('patch') if v else None
+        self.regex = v
+        if not v:
+            raise RuntimeError("Parsing failure of ACI version `%s`", version)
+
+    def __str__(self):
+        return self.version
+
+    def older_than(self, version):
+        v = re.search(self.v_regex, version)
+        if not v: return None
+        for i in range(1, len(v.groups())+1):
+            if i < 4:
+                if int(self.regex.group(i)) > int(v.group(i)): return False
+                elif int(self.regex.group(i)) < int(v.group(i)): return True
+            if i == 4:
+                if self.regex.group(i) > v.group(i): return False
+                elif self.regex.group(i) < v.group(i): return True
+        return False
+
+    def newer_than(self, version):
+        return not self.older_than(version) and not self.same_as(version)
+
+    def same_as(self, version):
+        v = re.search(self.v_regex, version)
+        ver = ('{major1}.{major2}({maint}{patch})'
+               .format(**v.groupdict()) if v else None)
+        return self.version == ver
+
+
+def is_firstver_gt_secondver(first_ver, second_ver):
+    """ Used for CIMC version comparison """
+    result = False
+    if first_ver[0] > second_ver[0]:
+        return True
+    elif first_ver[0] == second_ver[0]:
+        if first_ver[2] > second_ver[2]:
+            return True
+        elif first_ver[2] == second_ver[2]:
+            if first_ver[4] > second_ver[4]:
+                return True
+            elif first_ver[4] == second_ver[4]:
+                if first_ver[5] >= second_ver[5]:
+                    result = True
+    return result
+
+
 def format_table(headers, data,
                  min_width=5, left_padding=2, hdr_sp='-', col_sp='  '):
     """ get string results in table format
@@ -568,19 +630,20 @@ def get_credentials():
 
 
 def get_current_version():
-    """ Returns: x.y(z) """
+    """ Returns: AciVersion instance """
     prints("Checking current APIC version (switch nodes are assumed to be on the same version)...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
         if 'node-1' in firmware['firmwareCtrlrRunning']['attributes']['dn']:
-            current_version = firmware['firmwareCtrlrRunning']['attributes']['version']
+            apic1_version = firmware['firmwareCtrlrRunning']['attributes']['version']
             break
-    prints(current_version + '\n')
+    current_version = AciVersion(apic1_version)
+    prints('%s\n' % current_version)
     return current_version
 
 
 def get_target_version():
-    """ Returns: aci-apic-dk9.x.y.z.bin """
+    """ Returns: AciVersion instance """
     prints("Gathering APIC Versions from Firmware Repository...\n")
     repo_list = []
     response_json = icurl('class',
@@ -605,11 +668,12 @@ def get_target_version():
                 version_choice = None
 
         version = repo_list[version_choice - 1]
-        prints('\nYou have chosen version "%s"\n' % version)
-        return str(version)
+        target_version = AciVersion(version)
+        prints('\nYou have chosen version "%s"\n' % target_version)
+        return target_version
     else:
         prints("No Firmware Detected!  Please Upload APIC Firmware and re-run the script.\n")
-        return ''
+        return None
 
 
 def get_vpc_nodes(**kwargs):
@@ -628,58 +692,6 @@ def get_vpc_nodes(**kwargs):
     return vpc_nodes
 
 
-class AciVersion():
-    v_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
-
-    def __init__(self, version):
-        self.original = version
-        v = re.search(self.v_regex, version)
-        self.version = ('{major1}.{major2}({maint}{patch})'
-                        .format(**v.groupdict()) if v else None)
-        self.major1 = v.group('major1') if v else None
-        self.major2 = v.group('major2') if v else None
-        self.maint = v.group('maint') if v else None
-        self.patch = v.group('patch') if v else None
-        self.regex = v
-
-    def older_than(self, version):
-        v = re.search(self.v_regex, version)
-        if not v: return None
-        for i in range(1, len(v.groups())+1):
-            if i < 4:
-                if int(self.regex.group(i)) > int(v.group(i)): return False
-                elif int(self.regex.group(i)) < int(v.group(i)): return True
-            if i == 4:
-                if self.regex.group(i) > v.group(i): return False
-                elif self.regex.group(i) < v.group(i): return True
-        return False
-
-    def newer_than(self, version):
-        return not self.older_than(version) and not self.same_as(version)
-
-    def same_as(self, version):
-        v = re.search(self.v_regex, version)
-        ver = ('{major1}.{major2}({maint}{patch})'
-               .format(**v.groupdict()) if v else None)
-        return self.version == ver
-
-
-def is_firstver_gt_secondver(first_ver, second_ver):
-    result = False
-    if first_ver[0] > second_ver[0]:
-        return True
-    elif first_ver[0] == second_ver[0]:
-        if first_ver[2] > second_ver[2]:
-            return True
-        elif first_ver[2] == second_ver[2]:
-            if first_ver[4] > second_ver[4]:
-                return True
-            elif first_ver[4] == second_ver[4]:
-                if first_ver[5] >= second_ver[5]:
-                    result = True
-    return result
-
-
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
     result = FAIL_UF
@@ -690,8 +702,7 @@ def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     unformatted_data = []
     doc_url = 'ACI Troubleshooting Guide 2nd Edition - http://cs.co/9003ybZ1d'
     print_title(title, index, total_checks)
-    cv = AciVersion(cversion)
-    if cv.version and cv.older_than("4.2"):
+    if cversion.older_than("4.2"):
         recommended_action = 'Follow "Initial Fabric Setup" in ACI Troubleshooting Guide 2nd Edition'
     else:
         recommended_action = 'Troubleshoot by running "acidiag cluster" on APIC CLI'
@@ -761,12 +772,10 @@ def maintp_grp_crossing_4_0_check(index, total_checks, cversion, tversion, **kwa
     recommended_action = 'Remove the group prior to APIC upgrade. Create a new switch group once APICs are upgraded to post-4.0.'
     print_title(title, index, total_checks)
 
-    cv = re.search(ver_regex, cversion)
-    tv = re.search(ver_regex, tversion)
-    if (cv and (int(cv.group('major1')) >= 4)) or (tv and (int(tv.group('major1')) <= 3)):
+    if (int(cversion.major1) >= 4) or (tversion and (int(tversion.major1) <= 3)):
         result = NA
         msg = 'Versions not applicable'
-    elif (cv and (int(cv.group('major1')) < 4)) and not tv:
+    elif (int(cversion.major1) < 4) and not tversion:
         result = MANUAL
         msg = 'Target version not supplied. Skipping.'
     else:
@@ -840,17 +849,16 @@ def features_to_disable_check(index, total_checks, cversion, tversion, **kwargs)
             data.append(['Config Zone', name, 'Locked',
                          'Change the status to "Open" or remove the zone'])
         elif mo.get('epControlP') and mo['epControlP']['attributes']['adminSt'] == 'enabled':
-            cv = re.search(ver_regex, cversion)
-            tv = re.search(ver_regex, tversion)
-            cv_is_4_1 = cv and (cv.group('major1') == '4' and cv.group('major2') == '1')
-            tv_is_4_1 = tv and (tv.group('major1') == '4' and tv.group('major2') == '1')
             ra = ''
-            if cv_is_4_1 and not tv_is_4_1:
-                ra = 'Disable Rogue EP during the upgrade because your current version is 4.1'
-            elif not cv_is_4_1 and tv_is_4_1:
-                ra = 'Disable Rogue EP during the upgrade because your target version is 4.1'
-            elif not cv or not tv:
+            if not tversion:
                 ra = 'Disable Rogue EP during the upgrade if your current version is 4.1 or your target version is 4.1'
+            else:
+                cv_is_4_1 = cversion.major1 == '4' and cversion.major2 == '1'
+                tv_is_4_1 = tversion.major1 == '4' and tversion.major2 == '1'
+                if cv_is_4_1 and not tv_is_4_1:
+                    ra = 'Disable Rogue EP during the upgrade because your current version is 4.1'
+                elif not cv_is_4_1 and tv_is_4_1:
+                    ra = 'Disable Rogue EP during the upgrade because your target version is 4.1'
             if ra:
                 name = mo['epControlP']['attributes']['name']
                 data.append(['Rogue Endpoint', name, 'Enabled', ra])
@@ -1286,10 +1294,9 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
         'F3545': 'Ensure that Policy CAM usage is below the capacity and resolve the fault'
     }
     print_title(title, index, total_checks)
-    cfw = AciVersion(cversion)
 
     # Faults F3544 and F3545 don't exist until 4.1(1a)+
-    if cfw.older_than("4.1(1a)"):
+    if cversion.older_than("4.1(1a)"):
         headers = ["Object Class", "Recommended Action"]
         classes = ["actrlRule", "actrlPrefix"]
         result = MANUAL
@@ -1356,11 +1363,11 @@ def switch_ssd_check(index, total_checks, **kwargs):
     return result
 
 
-def apic_ssd_check(index, total_checks,cversion, **kwargs):
+def apic_ssd_check(index, total_checks, cversion, **kwargs):
     title = 'APIC SSD Health'
     result = FAIL_UF
     msg = ''
-    headers = ["Pod","Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
+    headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
     unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
@@ -1370,12 +1377,11 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
     adjust_title = False
-    cfw = AciVersion(cversion)
-    if len(faultInsts) == 0 and cversion and (cfw.older_than("4.2(7f)") or cfw.older_than("5.2(1g)")):
+    if len(faultInsts) == 0 and (cversion.older_than("4.2(7f)") or cversion.older_than("5.2(1g)")):
         print('')
         adjust_title = True
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-        report_other=False
+        report_other = False
         if not controller:
             print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
             return ERROR
@@ -1435,7 +1441,7 @@ def apic_ssd_check(index, total_checks,cversion, **kwargs):
                     ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,adjust_title=adjust_title)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title)
     return result
 
 
@@ -1636,11 +1642,8 @@ def apic_disk_space_faults_check(index, total_checks, cversion, **kwargs):
         '/techsupport': 'Remove unneeded techsupports/cores'
     }
     default_action = 'Contact Cisco TAC.'
-    cv = AciVersion(cversion)
-    if cv.version and (cv.same_as('4.0(1h)') or cv.older_than('3.2(6i)')):
+    if cversion.same_as('4.0(1h)') or cversion.older_than('3.2(6i)'):
         default_action += ' A typical issue is CSCvn13119.'
-    elif not cv.version:
-        default_action += ' A typical issue is CSCvn13119 if your current version is affected.'
     print_title(title, index, total_checks)
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
@@ -1775,9 +1778,8 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         return MANUAL
     prints('')
 
-    fm_name = str(tversion).rstrip(".bin")
     image_validaton = True
-    mo = icurl('mo', 'fwrepo/fw-%s.json' % fm_name)
+    mo = icurl('mo', 'fwrepo/fw-aci-apic-dk9.%s.json' % tversion.dot_version)
     for fm_mo in mo:
         if fm_mo.get("firmwareFirmware"):
             desc = fm_mo["firmwareFirmware"]['attributes']["description"]
@@ -1810,21 +1812,23 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 continue
 
             try:
-                c.cmd("ls -aslh /firmware/fwrepos/fwrepo/%s" % tversion)
+                c.cmd("ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.%s.bin" %
+                      tversion.dot_version)
             except Exception as e:
                 data.append([apic_name, '-', '-',
                              'ls command via ssh failed due to:{}'.format(e), '-'])
                 print_result(node_title, ERROR)
                 continue
             if "No such file or directory" in c.output:
-                data.append([apic_name, tversion, '-', 'image not found', recommended_action])
+                data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
                 print_result(node_title, FAIL_UF)
                 continue
 
             try:
-                c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/%s" % tversion)
+                c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/aci-apic-dk9.%s.bin" %
+                      tversion.dot_version)
             except Exception as e:
-                data.append([apic_name, tversion, '-',
+                data.append([apic_name, str(tversion), '-',
                              'failed to check md5sum via ssh due to:{}'.format(e), '-'])
                 print_result(node_title, ERROR)
                 continue
@@ -1838,7 +1842,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
-            data.append([name, tversion, md5, 'md5sum do not match on all APICs', recommended_action])
+            data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data, adjust_title=True)
@@ -1911,10 +1915,6 @@ def r_leaf_compatibility_check(index, total_checks, tversion, **kwargs):
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    ver = re.search(ver_regex, tversion)
-    if not ver:
-        print_result(title, ERROR, 'Failed to parse the target firmware version')
-        return ERROR
 
     remote_leafs = icurl('class', 'fabricNode.json?&query-target-filter=eq(fabricNode.nodeType,"remote-leaf-wan")')
     if not remote_leafs:
@@ -1927,19 +1927,16 @@ def r_leaf_compatibility_check(index, total_checks, tversion, **kwargs):
         if direct:
             direct_enabled = direct == 'yes'
 
-        major1 = ver.group('major1')
-        major2 = ver.group('major2')
-        maint = ver.group('maint')
         ra = ''
-        if major1 == "4" and major2 == "2" and maint == "2" and direct_enabled is True:
+        if tversion.simple_version == "4.2(2)" and direct_enabled is True:
             ra = recommended_action_4_2_2
-        elif int(major1) >= 5 and direct_enabled is False:
+        elif int(tversion.major1) >= 5 and direct_enabled is False:
             ra = recommended_action_5a
-        elif int(major1) >= 5 and direct_enabled == 'Not Supported':
+        elif int(tversion.major1) >= 5 and direct_enabled == 'Not Supported':
             ra = recommended_action_5b
         if ra:
             result = FAIL_O
-            data.append([tversion, "Present", direct_enabled, ra])
+            data.append([str(tversion), "Present", direct_enabled, ra])
     print_result(title, result, msg, headers, data)
     return result
 
@@ -1960,25 +1957,17 @@ def ep_announce_check(index, total_checks, cversion, tversion, **kwargs):
     current_version_affected = False
     target_version_affected = False
 
-    tfw = re.search(ver_regex, tversion)
-    cfw = re.search(ver_regex, cversion)
     if not tversion:
         result = MANUAL
         msg = 'Target version not supplied. Skipping.'
-    elif not tfw:
-        result = ERROR
-        msg = 'Failed to parse the target firmware version'
-    elif not cfw:
-        result = ERROR
-        msg = 'Failed to parse the current firmware version'
     else:
-        if cversion not in fixed_versions and int(cfw.group('major1')) < 3:
+        if cversion.version not in fixed_versions and int(cversion.major1) < 3:
             current_version_affected = True
 
-        if int(tfw.group('major1')) == 3:
-            if int(tfw.group('major2')) >= 2 and int(tfw.group('maint')) >= 2:
+        if tversion.major1 == "3":
+            if int(tversion.major2) >= 2 and int(tversion.maint) >= 2:
                 target_version_affected = True
-        elif int(tfw.group('major1')) >= 4:
+        elif int(tversion.major1) >= 4:
             target_version_affected = True
 
         if current_version_affected and target_version_affected:
@@ -2057,7 +2046,7 @@ def vpc_paired_switches_check(index, total_checks, vpc_node_ids=[], **kwargs):
     headers = ["Node ID", "Node Name", "Recommended Action"]
     data = []
     recommended_action = 'Determine if dataplane redundancy is available if this node goes down'
-    doc_url = '"All switch nodes in vPC" from Pre-Upgrade Check Lists'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vpc-paired-leaf-switches'
     print_title(title, index, total_checks)
 
     if not vpc_node_ids:
@@ -2094,17 +2083,14 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
     doc_url = '"Compatibility (CIMC Versions)" from Pre-Upgrade Checklists'
     print_title(title, index, total_checks)
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
-    tfw = re.search(ver_regex, tversion)
-    if apic_obj and tfw:
-        pretty_tfw = '{maj1}.{maj2}({maint})'.format(maj1=tfw.group('major1'), maj2=tfw.group('major2'),
-                                                     maint=tfw.group('maint'))
+    if apic_obj and tversion:
         try:
             for eqptCh in apic_obj:
                 if eqptCh['eqptCh']['attributes']['cimcVersion']:
                     apic_model = eqptCh['eqptCh']['attributes']['descr']
                     model = "apic" + apic_model.split('-')[2].lower()
                     current_cimc = eqptCh['eqptCh']['attributes']['cimcVersion']
-                    compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + pretty_tfw + \
+                    compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
@@ -2231,12 +2217,7 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    cfw = AciVersion(cversion)
-    tfw = AciVersion(tversion)
-
-    if cfw.older_than("4.2(1a)") and tfw.newer_than("4.2(1a)"):
-        vrf_rt = []
-
+    if cversion.older_than("4.2(1a)") and tversion.newer_than("4.2(1a)"):
         fvctx_mo = kwargs.get("fvCtx.json", None)
         if not fvctx_mo:
             fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
@@ -2300,11 +2281,7 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     recommended_action = 'Contact Cisco TAC to check the DB size via root'
     print_title(title, index, total_checks)
 
-    cv = AciVersion(cversion)
-    if not cv.version:
-        result = ERROR
-        msg = 'Failed to parse the current firmware version'
-    elif cv.older_than('3.2(5d)') or (cv.major1 == '4' and cv.older_than('4.1(1i)')):
+    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')):
         result = FAIL_UF
         data.append(['CSCvn20175', recommended_action])
 
@@ -2321,32 +2298,23 @@ def target_version_compatibility_check(index, total_checks, cversion, tversion, 
     recommended_action = ''
     doc_url = 'APIC Upgrade/Downgrade Support Matrix - http://cs.co/9005ydMQP'
     print_title(title, index, total_checks)
-    cfw = re.search(ver_regex, cversion)
-    tfw = re.search(ver_regex, tversion)
-    if cfw and tfw:
-        pretty_tfw = '{maj1}.{maj2}({maint})'.format(maj1=tfw.group('major1'), maj2=tfw.group('major2'),
-                                                     maint=tfw.group('maint'))
-
-        pretty_cfw = '{maj1}.{maj2}({maint})'.format(maj1=cfw.group('major1'), maj2=cfw.group('major2'),
-                                                     maint=cfw.group('maint'))
-
-        if pretty_cfw != pretty_tfw:
-            compatRsUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + pretty_cfw + \
-                                   "/rsupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + pretty_tfw + "].json"
+    if not tversion:
+        result = MANUAL
+        msg = 'Target version not supplied. Skipping.'
+    else:
+        if cversion.simple_version != tversion.simple_version:
+            compatRsUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
+                                   "/rsupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + "].json"
             compatRsUpgRel = icurl('mo', compatRsUpgRelString)
             if not compatRsUpgRel:
-                compatRtUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + pretty_cfw + \
-                                       "/rtupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + pretty_tfw + "].json"
+                compatRtUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
+                                       "/rtupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + "].json"
                 compatRtUpgRel = icurl('mo', compatRtUpgRelString)
                 if not compatRtUpgRel:
-                    data.append([cversion, tversion, 'Target version not a supported hop'])
+                    data.append([str(cversion), str(tversion), 'Target version not a supported hop'])
 
         if not data:
             result = PASS
-
-    else:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2364,20 +2332,19 @@ def gen1_switch_compatibility_check(index, total_checks, tversion, **kwargs):
     recommended_action = 'Select supported target version or upgrade hardware'
     doc_url = 'ACI 5.0(1) Switch Release Notes - http://cs.co/9001ydKCV'
     print_title(title, index, total_checks)
-    if tversion:
-        tfw = AciVersion(tversion)
-        if is_firstver_gt_secondver(tfw.version, "5.0(1a)"):
+    if not tversion:
+        result = MANUAL
+        msg = 'Target version not supplied. Skipping.'
+    else:
+        if tversion.newer_than("5.0(1a)"):
             fabric_node = icurl('class', 'fabricNode.json')
             for node in fabric_node:
                 if node['fabricNode']['attributes']['model'] in gen1_models:
-                    data.append([tfw.version, node['fabricNode']['attributes']['id'],
+                    data.append([str(tversion), node['fabricNode']['attributes']['id'],
                                  node['fabricNode']['attributes']['model'], 'Not supported on 5.x+'])
 
         if not data:
             result = PASS
-    else:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2391,29 +2358,28 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     data = []
     recommended_action = 'Review Software Advisory for details'
     doc_url = 'Cisco Software Advisory Notices for CSCvz65560 - http://cs.co/9007yh22H'
-    cfw = AciVersion(cversion)
     print_title(title, index, total_checks)
 
-    if tversion:
-        tfw = AciVersion(tversion)
-        if cfw.older_than("5.0(1a)") and (tfw.newer_than("5.0(1a)") and tfw.older_than("5.2(2g)")):
-            result = FAIL_O
-            data.append(["CSCvz65560", "Target Version susceptible to Defect"])
-    else:
+    if not tversion:
         result = MANUAL
         msg = 'Target version not supplied. Skipping.'
+    else:
+        if cversion.older_than("5.0(1a)") and (tversion.newer_than("5.0(1a)") and
+                                               tversion.older_than("5.2(2g)")):
+            result = FAIL_O
+            data.append(["CSCvz65560", "Target Version susceptible to Defect"])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
-def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=[] ,**kwargs):
+def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=[], **kwargs):
     title = 'Link Level Flow Control'
     result = PASS
     msg = ''
     headers = ["Pod", "NodeId", "Int", "Type", "BugId", "Warning"]
     data = []
-    sx_affected  = t_affected = False
+    sx_affected = t_affected = False
     recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
     print_title(title, index, total_checks)
@@ -2434,39 +2400,33 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
         print_result(title, result, 'No VPC Nodes found. Not susceptible.')
         return result
 
-    cfw = AciVersion(cversion)
-    tfw = AciVersion(tversion)
+    # Check for Fiber 1000base-SX, CSCvv33100
+    if cversion.older_than("4.2(6d)") and tversion.newer_than("4.2(6c)"):
+        sx_affected = True
 
-    if cfw and tfw:
-        # Check for Fiber 1000base-SX, CSCvv33100
-        if cfw.older_than("4.2(6d)") and tfw.newer_than("4.2(6c)"):
-            sx_affected = True
+    # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
+    if cversion.older_than("4.1(1i)") and tversion.newer_than("4.1(1h)") and tversion.older_than("5.2(7f)"):
+        t_affected = True
 
-        # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
-        if cfw.older_than("4.1(1i)") and tfw.newer_than("4.1(1h)") and tfw.older_than("5.2(7f)"):
-            t_affected = True
+    if sx_affected or t_affected:
+        ethpmFcot = kwargs.get("ethpmFcot.json")
+        if not ethpmFcot:
+            ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
 
-        if sx_affected or t_affected:
-            ethpmFcot = kwargs.get("ethpmFcot.json")
-            if not ethpmFcot:
-                ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
+        for fcot in ethpmFcot:
+            typeName = fcot['ethpmFcot']['attributes']['typeName']
+            dn = fcot['ethpmFcot']['attributes']['dn']
 
-            for fcot in ethpmFcot:
-                typeName = fcot['ethpmFcot']['attributes']['typeName']
-                dn = fcot['ethpmFcot']['attributes']['dn']
+            m = re.match(r'topology/pod-(?P<podid>\d+)/node-(?P<nodeid>\d+)/.+/phys-\[(?P<int>eth\d/\d+)\]', dn)
+            podid = m.group('podid')
+            nodeid = m.group('nodeid')
+            int = m.group('int')
 
-                m = re.match(r'topology/pod-(?P<podid>\d+)/node-(?P<nodeid>\d+)/.+/phys-\[(?P<int>eth\d/\d+)\]', dn)
-                podid = m.group('podid')
-                nodeid = m.group('nodeid')
-                int = m.group('int')
+            if sx_affected and typeName == "1000base-SX":
+                data.append([podid, nodeid, int, typeName, 'CSCvv33100', 'Check Peer Device LLFC behavior'])
 
-                if sx_affected and typeName == "1000base-SX":
-                    data.append([podid, nodeid, int, typeName, 'CSCvv33100', 'Check Peer Device LLFC behavior'])
-
-                if t_affected and typeName == "1000base-T":
-                    data.append([podid, nodeid, int, typeName, 'CSCwd37387', 'Check Peer Device LLFC behavior'])
-
-
+            if t_affected and typeName == "1000base-T":
+                data.append([podid, nodeid, int, typeName, 'CSCwd37387', 'Check Peer Device LLFC behavior'])
 
     if data:
         result = MANUAL
@@ -2495,17 +2455,13 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    cfw = AciVersion(cversion)
-    tfw = AciVersion(tversion)
-
-    if cfw and tfw:
-        if cfw.older_than("4.2(4d)") and tfw.newer_than("5.2(2d)"):
-            if not isinstance(telemetryStatsServerP_json, list):
-                telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
-            for serverp in telemetryStatsServerP_json:
-                if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
-                    result = FAIL_O
-                    data.append([cversion, tversion, 'telemetryStatsServerP.collectorLocation = "apic" Found'])
+    if cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
+        if not isinstance(telemetryStatsServerP_json, list):
+            telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
+        for serverp in telemetryStatsServerP_json:
+            if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
+                result = FAIL_O
+                data.append([str(cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2530,55 +2486,53 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    tfw = AciVersion(tversion)
-    if tfw:
-        if tfw.newer_than("4.2(6a)"):
-            if not isinstance(fvnsVlanInstP_json, list):
-                fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
-            # Dict with key = vlan pool name, values = list of associated domains
-            dom_rel = {}
-            # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
-            encap_list = []
-            encap_blk_dict = {}
-            for vlanInstP in fvnsVlanInstP_json:
-                encap_blk_list = []
-                vlanInstP_name = vlanInstP['fvnsVlanInstP']["attributes"]["name"]
-                dom_list = []
-                for vlan_child in vlanInstP['fvnsVlanInstP']['children']:
-                    if vlan_child.get('fvnsRtVlanNs'):
-                        dom_list.append({"dn":vlan_child['fvnsRtVlanNs']['attributes']['tDn'], "tCl":vlan_child['fvnsRtVlanNs']['attributes']['tCl']})
-                    elif vlan_child.get('fvnsEncapBlk'):
-                        if vlan_child['fvnsEncapBlk']['attributes']['role'] == "internal":
-                            encap_list.append(vlanInstP_name)
-                            encap_blk_list.append(vlan_child['fvnsEncapBlk']['attributes']['rn'])
-                dom_rel[vlanInstP_name] = dom_list
-                if encap_blk_list != []:
-                    encap_blk_dict[vlanInstP_name] = encap_blk_list
-            if len(encap_list) > 0:
-                # Check if internal vlan pool is associated to a domain which isnt AVE
-                # List of domains which are associated to a vlan pool that contains an encap block with role "internal"
-                assoc_doms = []
-                for vlanInstP_name in encap_list:
-                    for dom in dom_rel[vlanInstP_name]:
-                        if dom["tCl"] != "vmmDomP":
-                            result = FAIL_O
-                            # Deduplicate results for multiple encap blks and/or multiple domains
-                            if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
-                                data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
-                        assoc_doms.append(dom["dn"])
-                if not isinstance(vmmDomP_json, list):
-                    vmmDomP_json = icurl('class', 'vmmDomP.json')
-                for vmmDomP in vmmDomP_json:
-                    if vmmDomP["vmmDomP"]["attributes"]["dn"] in assoc_doms:
-                        if vmmDomP["vmmDomP"]["attributes"]["enableAVE"] != "yes":
-                            result = FAIL_O
-                            # For each non-AVE vmm domain, check if vmm dom is associated to an internal pool
-                            for vlanInstP_name in encap_list:
-                                for dom in dom_rel[vlanInstP_name]:
-                                    if vmmDomP["vmmDomP"]["attributes"]["dn"] == dom["dn"]:
-                                        # Deduplicate results for multiple encap blks and/or multiple domains
-                                        if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
-                                            data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
+    if tversion.newer_than("4.2(6a)"):
+        if not isinstance(fvnsVlanInstP_json, list):
+            fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
+        # Dict with key = vlan pool name, values = list of associated domains
+        dom_rel = {}
+        # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
+        encap_list = []
+        encap_blk_dict = {}
+        for vlanInstP in fvnsVlanInstP_json:
+            encap_blk_list = []
+            vlanInstP_name = vlanInstP['fvnsVlanInstP']["attributes"]["name"]
+            dom_list = []
+            for vlan_child in vlanInstP['fvnsVlanInstP']['children']:
+                if vlan_child.get('fvnsRtVlanNs'):
+                    dom_list.append({"dn": vlan_child['fvnsRtVlanNs']['attributes']['tDn'], "tCl": vlan_child['fvnsRtVlanNs']['attributes']['tCl']})
+                elif vlan_child.get('fvnsEncapBlk'):
+                    if vlan_child['fvnsEncapBlk']['attributes']['role'] == "internal":
+                        encap_list.append(vlanInstP_name)
+                        encap_blk_list.append(vlan_child['fvnsEncapBlk']['attributes']['rn'])
+            dom_rel[vlanInstP_name] = dom_list
+            if encap_blk_list != []:
+                encap_blk_dict[vlanInstP_name] = encap_blk_list
+        if len(encap_list) > 0:
+            # Check if internal vlan pool is associated to a domain which isnt AVE
+            # List of domains which are associated to a vlan pool that contains an encap block with role "internal"
+            assoc_doms = []
+            for vlanInstP_name in encap_list:
+                for dom in dom_rel[vlanInstP_name]:
+                    if dom["tCl"] != "vmmDomP":
+                        result = FAIL_O
+                        # Deduplicate results for multiple encap blks and/or multiple domains
+                        if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
+                            data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
+                    assoc_doms.append(dom["dn"])
+            if not isinstance(vmmDomP_json, list):
+                vmmDomP_json = icurl('class', 'vmmDomP.json')
+            for vmmDomP in vmmDomP_json:
+                if vmmDomP["vmmDomP"]["attributes"]["dn"] in assoc_doms:
+                    if vmmDomP["vmmDomP"]["attributes"]["enableAVE"] != "yes":
+                        result = FAIL_O
+                        # For each non-AVE vmm domain, check if vmm dom is associated to an internal pool
+                        for vlanInstP_name in encap_list:
+                            for dom in dom_rel[vlanInstP_name]:
+                                if vmmDomP["vmmDomP"]["attributes"]["dn"] == dom["dn"]:
+                                    # Deduplicate results for multiple encap blks and/or multiple domains
+                                    if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
+                                        data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2658,7 +2612,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
     return result
 
 
-def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'FabricDomain Name'
     result = FAIL_O
     msg = ''
@@ -2673,19 +2627,15 @@ def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, *
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    cfw = AciVersion(cversion)
-    tfw = AciVersion(tversion)
-
-    if tfw.same_as("6.0(2h)"):
+    if tversion.same_as("6.0(2h)"):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         if not controller:
             print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
             return ERROR
-        
-        fabricDomain = controller['imdata'][0]['topSystem']['attributes']['fabricDomain']
+
+        fabricDomain = controller[0]['topSystem']['attributes']['fabricDomain']
         if re.search(r'#|;', fabricDomain):
             data.append([fabricDomain, "Contains a special character"])
-
 
     if not data:
         result = PASS
@@ -2693,7 +2643,8 @@ def fabricdomain_name_check(index, total_checks, cversion=None, tversion=None, *
     return result
 
 
-def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+# TODO: Add tversion handling when CSCwb86706 is fixed.
+def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Spine SUP HW Revision'
     result = FAIL_O
     msg = ''
@@ -2704,16 +2655,13 @@ def sup_hwrev_check(index, total_checks, cversion=None, tversion=None, **kwargs)
 
     print_title(title, index, total_checks)
 
-    cfw = AciVersion(cversion)
-    # tfw = AciVersion(tversion)
-
-    if cfw.newer_than("5.2(1a)") and cfw.older_than("6.0(1a)"):
+    if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)"):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
         if not sups:
             print_result(title, ERROR, 'No sups found. This is unlikely.')
             return ERROR
-        
+
         for sup in sups:
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
             if prtNum in ['73-18562-02', '73-18570-02']:
@@ -2786,7 +2734,7 @@ if __name__ == "__main__":
               'cversion': cversion, 'tversion': tversion,
               'vpc_node_ids': vpc_nodes}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
-                "check_details": [], 'cversion': cversion, 'tversion': tversion}
+                "check_details": [], 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
         # General Checks
         apic_version_md5_check,
