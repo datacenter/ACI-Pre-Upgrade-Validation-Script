@@ -2677,8 +2677,8 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-def uplink_limit_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'Pre-Leaf Fabric Uplink Limit Validation'
+def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Per-Leaf Fabric Uplink Limit Validation'
     result = PASS
     msg = ''
     headers = ["Node", "Uplink Count"]
@@ -2688,10 +2688,11 @@ def uplink_limit_check(index, total_checks, cversion=None, tversion=None, **kwar
 
     print_title(title, index, total_checks)
 
-    cfw = AciVersion(cversion)
-    tfw = AciVersion(tversion)
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
 
-    if cfw.older_than("6.0(1a)") and tfw.newer_than("6.0(1a)"):
+    if cversion.older_than("6.0(1a)") and tversion.newer_than("6.0(1a)"):
         port_profiles = icurl('class', 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")')
         if not port_profiles or (len(port_profiles) < 57):
             return result
@@ -2705,7 +2706,7 @@ def uplink_limit_check(index, total_checks, cversion=None, tversion=None, **kwar
 
         for node, count in node_count.items():
             if count > 56:
-                data.append([node_id, count])
+                data.append([node, count])
 
     if data:
         result = FAIL_O

@@ -43,5 +43,7 @@ eqptPortP = 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")'
     ],
 )
 def test_logic(mock_icurl, cver, tver, expected_result):
-    result = script.uplink_limit_check(1, 1, cver, tver)
+    result = script.uplink_limit_check(
+        1, 1, script.AciVersion(cver), script.AciVersion(tver)
+    )
     assert result == expected_result
