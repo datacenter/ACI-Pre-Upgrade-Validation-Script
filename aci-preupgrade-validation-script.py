@@ -1132,9 +1132,11 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping prefix'
     print_title(title, index, total_checks)
 
-    desc_regex = r'Configuration failed for (?P<failedEpg>.+) due.+Prefix entry sys/ctx-\[vxlan-(?P<vrfvnid>\d+)\]/pfx-\[(?P<prefixInUse>.+)\] is'
-    faultInsts = icurl('class',
-                       'faultInst.json?&query-target-filter=wcard(faultInst.descr,"prefix-entry-already-in-use")')
+    desc_regex = r'Configuration failed for (?P<failedEpg>.+) due to Prefix Entry Already Used in Another EPG'
+    desc_regex += r'(.+Prefix entry sys/ctx-\[vxlan-(?P<vrfvnid>\d+)\]/pfx-\[(?P<prefixInUse>.+)\] is in use)?'
+
+    filter = '?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
+    faultInsts = icurl('class', 'faultInst.json' + filter)
     if faultInsts:
         vrf_dict = {}
         fv_ctx_response_json = icurl('class', 'fvCtx.json')
@@ -1148,9 +1150,15 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
             fc = faultInst['faultInst']['attributes']['code']
             desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
             if desc_array:
-                data.append([fc, desc_array.group("failedEpg"), desc_array.group("vrfvnid"),
-                             vrf_dict.get(desc_array.group("vrfvnid"), '??'), desc_array.group("prefixInUse"),
-                             recommended_action])
+                if desc_array.group("prefixInUse") is not None:
+                    vrf_vnid = desc_array.group("vrfvnid")
+                    vrf_name = vrf_dict.get(vrf_vnid, '??')
+                    prefix = desc_array.group("prefixInUse")
+                else:
+                    vrf_vnid = "--"
+                    vrf_name = "--"
+                    prefix = "Not described in the fault (version too old)"
+                data.append([fc, desc_array.group("failedEpg"), vrf_vnid, vrf_name, prefix, recommended_action])
             else:
                 unformatted_data.append(
                     [fc, faultInst['faultInst']['attributes']['descr'], recommended_action])

@@ -1,0 +1,36 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "ack": "no",
+        "alert": "no",
+        "cause": "configuration-failed",
+        "changeSet": "configQual:prefix-entry-already-in-use, configSt:failed-to-apply, debugMessage:prefix-entry-already-in-use: Prefix entry sys/ctx-[vxlan-2457600]/pfx-[20.51.0.0/24] is in use;, temporaryError:no",
+        "childAction": "",
+        "code": "F0467",
+        "created": "2023-08-15T22:08:23.666-07:00",
+        "delegated": "yes",
+        "descr": "Configuration failed for uni/tn-TK/out-OSPF/instP-EPG1 due to Prefix Entry Already Used in Another EPG, debug message: prefix-entry-already-in-use: Prefix entry sys/ctx-[vxlan-2457600]/pfx-[20.51.0.0/24] is in use;",
+        "dn": "topology/pod-2/node-103/local/svc-policyelem-id-0/uni/epp/rtd-[uni/tn-TK/out-OSPF/instP-EPG1]/nwissues/fault-F0467",
+        "domain": "tenant",
+        "extMngdBy": "undefined",
+        "highestSeverity": "minor",
+        "lastTransition": "2023-08-15T22:10:37.185-07:00",
+        "lc": "raised",
+        "modTs": "never",
+        "occur": "1",
+        "origSeverity": "minor",
+        "prevSeverity": "minor",
+        "rn": "fault-F0467",
+        "rule": "fv-nw-issues-config-failed",
+        "severity": "minor",
+        "status": "",
+        "subject": "management",
+        "title": "",
+        "type": "config",
+        "userdom": "all"
+      }
+    }
+  }
+]
+

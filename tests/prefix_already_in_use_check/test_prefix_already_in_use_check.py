@@ -1,0 +1,52 @@
+import os
+import pytest
+import logging
+import importlib
+from helpers.utils import read_data
+
+script = importlib.import_module("aci-preupgrade-validation-script")
+
+log = logging.getLogger(__name__)
+dir = os.path.dirname(os.path.abspath(__file__))
+
+
+# icurl queries
+faultInst = 'faultInst.json?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
+fvCtx = "fvCtx.json"
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs, expected_result",
+    [
+        # fault before CSCvq93592
+        (
+            {
+                faultInst: read_data(
+                    dir, "faultInst_F0467_prefix-entry-already-in-use_old.json"
+                ),
+                fvCtx: read_data(dir, "fvCtx.json"),
+            },
+            script.FAIL_O,
+        ),
+        # fault after CSCvq93592
+        (
+            {
+                faultInst: read_data(
+                    dir, "faultInst_F0467_prefix-entry-already-in-use_new.json"
+                ),
+                fvCtx: read_data(dir, "fvCtx.json"),
+            },
+            script.FAIL_O,
+        ),
+        (
+            {
+                faultInst: [],
+                fvCtx: read_data(dir, "fvCtx.json"),
+            },
+            script.PASS,
+        ),
+    ],
+)
+def test_logic(mock_icurl, expected_result):
+    result = script.prefix_already_in_use_check(1, 1)
+    assert result == expected_result
