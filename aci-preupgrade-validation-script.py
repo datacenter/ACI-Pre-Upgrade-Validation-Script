@@ -2677,6 +2677,43 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Per-Leaf Fabric Uplink Limit Validation'
+    result = PASS
+    msg = ''
+    headers = ["Node", "Uplink Count"]
+    data = []
+    recommended_action = "Reduce Per-Leaf Port Profile Uplinks to supported scale; 56 or less."
+    doc_url = 'http://cs.co/ACI_Access_Interfaces_Config_Guide'
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    if cversion.older_than("6.0(1a)") and tversion.newer_than("6.0(1a)"):
+        port_profiles = icurl('class', 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")')
+        if not port_profiles or (len(port_profiles) < 57):
+            return result
+
+        node_count = {}
+        for pp in port_profiles:
+            dn = re.search(node_regex, pp['eqptPortP']['attributes']['dn'])
+            node_id = dn.group("node")
+            node_count.setdefault(node_id, 0)
+            node_count[node_id] += 1
+
+        for node, count in node_count.items():
+            if count > 56:
+                data.append([node, count])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2743,6 +2780,8 @@ if __name__ == "__main__":
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
+        uplink_limit_check,
+
 
         # Bugs
         ep_announce_check,

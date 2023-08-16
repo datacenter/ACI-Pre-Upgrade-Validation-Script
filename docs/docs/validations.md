@@ -98,6 +98,7 @@ Items                                         | Faults         | This Script    
 [ISIS Redistribution Metric for MPod/Msite][c7]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Route-target Type for GOLF over L2EVPN][c8]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -108,6 +109,7 @@ Items                                         | Faults         | This Script    
 [c7]: #isis-redistribution-metric-for-mpodmsite
 [c8]: #bgp-route-target-type-for-golf-over-l2evpn
 [c9]: #apic-container-bridge-ip-overlap-with-apic-tep
+[c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 
 
 ### Defect Condition Checks
@@ -1183,6 +1185,17 @@ The script checks if the APIC Container Bridge IP is overlapping withe the APIC 
     admin@f2-apic1:~> moquery -d pluginPolContr/ContainerPol | grep containerBip
     containerBip : 172.17.0.1/16
     ```
+
+
+### Fabric Uplink Scale cannot exceed 56 uplinks per leaf
+
+Prior to release 6.0, the per-leaf fabric uplink count was not enforced. However, surpassing 56 could lead to programming issues on the leaf.
+
+After release 6.0, per-leaf fabric uplink count is enforced via enhancement CSCwb80058. If a leaf switch has surpassed 56 uplinks and is upgraded, 56 uplinks will come up and the rest will not.
+
+To avoid this, explicitly modify the port profile uplink scale to be 56 or less per leaf.
+
+The script counts the amount of port-profile provisioned uplinks per leaf, and fails if any leaf is found to surpass 56.
 
 
 ## Defect Check Details

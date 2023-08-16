@@ -1,0 +1,26 @@
+[
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-54"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-102/sys/ops/slot-lcslot-1/portpol-54"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-103/sys/ops/slot-lcslot-1/portpol-54"
+      }
+    }
+  }
+]

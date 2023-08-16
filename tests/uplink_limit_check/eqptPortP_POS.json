@@ -1,0 +1,498 @@
+[
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-1"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-2"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-3"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-4"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-5"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-6"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-7"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-8"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-9"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-10"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-11"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-12"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-13"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-14"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-15"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-16"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-17"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-18"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-19"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-20"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-21"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-22"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-23"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-24"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-25"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-26"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-27"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-28"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-29"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-30"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-31"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-32"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-33"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-34"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-35"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-36"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-37"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-38"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-39"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-40"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-41"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-42"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-43"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-44"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-45"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-46"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-47"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-48"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-49"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-50"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-51"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-52"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-53"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-54"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-55"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-56"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-57"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-58"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-59"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-101/sys/ops/slot-lcslot-1/portpol-60"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-102/sys/ops/slot-lcslot-1/portpol-54"
+      }
+    }
+  },
+  {
+    "eqptPortP": {
+      "attributes": {
+        "ctrl": "uplink",
+        "dn": "topology/pod-1/node-103/sys/ops/slot-lcslot-1/portpol-54"
+      }
+    }
+  }
+]
