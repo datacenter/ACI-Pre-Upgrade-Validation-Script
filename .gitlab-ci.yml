@@ -64,6 +64,8 @@ test:integration:
   stage: integration_test
   image: python:3.8.10-slim
   before_script:
+    - echo 'ACQUIRE {http::proxy "$apt_proxy"}' >> /etc/apt/apt.conf
+    - echo -e "$apt_source" > /etc/apt/sources.list
     - apt update
     - apt install -y curl
     - pip install --upgrade pip
