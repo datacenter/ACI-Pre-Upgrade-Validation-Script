@@ -2722,6 +2722,74 @@ def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
+    """Implementation change due to CSCvx29282/CSCvz96117"""
+    title = "OoB Mgmt Security"
+    result = PASS
+    msg = ""
+    headers = ["ACI Node EPG", "External Instance (Subnets)", "OoB Contracts"]
+    data = []
+    recommended_action = (
+        "\n\tEnsure that ICMP, SSH and HTTPS access are allowed for the required subnets with the above config."
+        "\n\tOtherwise, APIC access will be limited to the above subnets and the same subnet as APIC OoB after the upgrade."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#oob-mgmt-security"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    affected_versions = ["4.2(7)", "5.2(1)", "5.2(2)"]
+    if cversion.simple_version not in affected_versions or (
+        cversion.simple_version in affected_versions
+        and tversion.simple_version in affected_versions
+    ):
+        print_result(title, NA)
+        return NA
+
+    # ACI Node EPGs (providers)
+    mgmtOoBs = icurl("class", "mgmtOoB.json?rsp-subtree=children")
+    # External Instant Profiles (consumers)
+    mgmtInstPs = icurl("class", "mgmtInstP.json?rsp-subtree=children")
+
+    contract_to_providers = defaultdict(list)
+    for mgmtOoB in mgmtOoBs:
+        for child in mgmtOoB["mgmtOoB"].get("children", []):
+            if child.get("mgmtRsOoBProv"):
+                epg_name = mgmtOoB["mgmtOoB"]["attributes"]["name"]
+                contract_name = child["mgmtRsOoBProv"]["attributes"]["tnVzOOBBrCPName"]
+                contract_to_providers[contract_name].append(epg_name)
+
+    for mgmtInstP in mgmtInstPs:
+        consumer = mgmtInstP["mgmtInstP"]["attributes"]["name"]
+        providers = defaultdict(list)
+        subnets = []
+        for child in mgmtInstP["mgmtInstP"].get("children", []):
+            if child.get("mgmtRsOoBCons"):
+                contract = child["mgmtRsOoBCons"]["attributes"]["tnVzOOBBrCPName"]
+                for prov in contract_to_providers.get(contract, []):
+                    providers[prov].append(contract)
+            elif child.get("mgmtSubnet"):
+                subnets.append(child["mgmtSubnet"]["attributes"]["ip"])
+
+        if not subnets or not providers:
+            continue
+
+        for provider, contracts in providers.items():
+            data.append([
+                provider,
+                "{} ({})".format(consumer, ", ".join(subnets)),
+                ", ".join(contracts)
+            ])
+
+    if data:
+        result = MANUAL
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2789,7 +2857,7 @@ if __name__ == "__main__":
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
         uplink_limit_check,
-
+        oob_mgmt_security_check,
 
         # Bugs
         ep_announce_check,

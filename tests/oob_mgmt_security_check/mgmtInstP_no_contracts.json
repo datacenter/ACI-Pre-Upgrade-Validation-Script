@@ -1,0 +1,89 @@
+[
+  {
+    "mgmtInstP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "configSt": "applied",
+        "descr": "",
+        "dn": "uni/tn-mgmt/extmgmt-default/instp-EXTERNAL",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2023-08-21T14:28:13.899-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "EXTERNAL",
+        "nameAlias": "",
+        "pcTag": "32770",
+        "pcTagAllocSrc": "idmanager",
+        "prio": "unspecified",
+        "scope": "2457600",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      },
+      "children": [
+        {
+          "mgmtSubnet": {
+            "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "descr": "",
+              "extMngdBy": "",
+              "ip": "192.168.1.0/24",
+              "lcOwn": "local",
+              "modTs": "2023-08-22T16:32:41.662-07:00",
+              "name": "",
+              "nameAlias": "",
+              "rn": "subnet-[192.168.1.0/24]",
+              "status": "",
+              "uid": "15374",
+              "userdom": ":all:"
+            }
+          }
+        },
+        {
+          "mgmtSubnet": {
+            "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "descr": "",
+              "extMngdBy": "",
+              "ip": "10.0.0.0/8",
+              "lcOwn": "local",
+              "modTs": "2023-08-22T16:32:29.523-07:00",
+              "name": "",
+              "nameAlias": "",
+              "rn": "subnet-[10.0.0.0/8]",
+              "status": "",
+              "uid": "15374",
+              "userdom": ":all:"
+            }
+          }
+        },
+        {
+          "mgmtRsInstPCtx": {
+            "attributes": {
+              "childAction": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2023-08-21T14:28:13.870-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsinstPCtx",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fvCtx",
+              "tContextDn": "",
+              "tDn": "uni/tn-mgmt/ctx-oob",
+              "tRn": "ctx-oob",
+              "tType": "name",
+              "tnFvCtxName": ""
+            }
+          }
+        }
+      ]
+    }
+  }
+]

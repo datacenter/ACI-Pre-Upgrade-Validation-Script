@@ -99,6 +99,7 @@ Items                                         | Faults         | This Script    
 [BGP Route-target Type for GOLF over L2EVPN][c8]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -110,6 +111,7 @@ Items                                         | Faults         | This Script    
 [c8]: #bgp-route-target-type-for-golf-over-l2evpn
 [c9]: #apic-container-bridge-ip-overlap-with-apic-tep
 [c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
+[c11]: #oob-mgmt-security
 
 
 ### Defect Condition Checks
@@ -1196,6 +1198,19 @@ After release 6.0, per-leaf fabric uplink count is enforced via enhancement CSCw
 To avoid this, explicitly modify the port profile uplink scale to be 56 or less per leaf.
 
 The script counts the amount of port-profile provisioned uplinks per leaf, and fails if any leaf is found to surpass 56.
+
+
+### OoB Mgmt Security
+
+In the configuration of APIC Out-of-Band Management EPG, users can limit the protocols and source IP addresses that can access APIC nodes.
+
+To prevent accidental blocking of necessary access to APIC, essential access (ICMP, SSH, HTTP, and HTTPS) to APICs from the same subnet as the APIC OoB IP address is always permitted, regardless of the contracts and subnets configuration of the OoB Management EPG.
+
+Starting from releases 4.2(7) and 5.2(1), this safeguard implementation was extended to allow ICMP, SSH, and HTTPS from any source. However, CSCvz96117 reverted this change in release 5.2(3) due to use cases where ICMP, SSH, and HTTPS should only be allowed from a known secure source — the same subnet as the APIC OoB IP address and other user-configured IP addresses.
+
+This implies that for users running releases 4.2(7), 5.2(1), or 5.2(2), and when the OoB Management EPG is configured with contracts to restrict ICMP, SSH and HTTPS access to a specific subnet, OoB security is not honored, and those can still be allowed from any subnet. After upgrading to release 5.2(3) or a newer version, OoB Management access to APICs will only be permitted from the configured subnet or ICMP, SSH, HTTP and HTTPS from the same subnet as the APIC OoB IP addresses as it were before 4.2(7). This change might catch users by surprise if they were previously accessing APICs via ICMP, SSH, or HTTPS from a subnet other than the configured one.
+
+The script checks whether you should be aware of this change in behavior prior to your ACI upgrade so that appropriate subnets can be added to the configuration or you can prepare a workstation that is within the configured subnet, which will continue to be accessible to APICs even after the upgrade.
 
 
 ## Defect Check Details

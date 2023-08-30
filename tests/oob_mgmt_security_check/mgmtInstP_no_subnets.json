@@ -1,0 +1,109 @@
+[
+  {
+    "mgmtInstP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "configSt": "applied",
+        "descr": "",
+        "dn": "uni/tn-mgmt/extmgmt-default/instp-EXTERNAL",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2023-08-21T14:28:13.899-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "EXTERNAL",
+        "nameAlias": "",
+        "pcTag": "32770",
+        "pcTagAllocSrc": "idmanager",
+        "prio": "unspecified",
+        "scope": "2457600",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      },
+      "children": [
+        {
+          "mgmtRsOoBCons": {
+            "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "deplInfo": "",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2023-08-22T16:32:19.174-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "prio": "unspecified",
+              "rType": "mo",
+              "rn": "rsooBCons-ssh",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "vzOOBBrCP",
+              "tContextDn": "",
+              "tDn": "uni/tn-mgmt/oobbrc-ssh",
+              "tRn": "oobbrc-ssh",
+              "tType": "name",
+              "tnVzOOBBrCPName": "ssh",
+              "triggerSt": "triggerable",
+              "uid": "15374",
+              "userdom": ":all:"
+            }
+          }
+        },
+        {
+          "mgmtRsOoBCons": {
+            "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "deplInfo": "",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2023-08-22T16:32:12.598-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "prio": "unspecified",
+              "rType": "mo",
+              "rn": "rsooBCons-icmp",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "vzOOBBrCP",
+              "tContextDn": "",
+              "tDn": "uni/tn-mgmt/oobbrc-icmp",
+              "tRn": "oobbrc-icmp",
+              "tType": "name",
+              "tnVzOOBBrCPName": "icmp",
+              "triggerSt": "triggerable",
+              "uid": "15374",
+              "userdom": ":all:"
+            }
+          }
+        },
+        {
+          "mgmtRsInstPCtx": {
+            "attributes": {
+              "childAction": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2023-08-21T14:28:13.870-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsinstPCtx",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fvCtx",
+              "tContextDn": "",
+              "tDn": "uni/tn-mgmt/ctx-oob",
+              "tRn": "ctx-oob",
+              "tType": "name",
+              "tnFvCtxName": ""
+            }
+          }
+        }
+      ]
+    }
+  }
+]
