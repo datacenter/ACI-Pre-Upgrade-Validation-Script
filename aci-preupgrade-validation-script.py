@@ -1733,13 +1733,14 @@ def bgp_peer_loopback_check(index, total_checks, **kwargs):
             if l3extLNodeP_child['l3extRsNodeL3OutAtt'].get('children'):
                 for rsnode_child in l3extLNodeP_child['l3extRsNodeL3OutAtt']['children']:
                     if rsnode_child.get('l3extLoopBackIfP'):
-                        continue
-            # No loopbacks are configured for this node even though it has bgpPeerP
-            name = re.search(name_regex, l3extLNodeP['l3extLNodeP']['attributes']['dn'])
-            dn = re.search(node_regex, l3extLNodeP_child['l3extRsNodeL3OutAtt']['attributes']['tDn'])
-            data.append([
-                name.group('tenant'), name.group('l3out'), name.group('nodep'),
-                dn.group('pod'), dn.group('node'), recommended_action])
+                        break
+                else:
+                    # No loopbacks are configured for this node even though it has bgpPeerP
+                    name = re.search(name_regex, l3extLNodeP['l3extLNodeP']['attributes']['dn'])
+                    dn = re.search(node_regex, l3extLNodeP_child['l3extRsNodeL3OutAtt']['attributes']['tDn'])
+                    data.append([
+                        name.group('tenant'), name.group('l3out'), name.group('nodep'),
+                        dn.group('pod'), dn.group('node'), recommended_action])
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data)
