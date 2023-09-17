@@ -100,6 +100,7 @@ Items                                         | Faults         | This Script    
 [APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Interface Override Policy][c12]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -112,6 +113,7 @@ Items                                         | Faults         | This Script    
 [c9]: #apic-container-bridge-ip-overlap-with-apic-tep
 [c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c11]: #oob-mgmt-security
+[c12]: #interface-override-policy  
 
 
 ### Defect Condition Checks
@@ -1211,6 +1213,12 @@ Starting from releases 4.2(7) and 5.2(1), this safeguard implementation was exte
 This implies that for users running releases 4.2(7), 5.2(1), or 5.2(2), and when the OoB Management EPG is configured with contracts to restrict ICMP, SSH and HTTPS access to a specific subnet, OoB security is not honored, and those can still be allowed from any subnet. After upgrading to release 5.2(3) or a newer version, OoB Management access to APICs will only be permitted from the configured subnet or ICMP, SSH, HTTP and HTTPS from the same subnet as the APIC OoB IP addresses as it were before 4.2(7). This change might catch users by surprise if they were previously accessing APICs via ICMP, SSH, or HTTPS from a subnet other than the configured one.
 
 The script checks whether you should be aware of this change in behavior prior to your ACI upgrade so that appropriate subnets can be added to the configuration or you can prepare a workstation that is within the configured subnet, which will continue to be accessible to APICs even after the upgrade.
+
+### Interface Override Policy
+
+Due to the number of interface override policy, APIC takes longer time to introduce the new Mos after upgrade to 5.2(4d) or above. If switches were upgraded before that introduction, unexpected switch bootstrap delay can be hit.
+
+The script checks if the number of interface override policy is more than 700. 
 
 
 ## Defect Check Details
