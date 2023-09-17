@@ -2789,6 +2789,34 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def interface_override_policy_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'Interface override policies'
+    result = PASS
+    msg = ''
+    headers = ["Current version", "Target Version", "Warning"]
+    data = []
+    recommended_action = 'Dont upgrade switch until APIC shard-20 become fully fit '
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvy96109'
+    print_title(title, index, total_checks)
+
+    if not cversion:
+        cversion = kwargs.get("cversion", None)
+    if not tversion:
+        tversion = kwargs.get("tversion", None)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    if cversion.older_than("5.2(4d)") and tversion.newer_than("5.2(4c)"):
+        infraHPathS_count = icurl('class', 'infraHPathS.json?&rsp-subtree-include=count')
+        if infraHPathS_count[0]["moCount"]["attributes"].get("count"):
+            moCount = int(infraHPathS_count[0]["moCount"]["attributes"].get("count"))
+            if moCount >= 700:
+                data.append([str(cversion), str(tversion), str(moCount)+ " Interface override policy found"])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -2858,6 +2886,7 @@ if __name__ == "__main__":
         docker0_subnet_overlap_check,
         uplink_limit_check,
         oob_mgmt_security_check,
+        interface_override_policy_check,
 
         # Bugs
         ep_announce_check,
