@@ -1,0 +1,27 @@
+[
+    {
+      "lbpPol": {
+        "attributes": {
+          "annotation": "",
+          "childAction": "",
+          "descr": "",
+          "dlbMode": "off",
+          "dn": "uni/fabric/lbp-default",
+          "extMngdBy": "",
+          "hashGtp": "no",
+          "lcOwn": "local",
+          "modTs": "2023-06-02T12:41:03.820+00:00",
+          "mode": "traditional",
+          "name": "default",
+          "nameAlias": "",
+          "ownerKey": "",
+          "ownerTag": "",
+          "pri": "on",
+          "rn": "lbp-default",
+          "status": "",
+          "uid": "0",
+          "userdom": "all"
+        }
+      }
+    }
+]
