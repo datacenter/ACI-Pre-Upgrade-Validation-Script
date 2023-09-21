@@ -2852,7 +2852,6 @@ if __name__ == "__main__":
         maintp_grp_crossing_4_0_check,
         features_to_disable_check,
         switch_group_guideline_check,
-        fabric_dpp_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -2897,6 +2896,7 @@ if __name__ == "__main__":
         apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
+        fabric_dpp_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
