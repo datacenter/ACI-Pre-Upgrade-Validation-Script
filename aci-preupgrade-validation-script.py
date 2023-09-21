@@ -2790,6 +2790,33 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def fabric_dpp_check(index, total_checks, tversion, **kwargs):
+    title = 'Dynamic Packet Prioritization'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'Review Software Advisory for details'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
+    print_title(title, index, total_checks)
+
+    lbpPol = icurl('class', 'lbpPol.json')
+    if lbpPol:
+        lbpPol_check = lbpPol[0]["lbpPol"]["attributes"]["pri"]
+
+    if not tversion:
+        result = MANUAL
+        msg = 'Target version not supplied. Skipping.'
+    else:
+        if tversion.major1 == "5" and tversion.older_than("5.2(8e)") or tversion.major1 == "6" and tversion.older_than("6.0(3d)"):
+            if lbpPol_check == "on":
+                result = FAIL_O
+                data.append(["CSCwf05073", "Target Version susceptible to Defect"])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2869,6 +2896,7 @@ if __name__ == "__main__":
         apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
+        fabric_dpp_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
