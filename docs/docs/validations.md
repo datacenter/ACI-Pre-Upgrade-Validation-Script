@@ -100,6 +100,8 @@ Items                                         | Faults         | This Script    
 [APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[service-graph-logic-device-context][c12]             | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -112,6 +114,7 @@ Items                                         | Faults         | This Script    
 [c9]: #apic-container-bridge-ip-overlap-with-apic-tep
 [c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c11]: #oob-mgmt-security
+[c12]: #service-graph-logic-device-context
 
 
 ### Defect Condition Checks

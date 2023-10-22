@@ -2790,6 +2790,26 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def svg_ldev_ctx_empty_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+    title = 'Service Graph Logical Device Context Check'
+    result = PASS
+    msg = ''
+    headers = ["vnsLDevCtx DN", "Warning"]
+    data = []
+    recommended_action = 'Make sure all Service Graph Logical Device Context are not empty '
+    doc_url = ''
+    print_title(title, index, total_checks)
+
+    vnsLDevCtxMo = icurl('class', 'vnsLDevCtx.json?query-target-filter=eq(vnsLDevCtx.context,"")')
+    if len(vnsLDevCtxMo)>=1:
+        for vnsLDevCtx in vnsLDevCtxMo:
+            dn = vnsLDevCtx["vnsLDevCtx"]["attributes"].get("dn")
+            data.append([dn, " context is empty"])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2858,6 +2878,7 @@ if __name__ == "__main__":
         docker0_subnet_overlap_check,
         uplink_limit_check,
         oob_mgmt_security_check,
+        svg_ldev_ctx_empty_check,
 
         # Bugs
         ep_announce_check,
