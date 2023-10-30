@@ -142,7 +142,8 @@ Items                                           | Defect       | This Script    
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[CoS 3 with Dynamic Packet Prioritization][d12]            | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -156,7 +157,7 @@ Items                                           | Defect       | This Script    
 [d10]: #sup-aa-high-memory-usage
 [d11]: #vmm-uplink-container-with-empty-actives
 [d12]: #cos-3-with-dynamic-packet-prioritization
-
+[d13]: #n9k-c93108tc-fx3pfx3h-interface-down
 
 
 ## General Check Details
@@ -1660,6 +1661,19 @@ The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under th
     userdom      : :all:common:
     ```
 
+
+### N9K-C93108TC-FX3P/FX3H Interface Down
+
+Due to the defect CSCwh81430, some RJ45 interfaces on Cisco Nexus N9K-C93108TC-FX3P and N9K-C93108TC-FX3H Switches might not come up, even when connected.
+
+This issue can be triggered by a switch reload that occurs for any reason, including a software upgrade, software reset, system crash, or the power being turned up or down.
+
+The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Optical ports Ethernet 1/49 - 54 and MGMT0 port are not affected.
+
+Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
+
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1680,3 +1694,4 @@ The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under th
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
+[20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html
