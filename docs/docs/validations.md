@@ -127,6 +127,7 @@ Items                                           | Defect       | This Script    
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C93108TC-FX3P Check][d10]                  | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -137,6 +138,7 @@ Items                                           | Defect       | This Script    
 [d7]: #apic-ca-cert-validation
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
+[d10]:#n9k-c93108tc-fx3p-check
 
 
 

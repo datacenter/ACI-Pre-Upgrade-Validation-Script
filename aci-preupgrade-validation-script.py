@@ -2790,6 +2790,29 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def switch_n9k_c93108tc_fx3p_check(index, total_checks,**kwargs):
+    title = 'N9K-C93108TC-FX3P existence'
+    result = PASS
+    msg = ''
+    headers = ["Node Id", "PID", "Warning"]
+    data = []
+    recommended_action = 'Please hold on reboot (include upgrade) until CSCwh81430 offers a solution'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh81430'
+    print_title(title, index, total_checks)
+    added_node_list = []
+    deviceMo = icurl('class', 'dhcpClient.json?query-target-filter=eq(dhcpClient.model,"N9K-C93108TC-FX3P")')
+    if len(deviceMo)>=1:
+        for switchMo in deviceMo:
+            nodeId = switchMo["dhcpClient"]["attributes"].get("nodeId")
+            pid = switchMo["dhcpClient"]["attributes"].get("model")
+            if nodeId not in added_node_list:
+                added_node_list.append(nodeId)
+                data.append([nodeId,pid,"Attention Required"])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2869,6 +2892,7 @@ if __name__ == "__main__":
         apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
+        switch_n9k_c93108tc_fx3p_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
