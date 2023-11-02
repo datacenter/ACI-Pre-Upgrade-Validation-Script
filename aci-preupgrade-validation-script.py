@@ -1297,7 +1297,7 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
     unformatted_data = []
     recommended_action = {
         'actrlRule': 'Check that "operSt" are set to "enabled". F3545 does not exist on this version.',
-        'actrlPrefix': 'Check that "operSt" are set to "enabled". F3544 does not exist on this version.',
+        'actrlPfxEntry': 'Check that "operSt" are set to "enabled". F3544 does not exist on this version.',
         'F3544': 'Ensure that LPM and host routes usage are below the capacity and resolve the fault',
         'F3545': 'Ensure that Policy CAM usage is below the capacity and resolve the fault'
     }
@@ -1306,7 +1306,7 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
     # Faults F3544 and F3545 don't exist until 4.1(1a)+
     if cversion.older_than("4.1(1a)"):
         headers = ["Object Class", "Recommended Action"]
-        classes = ["actrlRule", "actrlPrefix"]
+        classes = ["actrlRule", "actrlPfxEntry"]
         result = MANUAL
 
         for entry in classes:
