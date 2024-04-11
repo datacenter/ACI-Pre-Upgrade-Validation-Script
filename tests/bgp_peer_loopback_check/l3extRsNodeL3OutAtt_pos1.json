@@ -1,0 +1,216 @@
+[
+  {
+    "l3extLNodeP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2023-09-11T07:21:20.090+00:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "l3ipv6_nodeProfile",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "rn": "lnodep-l3ipv6_nodeProfile",
+        "status": "modified",
+        "tag": "yellow-green",
+        "targetDscp": "unspecified",
+        "uid": "15374",
+        "userdom": ":all:common:"
+      },
+      "children": [
+        {
+          "l3extRsNodeL3OutAtt": {
+            "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "configIssues": "",
+              "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/rsnodeL3OutAtt-[topology/pod-1/node-102]",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2023-09-15T07:45:38.370+00:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsnodeL3OutAtt-[topology/pod-1/node-102]",
+              "rtrId": "102.0.0.3",
+              "rtrIdLoopBack": "yes",
+              "state": "unformed",
+              "stateQual": "none",
+              "status": "modified",
+              "tCl": "fabricNode",
+              "tDn": "topology/pod-1/node-102",
+              "tType": "mo",
+              "uid": "15374",
+              "userdom": ":all:common:"
+            },
+            "children": [
+              {
+                "l3extInfraNodeP": {
+                  "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "descr": "",
+                    "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/rsnodeL3OutAtt-[topology/pod-1/node-102]/infranodep",
+                    "extMngdBy": "",
+                    "fabricExtCtrlPeering": "no",
+                    "fabricExtIntersiteCtrlPeering": "no",
+                    "lcOwn": "local",
+                    "modTs": "2023-09-11T07:46:23.072+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "",
+                    "nameAlias": "",
+                    "rn": "infranodep",
+                    "spineRole": "",
+                    "status": "",
+                    "uid": "15374",
+                    "userdom": ":all:common:"
+                  }
+                }
+              },
+              {
+                "ipRouteP": {
+                  "attributes": {
+                    "aggregate": "no",
+                    "annotation": "",
+                    "childAction": "",
+                    "descr": "",
+                    "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/rsnodeL3OutAtt-[topology/pod-1/node-102]/rt-[beaf:dead::1/64]",
+                    "extMngdBy": "",
+                    "fromPfxLen": "0",
+                    "ip": "beaf:dead::1/64",
+                    "lcOwn": "local",
+                    "modTs": "2023-09-11T07:35:43.581+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "",
+                    "nameAlias": "",
+                    "pref": "1",
+                    "rn": "rt-[beaf:dead::1/64]",
+                    "rtCtrl": "",
+                    "status": "modified",
+                    "toPfxLen": "0",
+                    "type": "rt-static",
+                    "uid": "15374",
+                    "userdom": ":all:common:"
+                  },
+                  "children": [
+                    {
+                      "ipNexthopP": {
+                        "attributes": {
+                          "annotation": "",
+                          "childAction": "",
+                          "descr": "",
+                          "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/rsnodeL3OutAtt-[topology/pod-1/node-102]/rt-[beaf:dead::1/64]/nh-[dead:beaf::2]",
+                          "extMngdBy": "",
+                          "lcOwn": "local",
+                          "modTs": "2023-09-11T07:35:43.581+00:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "nhAddr": "dead:beaf::2",
+                          "pref": "unspecified",
+                          "rn": "nh-[dead:beaf::2]",
+                          "status": "",
+                          "type": "prefix",
+                          "uid": "15374",
+                          "userdom": ":all:common:"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "bgpPeerP": {
+            "attributes": {
+              "ConfigIssues": "",
+              "addr": "beaf:dead::2",
+              "addrTCtrl": "af-ucast",
+              "adminSt": "enabled",
+              "allowedSelfAsCnt": "3",
+              "annotation": "",
+              "childAction": "",
+              "connectivityType": "tenant",
+              "ctrl": "",
+              "ctrlExt": "",
+              "descr": "",
+              "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/peerP-[beaf:dead::2]",
+              "extMngdBy": "",
+              "lcOwn": "local",
+              "modTs": "2023-09-15T07:45:38.370+00:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "name": "",
+              "nameAlias": "",
+              "peerCtrl": "",
+              "privateASctrl": "",
+              "rn": "peerP-[beaf:dead::2]",
+              "sessionT": "peer",
+              "status": "modified",
+              "ttl": "2",
+              "uid": "15374",
+              "userdom": ":all:common:",
+              "weight": "0"
+            },
+            "children": [
+              {
+                "bgpRsPeerPfxPol": {
+                  "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/peerP-[beaf:dead::2]/rspeerPfxPol",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2023-09-11T07:23:10.944+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rspeerPfxPol",
+                    "state": "formed",
+                    "stateQual": "default-target",
+                    "status": "",
+                    "tCl": "bgpPeerPfxPol",
+                    "tContextDn": "",
+                    "tDn": "uni/tn-common/bgpPfxP-default",
+                    "tRn": "bgpPfxP-default",
+                    "tType": "name",
+                    "tnBgpPeerPfxPolName": "",
+                    "uid": "0",
+                    "userdom": "all"
+                  }
+                }
+              },
+              {
+                "bgpAsP": {
+                  "attributes": {
+                    "annotation": "",
+                    "asn": "36040",
+                    "childAction": "",
+                    "descr": "",
+                    "dn": "uni/tn-test/out-l3ipv6/lnodep-l3ipv6_nodeProfile/peerP-[beaf:dead::2]/as",
+                    "extMngdBy": "",
+                    "lcOwn": "local",
+                    "modTs": "2023-09-11T07:23:10.826+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "",
+                    "nameAlias": "",
+                    "rn": "as",
+                    "status": "",
+                    "uid": "15374",
+                    "userdom": ":all:common:"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]
