@@ -2791,6 +2791,39 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
+    title = "SUP-A/A+ High Memory Usage"
+    result = PASS
+    msg = ""
+    headers = ["Pod ID", "Node ID", "SUP Model", "Active/Standby"]
+    data = []
+    recommended_action = "Change the target version to the one with memory optimization from CSCwh39489"
+    doc_url = "TBD"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    affected_versions = ["6.0(3)", "6.0(4)", "6.0(5)"]
+    if tversion.simple_version in affected_versions:
+        eqptSupCs = icurl("class", "eqptSupC.json")
+        for eqptSupC in eqptSupCs:
+            model = eqptSupC["eqptSupC"]["attributes"]["model"]
+            if model in ["N9K-SUP-A", "N9K-SUP-A+"]:
+                dn = re.search(node_regex, eqptSupC["eqptSupC"]["attributes"]["dn"])
+                pod_id = dn.group("pod")
+                node_id = dn.group("node")
+                act_stb = eqptSupC["eqptSupC"]["attributes"]["rdSt"]
+                data.append([pod_id, node_id, model, act_stb])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2870,7 +2903,7 @@ if __name__ == "__main__":
         apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
-
+        sup_a_high_memory_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
