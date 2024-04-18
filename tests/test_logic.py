@@ -21,7 +21,10 @@ def upgradePaths():
             {"cversion": script.AciVersion("4.2(3a)"), "tversion": script.AciVersion("4.2(7d)")},
             {"cversion": script.AciVersion("2.2(3a)"), "tversion": script.AciVersion("2.2(4r)")},
             {"cversion": script.AciVersion("5.2(1a)"), "tversion": None},
-            {"cversion": script.AciVersion("4.1(1a)"), "tversion": script.AciVersion("5.2(7f)")}]
+            {"cversion": script.AciVersion("4.1(1a)"), "tversion": script.AciVersion("5.2(7f)")},
+            {"cversion": script.AciVersion("4.2(2a)"), "tversion": script.AciVersion("6.0(2c)")},
+            {"cversion": script.AciVersion("4.2(2a)"), "tversion": script.AciVersion("6.0(5c)")},
+            {"cversion": script.AciVersion("6.0(2c)"), "tversion": script.AciVersion("6.0(5c)")}]
 
 
 def test_aciversion(upgradePaths):
@@ -359,3 +362,37 @@ def test_bgp_golf_route_target_type_check(upgradePaths):
             assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.MANUAL
         if pathnum == 7:
             assert script.bgp_golf_route_target_type_check(pathnum, pathlen, **testdata) == script.FAIL_O
+
+def test_pos_mini_aci_6_0_2_check(upgradePaths):
+    script.prints("=====Starting Positive mini_aci_6_0_2_check\n")
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+        with open("tests/topSystem_controller.json_pos","r") as file:
+            testdata.update({"topSystem.json": json.loads(file.read())['imdata']})
+        pathnum = i+1
+        if pathnum == 7:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 8:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.FAIL_UF
+        if pathnum == 9:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.FAIL_UF
+        if pathnum == 10:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.PASS
+
+
+def test_neg_mini_aci_6_0_2_check(upgradePaths):
+    script.prints("=====Starting Negative mini_aci_6_0_2_check\n")
+    pathlen = len(upgradePaths)
+    for i, testdata in enumerate(upgradePaths):
+        with open("tests/topSystem_controller.json_neg","r") as file:
+            testdata.update({"topSystem.json": json.loads(file.read())['imdata']})
+        pathnum = i+1
+
+        if pathnum == 7:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 8:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 9:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.PASS
+        if pathnum == 10:
+            assert script.mini_aci_6_0_2_check(pathnum, pathlen, **testdata) == script.PASS
