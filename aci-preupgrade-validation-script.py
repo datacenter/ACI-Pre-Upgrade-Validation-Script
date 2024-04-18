@@ -2794,10 +2794,10 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Mini ACI Upgrade to 6.0(2)+'
     result = FAIL_UF
     msg = ''
-    headers = ["Pod ID","Node ID", "APIC Type"]
+    headers = ["Pod ID","Node ID", "APIC Type", "Failure Reason"]
     data = []
-    recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+. Reference the Upgrading or Downgrading Virtual APIC guide for the procedure."
-    doc_url = 'https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#id_75038'
+    recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+."
+    doc_url = 'Upgrading or Downgrading Virtual APIC - http://cs.co/9009bBTQB'
 
     print_title(title, index, total_checks)
 
@@ -2822,7 +2822,7 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
             if controller['topSystem']['attributes']['nodeType'] == "virtual":
                 pod_id = controller["topSystem"]["attributes"]["podId"]
                 node_id = controller['topSystem']['attributes']['id']
-                data.append([pod_id, node_id, "virtual"])
+                data.append([pod_id, node_id, "virtual", "Virtual APIC must be removed prior to upgrade to 6.0(2)+"])
 
     if not data:
         result = PASS
