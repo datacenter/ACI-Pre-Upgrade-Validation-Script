@@ -2797,7 +2797,7 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
     msg = ""
     headers = ["Pod ID", "Node ID", "SUP Model", "Active/Standby"]
     data = []
-    recommended_action = "Change the target version to the one with memory optimization from CSCwh39489"
+    recommended_action = "Change the target version to the one with memory optimization in a near-future 6.0 release."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#sup-aa-high-memory-usage"
 
     print_title(title, index, total_checks)
