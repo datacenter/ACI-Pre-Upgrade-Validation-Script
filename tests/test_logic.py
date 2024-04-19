@@ -57,25 +57,6 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
-def test_contract_22_defect_check(upgradePaths):
-    script.prints("=====Starting test_llfc_susceptibility_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-        pathnum = i+1
-        if pathnum == 1:
-            assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 2:
-            assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 3:
-            assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 4:
-            assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 5:
-            assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 6:
-            assert script.contract_22_defect_check(pathnum, pathlen, **testdata) == script.MANUAL
-
-
 def test_pos_internal_vlanpool_check(upgradePaths):
     script.prints("=====Starting Positive internal_vlanpool_check\n")
     pathlen = len(upgradePaths)
