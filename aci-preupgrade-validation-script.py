@@ -2434,19 +2434,12 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
     print_title(title, index, total_checks)
 
-    telemetryStatsServerP_json = kwargs.get("telemetryStatsServerP.json", None)
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
-        if not isinstance(telemetryStatsServerP_json, list):
-            telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
+        telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
         for serverp in telemetryStatsServerP_json:
             if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
                 result = FAIL_O

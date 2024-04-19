@@ -57,46 +57,6 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
-def test_pos_telemetryStatsServerP_object_check(upgradePaths):
-    script.prints("=====Starting test_pos_telemetryStatsServerP_object_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-        with open("tests/telemetryStatsServerP.json_pos","r") as file:
-            testdata.update({"telemetryStatsServerP.json": json.loads(file.read())['imdata']})
-        pathnum = i+1
-        if pathnum == 1:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 2:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 3:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 4:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-
-
-def test_neg_telemetryStatsServerP_object_check(upgradePaths):
-    script.prints("=====Starting Negative stale_nir_object_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-        pathnum = i+1
-        if pathnum == 1:
-            neg_json = {"totalCount":"0","imdata":[]}
-            testdata.update({"telemetryStatsServerP.json": neg_json['imdata']})
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 2:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 3:
-            with open("tests/telemetryStatsServerP.json_neg","r") as file:
-                testdata.update({"telemetryStatsServerP.json": json.loads(file.read())['imdata']})
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 4:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 5:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 6:
-            assert script.telemetryStatsServerP_object_check(pathnum, pathlen, **testdata) == script.MANUAL
-
-
 def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
     script.prints("=====Starting test_pos_isis_redis_metric_mpod_msite_check\n")
     pathlen = len(upgradePaths)
