@@ -2824,6 +2824,43 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def access_untagged_check(index, total_checks, **kwargs):
+    title = 'Overlapping Access (Untagged) mode on interfaces'
+    result = PASS
+    msg = ''
+    headers = ["POD ID","Node ID(s)","Interface","Tenant", "AP", "EPG"]
+    data = []
+    recommended_action = 'Ensure that only one EPG is using the interface in Access(untagged) mode.'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwj69435'
+    print_title(title, index, total_checks)
+
+    fvRsPathAtt_lst = icurl("class", "fvRsPathAtt.json")
+    fvRsPathAtt_lst_untagged = [(x["fvRsPathAtt"]["attributes"]["dn"],x["fvRsPathAtt"]["attributes"]["tDn"]) for x in fvRsPathAtt_lst if x["fvRsPathAtt"]["attributes"]["mode"] == "untagged"]
+    tdn_set = set([item[1] for item in fvRsPathAtt_lst_untagged])
+    dict_tdn = {tdn:[] for tdn in tdn_set}
+    for item in fvRsPathAtt_lst_untagged:
+        dict_tdn[item[1]].append(item[0])
+    for lst in dict_tdn.values():
+        if len(lst) > 1:
+            regex_lst=[
+                r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)/rspathAtt-\[topology/pod-(?P<podid>\d+)/paths-(?P<nodeid>[^/]+)/pathep-\[(?P<interface>.+)\]\]',
+                r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)/rspathAtt-\[topology/pod-(?P<podid>\d+)/protpaths-(?P<nodeid>[^/]+)/extprotpaths-\d+-\d+/pathep-\[(?P<interface>[^/]+)\]\]',
+                r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)/rspathAtt-\[topology/pod-(?P<podid>\d+)/protpaths-(?P<nodeid>[^/]+)/pathep-\[(?P<interface>.+)\]\]'
+            ]
+
+            for item in lst:
+                for dn_regex in regex_lst:
+                    m = re.search(dn_regex, item)
+                    if m:
+                        break
+                data.append([m.group('podid'), m.group('nodeid'), m.group('interface'), m.group('tenant'), m.group('app_profile'), m.group('epg_name')])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2892,6 +2929,7 @@ if __name__ == "__main__":
         docker0_subnet_overlap_check,
         uplink_limit_check,
         oob_mgmt_security_check,
+        access_untagged_check,
 
         # Bugs
         ep_announce_check,
