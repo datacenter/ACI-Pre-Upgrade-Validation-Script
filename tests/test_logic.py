@@ -57,14 +57,6 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
-def test_switch_bootflash_usage_check_new():
-    script.prints("=====Starting test_switch_bootflash_usage_check_new\n")
-    with open("tests/eqptcapacityFSPartition.json_pos","r") as file:
-        testdata = {"eqptcapacityFSPartition.json": json.loads(file.read())['imdata']}
-    res = script.switch_bootflash_usage_check(1, 1, **testdata)
-    assert res == script.FAIL_UF
-
-
 def test_contract_22_defect_check(upgradePaths):
     script.prints("=====Starting test_llfc_susceptibility_check\n")
     pathlen = len(upgradePaths)

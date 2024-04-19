@@ -992,10 +992,7 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
     data = []
     print_title(title, index, total_checks)
 
-    response_json = kwargs.get("eqptcapacityFSPartition.json")
-
-    if not response_json:
-        response_json = icurl('class',
+    response_json = icurl('class',
                           'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
     if not response_json:
         result = ERROR
