@@ -2042,7 +2042,7 @@ def vmm_controller_adj_check(index, total_checks, **kwargs):
     return result
 
 
-def vpc_paired_switches_check(index, total_checks, vpc_node_ids=[], **kwargs):
+def vpc_paired_switches_check(index, total_checks, vpc_node_ids=None, **kwargs):
     title = 'VPC-paired Leaf switches'
     result = FAIL_O
     msg = ''
@@ -2053,14 +2053,10 @@ def vpc_paired_switches_check(index, total_checks, vpc_node_ids=[], **kwargs):
     print_title(title, index, total_checks)
 
     if not vpc_node_ids:
-        vpc_node_ids = kwargs.get("vpc_node_ids", [])
-
-    if not vpc_node_ids:
         msg = 'No VPC definitions found!'
+        vpc_node_ids = []
 
-    top_system = kwargs.get("topSystem.json")
-    if not top_system:
-        top_system = icurl('class', 'topSystem.json')
+    top_system = icurl('class', 'topSystem.json')
 
     for node in top_system:
         node_id = node['topSystem']['attributes']['id']
