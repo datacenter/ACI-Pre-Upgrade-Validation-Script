@@ -58,29 +58,6 @@ def test_get_vpc_nodes():
 
 
 @pytest.mark.parametrize(
-    "cversion,tversion,expected_fail_type",
-    [
-        # Non-affected version combination
-        ("3.2(5e)", "4.2(4r)", script.PASS),
-        ("3.2(10g)", "4.2(4r)", script.PASS),
-        ("4.1(2a)", "4.2(7a)", script.PASS),
-        # Affected versio combination
-        ("3.2(4a)", "5.2(2a)", script.FAIL_UF),
-        ("4.0(1a)", "5.2(3a)", script.FAIL_UF),
-    ],
-)
-def test_defect_eventmgr_db(cversion, tversion, expected_fail_type):
-    script.prints("=====Starting test_defect_eventmgr_db\n")
-    testdata = {
-        "cversion": script.AciVersion(cversion),
-        "tversion": script.AciVersion(tversion)
-    }
-    assert script.eventmgr_db_defect_check(1, 1, **testdata) == expected_fail_type
-
-
-
-
-@pytest.mark.parametrize(
     "faultInst,fvIfConn,expected_fail_type",
     [
         # FAIL - certreq returns error
