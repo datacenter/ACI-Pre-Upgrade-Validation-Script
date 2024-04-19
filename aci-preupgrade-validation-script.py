@@ -2553,7 +2553,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
 
     certreq_out = kwargs.get("certreq_out")
     if not certreq_out:
-        pki_fabric_ca_mo = icurl('class','pkiFabricSelfCAEp.json')
+        pki_fabric_ca_mo = icurl('class', 'pkiFabricSelfCAEp.json')
         if pki_fabric_ca_mo:
             # Prep csr
             passphrase = pki_fabric_ca_mo[0]['pkiFabricSelfCAEp']['attributes']['currCertReqPassphrase']
@@ -2598,8 +2598,8 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             # Perform test certreq
             url = 'https://127.0.0.1/raca/certreq.json'
             payload = '{"aaaCertGenReq":{"attributes":{"type":"csvc","hmac":"%s", "certreq": "%s", ' \
-                    '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
-            cmd = 'icurl -kX POST %s -d \' %s \'' %(url,payload)
+                      '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
+            cmd = 'icurl -kX POST %s -d \' %s \'' % (url, payload)
             logging.debug('cmd = ' + ''.join(cmd))
             certreq_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             certreq_out = certreq_proc.communicate()[0].strip()

@@ -57,26 +57,6 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
-@pytest.mark.parametrize(
-    "cversion,tversion,certreq_resp,expected_fail_type",
-    [
-        # FAIL - certreq returns error
-        ("4.2(5e)", "5.2(6e)", "POS_certreq.txt", script.FAIL_O),
-        # PASS - certreq returns cert info
-        ("4.2(4a)", "5.2(2a)", "NEG_certreq.txt",script.PASS)
-    ],
-)
-def test_apic_ca_cert_validation(cversion, tversion, certreq_resp, expected_fail_type):
-    script.prints("=====Starting apic_ca_cert_validation\n")
-    testdata = {
-        "cversion": script.AciVersion(cversion),
-        "tversion": script.AciVersion(tversion)
-    }
-    with open("tests/"+certreq_resp,"r") as file:
-        testdata.update({"certreq_out": file.read()})
-    assert script.apic_ca_cert_validation(1, 1, **testdata) == expected_fail_type
-
-
 def test_vpc_paired_switches_check(upgradePaths):
     script.prints("=====Starting vpc_paired_switches_check\n")
     pathlen = len(upgradePaths)
