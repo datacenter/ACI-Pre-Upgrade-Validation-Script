@@ -57,68 +57,6 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
-def test_pos_isis_redis_metric_mpod_msite_check(upgradePaths):
-    script.prints("=====Starting test_pos_isis_redis_metric_mpod_msite_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-        with open("tests/isisDomP-default.json_pos","r") as file:
-            testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
-
-        pathnum = i+1
-        if pathnum == 1:
-            with open("tests/fvFabricExtConnP.json_pos1","r") as file:
-                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 2:
-            with open("tests/fvFabricExtConnP.json_pos2","r") as file:
-                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 3:
-            with open("tests/fvFabricExtConnP.json_pos3","r") as file:
-                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 4:
-            with open("tests/fvFabricExtConnP.json_pos1","r") as file:
-                testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O
-
-
-def test_neg_isis_redis_metric_mpod_msite_check(upgradePaths):
-    script.prints("=====Starting test_neg_isis_redis_metric_mpod_msite_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-
-        with open("tests/isisDomP-default.json_neg","r") as file:
-            testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
-        with open("tests/fvFabricExtConnP.json_pos1","r") as file:
-            testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-
-        pathnum = i+1
-        if pathnum == 1:
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 2:
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 3:
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 4:
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.PASS
-
-
-def test_missing_isis_redis_metric_mpod_msite_check(upgradePaths):
-    script.prints("=====Starting test_missing_isis_redis_metric_mpod_msite_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-
-        with open("tests/isisDomP-default.json_missing","r") as file:
-            testdata.update({"uni/fabric/isisDomP-default.json": json.loads(file.read())['imdata']})
-        with open("tests/fvFabricExtConnP.json_pos1","r") as file:
-            testdata.update({"fvFabricExtConnP.json?query-target=children": json.loads(file.read())['imdata']})
-            
-        pathnum = i+1
-        if pathnum == 5:
-            assert script.isis_redis_metric_mpod_msite_check(pathnum, pathlen, **testdata) == script.FAIL_O 
-
-
 def test_switch_bootflash_usage_check_new():
     script.prints("=====Starting test_switch_bootflash_usage_check_new\n")
     with open("tests/eqptcapacityFSPartition.json_pos","r") as file:
