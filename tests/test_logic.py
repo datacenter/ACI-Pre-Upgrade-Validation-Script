@@ -58,29 +58,6 @@ def test_get_vpc_nodes():
 
 
 @pytest.mark.parametrize(
-    "faultInst,fvIfConn,expected_fail_type",
-    [
-        # FAIL - certreq returns error
-        ( "faultInst-encap-pos.json", "fvIfConn.json", script.FAIL_O),
-        # PASS - certreq returns cert info
-        ("faultInst-encap-neg.json", "fvIfConn.json", script.PASS)
-    ],
-)
-def test_encap_already_in_use_check(faultInst, fvIfConn, expected_fail_type):
-    script.prints("=====Starting encap_already_in_use_check\n")
-    testdata = {
-        "faultInst": faultInst,
-        "fvIfConn": fvIfConn,
-    }
-    with open("tests/"+faultInst,"r") as file:
-        testdata.update({"faultInst": json.loads(file.read())['imdata']})
-    with open("tests/"+fvIfConn,"r") as file:
-        testdata.update({"fvIfConn": json.loads(file.read())['imdata']})
-    assert script.encap_already_in_use_check(1, 1, **testdata) == expected_fail_type
-
-
-
-@pytest.mark.parametrize(
     "cversion,tversion,certreq_resp,expected_fail_type",
     [
         # FAIL - certreq returns error

@@ -1179,18 +1179,13 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
     recommended_action = 'Resolve the overlapping encap configuration prior to upgrade'
     print_title(title, index, total_checks)
 
-    faultInsts = kwargs.get("faultInst")
-    fvIfConns = kwargs.get("fvIfConn")
-
     desc_regex = r'Encap is already in use by (?P<inUseEpgStr>.+);'
     nwissues_dn_regex = node_regex + r'/.*epp/fv-\[(?P<faultedEpgDn>.*)\]/node.*'
 
-    if "pytest" not in sys.modules:
-        faultInsts = icurl('class',
+    faultInsts = icurl('class',
                        'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
     if faultInsts:
-        if "pytest" not in sys.modules:
-            fvIfConns = icurl('class', 'fvIfConn.json')
+        fvIfConns = icurl('class', 'fvIfConn.json')
         for faultInst in faultInsts:
             desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
 
@@ -1218,11 +1213,10 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
                 overlapping_encaps = [x for x in in_use_epg_encaps if x in faulted_epg_encaps]
                 data.append([faulted_epg_dn, in_use_epg_dn, nodeId, ','.join(overlapping_encaps)])
             else:
-                unformatted_data.append(
-                    [faultInst['faultInst']['attributes']['descr']])
+                unformatted_data.append([faultInst['faultInst']['attributes']['descr']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, 
+    print_result(title, result, msg, headers, data,
                  unformatted_headers, unformatted_data, recommended_action=recommended_action)
     return result
 
