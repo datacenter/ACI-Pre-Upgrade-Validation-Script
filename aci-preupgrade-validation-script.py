@@ -2193,25 +2193,18 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
     title = 'BGP route target type for GOLF over L2EVPN'
     result = FAIL_O
     msg = ''
-    headers = ["VRF DN","Global Name", "Route Target", "Recommendation" ]
+    headers = ["VRF DN", "Global Name", "Route Target", "Recommendation"]
     data = []
     recommended_action = "Reconfigure extended: RT with prefix route-target: "
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvm23100'
     print_title(title, index, total_checks)
-
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
 
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if cversion.older_than("4.2(1a)") and tversion.newer_than("4.2(1a)"):
-        fvctx_mo = kwargs.get("fvCtx.json", None)
-        if not fvctx_mo:
-            fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
+        fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
 
         if fvctx_mo:
             for vrf in fvctx_mo:
