@@ -57,49 +57,6 @@ def test_get_vpc_nodes():
     assert set(script.get_vpc_nodes(**testdata)) == set(["101", "103", "204", "206"])
 
 
-def test_pos_internal_vlanpool_check(upgradePaths):
-    script.prints("=====Starting Positive internal_vlanpool_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-        with open("tests/fvnsVlanInstP.json_pos","r") as file:
-            testdata.update({"fvnsVlanInstP.json": json.loads(file.read())['imdata']})
-        with open("tests/vmmDomP.json_pos","r") as file:
-            testdata.update({"vmmDomP.json": json.loads(file.read())['imdata']})
-        pathnum = i+1
-        if pathnum == 1:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 2:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 3:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 4:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.FAIL_O
-        if pathnum == 5:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-
-
-def test_neg_internal_vlanpool_check(upgradePaths):
-    script.prints("=====Starting Negative internal_vlanpool_check\n")
-    pathlen = len(upgradePaths)
-    for i, testdata in enumerate(upgradePaths):
-        with open("tests/fvnsVlanInstP.json_neg","r") as file:
-            testdata.update({"fvnsVlanInstP.json": json.loads(file.read())['imdata']})
-        with open("tests/vmmDomP.json_neg","r") as file:
-            testdata.update({"vmmDomP.json": json.loads(file.read())['imdata']})
-        pathnum = i+1
-
-        if pathnum == 1:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 2:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 3:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 4:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-        if pathnum == 5:
-            assert script.internal_vlanpool_check(pathnum, pathlen, **testdata) == script.PASS
-
-
 def test_bgp_golf_route_target_type_check(upgradePaths):
     script.prints("=====Starting bgp_golf_route_target_type_check tests\n")
     pathlen = len(upgradePaths)

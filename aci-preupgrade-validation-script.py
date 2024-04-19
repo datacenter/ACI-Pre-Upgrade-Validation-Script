@@ -2451,18 +2451,12 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
     print_title(title, index, total_checks)
 
-    fvnsVlanInstP_json = kwargs.get("fvnsVlanInstP.json", None)
-    vmmDomP_json = kwargs.get("vmmDomP.json", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if tversion.newer_than("4.2(6a)"):
-        if not isinstance(fvnsVlanInstP_json, list):
-            fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
+        fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
         # Dict with key = vlan pool name, values = list of associated domains
         dom_rel = {}
         # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
@@ -2494,8 +2488,7 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                         if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
                             data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
                     assoc_doms.append(dom["dn"])
-            if not isinstance(vmmDomP_json, list):
-                vmmDomP_json = icurl('class', 'vmmDomP.json')
+            vmmDomP_json = icurl('class', 'vmmDomP.json')
             for vmmDomP in vmmDomP_json:
                 if vmmDomP["vmmDomP"]["attributes"]["dn"] in assoc_doms:
                     if vmmDomP["vmmDomP"]["attributes"]["enableAVE"] != "yes":
