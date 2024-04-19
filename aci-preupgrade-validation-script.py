@@ -2372,7 +2372,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=[], **kwargs):
+def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=None, **kwargs):
     title = 'Link Level Flow Control'
     result = PASS
     msg = ''
@@ -2383,17 +2383,9 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
     print_title(title, index, total_checks)
 
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-
-    if not vpc_node_ids:
-        vpc_node_ids = kwargs.get("vpc_node_ids", [])
 
     if not vpc_node_ids:
         print_result(title, result, 'No VPC Nodes found. Not susceptible.')
@@ -2408,9 +2400,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
         t_affected = True
 
     if sx_affected or t_affected:
-        ethpmFcot = kwargs.get("ethpmFcot.json")
-        if not ethpmFcot:
-            ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
+        ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
 
         for fcot in ethpmFcot:
             typeName = fcot['ethpmFcot']['attributes']['typeName']

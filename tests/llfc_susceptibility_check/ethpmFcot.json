@@ -1,0 +1,46 @@
+[
+  {
+    "ethpmFcot": {
+      "attributes": {
+        "actualType": "sfp",
+        "dn": "topology/pod-1/node-101/sys/phys-[eth1/6]/phys/fcot",
+        "state": "inserted",
+        "type": "sfp",
+        "typeName": "1000base-T"
+      }
+    }
+  },
+  {
+    "ethpmFcot": {
+      "attributes": {
+        "actualType": "sfp",
+        "dn": "topology/pod-1/node-103/sys/phys-[eth1/6]/phys/fcot",
+        "state": "inserted",
+        "type": "sfp",
+        "typeName": "1000base-T"
+      }
+    }
+  },
+  {
+    "ethpmFcot": {
+      "attributes": {
+        "actualType": "sfp",
+        "dn": "topology/pod-1/node-101/sys/phys-[eth1/7]/phys/fcot",
+        "state": "inserted",
+        "type": "sfp",
+        "typeName": "1000base-SX"
+      }
+    }
+  },
+  {
+    "ethpmFcot": {
+      "attributes": {
+        "actualType": "sfp",
+        "dn": "topology/pod-1/node-103/sys/phys-[eth1/7]/phys/fcot",
+        "state": "inserted",
+        "type": "sfp",
+        "typeName": "1000base-SX"
+      }
+    }
+  }
+]
