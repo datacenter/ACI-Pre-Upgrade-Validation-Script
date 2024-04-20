@@ -1019,7 +1019,7 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
     ```
 
 
-### native or untagged encap failure
+### Native or untagged encap failure
 The APIC GUI or REST previously accepted two different access encapsulations on the same port, despite raising a fault with code F0467 and "native-or-untagged-encap-failure" in the changeSet. This configuration, likely resulting from user error, presents a significant risk of outage during switch upgrades or stateless reloads.
 
 The script verifies these faults to ensure that a port is not configured as part of two access VLANs. It is expected that the customer resolves the conflict causing this fault before any upgrades to prevent potential outages. Failure to do so may result in the deployment of a new VLAN/EPG on the port after the upgrade, leading to downtime in the environment.
