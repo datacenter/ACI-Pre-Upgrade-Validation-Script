@@ -1,0 +1,178 @@
+[
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "6160040",
+        "childAction": "",
+        "dn": "topology/pod-1/node-102/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "5374088"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "6643924",
+        "childAction": "",
+        "dn": "topology/pod-1/node-103/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "4332192"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "6916228",
+        "childAction": "",
+        "dn": "topology/pod-2/node-205/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "4059888"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "7261676",
+        "childAction": "",
+        "dn": "topology/pod-2/node-206/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "3714440"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "7422756",
+        "childAction": "",
+        "dn": "topology/pod-1/node-1002/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "4111372"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "5980968",
+        "childAction": "",
+        "dn": "topology/pod-1/node-1001/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "4995148"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "16712928",
+        "childAction": "",
+        "dn": "topology/pod-2/node-2002/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "6502564"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "16923436",
+        "childAction": "",
+        "dn": "topology/pod-2/node-2003/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "6292056"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "6438436",
+        "childAction": "",
+        "dn": "topology/pod-2/node-2001/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "4537680"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "8031460",
+        "childAction": "",
+        "dn": "topology/pod-2/node-2010/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "4127820"
+      }
+    }
+  },
+  {
+    "eqptcapacityFSPartition": {
+      "attributes": {
+        "avail": "5347648",
+        "childAction": "",
+        "dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash",
+        "memAlert": "normal",
+        "modTs": "never",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "bootflash",
+        "path": "/bootflash",
+        "status": "",
+        "used": "5628468"
+      }
+    }
+  }
+]

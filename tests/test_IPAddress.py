@@ -1,11 +1,5 @@
-import os
-import sys
 import pytest
 import importlib
-
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.dirname(TEST_DIR)
-sys.path.append(PROJECT_DIR)
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 
