@@ -1025,9 +1025,9 @@ The APIC GUI or REST previously accepted two different access encapsulations on 
 The script verifies these faults to ensure that a port is not configured as part of two access VLANs. It is expected that the customer resolves the conflict causing this fault before any upgrades to prevent potential outages. Failure to do so may result in the deployment of a new VLAN/EPG on the port after the upgrade, leading to downtime in the environment.
 
 !!! example "Fault Example (F0467: native-or-untagged-encap-failure)"
-bdsol-aci15-apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
+```
+apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
 Total Objects shown: 1
-
 # fault.Inst
 code             : F0467
 ack              : no
@@ -1058,7 +1058,8 @@ title            :
 type             : config
 uid              : 
 userdom          : all
-bdsol-aci15-apic1# 
+apic1# 
+```
 Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
 
 ## Configuration Check Details
