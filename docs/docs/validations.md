@@ -1020,8 +1020,46 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
 
 
 ### native or untagged encap failure
-The script checks faults raised under `eqptcapacityEntity`, which are TCA (Threshold Crossed Alert) faults for various objects monitored in the **Capacity Dashboard** from `Operations > Capacity Dashboard > Leaf Capacity` on the Cisco APIC GUI.
+The APIC GUI or REST previously accepted two different access encapsulations on the same port, despite raising a fault with code F0467 and "native-or-untagged-encap-failure" in the changeSet. This configuration, likely resulting from user error, presents a significant risk of outage during switch upgrades or stateless reloads.
 
+The script verifies these faults to ensure that a port is not configured as part of two access VLANs. It is expected that the customer resolves the conflict causing this fault before any upgrades to prevent potential outages. Failure to do so may result in the deployment of a new VLAN/EPG on the port after the upgrade, leading to downtime in the environment.
+
+!!! example "Fault Example (F0467: native-or-untagged-encap-failure)"
+bdsol-aci15-apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
+Total Objects shown: 1
+
+# fault.Inst
+code             : F0467
+ack              : no
+alert            : no
+annotation       : 
+cause            : configuration-failed
+changeSet        : configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no
+childAction      : 
+created          : 2024-04-20T10:03:48.493+02:00
+delegated        : yes
+descr            : Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 101 eth1/28 due to Only One Native or Untagged Encap Allowed on Interface, debug message: 
+dn               : topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-101/stpathatt-[eth1/28]/nwissues/fault-F0467
+domain           : tenant
+extMngdBy        : undefined
+highestSeverity  : minor
+lastTransition   : 2024-04-20T10:03:53.045+02:00
+lc               : raised
+modTs            : never
+occur            : 1
+origSeverity     : minor
+prevSeverity     : minor
+rn               : fault-F0467
+rule             : fv-nw-issues-config-failed
+severity         : minor
+status           : 
+subject          : management
+title            : 
+type             : config
+uid              : 
+userdom          : all
+bdsol-aci15-apic1# 
+Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
 
 ## Configuration Check Details
 

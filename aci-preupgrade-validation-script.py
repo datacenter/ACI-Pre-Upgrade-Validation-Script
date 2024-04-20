@@ -2938,9 +2938,6 @@ if __name__ == "__main__":
         sup_hwrev_check,
         sup_a_high_memory_check,
     ]
-    
-    
-    checks=[access_untagged_check]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
