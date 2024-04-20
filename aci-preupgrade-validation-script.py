@@ -2825,39 +2825,34 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
 
 
 def access_untagged_check(index, total_checks, **kwargs):
-    title = 'Overlapping Access (Untagged) mode on interfaces'
+    title = 'Access (Untagged) Port Config (F0467 native-or-untagged-encap-failure)'
     result = PASS
     msg = ''
-    headers = ["POD ID","Node ID(s)","Interface","Tenant", "AP", "EPG"]
+    headers = ["Fault", "POD ID","Node ID","Port","Tenant", "Application Profile", "Application EPG", "Recommended Action"]
     data = []
-    recommended_action = 'Ensure that only one EPG is using the interface in Access(untagged) mode.'
+    recommended_action = 'Resolve the conflict by removing this config or other configs using this port in Access(untagged) or native mode.'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwj69435'
     print_title(title, index, total_checks)
-
-    fvRsPathAtt_lst = icurl("class", "fvRsPathAtt.json")
-    fvRsPathAtt_lst_untagged = [(x["fvRsPathAtt"]["attributes"]["dn"],x["fvRsPathAtt"]["attributes"]["tDn"]) for x in fvRsPathAtt_lst if x["fvRsPathAtt"]["attributes"]["mode"] == "untagged"]
-    tdn_set = set([item[1] for item in fvRsPathAtt_lst_untagged])
-    dict_tdn = {tdn:[] for tdn in tdn_set}
-    for item in fvRsPathAtt_lst_untagged:
-        dict_tdn[item[1]].append(item[0])
-    for lst in dict_tdn.values():
-        if len(lst) > 1:
-            regex_lst=[
-                r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)/rspathAtt-\[topology/pod-(?P<podid>\d+)/paths-(?P<nodeid>[^/]+)/pathep-\[(?P<interface>.+)\]\]',
-                r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)/rspathAtt-\[topology/pod-(?P<podid>\d+)/protpaths-(?P<nodeid>[^/]+)/extprotpaths-\d+-\d+/pathep-\[(?P<interface>[^/]+)\]\]',
-                r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)/rspathAtt-\[topology/pod-(?P<podid>\d+)/protpaths-(?P<nodeid>[^/]+)/pathep-\[(?P<interface>.+)\]\]'
-            ]
-
-            for item in lst:
-                for dn_regex in regex_lst:
-                    m = re.search(dn_regex, item)
-                    if m:
-                        break
-                data.append([m.group('podid'), m.group('nodeid'), m.group('interface'), m.group('tenant'), m.group('app_profile'), m.group('epg_name')])
-
+    
+    faultInsts = icurl('class','faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
+    fault_dn_regex=r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
+    
+    if faultInsts:
+        faultInsts_dn_list = [faultInst['faultInst']['attributes']['dn'] for faultInst in faultInsts]
+        fc = faultInsts[0]['faultInst']['attributes']['code']
+        for faultInst_dn in faultInsts_dn_list:
+            m = re.search(fault_dn_regex, faultInst_dn)
+            if m:
+                podid = m.group('podid')
+                nodeid = m.group('nodeid')
+                port = m.group('port')
+                tenant = m.group('tenant')
+                app_profile = m.group('app_profile')
+                epg_name = m.group('epg_name')
+                data.append([fc,podid, nodeid, port, tenant, app_profile, epg_name, recommended_action])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action="", doc_url=doc_url)
     return result
 
 
@@ -2908,6 +2903,7 @@ if __name__ == "__main__":
         port_configured_as_l3_check,
         prefix_already_in_use_check,
         encap_already_in_use_check,
+        access_untagged_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,
@@ -2929,7 +2925,6 @@ if __name__ == "__main__":
         docker0_subnet_overlap_check,
         uplink_limit_check,
         oob_mgmt_security_check,
-        access_untagged_check,
 
         # Bugs
         ep_announce_check,
@@ -2943,6 +2938,9 @@ if __name__ == "__main__":
         sup_hwrev_check,
         sup_a_high_memory_check,
     ]
+    
+    
+    checks=[access_untagged_check]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:

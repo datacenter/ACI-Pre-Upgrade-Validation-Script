@@ -66,6 +66,7 @@ Items                                         | Faults         | This Script    
 [Different infra VLAN via LLDP][f14]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [HW Programming Failure][f15]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f16] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Access (Untagged) Port Config][f17] | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -83,6 +84,8 @@ Items                                         | Faults         | This Script    
 [f14]: #different-infra-vlan-via-lldp
 [f15]: #hw-programming-failure
 [f16]: #scalability-faults-related-to-capacity-dashboard
+[f17]: #native-or-untagged-encap-failure
+
 
 
 ### Configuration Checks
@@ -1014,6 +1017,10 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
     type             : operational
     uid              :
     ```
+
+
+### native or untagged encap failure
+The script checks faults raised under `eqptcapacityEntity`, which are TCA (Threshold Crossed Alert) faults for various objects monitored in the **Capacity Dashboard** from `Operations > Capacity Dashboard > Leaf Capacity` on the Cisco APIC GUI.
 
 
 ## Configuration Check Details
