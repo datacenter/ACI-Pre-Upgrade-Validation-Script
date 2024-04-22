@@ -2831,7 +2831,7 @@ def access_untagged_check(index, total_checks, **kwargs):
     headers = ["Fault", "POD ID","Node ID","Port","Tenant", "Application Profile", "Application EPG", "Recommended Action"]
     data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port in Access(untagged) or native mode.'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwj69435'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
     print_title(title, index, total_checks)
     
     faultInsts = icurl('class','faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
