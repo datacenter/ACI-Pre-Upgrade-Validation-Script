@@ -1,6 +1,4 @@
-{
-  "totalCount": "3",
-  "imdata": [
+[
     {
       "topSystem": {
         "attributes": {
@@ -175,5 +173,4 @@
         }
       }
     }
-  ]
-}
+]

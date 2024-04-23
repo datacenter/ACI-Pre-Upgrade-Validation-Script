@@ -2748,27 +2748,19 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     headers = ["Pod ID","Node ID", "APIC Type", "Failure Reason"]
     data = []
     recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+."
-    doc_url = 'Upgrading or Downgrading Virtual APIC - http://cs.co/9009bBTQB'
+    doc_url = 'Upgrading Mini ACI - http://cs.co/9009bBTQB'
 
     print_title(title, index, total_checks)
-
-    topSystem = kwargs.get("topSystem.json", None)
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
 
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
-        if not topSystem:
-            topSystem = icurl('class', 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")')
+        topSystem = icurl('class', 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")')
         if not topSystem:
             print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
             return ERROR
-
         for controller in topSystem:
             if controller['topSystem']['attributes']['nodeType'] == "virtual":
                 pod_id = controller["topSystem"]["attributes"]["podId"]
