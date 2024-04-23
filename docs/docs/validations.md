@@ -58,7 +58,7 @@ Items                                         | Faults         | This Script    
 [Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[Access (Untagged) Port Config][9] | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Access (Untagged) Port Config][f9]            | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
 [L3Out Subnets][f10]                           | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
 [BD Subnets][f11]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
 [BD Subnets][f12]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
@@ -76,7 +76,7 @@ Items                                         | Faults         | This Script    
 [f6]: #config-on-apic-connected-port
 [f7]: #l2l3-port-config
 [f8]: #l2l3-port-config
-[f9]: #native-or-untagged-encap-failure
+[f9]: #access-untagged-port-config
 [f10]: #l3out-subnets
 [f11]: #bd-subnets
 [f12]: #bd-subnets
