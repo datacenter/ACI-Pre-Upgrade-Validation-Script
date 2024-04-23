@@ -2775,6 +2775,42 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def access_untagged_check(index, total_checks, **kwargs):
+    title = 'Access (Untagged) Port Config (F0467 native-or-untagged-encap-failure)'
+    result = FAIL_O
+    msg = ''
+    headers = ["Fault", "POD ID","Node ID","Port","Tenant", "Application Profile", "Application EPG", "Recommended Action"]
+    unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
+    unformatted_data = []
+    data = []
+    recommended_action = 'Resolve the conflict by removing this config or other configs using this port in Access(untagged) or native mode.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
+    print_title(title, index, total_checks)
+    
+    faultInsts = icurl('class','faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
+    fault_dn_regex=r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
+    
+    if faultInsts:
+        fc = faultInsts[0]['faultInst']['attributes']['code']
+        for faultInst in faultInsts:
+            m = re.search(fault_dn_regex, faultInst['faultInst']['attributes']['dn'])
+            if m:
+                podid = m.group('podid')
+                nodeid = m.group('nodeid')
+                port = m.group('port')
+                tenant = m.group('tenant')
+                app_profile = m.group('app_profile')
+                epg_name = m.group('epg_name')
+                data.append([fc,podid, nodeid, port, tenant, app_profile, epg_name, recommended_action])
+            else:
+                unformatted_data.append(fc,faultInst['faultInst']['attributes']['descr'],recommended_action)
+
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2822,6 +2858,7 @@ if __name__ == "__main__":
         port_configured_as_l3_check,
         prefix_already_in_use_check,
         encap_already_in_use_check,
+        access_untagged_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,

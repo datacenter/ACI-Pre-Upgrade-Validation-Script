@@ -1,0 +1,147 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "status": "",
+        "domain": "tenant",
+        "code": "F0467",
+        "occur": "1",
+        "subject": "management",
+        "severity": "minor",
+        "descr": "Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 102 Common-VPC-L101-102-To-N3K1-E35 due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "title": "",
+        "origSeverity": "minor",
+        "childAction": "",
+        "cause": "configuration-failed",
+        "dn": "topology/pod-1/node-102/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-102/stpathatt-[Common-VPC-L101-102-To-N3K1-E35]/nwissues/fault-F0467",
+        "prevSeverity": "minor",
+        "highestSeverity": "minor",
+        "alert": "no",
+        "delegated": "yes",
+        "lc": "raised",
+        "changeSet": "configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no",
+        "created": "2024-04-20T13:53:48.318+02:00",
+        "ack": "no",
+        "type": "config",
+        "rule": "fv-nw-issues-config-failed",
+        "lastTransition": "2024-04-20T13:54:10.743+02:00"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "status": "",
+        "domain": "tenant",
+        "code": "F0467",
+        "occur": "1",
+        "subject": "management",
+        "severity": "minor",
+        "descr": "Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 103 Common-VPC-103-104-To-SRV73-LACP due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "title": "",
+        "origSeverity": "minor",
+        "childAction": "",
+        "cause": "configuration-failed",
+        "dn": "topology/pod-1/node-103/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-103/stpathatt-[Common-VPC-103-104-To-SRV73-LACP]/nwissues/fault-F0467",
+        "prevSeverity": "minor",
+        "highestSeverity": "minor",
+        "alert": "no",
+        "delegated": "yes",
+        "lc": "raised",
+        "changeSet": "configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no",
+        "created": "2024-04-20T13:54:15.129+02:00",
+        "ack": "no",
+        "type": "config",
+        "rule": "fv-nw-issues-config-failed",
+        "lastTransition": "2024-04-20T13:54:41.861+02:00"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "status": "",
+        "domain": "tenant",
+        "code": "F0467",
+        "occur": "1",
+        "subject": "management",
+        "severity": "minor",
+        "descr": "Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-3 node 101 eth1/28 due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "title": "",
+        "origSeverity": "minor",
+        "childAction": "",
+        "cause": "configuration-failed",
+        "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-3]/node-101/stpathatt-[eth1/28]/nwissues/fault-F0467",
+        "prevSeverity": "minor",
+        "highestSeverity": "minor",
+        "alert": "no",
+        "delegated": "yes",
+        "lc": "raised",
+        "changeSet": "configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no",
+        "created": "2024-04-20T10:57:54.056+02:00",
+        "ack": "no",
+        "type": "config",
+        "rule": "fv-nw-issues-config-failed",
+        "lastTransition": "2024-04-20T10:58:23.520+02:00"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "status": "",
+        "domain": "tenant",
+        "code": "F0467",
+        "occur": "1",
+        "subject": "management",
+        "severity": "minor",
+        "descr": "Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 101 eth1/28 due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "title": "",
+        "origSeverity": "minor",
+        "childAction": "",
+        "cause": "configuration-failed",
+        "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-101/stpathatt-[eth1/28]/nwissues/fault-F0467",
+        "prevSeverity": "minor",
+        "highestSeverity": "minor",
+        "alert": "no",
+        "delegated": "yes",
+        "lc": "raised",
+        "changeSet": "configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no",
+        "created": "2024-04-20T10:03:48.493+02:00",
+        "ack": "no",
+        "type": "config",
+        "rule": "fv-nw-issues-config-failed",
+        "lastTransition": "2024-04-20T10:03:53.045+02:00"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "status": "",
+        "domain": "tenant",
+        "code": "F0467",
+        "occur": "1",
+        "subject": "management",
+        "severity": "minor",
+        "descr": "Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 104 Common-VPC-103-104-To-SRV73-LACP due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "title": "",
+        "origSeverity": "minor",
+        "childAction": "",
+        "cause": "configuration-failed",
+        "dn": "topology/pod-1/node-104/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-104/stpathatt-[Common-VPC-103-104-To-SRV73-LACP]/nwissues/fault-F0467",
+        "prevSeverity": "minor",
+        "highestSeverity": "minor",
+        "alert": "no",
+        "delegated": "yes",
+        "lc": "raised",
+        "changeSet": "configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no",
+        "created": "2024-04-20T13:54:05.767+02:00",
+        "ack": "no",
+        "type": "config",
+        "rule": "fv-nw-issues-config-failed",
+        "lastTransition": "2024-04-20T13:54:13.497+02:00"
+      }
+    }
+  }
+]
