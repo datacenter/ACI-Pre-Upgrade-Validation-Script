@@ -58,14 +58,15 @@ Items                                         | Faults         | This Script    
 [Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[L3Out Subnets][f9]                           | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
-[BD Subnets][f10]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[BD Subnets][f11]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[VMM Domain Controller Status][f12]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[VMM Domain LLDP/CDP Adjacency Status][f13]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Different infra VLAN via LLDP][f14]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[HW Programming Failure][f15]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
-[Scalability (faults related to Capacity Dashboard)][f16] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Access (Untagged) Port Config][f9]            | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[L3Out Subnets][f10]                           | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
+[BD Subnets][f11]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[BD Subnets][f12]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[VMM Domain Controller Status][f13]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[VMM Domain LLDP/CDP Adjacency Status][f14]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[Different infra VLAN via LLDP][f15]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[HW Programming Failure][f16]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
+[Scalability (faults related to Capacity Dashboard)][f17] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -75,14 +76,17 @@ Items                                         | Faults         | This Script    
 [f6]: #config-on-apic-connected-port
 [f7]: #l2l3-port-config
 [f8]: #l2l3-port-config
-[f9]: #l3out-subnets
-[f10]: #bd-subnets
+[f9]: #access-untagged-port-config
+[f10]: #l3out-subnets
 [f11]: #bd-subnets
-[f12]: #vmm-domain-controller-status
-[f13]: #vmm-domain-lldpcdp-adjacency-status
-[f14]: #different-infra-vlan-via-lldp
-[f15]: #hw-programming-failure
-[f16]: #scalability-faults-related-to-capacity-dashboard
+[f12]: #bd-subnets
+[f13]: #vmm-domain-controller-status
+[f14]: #vmm-domain-lldpcdp-adjacency-status
+[f15]: #different-infra-vlan-via-lldp
+[f16]: #hw-programming-failure
+[f17]: #scalability-faults-related-to-capacity-dashboard
+
+
 
 
 ### Configuration Checks
@@ -127,6 +131,7 @@ Items                                           | Defect       | This Script    
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -137,6 +142,7 @@ Items                                           | Defect       | This Script    
 [d7]: #apic-ca-cert-validation
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
+[d10]: #sup-aa-high-memory-usage
 
 
 
@@ -660,6 +666,50 @@ It is critical that you resolve these issues before the upgrade to prevent any i
     subject          : management
     type             : config
     ```
+
+
+### Access (Untagged) Port Config
+The APIC GUI or REST previously accepted two different access encapsulations on the same port, despite raising a fault with code F0467 and "native-or-untagged-encap-failure" in the changeSet. This configuration, likely resulting from user error, presents a significant risk of outage during switch upgrades or stateless reloads.
+
+The script verifies these faults to ensure that a port is not configured as part of two access VLANs. You need to resolve the conflict causing this fault before any upgrades to prevent potential outages. Failure to do so may result in the deployment of a new VLAN/EPG on the port after the upgrade, leading to downtime in the environment.
+
+!!! example "Fault Example (F0467: native-or-untagged-encap-failure)"
+    ```
+    apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
+    Total Objects shown: 1
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : configuration-failed
+    changeSet        : configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no
+    childAction      : 
+    created          : 2024-04-20T10:03:48.493+02:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 101 eth1/28 due to Only One Native or Untagged Encap Allowed on Interface, debug message: 
+    dn               : topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-101/stpathatt-[eth1/28]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-20T10:03:53.045+02:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           : 
+    subject          : management
+    title            : 
+    type             : config
+    uid              : 
+    userdom          : all
+    apic1# 
+    ```
+Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
 
 
 ### L3Out Subnets
@@ -1307,6 +1357,15 @@ Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot
 The script checks if the version and the SUP modules are susceptible to the defect.
 
 
+### SUP-A/A+ High Memory Usage
+
+Due to the increased memory utilization from 6.0(3), N9K-SUP-A or N9K-SUP-A+ will likely experience constant high memory utilization.
+
+It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0(5) if your fabric contains N9K-SUP-A and/or N9K-SUP-A+. Instead, wait for the memory optimization in a near-future Cisco ACI 6.0 maintenance release that will allow the N9K-SUP-A and N9K-SUP-A+ supervisors to operate in a normal memory condition.
+
+!!! note
+    This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
+
 
 
 
@@ -1325,3 +1384,6 @@ The script checks if the version and the SUP modules are susceptible to the defe
 [12]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/4-x/L2-configuration/Cisco-APIC-Layer2-Configuration-Guide-42x/Cisco-APIC-Layer2-Configuration-Guide-421_chapter_0110.html#id_109428
 [13]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#_Toc114493697
 [14]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#_Toc114493698
+[15]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-603.html
+[16]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-604.html
+[17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html

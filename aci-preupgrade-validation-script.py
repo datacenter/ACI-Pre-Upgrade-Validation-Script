@@ -992,10 +992,7 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
     data = []
     print_title(title, index, total_checks)
 
-    response_json = kwargs.get("eqptcapacityFSPartition.json")
-
-    if not response_json:
-        response_json = icurl('class',
+    response_json = icurl('class',
                           'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
     if not response_json:
         result = ERROR
@@ -1179,18 +1176,13 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
     recommended_action = 'Resolve the overlapping encap configuration prior to upgrade'
     print_title(title, index, total_checks)
 
-    faultInsts = kwargs.get("faultInst")
-    fvIfConns = kwargs.get("fvIfConn")
-
     desc_regex = r'Encap is already in use by (?P<inUseEpgStr>.+);'
     nwissues_dn_regex = node_regex + r'/.*epp/fv-\[(?P<faultedEpgDn>.*)\]/node.*'
 
-    if "pytest" not in sys.modules:
-        faultInsts = icurl('class',
+    faultInsts = icurl('class',
                        'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
     if faultInsts:
-        if "pytest" not in sys.modules:
-            fvIfConns = icurl('class', 'fvIfConn.json')
+        fvIfConns = icurl('class', 'fvIfConn.json')
         for faultInst in faultInsts:
             desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
 
@@ -1218,11 +1210,10 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
                 overlapping_encaps = [x for x in in_use_epg_encaps if x in faulted_epg_encaps]
                 data.append([faulted_epg_dn, in_use_epg_dn, nodeId, ','.join(overlapping_encaps)])
             else:
-                unformatted_data.append(
-                    [faultInst['faultInst']['attributes']['descr']])
+                unformatted_data.append([faultInst['faultInst']['attributes']['descr']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, 
+    print_result(title, result, msg, headers, data,
                  unformatted_headers, unformatted_data, recommended_action=recommended_action)
     return result
 
@@ -2048,7 +2039,7 @@ def vmm_controller_adj_check(index, total_checks, **kwargs):
     return result
 
 
-def vpc_paired_switches_check(index, total_checks, vpc_node_ids=[], **kwargs):
+def vpc_paired_switches_check(index, total_checks, vpc_node_ids=None, **kwargs):
     title = 'VPC-paired Leaf switches'
     result = FAIL_O
     msg = ''
@@ -2059,14 +2050,10 @@ def vpc_paired_switches_check(index, total_checks, vpc_node_ids=[], **kwargs):
     print_title(title, index, total_checks)
 
     if not vpc_node_ids:
-        vpc_node_ids = kwargs.get("vpc_node_ids", [])
-
-    if not vpc_node_ids:
         msg = 'No VPC definitions found!'
+        vpc_node_ids = []
 
-    top_system = kwargs.get("topSystem.json")
-    if not top_system:
-        top_system = icurl('class', 'topSystem.json')
+    top_system = icurl('class', 'topSystem.json')
 
     for node in top_system:
         node_id = node['topSystem']['attributes']['id']
@@ -2163,17 +2150,13 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
     title = 'ISIS Redistribution metric for MPod/MSite'
     result = FAIL_O
     msg = ''
-    headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment","Recommendation" ]
+    headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment", "Recommendation"]
     data = []
     recommended_action = None
     doc_url = '"ISIS Redistribution Metric" from ACI Best Practices Quick Summary - http://cs.co/9001zNNr7'
     print_title(title, index, total_checks)
 
-    isis_mo = kwargs.get("uni/fabric/isisDomP-default.json", None)
-    mpod_msite_mo = kwargs.get("fvFabricExtConnP.json?query-target=children", None)
-
-    if not isis_mo:
-        isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
+    isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
     redistribMetric = isis_mo[0]['isisDomPol']['attributes'].get('redistribMetric')
 
     msite = False
@@ -2186,8 +2169,7 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
             recommended_action = 'Change ISIS Redistribution Metric to less than 63'
 
     if recommended_action:
-        if not mpod_msite_mo:
-            mpod_msite_mo = icurl('class','fvFabricExtConnP.json?query-target=children')
+        mpod_msite_mo = icurl('class', 'fvFabricExtConnP.json?query-target=children')
         if mpod_msite_mo:
             pods_list = []
 
@@ -2211,25 +2193,18 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
     title = 'BGP route target type for GOLF over L2EVPN'
     result = FAIL_O
     msg = ''
-    headers = ["VRF DN","Global Name", "Route Target", "Recommendation" ]
+    headers = ["VRF DN", "Global Name", "Route Target", "Recommendation"]
     data = []
     recommended_action = "Reconfigure extended: RT with prefix route-target: "
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvm23100'
     print_title(title, index, total_checks)
-
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
 
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if cversion.older_than("4.2(1a)") and tversion.newer_than("4.2(1a)"):
-        fvctx_mo = kwargs.get("fvCtx.json", None)
-        if not fvctx_mo:
-            fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
+        fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
 
         if fvctx_mo:
             for vrf in fvctx_mo:
@@ -2382,7 +2357,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=[], **kwargs):
+def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=None, **kwargs):
     title = 'Link Level Flow Control'
     result = PASS
     msg = ''
@@ -2393,17 +2368,9 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
     print_title(title, index, total_checks)
 
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-
-    if not vpc_node_ids:
-        vpc_node_ids = kwargs.get("vpc_node_ids", [])
 
     if not vpc_node_ids:
         print_result(title, result, 'No VPC Nodes found. Not susceptible.')
@@ -2418,9 +2385,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
         t_affected = True
 
     if sx_affected or t_affected:
-        ethpmFcot = kwargs.get("ethpmFcot.json")
-        if not ethpmFcot:
-            ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
+        ethpmFcot = icurl('class', 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq(ethpmFcot.state,"inserted"))')
 
         for fcot in ethpmFcot:
             typeName = fcot['ethpmFcot']['attributes']['typeName']
@@ -2454,19 +2419,12 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
     print_title(title, index, total_checks)
 
-    telemetryStatsServerP_json = kwargs.get("telemetryStatsServerP.json", None)
-    if not cversion:
-        cversion = kwargs.get("cversion", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
-        if not isinstance(telemetryStatsServerP_json, list):
-            telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
+        telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
         for serverp in telemetryStatsServerP_json:
             if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
                 result = FAIL_O
@@ -2486,18 +2444,12 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
     print_title(title, index, total_checks)
 
-    fvnsVlanInstP_json = kwargs.get("fvnsVlanInstP.json", None)
-    vmmDomP_json = kwargs.get("vmmDomP.json", None)
-    if not tversion:
-        tversion = kwargs.get("tversion", None)
-
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
     if tversion.newer_than("4.2(6a)"):
-        if not isinstance(fvnsVlanInstP_json, list):
-            fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
+        fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
         # Dict with key = vlan pool name, values = list of associated domains
         dom_rel = {}
         # List of vlanInstP which contain fvnsEncapBlk.role = "internal"
@@ -2529,8 +2481,7 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                         if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
                             data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), dom["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
                     assoc_doms.append(dom["dn"])
-            if not isinstance(vmmDomP_json, list):
-                vmmDomP_json = icurl('class', 'vmmDomP.json')
+            vmmDomP_json = icurl('class', 'vmmDomP.json')
             for vmmDomP in vmmDomP_json:
                 if vmmDomP["vmmDomP"]["attributes"]["dn"] in assoc_doms:
                     if vmmDomP["vmmDomP"]["attributes"]["enableAVE"] != "yes":
@@ -2559,7 +2510,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
 
     certreq_out = kwargs.get("certreq_out")
     if not certreq_out:
-        pki_fabric_ca_mo = icurl('class','pkiFabricSelfCAEp.json')
+        pki_fabric_ca_mo = icurl('class', 'pkiFabricSelfCAEp.json')
         if pki_fabric_ca_mo:
             # Prep csr
             passphrase = pki_fabric_ca_mo[0]['pkiFabricSelfCAEp']['attributes']['currCertReqPassphrase']
@@ -2604,8 +2555,8 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             # Perform test certreq
             url = 'https://127.0.0.1/raca/certreq.json'
             payload = '{"aaaCertGenReq":{"attributes":{"type":"csvc","hmac":"%s", "certreq": "%s", ' \
-                    '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
-            cmd = 'icurl -kX POST %s -d \' %s \'' %(url,payload)
+                      '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
+            cmd = 'icurl -kX POST %s -d \' %s \'' % (url, payload)
             logging.debug('cmd = ' + ''.join(cmd))
             certreq_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             certreq_out = certreq_proc.communicate()[0].strip()
@@ -2831,6 +2782,75 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
 
 
 
+def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
+    title = "SUP-A/A+ High Memory Usage"
+    result = PASS
+    msg = ""
+    headers = ["Pod ID", "Node ID", "SUP Model", "Active/Standby"]
+    data = []
+    recommended_action = "Change the target version to the one with memory optimization in a near-future 6.0 release."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#sup-aa-high-memory-usage"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    affected_versions = ["6.0(3)", "6.0(4)", "6.0(5)"]
+    if tversion.simple_version in affected_versions:
+        eqptSupCs = icurl("class", "eqptSupC.json")
+        for eqptSupC in eqptSupCs:
+            model = eqptSupC["eqptSupC"]["attributes"]["model"]
+            if model in ["N9K-SUP-A", "N9K-SUP-A+"]:
+                dn = re.search(node_regex, eqptSupC["eqptSupC"]["attributes"]["dn"])
+                pod_id = dn.group("pod")
+                node_id = dn.group("node")
+                act_stb = eqptSupC["eqptSupC"]["attributes"]["rdSt"]
+                data.append([pod_id, node_id, model, act_stb])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def access_untagged_check(index, total_checks, **kwargs):
+    title = 'Access (Untagged) Port Config (F0467 native-or-untagged-encap-failure)'
+    result = FAIL_O
+    msg = ''
+    headers = ["Fault", "POD ID","Node ID","Port","Tenant", "Application Profile", "Application EPG", "Recommended Action"]
+    unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
+    unformatted_data = []
+    data = []
+    recommended_action = 'Resolve the conflict by removing this config or other configs using this port in Access(untagged) or native mode.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
+    print_title(title, index, total_checks)
+    
+    faultInsts = icurl('class','faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
+    fault_dn_regex=r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
+    
+    if faultInsts:
+        fc = faultInsts[0]['faultInst']['attributes']['code']
+        for faultInst in faultInsts:
+            m = re.search(fault_dn_regex, faultInst['faultInst']['attributes']['dn'])
+            if m:
+                podid = m.group('podid')
+                nodeid = m.group('nodeid')
+                port = m.group('port')
+                tenant = m.group('tenant')
+                app_profile = m.group('app_profile')
+                epg_name = m.group('epg_name')
+                data.append([fc,podid, nodeid, port, tenant, app_profile, epg_name, recommended_action])
+            else:
+                unformatted_data.append(fc,faultInst['faultInst']['attributes']['descr'],recommended_action)
+
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2879,6 +2899,7 @@ if __name__ == "__main__":
         port_configured_as_l3_check,
         prefix_already_in_use_check,
         encap_already_in_use_check,
+        access_untagged_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,
@@ -2911,7 +2932,7 @@ if __name__ == "__main__":
         apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
-
+        sup_a_high_memory_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
