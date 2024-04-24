@@ -2741,6 +2741,38 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Mini ACI Upgrade to 6.0(2)+'
+    result = FAIL_UF
+    msg = ''
+    headers = ["Pod ID","Node ID", "APIC Type", "Failure Reason"]
+    data = []
+    recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+."
+    doc_url = 'Upgrading Mini ACI - http://cs.co/9009bBTQB'
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
+        topSystem = icurl('class', 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")')
+        if not topSystem:
+            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+            return ERROR
+        for controller in topSystem:
+            if controller['topSystem']['attributes']['nodeType'] == "virtual":
+                pod_id = controller["topSystem"]["attributes"]["podId"]
+                node_id = controller['topSystem']['attributes']['id']
+                data.append([pod_id, node_id, "virtual", "Virtual APIC must be removed prior to upgrade to 6.0(2)+"])
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 
 def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
     title = "SUP-A/A+ High Memory Usage"
@@ -2846,6 +2878,7 @@ if __name__ == "__main__":
         maintp_grp_crossing_4_0_check,
         features_to_disable_check,
         switch_group_guideline_check,
+        mini_aci_6_0_2_check,
 
         # Faults
         apic_disk_space_faults_check,

@@ -31,6 +31,7 @@ Items                                                        | This Script      
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps | :white_check_mark:
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
+[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -45,6 +46,7 @@ Items                                                        | This Script      
 [g11]: #features-that-need-to-be-disabled-prior-to-upgrade
 [g12]: #switch-upgrade-group-guidelines
 [g13]: #intersight-device-connector-upgrade-status
+[g14]: #mini-aci-upgrade-to-602-or-later
 
 
 ### Fault Checks
@@ -306,6 +308,30 @@ If you start an Cisco APIC upgrade while an intersight Device Connector (DC) upg
 
 You can check the status of intersight DC from `System > System Settings > intersight`. If the upgrade of the DC is in progress, wait for a minute and retry the Cisco APIC upgrade. The upgrade of the Intersight Device Connector typically takes less than a minute.
 
+### Mini ACI Upgrade to 6.0(2) or later
+
+Starting with APIC Release 6.0(2), controllers use a new linux operating system which requires any virtual APIC to be redeployed on the target version.
+
+When upgrading from ACI release 6.0(1) or earlier to release 6.0(2) or later, any virtual APICs must be removed from the APIC cluster prior to upgrade. You must follow the documented steps under the [Mini ACI Upgrade Guide][18] for this specific upgrade path. A regular policy upgrade will fail and result in a diverged cluster.
+
+!!! tip
+    You can check whether any APICs are virtual by querying `topSystem` and looking at the `nodeType` attribute. `unspecified` is used for any physical APIC appliance while `virtual` is used for any virtual APIC.
+    ```
+    # top.System
+    address                  : 10.1.0.2
+    --- omit ---
+    dn                       : topology/pod-1/node-2/sys
+    lastRebootTime           : 2024-04-21T11:35:24.844-04:00
+    lastResetReason          : unknown
+    lcOwn                    : local
+    modTs                    : 2024-04-21T11:56:04.032-04:00
+    mode                     : unspecified
+    monPolDn                 : uni/fabric/monfab-default
+    name                     : vapic2
+    nameAlias                :
+    nodeType                 : virtual
+    --- omit ---
+    ```
 
 ## Fault Check Details
 
@@ -1387,3 +1413,4 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 [15]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-603.html
 [16]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-604.html
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
+[18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
