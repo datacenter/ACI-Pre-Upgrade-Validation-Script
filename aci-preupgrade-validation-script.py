@@ -2843,7 +2843,7 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
-def eecdh_cipher_check(index, total_checks, **kwargs):
+def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     title = 'EECDH SSL Cipher'
     result = FAIL_UF
     msg = ''
@@ -2853,14 +2853,15 @@ def eecdh_cipher_check(index, total_checks, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#eecdh-ssl-cipher'
 
     print_title(title, index, total_checks)
-
-    commCipher = icurl('class', 'commCipher.json')
-    if not commCipher:
-        print_result(title, ERROR, 'commCipher response empty. Is the cluster healthy?')
-        return ERROR
-    for cipher in commCipher:
-        if cipher['commCipher']['attributes']['id'] == "EECDH" and cipher['commCipher']['attributes']['state'] == "disabled":
-            data.append([cipher['commCipher']['attributes']['dn'], "EECDH", "disabled", "Secure key exchange is disabled which may cause APIC GUI to be down after upgrade."])
+    
+    if cversion.newer_than("4.2(1a)"):
+        commCipher = icurl('class', 'commCipher.json')
+        if not commCipher:
+            print_result(title, ERROR, 'commCipher response empty. Is the cluster healthy?')
+            return ERROR
+        for cipher in commCipher:
+            if cipher['commCipher']['attributes']['id'] == "EECDH" and cipher['commCipher']['attributes']['state'] == "disabled":
+                data.append([cipher['commCipher']['attributes']['dn'], "EECDH", "disabled", "Secure key exchange is disabled which may cause APIC GUI to be down after upgrade."])
 
     if not data:
         result = PASS

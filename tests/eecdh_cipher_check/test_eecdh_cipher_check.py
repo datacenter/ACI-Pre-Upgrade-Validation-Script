@@ -15,21 +15,29 @@ commCiphers = 'commCipher.json'
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, expected_result",
+    "icurl_outputs, cversion, expected_result",
     [
         (
             {commCiphers: read_data(dir, "commCipher_neg.json")},
+            "5.2(6d)",
             script.PASS,
         ),
         (
             {commCiphers: read_data(dir, "commCipher_pos.json")},
+            "5.2(6d)",
             script.FAIL_UF,
+        ),
+        (
+            {commCiphers: ""},
+            "3.2(7f)",
+            script.PASS,
         ),
     ],
 )
-def test_logic(mock_icurl, expected_result):
+def test_logic(mock_icurl, cversion, expected_result):
     result = script.eecdh_cipher_check(
         1,
         1,
+        script.AciVersion(cversion),
     )
     assert result == expected_result
