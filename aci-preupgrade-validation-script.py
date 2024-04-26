@@ -2265,11 +2265,7 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     recommended_action = 'Contact Cisco TAC to check the DB size via root'
     print_title(title, index, total_checks)
 
-    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')): 
-        result = FAIL_UF
-        data.append(['CSCvn20175', recommended_action])
-
-    elif cversion.older_than('4.2(4i)') or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')): 
+    if cversion.older_than('4.2(4i)') or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')): 
         result = FAIL_UF
         data.append(['CSCvt07565', recommended_action])
 

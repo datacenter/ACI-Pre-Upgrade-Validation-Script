@@ -20,7 +20,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
         ("3.2(10g)", script.FAIL_UF),
         ("4.1(2a)", script.FAIL_UF),
         ("3.2(4a)", script.FAIL_UF),
-        ("4.0(1a)", script.FAIL_UF),
+        ("5.0(1a)", script.FAIL_UF),
         ("4.2(3q)", script.FAIL_UF),
         
         
