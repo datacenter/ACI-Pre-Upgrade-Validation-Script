@@ -16,9 +16,14 @@ dir = os.path.dirname(os.path.abspath(__file__))
         ("3.2(5e)", script.PASS),
         ("3.2(10g)", script.PASS),
         ("4.1(2a)", script.PASS),
+        ("4.2(4i)", script.PASS),
+        ("5.0(1k)", script.PASS),
         # Affected version
         ("3.2(4a)", script.FAIL_UF),
         ("4.0(1a)", script.FAIL_UF),
+        ("4.2(3q)", script.FAIL_UF),
+        
+        
     ],
 )
 def test_logic(mock_icurl, cversion, expected_result):
