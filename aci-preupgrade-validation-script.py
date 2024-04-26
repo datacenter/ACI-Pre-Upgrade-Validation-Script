@@ -2959,6 +2959,76 @@ def access_untagged_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url)
     return result
 
+def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Post Upgrade Callback Check'
+    new_mo_dict = {
+    "infraAssocEncapInstDef":
+        {
+            "CreatedBy":"infraRsToEncapInstDef",
+            "SinceVersion":"5.2(4d)",
+        },
+    "infraRsConnectivityProfileOpt":
+        {
+            "CreatedBy":"infraRsConnectivityProfile",
+            "SinceVersion":"5.2(4d)",
+        },
+    "fvSlaDef":
+        {
+            "CreatedBy":"fvIPSLAMonitoringPol",
+            "SinceVersion":"4.1(1i)",
+        },
+    "infraImplicitSetPol":
+        {
+            "CreatedBy":"",
+            "SinceVersion":"3.2(10e)"
+        },
+    "infraRsToImplicitSetPol":
+        {
+            "CreatedBy":"infraImplicitSetPol",
+            "SinceVersion":"3.2(10e)"
+        }
+    }
+    result = PASS
+    msg = ''
+    headers = ["Missed Objects", "Impact"]
+    data = []
+    recommended_action = 'Contact Cisco TAC with Output'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-cb-check'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        result = MANUAL
+        msg = 'Run this script post upgrade.'
+    else:
+        if cversion.same_as(tversion.__str__()):
+            #Post Upgrade Check is required
+            for new_mo in new_mo_dict:
+                since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+                created_by_mo = new_mo_dict[new_mo]['CreatedBy']
+                if created_by_mo=="":
+                    created_by_mo=new_mo
+                if since_version.same_as(cversion.__str__()) or since_version.older_than(cversion.__str__()):
+                    temp_createdby_mo_count = icurl('class',created_by_mo+".json"+"?rsp-subtree-include=count")
+                    created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+                    temp_new_mo_count = icurl("class",new_mo+".json"+"?rsp-subtree-include=count")
+                    new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+                    if created_by_mo_count!=new_mo_count:
+                        if new_mo=="infraAssocEncapInstDef":
+                            data.append([new_mo,"VLAN for missing Mo will not be deployed to leaf",])
+                        if new_mo=="infraRsConnectivityProfileOpt":
+                            data.append([new_mo,"VPC for missing Mo will not be deployed to leaf", ])                  
+                        if new_mo=="fvSlaDef":
+                            data.append([new_mo,"IPSLA monitor policy will not be deployed", ])
+                        if new_mo=="infraImplicitSetPol" or new_mo=="infraRsToImplicitSetPol":
+                            data.append([new_mo,"Infra implicit settings will not be deployed",])
+        else:
+            result = MANUAL
+            msg = 'Run this script post upgrade.'
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     title = 'EECDH SSL Cipher'
@@ -3094,6 +3164,7 @@ if __name__ == "__main__":
         features_to_disable_check,
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
+        post_upgrade_cb_check,
 
         # Faults
         apic_disk_space_faults_check,

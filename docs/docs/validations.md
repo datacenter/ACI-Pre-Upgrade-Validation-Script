@@ -31,7 +31,9 @@ Items                                                        | This Script      
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps | :white_check_mark:
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
-[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[Post Upgrade CallBack][g15]                                 | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -47,6 +49,7 @@ Items                                                        | This Script      
 [g12]: #switch-upgrade-group-guidelines
 [g13]: #intersight-device-connector-upgrade-status
 [g14]: #mini-aci-upgrade-to-602-or-later
+[g15]: #post-upgrade-cb-check
 
 
 ### Fault Checks
@@ -340,6 +343,44 @@ When upgrading from ACI release 6.0(1) or earlier to release 6.0(2) or later, an
     nameAlias                :
     nodeType                 : virtual
     --- omit ---
+    ```
+
+### Post Upgrade CallBack
+
+Post APIC cluster upgrade, DME process may invoke the postUpgradeCb function of existing class, which will introduce the object for new classes to extend/enhance/optimize an existing feature.
+
+With that, we expect the existing class has same Mo count with newly created Mos.
+
+Otherwise, the impact depends on the class was missing. 
+
+!!! tip
+    You can check mocount between new class infraAssocEncapInstDef and exisiting class infraRsToEncapInstDef, 
+    As long as the mocount match, it means infraAssocEncapInstDef was created successfully post APIC cluster upgrade by infraRsToEncapInstDef's postUpgradeCb function:
+    ```
+    apic1# moquery -c infraAssocEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
+
+    apic1# moquery -c infraRsToEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
+
     ```
 
 ## Fault Check Details
