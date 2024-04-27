@@ -2959,6 +2959,7 @@ def access_untagged_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url)
     return result
 
+
 def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Post Upgrade Callback Integrity'
     result = PASS
@@ -2974,29 +2975,34 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         {
             "CreatedBy": "infraRsToEncapInstDef",
             "SinceVersion": "5.2(4d)",
+            "Impact": "VLAN for missing Mo will not be deployed to leaf",
         },
         "infraRsConnectivityProfileOpt":
         {
             "CreatedBy": "infraRsConnectivityProfile",
             "SinceVersion": "5.2(4d)",
+            "Impact": "VPC for missing Mo will not be deployed to leaf",
         },
         "fvSlaDef":
         {
             "CreatedBy": "fvIPSLAMonitoringPol",
             "SinceVersion": "4.1(1i)",
+            "Impact": "IPSLA monitor policy will not be deployed",
         },
         "infraImplicitSetPol":
         {
             "CreatedBy": "",
-            "SinceVersion": "3.2(10e)"
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
         },
         "infraRsToImplicitSetPol":
         {
             "CreatedBy": "infraImplicitSetPol",
-            "SinceVersion": "3.2(10e)"
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
         }
     }
-    if not tversion or (tversion and cversion.older_than(tversion.__str__())):
+    if not tversion or (tversion and cversion.older_than(str(tversion))):
         print_result(title, MANUAL, 'Run this script again after APIC upgrade and before switch upgrade')
         return MANUAL
     for new_mo in new_mo_dict:
@@ -3004,26 +3010,19 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
         if created_by_mo == "":
             created_by_mo = new_mo
-        if not since_version.newer_than(cversion.__str__()):
+        if not since_version.newer_than(str(cversion)):
             temp_createdby_mo_count = icurl('class', created_by_mo+".json?rsp-subtree-include=count")
             created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
-            temp_new_mo_count = icurl("class",new_mo+".json"+"?rsp-subtree-include=count")
+            temp_new_mo_count = icurl("class", new_mo+".json?rsp-subtree-include=count")
             new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
-            if created_by_mo_count!=new_mo_count:
-                if new_mo=="infraAssocEncapInstDef":
-                    data.append([new_mo,"VLAN for missing Mo will not be deployed to leaf",])
-                if new_mo=="infraRsConnectivityProfileOpt":
-                    data.append([new_mo,"VPC for missing Mo will not be deployed to leaf", ])                  
-                if new_mo=="fvSlaDef":
-                    data.append([new_mo,"IPSLA monitor policy will not be deployed", ])
-                if new_mo=="infraImplicitSetPol" or new_mo=="infraRsToImplicitSetPol":
-                    data.append([new_mo,"Infra implicit settings will not be deployed",])
-
+            if created_by_mo_count != new_mo_count:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
 
     if data:
         result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
+
 
 def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     title = 'EECDH SSL Cipher'
