@@ -2960,70 +2960,65 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Post Upgrade Callback Check'
-    new_mo_dict = {
-    "infraAssocEncapInstDef":
-        {
-            "CreatedBy":"infraRsToEncapInstDef",
-            "SinceVersion":"5.2(4d)",
-        },
-    "infraRsConnectivityProfileOpt":
-        {
-            "CreatedBy":"infraRsConnectivityProfile",
-            "SinceVersion":"5.2(4d)",
-        },
-    "fvSlaDef":
-        {
-            "CreatedBy":"fvIPSLAMonitoringPol",
-            "SinceVersion":"4.1(1i)",
-        },
-    "infraImplicitSetPol":
-        {
-            "CreatedBy":"",
-            "SinceVersion":"3.2(10e)"
-        },
-    "infraRsToImplicitSetPol":
-        {
-            "CreatedBy":"infraImplicitSetPol",
-            "SinceVersion":"3.2(10e)"
-        }
-    }
+    title = 'Post Upgrade Callback Integrity'
     result = PASS
     msg = ''
     headers = ["Missed Objects", "Impact"]
     data = []
     recommended_action = 'Contact Cisco TAC with Output'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-cb-check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-callback-integrity'
     print_title(title, index, total_checks)
 
-    if not tversion:
-        result = MANUAL
-        msg = 'Run this script post upgrade.'
-    else:
-        if cversion.same_as(tversion.__str__()):
-            #Post Upgrade Check is required
-            for new_mo in new_mo_dict:
-                since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
-                created_by_mo = new_mo_dict[new_mo]['CreatedBy']
-                if created_by_mo=="":
-                    created_by_mo=new_mo
-                if since_version.same_as(cversion.__str__()) or since_version.older_than(cversion.__str__()):
-                    temp_createdby_mo_count = icurl('class',created_by_mo+".json"+"?rsp-subtree-include=count")
-                    created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
-                    temp_new_mo_count = icurl("class",new_mo+".json"+"?rsp-subtree-include=count")
-                    new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
-                    if created_by_mo_count!=new_mo_count:
-                        if new_mo=="infraAssocEncapInstDef":
-                            data.append([new_mo,"VLAN for missing Mo will not be deployed to leaf",])
-                        if new_mo=="infraRsConnectivityProfileOpt":
-                            data.append([new_mo,"VPC for missing Mo will not be deployed to leaf", ])                  
-                        if new_mo=="fvSlaDef":
-                            data.append([new_mo,"IPSLA monitor policy will not be deployed", ])
-                        if new_mo=="infraImplicitSetPol" or new_mo=="infraRsToImplicitSetPol":
-                            data.append([new_mo,"Infra implicit settings will not be deployed",])
-        else:
-            result = MANUAL
-            msg = 'Run this script post upgrade.'
+    new_mo_dict = {
+        "infraAssocEncapInstDef":
+        {
+            "CreatedBy": "infraRsToEncapInstDef",
+            "SinceVersion": "5.2(4d)",
+        },
+        "infraRsConnectivityProfileOpt":
+        {
+            "CreatedBy": "infraRsConnectivityProfile",
+            "SinceVersion": "5.2(4d)",
+        },
+        "fvSlaDef":
+        {
+            "CreatedBy": "fvIPSLAMonitoringPol",
+            "SinceVersion": "4.1(1i)",
+        },
+        "infraImplicitSetPol":
+        {
+            "CreatedBy": "",
+            "SinceVersion": "3.2(10e)"
+        },
+        "infraRsToImplicitSetPol":
+        {
+            "CreatedBy": "infraImplicitSetPol",
+            "SinceVersion": "3.2(10e)"
+        }
+    }
+    if not tversion or (tversion and cversion.older_than(tversion.__str__())):
+        print_result(title, MANUAL, 'Run this script again after APIC upgrade and before switch upgrade')
+        return MANUAL
+    for new_mo in new_mo_dict:
+        since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+        created_by_mo = new_mo_dict[new_mo]['CreatedBy']
+        if created_by_mo == "":
+            created_by_mo = new_mo
+        if not since_version.newer_than(cversion.__str__()):
+            temp_createdby_mo_count = icurl('class', created_by_mo+".json?rsp-subtree-include=count")
+            created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+            temp_new_mo_count = icurl("class",new_mo+".json"+"?rsp-subtree-include=count")
+            new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+            if created_by_mo_count!=new_mo_count:
+                if new_mo=="infraAssocEncapInstDef":
+                    data.append([new_mo,"VLAN for missing Mo will not be deployed to leaf",])
+                if new_mo=="infraRsConnectivityProfileOpt":
+                    data.append([new_mo,"VPC for missing Mo will not be deployed to leaf", ])                  
+                if new_mo=="fvSlaDef":
+                    data.append([new_mo,"IPSLA monitor policy will not be deployed", ])
+                if new_mo=="infraImplicitSetPol" or new_mo=="infraRsToImplicitSetPol":
+                    data.append([new_mo,"Infra implicit settings will not be deployed",])
+
 
     if data:
         result = FAIL_O
