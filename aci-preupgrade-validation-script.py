@@ -2864,7 +2864,7 @@ if __name__ == "__main__":
               'cversion': cversion, 'tversion': tversion,
               'vpc_node_ids': vpc_nodes}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
-                "script_version": str(SCRIPT_VERSION), "check_details": [], 'cversion': str(cversion), 'tversion': str(tversion)}
+                "check_details": [], 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
         # General Checks
         apic_version_md5_check,
