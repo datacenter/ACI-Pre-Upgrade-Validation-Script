@@ -1705,6 +1705,60 @@ def l3out_route_map_direction_check(index, total_checks, **kwargs):
     return result
 
 
+def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion, **kwargs):
+    """ Implementation change due to CSCwc11570 - 5.2.8/6.0.2 """
+    title = 'L3Out Route Map Match Rule with missing-target'
+    result = FAIL_O
+    msg = ''
+    headers = ['Tenant', 'L3Out', 'Route Map', 'Context', 'Action', 'Match Rule']
+    data = []
+    recommended_action = 'The configured match rules do not exist. Update the route maps with existing match rules.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-route-map-match-rule-with-missing-target'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    def is_old(v):
+        return True if v.older_than("5.2(8a)") or v.simple_version == "6.0(1)" else False
+
+    c_is_old = is_old(cversion)
+    t_is_old = is_old(tversion)
+    if (c_is_old and t_is_old) or (not c_is_old and not t_is_old):
+        print_result(title, NA)
+        return NA
+
+    dn_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/'
+    # Get a missing-target match rule in a route map with type `combinable`
+    api = 'rtctrlProfile.json'
+    api += '?query-target-filter=eq(rtctrlProfile.type,"combinable")'
+    api += '&rsp-subtree=full&rsp-subtree-filter=eq(rtctrlRsCtxPToSubjP.state,"missing-target")'
+    profiles = icurl('class', api)
+    for profile in profiles:
+        dn = re.search(dn_regex, profile['rtctrlProfile']['attributes']['dn'])
+        for ctxP in profile['rtctrlProfile'].get('children', []):
+            if not ctxP.get('rtctrlCtxP'):
+                continue
+            for rsCtxPToSubjP in ctxP['rtctrlCtxP'].get('children', []):
+                if (
+                    rsCtxPToSubjP.get('rtctrlRsCtxPToSubjP')
+                    and rsCtxPToSubjP['rtctrlRsCtxPToSubjP']['attributes']['state'] == 'missing-target'
+                ):
+                    data.append([
+                        dn.group('tenant'),
+                        dn.group('l3out'),
+                        profile['rtctrlProfile']['attributes']['name'],
+                        ctxP['rtctrlCtxP']['attributes']['name'],
+                        ctxP['rtctrlCtxP']['attributes']['action'],
+                        rsCtxPToSubjP['rtctrlRsCtxPToSubjP']['attributes']['tnRtctrlSubjPName'],
+                    ])
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def bgp_peer_loopback_check(index, total_checks, **kwargs):
     """ Implementation change due to CSCvm28482 - 4.1(2) """
     title = 'BGP Peer Profile at node level without Loopback'
@@ -2916,6 +2970,7 @@ if __name__ == "__main__":
         l3out_mtu_check,
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
+        l3out_route_map_missing_target_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
