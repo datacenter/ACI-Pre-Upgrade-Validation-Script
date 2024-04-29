@@ -60,15 +60,16 @@ Items                                         | Faults         | This Script    
 [Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[Access (Untagged) Port Config][f9]            | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-[L3Out Subnets][f10]                           | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
-[BD Subnets][f11]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[BD Subnets][f12]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[VMM Domain Controller Status][f13]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[VMM Domain LLDP/CDP Adjacency Status][f14]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Different infra VLAN via LLDP][f15]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[HW Programming Failure][f16]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
-[Scalability (faults related to Capacity Dashboard)][f17] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
+[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
+[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -79,16 +80,15 @@ Items                                         | Faults         | This Script    
 [f7]: #l2l3-port-config
 [f8]: #l2l3-port-config
 [f9]: #access-untagged-port-config
-[f10]: #l3out-subnets
-[f11]: #bd-subnets
+[f10]: #encap-already-in-use
+[f11]: #l3out-subnets
 [f12]: #bd-subnets
-[f13]: #vmm-domain-controller-status
-[f14]: #vmm-domain-lldpcdp-adjacency-status
-[f15]: #different-infra-vlan-via-lldp
-[f16]: #hw-programming-failure
-[f17]: #scalability-faults-related-to-capacity-dashboard
-
-
+[f13]: #bd-subnets
+[f14]: #vmm-domain-controller-status
+[f15]: #vmm-domain-lldpcdp-adjacency-status
+[f16]: #different-infra-vlan-via-lldp
+[f17]: #hw-programming-failure
+[f18]: #scalability-faults-related-to-capacity-dashboard
 
 
 ### Configuration Checks
@@ -703,6 +703,7 @@ The script verifies these faults to ensure that a port is not configured as part
     ```
     apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
     Total Objects shown: 1
+
     # fault.Inst
     code             : F0467
     ack              : no
@@ -736,6 +737,121 @@ The script verifies these faults to ensure that a port is not configured as part
     apic1# 
     ```
 Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
+
+
+### Encap Already in Use
+
+This is another type of the F0467 fault code family that you should check before an upgrade. This fault alerts that an interface configuration under an EPG or an SVI configuration for an L3Out has failed because the VLAN encapsulation for the interface is already used by another interface on the same switch for a different purpose. After an upgrade, it’s possible that the previous working configuration will break if this faulty policy is deployed first after the switch reloads.
+
+It is critical that you resolve these issues before the upgrade to prevent any unexpected outages when the switch(es) upgrade. The VLAN encapsulation on the interface that the fault is raised on should either be corrected or deleted in order to clear the fault. You can run the moquery in the example below on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well.
+
+!!! example "Fault Example (F0467: encap-already-in-use)"
+    The following shows three examples.
+
+    The first fault is for the interface configuration under the EPG `EPG1-2` in application profile `AP1` in tenant `TK` on node `101` interface `eth1/4` with VLAN `2011`. The fault description indicates that VLAN `2011` is already used by EPG `EPG1-1` in application profile `AP1` in tenant `TK`.
+
+    The second fault is for the SVI configuration under L3Out `BGP` in tenant `TK` on `node-103` interface `eth1/11` with VLAN `2013`. The fault description indicates that VLAN `2013` is already used by `EPG1-3` in application profile `AP1` in tenant `TK`.
+
+    The third fault is for the interface configuration under the EPG `EPG3-1` in application profile `AP1` in tenant `TK` on node `103` interface `eth1/1` with VLAN `2051`. The fault description indicates that VLAN `2051` is already used by L3Out `BGP` in tenant `TK`.
+
+    Note that the fault description may not include `(vlan-2011)` in `Encap (vlan-2011)` on older versions.
+    ```
+    admin@apic1:~> moquery -c faultInst -x 'query-target-filter=wcard(faultInst.descr,"encap-already-in-use")'
+    Total Objects shown: 3
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:02:20.878-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/ap-AP1/epg-EPG1-2 node 101 eth1/4 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;
+    dn               : topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG1-2]/node-101/stpathatt-[eth1/4]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:04:25.300-07:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:59:31.948-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/out-BGP node 103 eth1/11 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;
+    dn               : topology/pod-2/node-103/local/svc-policyelem-id-0/resPolCont/rtdOutCont/rtdOutDef-[uni/tn-TK/out-BGP]/node-103/stpathatt-[eth1/11]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:59:31.948-07:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:58:02.758-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/ap-AP1/epg-EPG3-1 node 103 eth1/1 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;
+    dn               : topology/pod-2/node-103/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG3-1]/node-103/stpathatt-[eth1/1]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:58:02.758-07:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+    ```
 
 
 ### L3Out Subnets
