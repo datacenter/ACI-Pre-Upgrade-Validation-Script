@@ -101,11 +101,12 @@ Items                                         | Faults         | This Script    
 [L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[ISIS Redistribution Metric for MPod/Msite][c7]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[BGP Route-target Type for GOLF over L2EVPN][c8]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[ISIS Redistribution Metric for MPod/Msite][c8]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[BGP Route-target Type for GOLF over L2EVPN][c9]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[APIC Container Bridge IP Overlap with APIC TEP][c10] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -113,11 +114,12 @@ Items                                         | Faults         | This Script    
 [c4]: #l3out-mtu
 [c5]: #bgp-peer-profile-at-node-level-without-loopback
 [c6]: #l3out-route-map-importexport-direction
-[c7]: #isis-redistribution-metric-for-mpodmsite
-[c8]: #bgp-route-target-type-for-golf-over-l2evpn
-[c9]: #apic-container-bridge-ip-overlap-with-apic-tep
-[c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
-[c11]: #oob-mgmt-security
+[c7]: #l3out-route-map-match-rule-with-missing-target
+[c8]: #isis-redistribution-metric-for-mpodmsite
+[c9]: #bgp-route-target-type-for-golf-over-l2evpn
+[c10]: #apic-container-bridge-ip-overlap-with-apic-tep
+[c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
+[c12]: #oob-mgmt-security
 
 
 ### Defect Condition Checks
@@ -1299,7 +1301,7 @@ Due to this change, when upgrading from an older version to release 4.1(2) or la
     When multiple interfaces in the same node profile need to establish a BGP peer with the same peer IP, you might attempt to configure a **BGP Peer Connectivity Profile** at a node profile without a loopback so that the same BGP Peer configuration is applied, as a fallback due to the missing loopback, to each interface in the same node profile. This is because a **BGP Peer Connectivity Profile** with the same peer IP address could not be configured at multiple interface profiles within the same node profile. This limitation was loosened based on CSCvw88636 on 4.2(7f). Until then, for this specific requirement, you need to configure a node interface per interface profile and configure the **BGP Peer Connectivity Profile** at each interface profile in a different node profile.
 
 
-### L3Out Route Map import/export direction        
+### L3Out Route Map import/export direction
 
 Prior to upgrading to release 4.1(1) or later, you must ensure that the route map (route profile) configuration is correct.
 
@@ -1326,6 +1328,37 @@ Although this method is not the most common or recommended one among many ways t
     With this configuration, you don’t need **Export Route Control Subnet** or **Import Route Control Subnet** in the external EPGs, and you can have external EPGs that are dedicated for contracts or route leaking while you have the full control of routing protocol through route maps just like a normal router.
 
     Also note that any import direction route maps only take effect when **Route Control Enforcement** is enabled for import under `Tenant > Networking > L3Out > Main profile`. Otherwise, everything is imported (learned) by default.
+
+
+### L3Out Route Map Match Rule with missing-target
+
+Prior to upgrading to release 5.2(8), 6.0(2) or later, you must ensure that the route map (route profile) with type **Match Prefix AND Routing Policy** (type `combinable` in the object `rtctrlProfile`) does not contain a match rule with the `missing-target` state.
+
+Each context in an L3Out route-map with type **Match Prefix AND Routing Policy** creates a route-map sequence by combining multiple match conditions shown below:
+
+* Match rules referenced by the route-map context
+* L3Out subnets to which the route-map is associated directly or through an L3Out EPG.
+* BD subnets in a BD to which the route-map is associated
+
+!!! note
+    Match rule references in a route-map context is located at the following path in the APIC GUI:
+
+    * `Tenants > Networking > L3Outs > (your L3Out) > Route map for import and export route control > Contexts > Match Rules`
+
+    Whereas the match rule itself is located at the following path in the APIC GUI:
+
+    * `Tanants > Policies > Protocol > Match Rules`
+
+However, prior to the fix of CSCwc11570, when the state of the match rule reference in the route map was `missing-target`, that is when the target match rule didn't exist due to a mis-configuration, no route-map sequence was created even when there were other match conditions such as L3Out subnets or BD subnets.
+
+After the fix of CSCwc11570, a route-map sequence is created correctly based on other available match conditions (i.e. L3Out/BD subnets) even when the state of the match rule reference is `missing-target`.
+
+Because of this, if users have route maps with type **Match Prefix AND Routing Policy** and a match rule reference that resulted in `missing-target` prior to an upgrade, route-map sequences that weren't deployed prior to the upgrade may be deployed after the upgrade. This may change how the routes are exported(advertised) or imported(learned) through an L3Out after the upgrade.
+
+To avoid an unexpected behavior change after an upgrade, if the route map context has a match rule reference with `missing-target`, you should either remove the match rule reference or update it such that it points to an existing match rule.
+
+!!! Tip
+    When a match rule reference with `missing-target` is present for a route map with type **Match Prefix AND Routing Policy** prior to the upgrade and prior to the fix of CSCwx11570, the corresponding route-map context is not functioning. However, the fact that it has not been functioning without any operational impact indicates that the route map context may not be needed in the first place. If you remove the match rule reference with `missing-target`, a new route-map sequence will be deployed based on other match conditions which may or may not be needed. Thus, it is important for you to check the original intent of the route-map context and decide how to resolve it. If the route-map context is not needed in the first place, you would need to remove the entire route-map context instead of just removing the match rule reference with `missing-target`.
 
 
 ### ISIS Redistribution Metric for MPod/Msite      

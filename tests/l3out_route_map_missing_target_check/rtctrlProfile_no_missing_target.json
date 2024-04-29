@@ -1,0 +1,27 @@
+[
+  {
+    "rtctrlProfile": {
+      "attributes": {
+        "annotation": "",
+        "autoContinue": "no",
+        "childAction": "",
+        "descr": "",
+        "direction": "import",
+        "dn": "uni/tn-TK/out-OSPF/prof-RMAP1",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "level": "0",
+        "modTs": "2024-04-17T13:01:33.705-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "RMAP1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "combinable",
+        "uid": "15374",
+        "userdom": ":"
+      }
+    }
+  }
+]
