@@ -36,7 +36,7 @@ Items                                                        | This Script      
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
-[g4]: #compatibility-switch-hardware-gen1
+[g4]: #compatibility-switch-hardware---gen1
 [g5]: #compatibility-remote-leaf-switch
 [g6]: #apic-target-version-image-and-md5-hash
 [g7]: #apic-cluster-is-fully-fit
@@ -138,7 +138,7 @@ Items                                           | Defect       | This Script    
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
 [d3]: #contract-port-22
-[d4]: #telemetry-stats
+[d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
 [d6]: #internal-vlan-pool
 [d7]: #apic-ca-cert-validation
@@ -1324,7 +1324,9 @@ Due to the defect CSCvt47850, if the switches are still on an older version than
 To avoid this issue, change the `collectorLocation` type to `none` through the API to prevent the object from being automatically deleted post upgrade.
 
 1. If `telemetryStatsServerP` exists with `collectorLocation="apic"`, use the API to change the `collectorLocation` type to `none`.
+
     !!! example
+        `collectorLocation` is set to `apic` so this fabric is susceptible to CSCvt47850. Use icurl to change `collectorLocation` to `none`.
         ```
         apic# moquery -c telemetryStatsServerP
         # telemetry.StatsServerP
@@ -1339,7 +1341,9 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 2. Upgrade both Cisco APICs and switches to the target version.
 
 3. After validating that all switches have been upgraded successfully, delete the `telemetryStatsSeverP` managed object.
+
     !!! example
+        Object can safely be removed from the fabric.
         ```
         apic# bash
         apic:~> icurl -kX POST "http://localhost:7777/api/mo/uni/fabric/servers/stserverp-default.xml" -d '<telemetryStatsServerP status="deleted"/>'

@@ -631,7 +631,7 @@ def get_credentials():
 
 def get_current_version():
     """ Returns: AciVersion instance """
-    prints("Checking current APIC version (switch nodes are assumed to be on the same version)...", end='')
+    prints("Checking current APIC version...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
         if 'node-1' in firmware['firmwareCtrlrRunning']['attributes']['dn']:
@@ -691,6 +691,25 @@ def get_vpc_nodes(**kwargs):
 
     return vpc_nodes
 
+def get_switch_version(**kwargs):
+    """ Returns: AciVersion instance """
+    prints("Gathering Switch Versions from Firmware Repository...", end='')
+    firmwares = icurl('class', 'firmwareRunning.json')
+    versions = []
+    switch_version = None
+
+    for firmware in firmwares:
+        if firmware['firmwareRunning']['attributes']['peVer'] not in versions:
+            versions.append(firmware['firmwareRunning']['attributes']['peVer'])
+    for version in versions:
+        version = AciVersion(version)
+        if not switch_version:
+            switch_version = version
+        elif switch_version.newer_than(str(version)):
+            switch_version = version
+
+    prints('%s\n' % switch_version)
+    return switch_version
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
@@ -2409,7 +2428,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     return result
 
 
-def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+def telemetryStatsServerP_object_check(index, total_checks, switch_version=None, tversion=None, **kwargs):
     title = 'telemetryStatsServerP Object'
     result = PASS
     msg = ''
@@ -2423,12 +2442,12 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    if cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
+    if switch_version.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
         telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
         for serverp in telemetryStatsServerP_json:
             if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
                 result = FAIL_O
-                data.append([str(cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
+                data.append([str(switch_version), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2852,6 +2871,7 @@ if __name__ == "__main__":
         cversion = get_current_version()
         tversion = get_target_version()
         vpc_nodes = get_vpc_nodes()
+        switch_version = get_switch_version()
     except Exception as e:
         prints('')
         err = 'Error: %s' % e
@@ -2862,7 +2882,7 @@ if __name__ == "__main__":
         sys.exit()
     inputs = {'username': username, 'password': password,
               'cversion': cversion, 'tversion': tversion,
-              'vpc_node_ids': vpc_nodes}
+              'vpc_node_ids': vpc_nodes, 'switch_version':switch_version}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
                 "check_details": [], 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
