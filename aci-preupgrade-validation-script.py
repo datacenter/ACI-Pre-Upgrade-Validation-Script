@@ -1005,7 +1005,11 @@ def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
         msg = 'bootflash objects not found'
 
     predownloaded_nodes = []
-    download_sts = icurl('class', download_sts_api)
+    try:
+        download_sts = icurl('class', download_sts_api)
+    except:
+        # Older versions don't have 'dnldStatus' param
+        download_sts = []
     for maintUpgJob in download_sts:
         dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
         node = dn.group("node")
