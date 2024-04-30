@@ -60,15 +60,16 @@ Items                                         | Faults         | This Script    
 [Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[Access (Untagged) Port Config][f9]            | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-[L3Out Subnets][f10]                           | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
-[BD Subnets][f11]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[BD Subnets][f12]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[VMM Domain Controller Status][f13]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[VMM Domain LLDP/CDP Adjacency Status][f14]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Different infra VLAN via LLDP][f15]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[HW Programming Failure][f16]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
-[Scalability (faults related to Capacity Dashboard)][f17] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
+[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
+[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -79,16 +80,15 @@ Items                                         | Faults         | This Script    
 [f7]: #l2l3-port-config
 [f8]: #l2l3-port-config
 [f9]: #access-untagged-port-config
-[f10]: #l3out-subnets
-[f11]: #bd-subnets
+[f10]: #encap-already-in-use
+[f11]: #l3out-subnets
 [f12]: #bd-subnets
-[f13]: #vmm-domain-controller-status
-[f14]: #vmm-domain-lldpcdp-adjacency-status
-[f15]: #different-infra-vlan-via-lldp
-[f16]: #hw-programming-failure
-[f17]: #scalability-faults-related-to-capacity-dashboard
-
-
+[f13]: #bd-subnets
+[f14]: #vmm-domain-controller-status
+[f15]: #vmm-domain-lldpcdp-adjacency-status
+[f16]: #different-infra-vlan-via-lldp
+[f17]: #hw-programming-failure
+[f18]: #scalability-faults-related-to-capacity-dashboard
 
 
 ### Configuration Checks
@@ -101,11 +101,12 @@ Items                                         | Faults         | This Script    
 [L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[ISIS Redistribution Metric for MPod/Msite][c7]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[BGP Route-target Type for GOLF over L2EVPN][c8]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[ISIS Redistribution Metric for MPod/Msite][c8]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[BGP Route-target Type for GOLF over L2EVPN][c9]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[APIC Container Bridge IP Overlap with APIC TEP][c10] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -113,11 +114,12 @@ Items                                         | Faults         | This Script    
 [c4]: #l3out-mtu
 [c5]: #bgp-peer-profile-at-node-level-without-loopback
 [c6]: #l3out-route-map-importexport-direction
-[c7]: #isis-redistribution-metric-for-mpodmsite
-[c8]: #bgp-route-target-type-for-golf-over-l2evpn
-[c9]: #apic-container-bridge-ip-overlap-with-apic-tep
-[c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
-[c11]: #oob-mgmt-security
+[c7]: #l3out-route-map-match-rule-with-missing-target
+[c8]: #isis-redistribution-metric-for-mpodmsite
+[c9]: #bgp-route-target-type-for-golf-over-l2evpn
+[c10]: #apic-container-bridge-ip-overlap-with-apic-tep
+[c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
+[c12]: #oob-mgmt-security
 
 
 ### Defect Condition Checks
@@ -703,6 +705,7 @@ The script verifies these faults to ensure that a port is not configured as part
     ```
     apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
     Total Objects shown: 1
+
     # fault.Inst
     code             : F0467
     ack              : no
@@ -736,6 +739,121 @@ The script verifies these faults to ensure that a port is not configured as part
     apic1# 
     ```
 Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
+
+
+### Encap Already in Use
+
+This is another type of the F0467 fault code family that you should check before an upgrade. This fault alerts that an interface configuration under an EPG or an SVI configuration for an L3Out has failed because the VLAN encapsulation for the interface is already used by another interface on the same switch for a different purpose. After an upgrade, it’s possible that the previous working configuration will break if this faulty policy is deployed first after the switch reloads.
+
+It is critical that you resolve these issues before the upgrade to prevent any unexpected outages when the switch(es) upgrade. The VLAN encapsulation on the interface that the fault is raised on should either be corrected or deleted in order to clear the fault. You can run the moquery in the example below on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well.
+
+!!! example "Fault Example (F0467: encap-already-in-use)"
+    The following shows three examples.
+
+    The first fault is for the interface configuration under the EPG `EPG1-2` in application profile `AP1` in tenant `TK` on node `101` interface `eth1/4` with VLAN `2011`. The fault description indicates that VLAN `2011` is already used by EPG `EPG1-1` in application profile `AP1` in tenant `TK`.
+
+    The second fault is for the SVI configuration under L3Out `BGP` in tenant `TK` on `node-103` interface `eth1/11` with VLAN `2013`. The fault description indicates that VLAN `2013` is already used by `EPG1-3` in application profile `AP1` in tenant `TK`.
+
+    The third fault is for the interface configuration under the EPG `EPG3-1` in application profile `AP1` in tenant `TK` on node `103` interface `eth1/1` with VLAN `2051`. The fault description indicates that VLAN `2051` is already used by L3Out `BGP` in tenant `TK`.
+
+    Note that the fault description may not include `(vlan-2011)` in `Encap (vlan-2011)` on older versions.
+    ```
+    admin@apic1:~> moquery -c faultInst -x 'query-target-filter=wcard(faultInst.descr,"encap-already-in-use")'
+    Total Objects shown: 3
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:02:20.878-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/ap-AP1/epg-EPG1-2 node 101 eth1/4 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;
+    dn               : topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG1-2]/node-101/stpathatt-[eth1/4]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:04:25.300-07:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:59:31.948-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/out-BGP node 103 eth1/11 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;
+    dn               : topology/pod-2/node-103/local/svc-policyelem-id-0/resPolCont/rtdOutCont/rtdOutDef-[uni/tn-TK/out-BGP]/node-103/stpathatt-[eth1/11]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:59:31.948-07:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:58:02.758-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/ap-AP1/epg-EPG3-1 node 103 eth1/1 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;
+    dn               : topology/pod-2/node-103/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG3-1]/node-103/stpathatt-[eth1/1]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:58:02.758-07:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+    ```
 
 
 ### L3Out Subnets
@@ -1183,7 +1301,7 @@ Due to this change, when upgrading from an older version to release 4.1(2) or la
     When multiple interfaces in the same node profile need to establish a BGP peer with the same peer IP, you might attempt to configure a **BGP Peer Connectivity Profile** at a node profile without a loopback so that the same BGP Peer configuration is applied, as a fallback due to the missing loopback, to each interface in the same node profile. This is because a **BGP Peer Connectivity Profile** with the same peer IP address could not be configured at multiple interface profiles within the same node profile. This limitation was loosened based on CSCvw88636 on 4.2(7f). Until then, for this specific requirement, you need to configure a node interface per interface profile and configure the **BGP Peer Connectivity Profile** at each interface profile in a different node profile.
 
 
-### L3Out Route Map import/export direction        
+### L3Out Route Map import/export direction
 
 Prior to upgrading to release 4.1(1) or later, you must ensure that the route map (route profile) configuration is correct.
 
@@ -1210,6 +1328,37 @@ Although this method is not the most common or recommended one among many ways t
     With this configuration, you don’t need **Export Route Control Subnet** or **Import Route Control Subnet** in the external EPGs, and you can have external EPGs that are dedicated for contracts or route leaking while you have the full control of routing protocol through route maps just like a normal router.
 
     Also note that any import direction route maps only take effect when **Route Control Enforcement** is enabled for import under `Tenant > Networking > L3Out > Main profile`. Otherwise, everything is imported (learned) by default.
+
+
+### L3Out Route Map Match Rule with missing-target
+
+Prior to upgrading to release 5.2(8), 6.0(2) or later, you must ensure that the route map (route profile) with type **Match Prefix AND Routing Policy** (type `combinable` in the object `rtctrlProfile`) does not contain a match rule with the `missing-target` state.
+
+Each context in an L3Out route-map with type **Match Prefix AND Routing Policy** creates a route-map sequence by combining multiple match conditions shown below:
+
+* Match rules referenced by the route-map context
+* L3Out subnets to which the route-map is associated directly or through an L3Out EPG.
+* BD subnets in a BD to which the route-map is associated
+
+!!! note
+    Match rule references in a route-map context is located at the following path in the APIC GUI:
+
+    * `Tenants > Networking > L3Outs > (your L3Out) > Route map for import and export route control > Contexts > Match Rules`
+
+    Whereas the match rule itself is located at the following path in the APIC GUI:
+
+    * `Tanants > Policies > Protocol > Match Rules`
+
+However, prior to the fix of CSCwc11570, when the state of the match rule reference in the route map was `missing-target`, that is when the target match rule didn't exist due to a mis-configuration, no route-map sequence was created even when there were other match conditions such as L3Out subnets or BD subnets.
+
+After the fix of CSCwc11570, a route-map sequence is created correctly based on other available match conditions (i.e. L3Out/BD subnets) even when the state of the match rule reference is `missing-target`.
+
+Because of this, if users have route maps with type **Match Prefix AND Routing Policy** and a match rule reference that resulted in `missing-target` prior to an upgrade, route-map sequences that weren't deployed prior to the upgrade may be deployed after the upgrade. This may change how the routes are exported(advertised) or imported(learned) through an L3Out after the upgrade.
+
+To avoid an unexpected behavior change after an upgrade, if the route map context has a match rule reference with `missing-target`, you should either remove the match rule reference or update it such that it points to an existing match rule.
+
+!!! Tip
+    When a match rule reference with `missing-target` is present for a route map with type **Match Prefix AND Routing Policy** prior to the upgrade and prior to the fix of CSCwx11570, the corresponding route-map context is not functioning. However, the fact that it has not been functioning without any operational impact indicates that the route map context may not be needed in the first place. If you remove the match rule reference with `missing-target`, a new route-map sequence will be deployed based on other match conditions which may or may not be needed. Thus, it is important for you to check the original intent of the route-map context and decide how to resolve it. If the route-map context is not needed in the first place, you would need to remove the entire route-map context instead of just removing the match rule reference with `missing-target`.
 
 
 ### ISIS Redistribution Metric for MPod/Msite      
