@@ -136,6 +136,7 @@ Items                                           | Defect       | This Script    
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -147,6 +148,7 @@ Items                                           | Defect       | This Script    
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
+[d11]: #vmm-uplink-container-with-empty-actives
 
 
 
@@ -1540,6 +1542,13 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 
 !!! note
     This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
+
+
+### VMM Uplink Container with empty Actives
+
+Due to the defect CSCvr96408, affected versions with VMM domains having VMM parameters changed via the UI could have resulted in `fvUplinkOrderCont` objects created with the parameter pairing `"active": ""` (set to blank). In most cases, issues due to this were avoided by manually modifying the active uplink configuration directly within VMware.
+
+The issue arises when an upgrade or VMM parameter change occurs which causes a re-validation of VMM policy as defined in ACI. The result is that any `fvUplinkOrderCont` still having `active: ""` will push this down to VMware vCenter, resulting in no active uplinks and a corresponding outage.
 
 
 

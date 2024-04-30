@@ -2906,6 +2906,36 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
+def vmm_active_uplinks_check(index, total_checks, **kwargs):
+    title = 'fvUplinkOrderCont with blank active uplinks definition'
+    result = PASS
+    msg = ''
+    headers = ["Tenant", "Application Profile", "Application EPG", "VMM Domain"]
+    data = []
+    recommended_action = 'Identify Active Uplinks and apply this to the VMM domain association of each EPG'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
+    print_title(title, index, total_checks)
+
+    uplink_api =  'fvUplinkOrderCont.json' 
+    uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
+    vmm_epg_regex=r"uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)/rsdomAtt-\[uni/vmmp-.+/dom-(?P<dom>.+)\]"
+
+    try:
+        affected_uplinks = icurl('class', uplink_api)
+    except:
+        # Pre 4.x did not have this class
+        affected_uplinks = []
+
+    if affected_uplinks:
+        result = FAIL_O
+        for uplink in affected_uplinks:
+            dn = re.search(vmm_epg_regex, uplink['fvUplinkOrderCont']['attributes']['dn'])
+            data.append([dn.group("tenant"), dn.group("ap"), dn.group("epg"), dn.group("dom")])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2989,6 +3019,7 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
+        vmm_active_uplinks_check
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
