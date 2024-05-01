@@ -71,6 +71,7 @@ Items                                         | Faults         | This Script    
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 
+
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
 [f3]: #switch-node-bootflash-usage
@@ -107,6 +108,7 @@ Items                                         | Faults         | This Script    
 [APIC Container Bridge IP Overlap with APIC TEP][c10] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c13]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -120,6 +122,7 @@ Items                                         | Faults         | This Script    
 [c10]: #apic-container-bridge-ip-overlap-with-apic-tep
 [c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c12]: #oob-mgmt-security
+[c13]: #eecdh-ssl-cipher
 
 
 ### Defect Condition Checks
@@ -1437,6 +1440,22 @@ This implies that for users running releases 4.2(7), 5.2(1), or 5.2(2), and when
 
 The script checks whether you should be aware of this change in behavior prior to your ACI upgrade so that appropriate subnets can be added to the configuration or you can prepare a workstation that is within the configured subnet, which will continue to be accessible to APICs even after the upgrade.
 
+### EECDH SSL Cipher
+
+Under `Fabric > Fabric Policies > Policies > Pod > Management Access > default`, there are multiple SSL ciphers which can be enabled or disabled by the user. Cipher states should only be modified if a configured cipher is declared insecure or weak by the IETF. When modifying any cipher it is important to validate that the configuration is valid otherwise NGINX may fail to validate and the GUI will become unusable due to no cipher match. For more information reference the [APIC Security Configuration Guide][19].
+
+EECDH is a key algorithm that many cipher suites use for HTTPS communication. If the key algorithm is disabled any cipher suite using this key algorithm will also be implicitly disabled. Cisco does not recommend disabling EECDH.
+
+When disabled, the nginx.conf configuration file may fail to validate and NGINX will continue to use the last known good configuration. On upgrade, nginx.conf will also fail to validate but there is no known good configuration so the APIC GUI will be down until EECDH is re-enabled.
+
+!!! tip
+    If the GUI is inaccessible due to the EECDH cipher being disabled, it can be re-enabled from the CLI using icurl.
+    ```
+    apic1# bash
+    admin@apic1:~> icurl -X POST 'http://localhost:7777/api/mo/uni/fabric/comm-default/https/cph-EECDH.json' -d '{"commCipher":{"attributes":{"state":"enabled"}}}'
+    {"totalCount":"0","imdata":[]}
+    admin@apic1:~>
+    ```
 
 ## Defect Check Details
 
@@ -1545,9 +1564,6 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 !!! note
     This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
 
-
-
-
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1567,3 +1583,4 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 [16]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-604.html
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
+[19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html

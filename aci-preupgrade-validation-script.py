@@ -2924,6 +2924,33 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
+def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
+    title = 'EECDH SSL Cipher'
+    result = FAIL_UF
+    msg = ''
+    headers = ["DN", "Cipher", "State", "Failure Reason"]
+    data = []
+    recommended_action = "Re-enable EECDH key exchange prior to APIC upgrade."
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#eecdh-ssl-cipher'
+
+    print_title(title, index, total_checks)
+    
+    if cversion.newer_than("4.2(1a)"):
+        commCipher = icurl('class', 'commCipher.json')
+        if not commCipher:
+            print_result(title, ERROR, 'commCipher response empty. Is the cluster healthy?')
+            return ERROR
+        for cipher in commCipher:
+            if cipher['commCipher']['attributes']['id'] == "EECDH" and cipher['commCipher']['attributes']['state'] == "disabled":
+                data.append([cipher['commCipher']['attributes']['dn'], "EECDH", "disabled", "Secure key exchange is disabled which may cause APIC GUI to be down after upgrade."])
+
+    if not data:
+        result = PASS
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2997,6 +3024,7 @@ if __name__ == "__main__":
         docker0_subnet_overlap_check,
         uplink_limit_check,
         oob_mgmt_security_check,
+        eecdh_cipher_check,
 
         # Bugs
         ep_announce_check,
@@ -3009,6 +3037,7 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
+        
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):

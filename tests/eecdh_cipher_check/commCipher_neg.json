@@ -1,0 +1,50 @@
+[
+    {
+      "commCipher": {
+        "attributes": {
+          "annotation": "",
+          "childAction": "",
+          "dn": "uni/fabric/comm-default/https/cph-EECDH",
+          "extMngdBy": "",
+          "id": "EECDH",
+          "lcOwn": "local",
+          "modTs": "2024-04-25T10:51:01.401-04:00",
+          "state": "enabled",
+          "status": "",
+          "uid": "15374"
+        }
+      }
+    },
+    {
+      "commCipher": {
+        "attributes": {
+          "annotation": "",
+          "childAction": "",
+          "dn": "uni/fabric/comm-default/https/cph-MD5",
+          "extMngdBy": "",
+          "id": "MD5",
+          "lcOwn": "local",
+          "modTs": "2022-06-24T14:40:07.637-04:00",
+          "state": "disabled",
+          "status": "",
+          "uid": "15374"
+        }
+      }
+    },
+    {
+      "commCipher": {
+        "attributes": {
+          "annotation": "",
+          "childAction": "",
+          "dn": "uni/fabric/comm-default/https/cph-ECDSA",
+          "extMngdBy": "",
+          "id": "ECDSA",
+          "lcOwn": "local",
+          "modTs": "2020-02-24T16:11:04.618-04:00",
+          "state": "disabled",
+          "status": "",
+          "uid": "15374"
+        }
+      }
+    }
+]
