@@ -1,0 +1,101 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "ack": "no",
+        "alert": "no",
+        "cause": "configuration-failed",
+        "changeSet": "configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;, temporaryError:no",
+        "childAction": "",
+        "code": "F0467",
+        "created": "2024-04-19T21:02:20.878-07:00",
+        "delegated": "yes",
+        "descr": "Configuration failed for uni/tn-TK/ap-AP1/epg-EPG1-2 node 101 eth1/4 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;",
+        "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG1-2]/node-101/stpathatt-[eth1/4]/nwissues/fault-F0467",
+        "domain": "tenant",
+        "extMngdBy": "undefined",
+        "highestSeverity": "minor",
+        "lastTransition": "2024-04-19T21:04:25.300-07:00",
+        "lc": "raised",
+        "modTs": "never",
+        "occur": "1",
+        "origSeverity": "minor",
+        "prevSeverity": "minor",
+        "rn": "fault-F0467",
+        "rule": "fv-nw-issues-config-failed",
+        "severity": "minor",
+        "status": "",
+        "subject": "management",
+        "title": "",
+        "type": "config",
+        "userdom": "all"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "ack": "no",
+        "alert": "no",
+        "cause": "configuration-failed",
+        "changeSet": "configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;, temporaryError:no",
+        "childAction": "",
+        "code": "F0467",
+        "created": "2024-04-19T21:59:31.948-07:00",
+        "delegated": "yes",
+        "descr": "Configuration failed for uni/tn-TK/out-BGP node 103 eth1/11 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;",
+        "dn": "topology/pod-2/node-103/local/svc-policyelem-id-0/resPolCont/rtdOutCont/rtdOutDef-[uni/tn-TK/out-BGP]/node-103/stpathatt-[eth1/11]/nwissues/fault-F0467",
+        "domain": "tenant",
+        "extMngdBy": "undefined",
+        "highestSeverity": "minor",
+        "lastTransition": "2024-04-19T22:01:52.348-07:00",
+        "lc": "raised",
+        "modTs": "never",
+        "occur": "1",
+        "origSeverity": "minor",
+        "prevSeverity": "minor",
+        "rn": "fault-F0467",
+        "rule": "fv-nw-issues-config-failed",
+        "severity": "minor",
+        "status": "",
+        "subject": "management",
+        "title": "",
+        "type": "config",
+        "userdom": "all"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "ack": "no",
+        "alert": "no",
+        "cause": "configuration-failed",
+        "changeSet": "configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;, temporaryError:no",
+        "childAction": "",
+        "code": "F0467",
+        "created": "2024-04-19T21:58:02.758-07:00",
+        "delegated": "yes",
+        "descr": "Configuration failed for uni/tn-TK/ap-AP1/epg-EPG3-1 node 103 eth1/1 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;",
+        "dn": "topology/pod-2/node-103/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG3-1]/node-103/stpathatt-[eth1/1]/nwissues/fault-F0467",
+        "domain": "tenant",
+        "extMngdBy": "undefined",
+        "highestSeverity": "minor",
+        "lastTransition": "2024-04-19T22:00:22.338-07:00",
+        "lc": "raised",
+        "modTs": "never",
+        "occur": "1",
+        "origSeverity": "minor",
+        "prevSeverity": "minor",
+        "rn": "fault-F0467",
+        "rule": "fv-nw-issues-config-failed",
+        "severity": "minor",
+        "status": "",
+        "subject": "management",
+        "title": "",
+        "type": "config",
+        "userdom": "all"
+      }
+    }
+  }
+]

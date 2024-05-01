@@ -631,7 +631,7 @@ def get_credentials():
 
 def get_current_version():
     """ Returns: AciVersion instance """
-    prints("Checking current APIC version (switch nodes are assumed to be on the same version)...", end='')
+    prints("Checking current APIC version...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
         if 'node-1' in firmware['firmwareCtrlrRunning']['attributes']['dn']:
@@ -691,6 +691,24 @@ def get_vpc_nodes(**kwargs):
 
     return vpc_nodes
 
+def get_switch_version(**kwargs):
+    """ Returns lowest switch version as AciVersion instance """
+    prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
+    firmwares = icurl('class', 'firmwareRunning.json')
+    lowest_sw_ver = None
+    versions = set()
+
+    for firmware in firmwares:
+        versions.add(firmware['firmwareRunning']['attributes']['peVer'])
+
+    lowest_sw_ver = AciVersion(versions.pop())
+    for version in versions:
+        version = AciVersion(version)
+        if lowest_sw_ver.newer_than(str(version)):
+            lowest_sw_ver = version
+
+    prints('%s\n' % lowest_sw_ver)
+    return lowest_sw_ver
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
@@ -1169,48 +1187,57 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
     title = 'Encap Already In Use (F0467 encap-already-in-use)'
     result = FAIL_O
     msg = ''
-    headers = ["DN of Faulted EPG", "In Use by EPG", "Node", "Overlapping Encap(s)"]
+    headers = ["Faulted EPG/L3Out", "Node", "Port", "In Use Encap(s)", "In Use by EPG/L3Out"]
     data = []
     unformatted_headers = ['Fault Description']
     unformatted_data = []
     recommended_action = 'Resolve the overlapping encap configuration prior to upgrade'
     print_title(title, index, total_checks)
 
-    desc_regex = r'Encap is already in use by (?P<inUseEpgStr>.+);'
-    nwissues_dn_regex = node_regex + r'/.*epp/fv-\[(?P<faultedEpgDn>.*)\]/node.*'
+    # <port> can be `ethX/X` or the name of I/F policy group
+    # <vlan> is not there for older versions
+    desc_regex = r'Configuration failed for (?P<failed>.+) node (?P<node>\d+) (?P<port>.+) due to .* Encap (\(vlan-(?P<vlan>\d+)\) )?is already in use by (?P<inuse>.+);'
 
     faultInsts = icurl('class',
-                       'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
-    if faultInsts:
-        fvIfConns = icurl('class', 'fvIfConn.json')
-        for faultInst in faultInsts:
-            desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+                       'faultInst.json?query-target-filter=wcard(faultInst.descr,"encap-already-in-use")')
+    fvIfConns = []
+    for faultInst in faultInsts:
+        desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+        if desc:
+            failed_dn = desc.group("failed")
+            node_id = desc.group("node")
+            port_id = desc.group("port")
+            vlan_id = desc.group("vlan")
+            inuse_list = desc.group("inuse").split(":")
+            if len(inuse_list) == 3:
+                inuse_dn = "uni/tn-{0}/ap-{1}/epg-{2}".format(*inuse_list)
+            elif len(inuse_list) == 4:
+                inuse_dn = "uni/tn-{0}/out-{2}".format(*inuse_list)
 
-            if desc_array:
-                inuse_epg_list = desc_array.group("inUseEpgStr").split(":")
-                in_use_epg_dn = "uni/tn-" + inuse_epg_list[0] + "/ap-" + inuse_epg_list[1] + "/epg-" + inuse_epg_list[2]
-
-                dn_array = re.search(nwissues_dn_regex, faultInst['faultInst']['attributes']['dn'])
-                faulted_epg_dn = dn_array.group("faultedEpgDn")
-                nodeId = dn_array.group("node")
-
+            # Get already-in-use encap(s) from fvIfConn when a fault doesn't include encap
+            if vlan_id is None:
                 faulted_epg_encaps = []
                 in_use_epg_encaps = []
+                if not fvIfConns:
+                    fvIfConns = icurl('class', 'fvIfConn.json')
                 for fvIfConn in fvIfConns:
                     dn = fvIfConn['fvIfConn']['attributes']['dn']
                     encap = fvIfConn['fvIfConn']['attributes']['encap']
-                    if (faulted_epg_dn in dn) and ("node-"+nodeId in dn):
+                    if (failed_dn in dn) and ("node-"+node_id in dn):
                         if encap not in faulted_epg_encaps:
                             faulted_epg_encaps.append(encap)
 
-                    if (in_use_epg_dn in dn) and ("node-"+nodeId in dn):
+                    if (inuse_dn in dn) and ("node-"+node_id in dn):
                         if encap not in in_use_epg_encaps:
                             in_use_epg_encaps.append(encap)
 
                 overlapping_encaps = [x for x in in_use_epg_encaps if x in faulted_epg_encaps]
-                data.append([faulted_epg_dn, in_use_epg_dn, nodeId, ','.join(overlapping_encaps)])
-            else:
-                unformatted_data.append([faultInst['faultInst']['attributes']['descr']])
+                vlan_id = ",".join(overlapping_encaps)
+
+            data.append([failed_dn, node_id, port_id, vlan_id, inuse_dn])
+        else:
+            unformatted_data.append([faultInst['faultInst']['attributes']['descr']])
+
     if not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data,
@@ -1693,6 +1720,60 @@ def l3out_route_map_direction_check(index, total_checks, **kwargs):
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data)
+    return result
+
+
+def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion, **kwargs):
+    """ Implementation change due to CSCwc11570 - 5.2.8/6.0.2 """
+    title = 'L3Out Route Map Match Rule with missing-target'
+    result = FAIL_O
+    msg = ''
+    headers = ['Tenant', 'L3Out', 'Route Map', 'Context', 'Action', 'Match Rule']
+    data = []
+    recommended_action = 'The configured match rules do not exist. Update the route maps with existing match rules.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-route-map-match-rule-with-missing-target'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    def is_old(v):
+        return True if v.older_than("5.2(8a)") or v.simple_version == "6.0(1)" else False
+
+    c_is_old = is_old(cversion)
+    t_is_old = is_old(tversion)
+    if (c_is_old and t_is_old) or (not c_is_old and not t_is_old):
+        print_result(title, NA)
+        return NA
+
+    dn_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/'
+    # Get a missing-target match rule in a route map with type `combinable`
+    api = 'rtctrlProfile.json'
+    api += '?query-target-filter=eq(rtctrlProfile.type,"combinable")'
+    api += '&rsp-subtree=full&rsp-subtree-filter=eq(rtctrlRsCtxPToSubjP.state,"missing-target")'
+    profiles = icurl('class', api)
+    for profile in profiles:
+        dn = re.search(dn_regex, profile['rtctrlProfile']['attributes']['dn'])
+        for ctxP in profile['rtctrlProfile'].get('children', []):
+            if not ctxP.get('rtctrlCtxP'):
+                continue
+            for rsCtxPToSubjP in ctxP['rtctrlCtxP'].get('children', []):
+                if (
+                    rsCtxPToSubjP.get('rtctrlRsCtxPToSubjP')
+                    and rsCtxPToSubjP['rtctrlRsCtxPToSubjP']['attributes']['state'] == 'missing-target'
+                ):
+                    data.append([
+                        dn.group('tenant'),
+                        dn.group('l3out'),
+                        profile['rtctrlProfile']['attributes']['name'],
+                        ctxP['rtctrlCtxP']['attributes']['name'],
+                        ctxP['rtctrlCtxP']['attributes']['action'],
+                        rsCtxPToSubjP['rtctrlRsCtxPToSubjP']['attributes']['tnRtctrlSubjPName'],
+                    ])
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -2409,7 +2490,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     return result
 
 
-def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tversion=None, **kwargs):
     title = 'telemetryStatsServerP Object'
     result = PASS
     msg = ''
@@ -2423,12 +2504,12 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    if cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
+    if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
         telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
         for serverp in telemetryStatsServerP_json:
             if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
                 result = FAIL_O
-                data.append([str(cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
+                data.append([str(sw_cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2879,6 +2960,7 @@ if __name__ == "__main__":
         cversion = get_current_version()
         tversion = get_target_version()
         vpc_nodes = get_vpc_nodes()
+        sw_cversion = get_switch_version()
     except Exception as e:
         prints('')
         err = 'Error: %s' % e
@@ -2889,9 +2971,10 @@ if __name__ == "__main__":
         sys.exit()
     inputs = {'username': username, 'password': password,
               'cversion': cversion, 'tversion': tversion,
-              'vpc_node_ids': vpc_nodes}
+              'vpc_node_ids': vpc_nodes, 'sw_cversion':sw_cversion}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
-                "check_details": [], 'cversion': str(cversion), 'tversion': str(tversion)}
+                "script_version": str(SCRIPT_VERSION), "check_details": [], 
+                'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
         # General Checks
         apic_version_md5_check,
@@ -2934,6 +3017,7 @@ if __name__ == "__main__":
         l3out_mtu_check,
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
+        l3out_route_map_missing_target_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,

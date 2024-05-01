@@ -12,7 +12,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 # icurl queries
 faultInsts = (
-    'faultInst.json?&query-target-filter=wcard(faultInst.descr,"encap-already-in-use")'
+    'faultInst.json?query-target-filter=wcard(faultInst.descr,"encap-already-in-use")'
 )
 fvIfConns = "fvIfConn.json"
 
@@ -22,6 +22,13 @@ fvIfConns = "fvIfConn.json"
     [
         (
             {
+                faultInsts: read_data(dir, "faultInst-new-version.json"),
+                fvIfConns: read_data(dir, "fvIfConn.json"),
+            },
+            script.FAIL_O,
+        ),
+        (
+            {
                 faultInsts: read_data(dir, "faultInst-encap-pos.json"),
                 fvIfConns: read_data(dir, "fvIfConn.json"),
             },
@@ -29,7 +36,7 @@ fvIfConns = "fvIfConn.json"
         ),
         (
             {
-                faultInsts: read_data(dir, "faultInst-encap-neg.json"),
+                faultInsts: [],
                 fvIfConns: read_data(dir, "fvIfConn.json"),
             },
             script.PASS,
