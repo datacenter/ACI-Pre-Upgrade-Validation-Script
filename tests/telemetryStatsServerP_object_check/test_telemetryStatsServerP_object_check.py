@@ -15,7 +15,7 @@ telemetryStatsServerPs = "telemetryStatsServerP.json"
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, switch_version, tversion, expected_result",
+    "icurl_outputs, sw_cversion, tversion, expected_result",
     [
         (
             {telemetryStatsServerPs: []},
@@ -79,11 +79,11 @@ telemetryStatsServerPs = "telemetryStatsServerP.json"
         ),
     ],
 )
-def test_logic(mock_icurl, switch_version, tversion, expected_result):
+def test_logic(mock_icurl, sw_cversion, tversion, expected_result):
     result = script.telemetryStatsServerP_object_check(
         1,
         1,
-        script.AciVersion(switch_version),
+        script.AciVersion(sw_cversion),
         script.AciVersion(tversion) if tversion else None,
     )
     assert result == expected_result
