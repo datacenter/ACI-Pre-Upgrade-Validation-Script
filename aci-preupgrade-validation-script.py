@@ -2332,7 +2332,7 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
         result = FAIL_UF
         data.append(['CSCvn20175', recommended_action])
 
-    elif (cversion.major1 == '4' and cversion.major2 == '2' cversion.older_than('4.2(4i)')) or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):  # If current 4.2 Version is older than 4.2(4i) or for 5.X version is older than 5.0(1k)
+    elif (cversion.major1 == '4' and cversion.major2 == '2' and cversion.older_than('4.2(4i)')) or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):  # If current 4.2 Version is older than 4.2(4i) or for 5.X version is older than 5.0(1k)
         result = FAIL_UF
         data.append(['CSCvt07565', recommended_action])
 
