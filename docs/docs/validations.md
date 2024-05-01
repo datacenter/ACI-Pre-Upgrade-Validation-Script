@@ -70,6 +70,7 @@ Items                                         | Faults         | This Script    
 [HW Programming Failure][f16]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f17] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 
+
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
 [f3]: #switch-node-bootflash-usage
@@ -106,6 +107,7 @@ Items                                         | Faults         | This Script    
 [APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c12]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -118,7 +120,7 @@ Items                                         | Faults         | This Script    
 [c9]: #apic-container-bridge-ip-overlap-with-apic-tep
 [c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c11]: #oob-mgmt-security
-
+[c12]: #eecdh-ssl-cipher
 
 ### Defect Condition Checks
 
