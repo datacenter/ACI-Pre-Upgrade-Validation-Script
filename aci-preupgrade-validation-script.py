@@ -2906,6 +2906,43 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
+def fabric_port_down_check(index, total_checks, **kwargs):
+    title = 'Fabric Port is Down (F1394 ethpm-if-port-down-fabric)'
+    result = FAIL_O
+    msg = ''
+    headers = ["Pod", "Node", "Int", "Reason"]
+    unformatted_headers = ['dn', 'Fault Description']
+    unformatted_data = []
+    data = []
+    recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#ethpm-if-port-down-fabric'
+    print_title(title, index, total_checks)
+    
+    fault_api =  'faultInst.json'
+    fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
+    fault_api += ',eq(faultInst.rule,"ethpm-if-port-down-fabric"))'
+
+    faultInsts = icurl('class',fault_api)
+    dn_re = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)/.+/phys-\[(?P<int>eth\d/\d+)\]'
+
+    if faultInsts:
+        for faultInst in faultInsts:
+            m = re.search(dn_re, faultInst['faultInst']['attributes']['dn'])
+            if m:
+                podid = m.group('pod')
+                nodeid = m.group('node')
+                port = m.group('int')
+                reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
+                data.append([podid, nodeid, port, reason])
+            else:
+                unformatted_data.append(faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr'])
+
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -2963,6 +3000,7 @@ if __name__ == "__main__":
         lldp_with_infra_vlan_mismatch_check,
         hw_program_fail_check,
         scalability_faults_check,
+        fabric_port_down_check
 
         # Configurations
         vpc_paired_switches_check,
