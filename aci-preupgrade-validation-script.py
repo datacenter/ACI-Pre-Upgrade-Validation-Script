@@ -56,6 +56,11 @@ logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt=
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
+class OldVerPropNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
+
+
 class Connection(object):
     """
     Object built primarily for executing commands on Cisco IOS/NXOS devices.  The following
@@ -613,7 +618,10 @@ def icurl(apitype, query):
     logging.debug('response: ' + str(response))
     imdata = json.loads(response)['imdata']
     if imdata and "error" in imdata[0].keys():
-        raise Exception('API call failed! Check debug log')
+        if imdata and "not found in class" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('cversion does not have requested property')
+        else:
+            raise Exception('API call failed! Check debug log')
     else:
         return imdata
 
@@ -1007,9 +1015,10 @@ def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
     predownloaded_nodes = []
     try:
         download_sts = icurl('class', download_sts_api)
-    except:
+    except OldVerPropNotFound:
         # Older versions don't have 'dnldStatus' param
         download_sts = []
+
     for maintUpgJob in download_sts:
         dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
         node = dn.group("node")

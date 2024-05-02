@@ -22,16 +22,22 @@ download_sts += ',eq(maintUpgJob.desiredVersion,"n9000-16.0(2h)"))'
     "icurl_outputs, tversion, expected_result",
     [
         (
-            {partitions: read_data(dir, "eqptcapacityFSPartition_pos.json"),
+            {partitions: read_data(dir, "eqptcapacityFSPartition.json"),
             download_sts: read_data(dir, "maintUpgJob_not_downloaded.json")},
             "6.0(2h)",
             script.FAIL_UF,
         ),
         (
-            {partitions: read_data(dir, "eqptcapacityFSPartition_pos.json"),
+            {partitions: read_data(dir, "eqptcapacityFSPartition.json"),
             download_sts: read_data(dir, "maintUpgJob_pre_downloaded.json")},
             "6.0(2h)",
             script.PASS,
+        ),
+        (
+            {partitions: read_data(dir, "eqptcapacityFSPartition.json"),
+            download_sts: read_data(dir, "maintUpgJob_old_ver_no_prop.json")},
+            "6.0(2h)",
+            script.FAIL_UF,
         ),
     ],
 )
