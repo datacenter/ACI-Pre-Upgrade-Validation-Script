@@ -2913,7 +2913,7 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
     headers = ["Tenant", "Application Profile", "Application EPG", "VMM Domain"]
     data = []
     recommended_action = 'Identify Active Uplinks and apply this to the VMM domain association of each EPG'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#vmm-uplink-container-with-empty-actives'
     print_title(title, index, total_checks)
 
     uplink_api =  'fvUplinkOrderCont.json' 
