@@ -2915,7 +2915,7 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     unformatted_data = []
     data = []
     recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#ethpm-if-port-down-fabric'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
     print_title(title, index, total_checks)
     
     fault_api =  'faultInst.json'
@@ -2935,7 +2935,7 @@ def fabric_port_down_check(index, total_checks, **kwargs):
                 reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
                 data.append([podid, nodeid, port, reason])
             else:
-                unformatted_data.append(faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr'])
+                unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
 
     if not data and not unformatted_data:
         result = PASS
@@ -3000,7 +3000,7 @@ if __name__ == "__main__":
         lldp_with_infra_vlan_mismatch_check,
         hw_program_fail_check,
         scalability_faults_check,
-        fabric_port_down_check
+        fabric_port_down_check,
 
         # Configurations
         vpc_paired_switches_check,
