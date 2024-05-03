@@ -2344,17 +2344,20 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     headers = ["Potential Defect", "Recommended Action"]
     data = []
     recommended_action = 'Contact Cisco TAC to check the DB size via root'
+    doc_url = ''
     print_title(title, index, total_checks)
 
-    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.major2 <= '1' and cversion.older_than('4.1(1i)')):  # If current Version is older than 3.2(5d) or for 4.1 version is older than 4.1.1i
+    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.major2 <= '1' and cversion.older_than('4.1(1i)')): 
         result = FAIL_UF
+        doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvn20175'
         data.append(['CSCvn20175', recommended_action])
 
-    elif (cversion.major1 == '4' and cversion.major2 == '2' and cversion.older_than('4.2(4i)')) or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):  # If current 4.2 Version is older than 4.2(4i) or for 5.X version is older than 5.0(1k)
+    elif (cversion.major1 == '4' and cversion.major2 == '2' and cversion.older_than('4.2(4i)')) or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):  
         result = FAIL_UF
+        doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt07565'
         data.append(['CSCvt07565', recommended_action])
 
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, doc_url=doc_url)
     return result 
 
 
