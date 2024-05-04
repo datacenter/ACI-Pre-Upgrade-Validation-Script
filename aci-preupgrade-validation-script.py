@@ -3008,15 +3008,18 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
     for new_mo in new_mo_dict:
         since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
-        if created_by_mo == "":
-            created_by_mo = new_mo
+       
         if not since_version.newer_than(str(cversion)):
-            temp_createdby_mo_count = icurl('class', created_by_mo+".json?rsp-subtree-include=count")
-            created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
             temp_new_mo_count = icurl("class", new_mo+".json?rsp-subtree-include=count")
             new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
-            if created_by_mo_count != new_mo_count:
-                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+            if created_by_mo == "":
+                if new_mo_count==0:
+                    data.append([new_mo, new_mo_dict[new_mo]["Impact"]]) 
+            else:
+                temp_createdby_mo_count = icurl('class', created_by_mo+".json?rsp-subtree-include=count")
+                created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+                if created_by_mo_count != new_mo_count:
+                    data.append([new_mo, new_mo_dict[new_mo]["Impact"]])    
 
     if data:
         result = FAIL_O
