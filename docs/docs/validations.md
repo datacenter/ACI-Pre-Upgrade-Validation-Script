@@ -139,6 +139,7 @@ Items                                           | Defect       | This Script    
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -150,6 +151,7 @@ Items                                           | Defect       | This Script    
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
+[d11]: #vmm-uplink-container-with-empty-actives
 
 
 
@@ -1563,6 +1565,42 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 
 !!! note
     This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
+
+
+### VMM Uplink Container with empty Actives
+
+Due to the defect CSCvr96408, affected versions with VMM domains having VMM parameters changed via the UI could have resulted in `fvUplinkOrderCont` objects created with the parameter `"active": ""` ('active' set to blank). This `active` parameter defines which uplinks should be set to active on the Vmware created EPG portgroup, and if blank, results in no active uplinks. In most cases, traffic issues due to this config were worked-around by manually modifying the active uplink configuration directly within VMware vCenter.
+
+The issue arises when an upgrade or VMM parameter change occurs. Either change causes a re-validation of the `fvUplinkOrderCont` VMM policy as defined in ACI. The result is that any `fvUplinkOrderCont` still having `active: ""` will push a config change into VMware vCenter to map back to APIC policy, resulting in the removal of active uplinks and a corresponding outage.
+
+This script checks for `fvUplinkOrderCont` with `active: ""` and alerts the user to their existence. The `active` parameter must match your current active configuration to avoid an outage on subsequent upgrade of VMM Parameter change.
+
+The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under the `active` field.
+
+!!! example
+    ```
+    apic1# moquery -c fvUplinkOrderCont
+    Total Objects shown: 1
+
+    # fv.UplinkOrderCont
+    active       : 1,2,3,4,5,6,7,8
+    annotation   : 
+    childAction  : 
+    descr        : 
+    dn           : uni/tn-test1/ap-ap3/epg-epg3/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder
+    extMngdBy    : 
+    lcOwn        : local
+    modTs        : 2024-04-30T16:15:06.815+00:00
+    name         : 
+    nameAlias    : 
+    ownerKey     : 
+    ownerTag     : 
+    rn           : uplinkorder
+    standby      : 
+    status       : 
+    uid          : 15374
+    userdom      : :all:common:
+    ```
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html

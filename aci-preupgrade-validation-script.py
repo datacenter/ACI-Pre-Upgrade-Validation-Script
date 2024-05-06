@@ -56,6 +56,11 @@ logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt=
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
+class OldVerClassNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
+
+
 class OldVerPropNotFound(Exception):
     """ Later versions of ACI can have class properties not found in older versions """
     pass
@@ -620,6 +625,10 @@ def icurl(apitype, query):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
+        elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
+        elif "not found" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
     else:
@@ -2978,6 +2987,39 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     return result
 
 
+def vmm_active_uplinks_check(index, total_checks, **kwargs):
+    title = 'fvUplinkOrderCont with blank active uplinks definition'
+    result = PASS
+    msg = ''
+    headers = ["Tenant", "Application Profile", "Application EPG", "VMM Domain"]
+    data = []
+    recommended_action = 'Identify Active Uplinks and apply this to the VMM domain association of each EPG'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#vmm-uplink-container-with-empty-actives'
+    print_title(title, index, total_checks)
+
+    uplink_api =  'fvUplinkOrderCont.json' 
+    uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
+    vmm_epg_regex=r"uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)/rsdomAtt-\[uni/vmmp-.+/dom-(?P<dom>.+)\]"
+
+    try:
+        affected_uplinks = icurl('class', uplink_api)
+    except OldVerClassNotFound:
+        # Pre 4.x did not have this class
+        msg = 'cversion does not have class fvUplinkOrderCont'
+        result = NA
+        print_result(title, result, msg)
+        return result
+
+    if affected_uplinks:
+        result = FAIL_O
+        for uplink in affected_uplinks:
+            dn = re.search(vmm_epg_regex, uplink['fvUplinkOrderCont']['attributes']['dn'])
+            data.append([dn.group("tenant"), dn.group("ap"), dn.group("epg"), dn.group("dom")])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3064,7 +3106,7 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
-        
+        vmm_active_uplinks_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
