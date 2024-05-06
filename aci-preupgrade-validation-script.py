@@ -56,6 +56,11 @@ logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt=
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
+class OldVerClassNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
+
+
 class OldVerPropNotFound(Exception):
     """ Later versions of ACI can have class properties not found in older versions """
     pass
@@ -620,6 +625,8 @@ def icurl(apitype, query):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
+        elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
     else:
@@ -2994,9 +3001,13 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
 
     try:
         affected_uplinks = icurl('class', uplink_api)
-    except:
+    except OldVerClassNotFound:
         # Pre 4.x did not have this class
-        affected_uplinks = []
+        msg = 'cversion does not have class fvUplinkOrderCont'
+        result = NA
+        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+        return result
+
 
     if affected_uplinks:
         result = FAIL_O

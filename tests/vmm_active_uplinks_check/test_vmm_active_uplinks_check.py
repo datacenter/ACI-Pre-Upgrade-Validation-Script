@@ -26,6 +26,10 @@ uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
             {uplink_api: read_data(dir, "fvUplinkOrderCont_neg.json")},
             script.PASS,
         ),
+        (
+            {uplink_api: read_data(dir, "fvUplinkOrderCont_not_exist.json")},
+            script.NA,
+        ),
     ],
 )
 def test_logic(mock_icurl, expected_result):
