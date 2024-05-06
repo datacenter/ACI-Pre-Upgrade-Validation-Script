@@ -3010,7 +3010,6 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
         print_result(title, result, msg)
         return result
 
-
     if affected_uplinks:
         result = FAIL_O
         for uplink in affected_uplinks:
