@@ -70,6 +70,8 @@ Items                                         | Faults         | This Script    
 [Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+
 
 
 [f1]: #apic-disk-space-usage
@@ -90,7 +92,7 @@ Items                                         | Faults         | This Script    
 [f16]: #different-infra-vlan-via-lldp
 [f17]: #hw-programming-failure
 [f18]: #scalability-faults-related-to-capacity-dashboard
-
+[f19]: #fabric-port-is-down
 
 ### Configuration Checks
 
@@ -1212,6 +1214,52 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
     uid              :
     ```
 
+
+### Fabric Port is Down
+
+The script checks for fault code `F1394` with rule `ethpm-if-port-down-fabric`, which indicate that ACI has flagged configured Fabric ports for being in a down state.
+
+It is important to understand whether or not these downed fabric prots are preventing your leaf nodes from having redundant paths. If unexpected, address these issues before performing the ACI Upgrade.
+
+Failure to do so may lead to outages during switch upgrades due to leaf nodes not having redundant spine paths.
+
+!!! example "Fault Example (F0469: duplicate-subnets-within-ctx)"
+    ```
+    admin@f1-apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F1394"'
+    Total Objects shown: 4
+     
+    # fault.Inst
+    code             : F1394
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : interface-physical-down
+    changeSet        : lastLinkStChg (New: 2023-10-24T03:24:57.051+00:00), operBitset (New: 4-5,11,35)
+    childAction      : 
+    created          : 2023-09-09T08:53:35.125+00:00
+    delegated        : no
+    descr            : Port is down, reason:err-disabled-link-flaps(err-disabled), used by:Fabric
+    dn               : topology/pod-1/node-101/sys/phys-[eth1/53]/phys/fault-F1394
+    domain           : access
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2023-10-24T03:24:57.101+00:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F1394
+    rule             : ethpm-if-port-down-fabric
+    severity         : minor
+    status           : 
+    subject          : port-down
+    title            : 
+    type             : communications
+    uid              : 
+    userdom          : all
+    --- omit ---
+    ```
 
 ## Configuration Check Details
 
