@@ -618,7 +618,7 @@ def icurl(apitype, query):
     logging.debug('response: ' + str(response))
     imdata = json.loads(response)['imdata']
     if imdata and "error" in imdata[0].keys():
-        if imdata and "not found in class" in imdata[0]['error']['attributes']['text']:
+        if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
         else:
             raise Exception('API call failed! Check debug log')
