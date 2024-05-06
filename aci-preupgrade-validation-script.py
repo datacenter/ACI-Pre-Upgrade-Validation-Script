@@ -56,6 +56,11 @@ logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt=
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
+class OldVerPropNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
+
+
 class Connection(object):
     """
     Object built primarily for executing commands on Cisco IOS/NXOS devices.  The following
@@ -612,8 +617,11 @@ def icurl(apitype, query):
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
     imdata = json.loads(response)['imdata']
-    if imdata and "error" in imdata[0].keys():
-        raise Exception('API call failed! Check debug log')
+    if imdata and "error" in imdata[0]:
+        if "not found in class" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('cversion does not have requested property')
+        else:
+            raise Exception('API call failed! Check debug log')
     else:
         return imdata
 
@@ -631,7 +639,7 @@ def get_credentials():
 
 def get_current_version():
     """ Returns: AciVersion instance """
-    prints("Checking current APIC version (switch nodes are assumed to be on the same version)...", end='')
+    prints("Checking current APIC version...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
         if 'node-1' in firmware['firmwareCtrlrRunning']['attributes']['dn']:
@@ -691,6 +699,24 @@ def get_vpc_nodes(**kwargs):
 
     return vpc_nodes
 
+def get_switch_version(**kwargs):
+    """ Returns lowest switch version as AciVersion instance """
+    prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
+    firmwares = icurl('class', 'firmwareRunning.json')
+    lowest_sw_ver = None
+    versions = set()
+
+    for firmware in firmwares:
+        versions.add(firmware['firmwareRunning']['attributes']['peVer'])
+
+    lowest_sw_ver = AciVersion(versions.pop())
+    for version in versions:
+        version = AciVersion(version)
+        if lowest_sw_ver.newer_than(str(version)):
+            lowest_sw_ver = version
+
+    prints('%s\n' % lowest_sw_ver)
+    return lowest_sw_ver
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
@@ -984,7 +1010,7 @@ def switch_group_guideline_check(index, total_checks, **kwargs):
     return result
 
 
-def switch_bootflash_usage_check(index, total_checks, **kwargs):
+def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
     title = 'Switch Node /bootflash usage'
     result = FAIL_UF
     msg = ''
@@ -992,13 +1018,31 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
     data = []
     print_title(title, index, total_checks)
 
-    response_json = icurl('class',
-                          'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
-    if not response_json:
+    partitions_api =  'eqptcapacityFSPartition.json'
+    partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
+
+    download_sts_api =  'maintUpgJob.json'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")' 
+    download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion)
+
+    partitions = icurl('class', partitions_api)
+    if not partitions:
         result = ERROR
         msg = 'bootflash objects not found'
 
-    for eqptcapacityFSPartition in response_json:
+    predownloaded_nodes = []
+    try:
+        download_sts = icurl('class', download_sts_api)
+    except OldVerPropNotFound:
+        # Older versions don't have 'dnldStatus' param
+        download_sts = []
+
+    for maintUpgJob in download_sts:
+        dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
+        node = dn.group("node")
+        predownloaded_nodes.append(node)
+
+    for eqptcapacityFSPartition in partitions:
         dn = re.search(node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
         pod = dn.group("pod")
         node = dn.group("node")
@@ -1006,11 +1050,12 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
         used = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['used'])
 
         usage = (used / (avail + used)) * 100
-        if usage >= 50:
+        if (usage >= 50) and (node not in predownloaded_nodes):
             data.append([pod, node, usage, "Over 50% usage! Contact Cisco TAC for Support"])
+
     if not data:
         result = PASS
-        msg = 'all below 50%'
+        msg = 'All below 50% or pre-downloaded'
     print_result(title, result, msg, headers, data)
     return result
 
@@ -2472,7 +2517,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     return result
 
 
-def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tversion=None, **kwargs):
+def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tversion=None, **kwargs):
     title = 'telemetryStatsServerP Object'
     result = PASS
     msg = ''
@@ -2486,12 +2531,12 @@ def telemetryStatsServerP_object_check(index, total_checks, cversion=None, tvers
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
 
-    if cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
+    if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
         telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
         for serverp in telemetryStatsServerP_json:
             if serverp["telemetryStatsServerP"]["attributes"].get("collectorLocation") == "apic":
                 result = FAIL_O
-                data.append([str(cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
+                data.append([str(sw_cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2906,6 +2951,33 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
+def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
+    title = 'EECDH SSL Cipher'
+    result = FAIL_UF
+    msg = ''
+    headers = ["DN", "Cipher", "State", "Failure Reason"]
+    data = []
+    recommended_action = "Re-enable EECDH key exchange prior to APIC upgrade."
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#eecdh-ssl-cipher'
+
+    print_title(title, index, total_checks)
+    
+    if cversion.newer_than("4.2(1a)"):
+        commCipher = icurl('class', 'commCipher.json')
+        if not commCipher:
+            print_result(title, ERROR, 'commCipher response empty. Is the cluster healthy?')
+            return ERROR
+        for cipher in commCipher:
+            if cipher['commCipher']['attributes']['id'] == "EECDH" and cipher['commCipher']['attributes']['state'] == "disabled":
+                data.append([cipher['commCipher']['attributes']['dn'], "EECDH", "disabled", "Secure key exchange is disabled which may cause APIC GUI to be down after upgrade."])
+
+    if not data:
+        result = PASS
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def vmm_active_uplinks_check(index, total_checks, **kwargs):
     title = 'fvUplinkOrderCont with blank active uplinks definition'
     result = PASS
@@ -2945,6 +3017,7 @@ if __name__ == "__main__":
         cversion = get_current_version()
         tversion = get_target_version()
         vpc_nodes = get_vpc_nodes()
+        sw_cversion = get_switch_version()
     except Exception as e:
         prints('')
         err = 'Error: %s' % e
@@ -2955,9 +3028,10 @@ if __name__ == "__main__":
         sys.exit()
     inputs = {'username': username, 'password': password,
               'cversion': cversion, 'tversion': tversion,
-              'vpc_node_ids': vpc_nodes}
+              'vpc_node_ids': vpc_nodes, 'sw_cversion':sw_cversion}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
-                "check_details": [], 'cversion': str(cversion), 'tversion': str(tversion)}
+                "script_version": str(SCRIPT_VERSION), "check_details": [], 
+                'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
         # General Checks
         apic_version_md5_check,
@@ -3007,6 +3081,7 @@ if __name__ == "__main__":
         docker0_subnet_overlap_check,
         uplink_limit_check,
         oob_mgmt_security_check,
+        eecdh_cipher_check,
 
         # Bugs
         ep_announce_check,
@@ -3019,7 +3094,7 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
-        vmm_active_uplinks_check
+        vmm_active_uplinks_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
