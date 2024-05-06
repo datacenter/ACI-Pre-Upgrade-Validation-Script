@@ -2791,7 +2791,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
 
 
 def fabric_dpp_check(index, total_checks, tversion, **kwargs):
-    title = 'Dynamic Packet Prioritization'
+    title = 'CoS 3 with Dynamic Packet Prioritization'
     result = PASS
     msg = ''
     headers = ["Potential Defect", "Reason"]
