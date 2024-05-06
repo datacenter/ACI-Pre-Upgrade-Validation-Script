@@ -2796,7 +2796,7 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
     msg = ''
     headers = ["Potential Defect", "Reason"]
     data = []
-    recommended_action = 'Review Software Advisory for details'
+    recommended_action = 'Change the target version to the fixed version of CSCwf05073'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
     print_title(title, index, total_checks)
 
