@@ -718,13 +718,13 @@ def get_switch_version(**kwargs):
     for firmware in firmwares:
         versions.add(firmware['firmwareRunning']['attributes']['peVer'])
 
-    lowest_sw_ver = AciVersion(versions.pop())
-    for version in versions:
-        version = AciVersion(version)
-        if lowest_sw_ver.newer_than(str(version)):
-            lowest_sw_ver = version
+    if versions:
+        lowest_sw_ver = AciVersion(versions.pop())
+        for version in versions:
+            version = AciVersion(version)
+            if lowest_sw_ver.newer_than(str(version)):
+                lowest_sw_ver = version
 
-    prints('%s\n' % lowest_sw_ver)
     return lowest_sw_ver
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
@@ -2536,8 +2536,8 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
     print_title(title, index, total_checks)
 
-    if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+    if not sw_cversion or not tversion:
+        print_result(title, MANUAL, 'Current and target Switch version not supplied. Skipping.')
         return MANUAL
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
