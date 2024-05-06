@@ -2925,17 +2925,16 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     faultInsts = icurl('class',fault_api)
     dn_re = node_regex + r'/.+/phys-\[(?P<int>eth\d/\d+)\]'
 
-    if faultInsts:
-        for faultInst in faultInsts:
-            m = re.search(dn_re, faultInst['faultInst']['attributes']['dn'])
-            if m:
-                podid = m.group('pod')
-                nodeid = m.group('node')
-                port = m.group('int')
-                reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
-                data.append([podid, nodeid, port, reason])
-            else:
-                unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
+    for faultInst in faultInsts:
+        m = re.search(dn_re, faultInst['faultInst']['attributes']['dn'])
+        if m:
+            podid = m.group('pod')
+            nodeid = m.group('node')
+            port = m.group('int')
+            reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
+            data.append([podid, nodeid, port, reason])
+        else:
+            unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
 
     if not data and not unformatted_data:
         result = PASS
