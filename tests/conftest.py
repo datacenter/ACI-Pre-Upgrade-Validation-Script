@@ -41,6 +41,14 @@ def mock_icurl(monkeypatch, icurl_outputs):
     def _mock_icurl(apitype, query):
         if icurl_outputs.get(query) is None:
             log.error("Query `%s` not found in test data", query)
-        return icurl_outputs.get(query, [])
+
+        imdata = icurl_outputs.get(query, [])
+        if imdata and "error" in imdata[0]:
+            if "not found in class" in imdata[0]['error']['attributes']['text']:
+                raise script.OldVerPropNotFound('cversion does not have requested property')
+            else:
+                raise Exception('API call failed! Check debug log')
+        else:
+            return imdata
 
     monkeypatch.setattr(script, "icurl", _mock_icurl)

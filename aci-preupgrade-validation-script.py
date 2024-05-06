@@ -56,6 +56,11 @@ logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt=
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
+class OldVerPropNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
+
+
 class Connection(object):
     """
     Object built primarily for executing commands on Cisco IOS/NXOS devices.  The following
@@ -612,8 +617,11 @@ def icurl(apitype, query):
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
     imdata = json.loads(response)['imdata']
-    if imdata and "error" in imdata[0].keys():
-        raise Exception('API call failed! Check debug log')
+    if imdata and "error" in imdata[0]:
+        if "not found in class" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('cversion does not have requested property')
+        else:
+            raise Exception('API call failed! Check debug log')
     else:
         return imdata
 
@@ -1002,7 +1010,7 @@ def switch_group_guideline_check(index, total_checks, **kwargs):
     return result
 
 
-def switch_bootflash_usage_check(index, total_checks, **kwargs):
+def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
     title = 'Switch Node /bootflash usage'
     result = FAIL_UF
     msg = ''
@@ -1010,13 +1018,31 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
     data = []
     print_title(title, index, total_checks)
 
-    response_json = icurl('class',
-                          'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
-    if not response_json:
+    partitions_api =  'eqptcapacityFSPartition.json'
+    partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
+
+    download_sts_api =  'maintUpgJob.json'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")' 
+    download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion)
+
+    partitions = icurl('class', partitions_api)
+    if not partitions:
         result = ERROR
         msg = 'bootflash objects not found'
 
-    for eqptcapacityFSPartition in response_json:
+    predownloaded_nodes = []
+    try:
+        download_sts = icurl('class', download_sts_api)
+    except OldVerPropNotFound:
+        # Older versions don't have 'dnldStatus' param
+        download_sts = []
+
+    for maintUpgJob in download_sts:
+        dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
+        node = dn.group("node")
+        predownloaded_nodes.append(node)
+
+    for eqptcapacityFSPartition in partitions:
         dn = re.search(node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
         pod = dn.group("pod")
         node = dn.group("node")
@@ -1024,11 +1050,12 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
         used = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['used'])
 
         usage = (used / (avail + used)) * 100
-        if usage >= 50:
+        if (usage >= 50) and (node not in predownloaded_nodes):
             data.append([pod, node, usage, "Over 50% usage! Contact Cisco TAC for Support"])
+
     if not data:
         result = PASS
-        msg = 'all below 50%'
+        msg = 'All below 50% or pre-downloaded'
     print_result(title, result, msg, headers, data)
     return result
 
