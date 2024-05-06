@@ -36,7 +36,7 @@ Items                                                        | This Script      
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
-[g4]: #compatibility-switch-hardware-gen1
+[g4]: #compatibility-switch-hardware---gen1
 [g5]: #compatibility-remote-leaf-switch
 [g6]: #apic-target-version-image-and-md5-hash
 [g7]: #apic-cluster-is-fully-fit
@@ -71,6 +71,7 @@ Items                                         | Faults         | This Script    
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 [Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+
 
 
 [f1]: #apic-disk-space-usage
@@ -109,6 +110,7 @@ Items                                         | Faults         | This Script    
 [APIC Container Bridge IP Overlap with APIC TEP][c10] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c13]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -122,6 +124,7 @@ Items                                         | Faults         | This Script    
 [c10]: #apic-container-bridge-ip-overlap-with-apic-tep
 [c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c12]: #oob-mgmt-security
+[c13]: #eecdh-ssl-cipher
 
 
 ### Defect Condition Checks
@@ -138,17 +141,19 @@ Items                                           | Defect       | This Script    
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
 [d3]: #contract-port-22
-[d4]: #telemetry-stats
+[d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
 [d6]: #internal-vlan-pool
 [d7]: #apic-ca-cert-validation
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
+[d11]: #vmm-uplink-container-with-empty-actives
 
 
 
@@ -1485,6 +1490,22 @@ This implies that for users running releases 4.2(7), 5.2(1), or 5.2(2), and when
 
 The script checks whether you should be aware of this change in behavior prior to your ACI upgrade so that appropriate subnets can be added to the configuration or you can prepare a workstation that is within the configured subnet, which will continue to be accessible to APICs even after the upgrade.
 
+### EECDH SSL Cipher
+
+Under `Fabric > Fabric Policies > Policies > Pod > Management Access > default`, there are multiple SSL ciphers which can be enabled or disabled by the user. Cipher states should only be modified if a configured cipher is declared insecure or weak by the IETF. When modifying any cipher it is important to validate that the configuration is valid otherwise NGINX may fail to validate and the GUI will become unusable due to no cipher match. For more information reference the [APIC Security Configuration Guide][19].
+
+EECDH is a key algorithm that many cipher suites use for HTTPS communication. If the key algorithm is disabled any cipher suite using this key algorithm will also be implicitly disabled. Cisco does not recommend disabling EECDH.
+
+When disabled, the nginx.conf configuration file may fail to validate and NGINX will continue to use the last known good configuration. On upgrade, nginx.conf will also fail to validate but there is no known good configuration so the APIC GUI will be down until EECDH is re-enabled.
+
+!!! tip
+    If the GUI is inaccessible due to the EECDH cipher being disabled, it can be re-enabled from the CLI using icurl.
+    ```
+    apic1# bash
+    admin@apic1:~> icurl -X POST 'http://localhost:7777/api/mo/uni/fabric/comm-default/https/cph-EECDH.json' -d '{"commCipher":{"attributes":{"state":"enabled"}}}'
+    {"totalCount":"0","imdata":[]}
+    admin@apic1:~>
+    ```
 
 ## Defect Check Details
 
@@ -1521,7 +1542,9 @@ Due to the defect CSCvt47850, if the switches are still on an older version than
 To avoid this issue, change the `collectorLocation` type to `none` through the API to prevent the object from being automatically deleted post upgrade.
 
 1. If `telemetryStatsServerP` exists with `collectorLocation="apic"`, use the API to change the `collectorLocation` type to `none`.
+
     !!! example
+        `collectorLocation` is set to `apic` so this fabric is susceptible to CSCvt47850. Use icurl to change `collectorLocation` to `none`.
         ```
         apic# moquery -c telemetryStatsServerP
         # telemetry.StatsServerP
@@ -1536,7 +1559,9 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 2. Upgrade both Cisco APICs and switches to the target version.
 
 3. After validating that all switches have been upgraded successfully, delete the `telemetryStatsSeverP` managed object.
+
     !!! example
+        Object can safely be removed from the fabric.
         ```
         apic# bash
         apic:~> icurl -kX POST "http://localhost:7777/api/mo/uni/fabric/servers/stserverp-default.xml" -d '<telemetryStatsServerP status="deleted"/>'
@@ -1590,7 +1615,40 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
     This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
 
 
+### VMM Uplink Container with empty Actives
 
+Due to the defect CSCvr96408, affected versions with VMM domains having VMM parameters changed via the UI could have resulted in `fvUplinkOrderCont` objects created with the parameter `"active": ""` ('active' set to blank). This `active` parameter defines which uplinks should be set to active on the Vmware created EPG portgroup, and if blank, results in no active uplinks. In most cases, traffic issues due to this config were worked-around by manually modifying the active uplink configuration directly within VMware vCenter.
+
+The issue arises when an upgrade or VMM parameter change occurs. Either change causes a re-validation of the `fvUplinkOrderCont` VMM policy as defined in ACI. The result is that any `fvUplinkOrderCont` still having `active: ""` will push a config change into VMware vCenter to map back to APIC policy, resulting in the removal of active uplinks and a corresponding outage.
+
+This script checks for `fvUplinkOrderCont` with `active: ""` and alerts the user to their existence. The `active` parameter must match your current active configuration to avoid an outage on subsequent upgrade of VMM Parameter change.
+
+The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under the `active` field.
+
+!!! example
+    ```
+    apic1# moquery -c fvUplinkOrderCont
+    Total Objects shown: 1
+
+    # fv.UplinkOrderCont
+    active       : 1,2,3,4,5,6,7,8
+    annotation   : 
+    childAction  : 
+    descr        : 
+    dn           : uni/tn-test1/ap-ap3/epg-epg3/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder
+    extMngdBy    : 
+    lcOwn        : local
+    modTs        : 2024-04-30T16:15:06.815+00:00
+    name         : 
+    nameAlias    : 
+    ownerKey     : 
+    ownerTag     : 
+    rn           : uplinkorder
+    standby      : 
+    status       : 
+    uid          : 15374
+    userdom      : :all:common:
+    ```
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -1611,3 +1669,4 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 [16]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-604.html
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
+[19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
