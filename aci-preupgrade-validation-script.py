@@ -2923,7 +2923,7 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     fault_api += ',eq(faultInst.rule,"ethpm-if-port-down-fabric"))'
 
     faultInsts = icurl('class',fault_api)
-    dn_re = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)/.+/phys-\[(?P<int>eth\d/\d+)\]'
+    dn_re = node_regex + r'/.+/phys-\[(?P<int>eth\d/\d+)\]'
 
     if faultInsts:
         for faultInst in faultInsts:
