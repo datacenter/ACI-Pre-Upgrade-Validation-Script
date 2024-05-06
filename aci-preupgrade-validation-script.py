@@ -2971,6 +2971,12 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     new_mo_dict = {
+        "compatSwitchHw":
+        {
+            "CreatedBy": "",
+            "SinceVersion": "6.0(2h)", #suppBit attribute is available from 6.0(2h)
+            "Impact": "64/32 bit image can unexpectedly pushed to switches",
+        },
         "infraAssocEncapInstDef":
         {
             "CreatedBy": "infraRsToEncapInstDef",
