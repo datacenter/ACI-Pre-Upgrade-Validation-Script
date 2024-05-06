@@ -627,6 +627,8 @@ def icurl(apitype, query):
             raise OldVerPropNotFound('cversion does not have requested property')
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('cversion does not have requested class')
+        elif "not found" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
     else:

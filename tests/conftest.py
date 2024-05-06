@@ -48,6 +48,8 @@ def mock_icurl(monkeypatch, icurl_outputs):
                 raise script.OldVerPropNotFound('cversion does not have requested property')
             elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
                 raise script.OldVerClassNotFound('cversion does not have requested class')
+            elif "not found" in imdata[0]['error']['attributes']['text']:
+                raise script.OldVerClassNotFound('cversion does not have requested class')
             else:
                 raise Exception('API call failed! Check debug log')
         else:
