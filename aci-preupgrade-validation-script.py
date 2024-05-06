@@ -39,6 +39,7 @@ FAIL_O = 'FAIL - OUTAGE WARNING!!'
 FAIL_UF = 'FAIL - UPGRADE FAILURE!!'
 ERROR = 'ERROR !!'
 MANUAL = 'MANUAL CHECK REQUIRED'
+POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
 ver_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
@@ -2971,61 +2972,63 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     new_mo_dict = {
-        "compatSwitchHw":
-        {
+        "infraImplicitSetPol": {
             "CreatedBy": "",
-            "SinceVersion": "6.0(2h)", #suppBit attribute is available from 6.0(2h)
-            "Impact": "64/32 bit image can unexpectedly pushed to switches",
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
         },
-        "infraAssocEncapInstDef":
-        {
-            "CreatedBy": "infraRsToEncapInstDef",
-            "SinceVersion": "5.2(4d)",
-            "Impact": "VLAN for missing Mo will not be deployed to leaf",
+        "infraRsToImplicitSetPol": {
+            "CreatedBy": "infraImplicitSetPol",
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
         },
-        "infraRsConnectivityProfileOpt":
-        {
-            "CreatedBy": "infraRsConnectivityProfile",
-            "SinceVersion": "5.2(4d)",
-            "Impact": "VPC for missing Mo will not be deployed to leaf",
-        },
-        "fvSlaDef":
-        {
+        "fvSlaDef": {
             "CreatedBy": "fvIPSLAMonitoringPol",
             "SinceVersion": "4.1(1i)",
             "Impact": "IPSLA monitor policy will not be deployed",
         },
-        "infraImplicitSetPol":
-        {
-            "CreatedBy": "",
-            "SinceVersion": "3.2(10e)",
-            "Impact": "Infra implicit settings will not be deployed",
+        "infraRsConnectivityProfileOpt": {
+            "CreatedBy": "infraRsConnectivityProfile",
+            "SinceVersion": "5.2(4d)",
+            "Impact": "VPC for missing Mo will not be deployed to leaf",
         },
-        "infraRsToImplicitSetPol":
-        {
-            "CreatedBy": "infraImplicitSetPol",
-            "SinceVersion": "3.2(10e)",
-            "Impact": "Infra implicit settings will not be deployed",
-        }
+        "infraAssocEncapInstDef": {
+            "CreatedBy": "infraRsToEncapInstDef",
+            "SinceVersion": "5.2(4d)",
+            "Impact": "VLAN for missing Mo will not be deployed to leaf",
+        },
+        "compatSwitchHw": {
+            "CreatedBy": "",  # suppBit attribute is available from 6.0(2h)
+            "SinceVersion": "6.0(2h)",
+            "Impact": "64/32 bit image can unexpectedly pushed to switches",
+        },
     }
     if not tversion or (tversion and cversion.older_than(str(tversion))):
-        print_result(title, MANUAL, 'Run this script again after APIC upgrade and before switch upgrade')
-        return MANUAL
+        print_result(title, POST, 'Re-run script after APICs are upgraded and back to Fully-Fit')
+        return POST
+
     for new_mo in new_mo_dict:
         since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
-       
-        if not since_version.newer_than(str(cversion)):
-            temp_new_mo_count = icurl("class", new_mo+".json?rsp-subtree-include=count")
-            new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
-            if created_by_mo == "":
-                if new_mo_count==0:
-                    data.append([new_mo, new_mo_dict[new_mo]["Impact"]]) 
-            else:
-                temp_createdby_mo_count = icurl('class', created_by_mo+".json?rsp-subtree-include=count")
-                created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
-                if created_by_mo_count != new_mo_count:
-                    data.append([new_mo, new_mo_dict[new_mo]["Impact"]])    
+
+        if since_version.newer_than(str(cversion)):
+            continue
+
+        api = "{}.json?rsp-subtree-include=count"
+        if new_mo == "compatSwitchHw":
+            # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
+            api += "&query-target-filter=eq(compatSwitchHw.suppBit,'32')"
+
+        temp_new_mo_count = icurl("class", api.format(new_mo))
+        new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+        if created_by_mo == "":
+            if new_mo_count == 0:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+        else:
+            temp_createdby_mo_count = icurl('class', api.format(created_by_mo))
+            created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+            if created_by_mo_count != new_mo_count:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
 
     if data:
         result = FAIL_O
