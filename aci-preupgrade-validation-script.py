@@ -3007,7 +3007,7 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
         # Pre 4.x did not have this class
         msg = 'cversion does not have class fvUplinkOrderCont'
         result = NA
-        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+        print_result(title, result, msg)
         return result
 
 
