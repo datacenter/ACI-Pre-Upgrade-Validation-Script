@@ -43,7 +43,7 @@ def mock_icurl(monkeypatch, icurl_outputs):
             log.error("Query `%s` not found in test data", query)
 
         imdata = icurl_outputs.get(query, [])
-        if imdata and "error" in imdata[0].keys():
+        if imdata and "error" in imdata[0]:
             if "not found in class" in imdata[0]['error']['attributes']['text']:
                 raise script.OldVerPropNotFound('cversion does not have requested property')
             else:
