@@ -3084,18 +3084,18 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def switch_n9k_c93108tc_fx3p_check(index, total_checks,**kwargs):
-    title = 'N9K-C93108TC-FX3P existence'
+def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, **kwargs):
+    title = 'N9K-C93108TC-FX3P/FX3H Interface Down'
     result = PASS
     msg = ''
     headers = ["Node Id", "PID", "Warning"]
     data = []
-    recommended_action = 'Please hold on reboot (include upgrade) until CSCwh81430 offers a solution'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh81430'
+    recommended_action = 'Change the target version to the fixed version of CSCwh81430'
+    doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html'
     print_title(title, index, total_checks)
     added_node_list = []
     deviceMo = icurl('class', 'dhcpClient.json?query-target-filter=eq(dhcpClient.model,"N9K-C93108TC-FX3P")')
-    if len(deviceMo)>=1:
+    if len(deviceMo) >= 1:
         for switchMo in deviceMo:
             nodeId = switchMo["dhcpClient"]["attributes"].get("nodeId")
             pid = switchMo["dhcpClient"]["attributes"].get("model")
@@ -3197,7 +3197,7 @@ if __name__ == "__main__":
         sup_a_high_memory_check,
         vmm_active_uplinks_check,
         fabric_dpp_check,
-        switch_n9k_c93108tc_fx3p_check,
+        n9k_c93108tc_fx3p_interface_down_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
