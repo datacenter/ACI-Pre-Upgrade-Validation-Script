@@ -1,0 +1,23 @@
+[
+  {
+    "fvPodConnP": {
+      "attributes": {
+        "annotation": "",
+        "assocIntersitePodId": "0",
+        "dn": "uni/tn-infra/fabricExtConnP-1/podConnP-1",
+        "id": "1"
+
+      }
+    }
+  },
+  {
+    "fvPodConnP": {
+      "attributes": {
+        "annotation": "",
+        "assocIntersitePodId": "0",
+        "dn": "uni/tn-infra/fabricExtConnP-1/podConnP-2",
+        "id": "2"
+      }
+    }
+  }
+]

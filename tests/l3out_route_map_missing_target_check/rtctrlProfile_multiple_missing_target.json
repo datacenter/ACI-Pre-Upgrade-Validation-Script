@@ -1,0 +1,127 @@
+[
+  {
+    "rtctrlProfile": {
+      "attributes": {
+        "annotation": "",
+        "autoContinue": "no",
+        "childAction": "",
+        "descr": "",
+        "direction": "import",
+        "dn": "uni/tn-TK/out-OSPF/prof-RMAP1",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "level": "0",
+        "modTs": "2024-04-17T13:01:33.705-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "RMAP1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "combinable",
+        "uid": "15374",
+        "userdom": ":"
+      },
+      "children": [
+        {
+          "rtctrlCtxP": {
+            "attributes": {
+              "action": "permit",
+              "annotation": "",
+              "childAction": "",
+              "descr": "",
+              "extMngdBy": "",
+              "lcOwn": "local",
+              "modTs": "2024-04-18T12:46:40.464-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "name": "CTX2",
+              "nameAlias": "",
+              "order": "1",
+              "rn": "ctx-CTX2",
+              "status": "",
+              "uid": "15374",
+              "userdom": ":"
+            },
+            "children": [
+              {
+                "rtctrlRsCtxPToSubjP": {
+                  "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-18T14:38:58.531-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsctxPToSubjP-Subj2",
+                    "state": "missing-target",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "rtctrlSubjP",
+                    "tContextDn": "",
+                    "tDn": "",
+                    "tRn": "subj-Subj2",
+                    "tType": "name",
+                    "tnRtctrlSubjPName": "Subj2",
+                    "uid": "15374",
+                    "userdom": ":all:"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rtctrlCtxP": {
+            "attributes": {
+              "action": "permit",
+              "annotation": "",
+              "childAction": "",
+              "descr": "",
+              "extMngdBy": "",
+              "lcOwn": "local",
+              "modTs": "2024-04-18T12:14:37.550-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "name": "CTX1",
+              "nameAlias": "",
+              "order": "0",
+              "rn": "ctx-CTX1",
+              "status": "",
+              "uid": "15374",
+              "userdom": ":"
+            },
+            "children": [
+              {
+                "rtctrlRsCtxPToSubjP": {
+                  "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-18T12:16:27.269-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsctxPToSubjP-Subj1",
+                    "state": "missing-target",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "rtctrlSubjP",
+                    "tContextDn": "",
+                    "tDn": "",
+                    "tRn": "subj-Subj1",
+                    "tType": "name",
+                    "tnRtctrlSubjPName": "Subj1",
+                    "uid": "15374",
+                    "userdom": ":all:"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]

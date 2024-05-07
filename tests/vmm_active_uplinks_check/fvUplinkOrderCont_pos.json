@@ -1,0 +1,29 @@
+[
+  {
+    "fvUplinkOrderCont": {
+      "attributes": {
+        "active": "",
+        "dn": "uni/tn-test1/ap-ap1/epg-epg1/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder",
+        "rn": "uplinkorder"
+      }
+    }
+  },
+  {
+    "fvUplinkOrderCont": {
+      "attributes": {
+        "active": "",
+        "dn": "uni/tn-test1/ap-ap2/epg-epg2/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder",
+        "rn": "uplinkorder"
+      }
+    }
+  },
+  {
+    "fvUplinkOrderCont": {
+      "attributes": {
+        "active": "",
+        "dn": "uni/tn-test1/ap-ap3/epg-epg3/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder",
+        "rn": "uplinkorder"
+      }
+    }
+  }
+]

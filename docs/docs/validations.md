@@ -31,11 +31,12 @@ Items                                                        | This Script      
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps | :white_check_mark:
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
+[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
-[g4]: #compatibility-switch-hardware-gen1
+[g4]: #compatibility-switch-hardware---gen1
 [g5]: #compatibility-remote-leaf-switch
 [g6]: #apic-target-version-image-and-md5-hash
 [g7]: #apic-cluster-is-fully-fit
@@ -45,6 +46,7 @@ Items                                                        | This Script      
 [g11]: #features-that-need-to-be-disabled-prior-to-upgrade
 [g12]: #switch-upgrade-group-guidelines
 [g13]: #intersight-device-connector-upgrade-status
+[g14]: #mini-aci-upgrade-to-602-or-later
 
 
 ### Fault Checks
@@ -58,14 +60,19 @@ Items                                         | Faults         | This Script    
 [Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[L3Out Subnets][f9]                           | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
-[BD Subnets][f10]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[BD Subnets][f11]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[VMM Domain Controller Status][f12]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[VMM Domain LLDP/CDP Adjacency Status][f13]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Different infra VLAN via LLDP][f14]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[HW Programming Failure][f15]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
-[Scalability (faults related to Capacity Dashboard)][f16] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
+[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
+[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
+[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
+[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+
+
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -75,15 +82,17 @@ Items                                         | Faults         | This Script    
 [f6]: #config-on-apic-connected-port
 [f7]: #l2l3-port-config
 [f8]: #l2l3-port-config
-[f9]: #l3out-subnets
-[f10]: #bd-subnets
-[f11]: #bd-subnets
-[f12]: #vmm-domain-controller-status
-[f13]: #vmm-domain-lldpcdp-adjacency-status
-[f14]: #different-infra-vlan-via-lldp
-[f15]: #hw-programming-failure
-[f16]: #scalability-faults-related-to-capacity-dashboard
-
+[f9]: #access-untagged-port-config
+[f10]: #encap-already-in-use
+[f11]: #l3out-subnets
+[f12]: #bd-subnets
+[f13]: #bd-subnets
+[f14]: #vmm-domain-controller-status
+[f15]: #vmm-domain-lldpcdp-adjacency-status
+[f16]: #different-infra-vlan-via-lldp
+[f17]: #hw-programming-failure
+[f18]: #scalability-faults-related-to-capacity-dashboard
+[f19]: #fabric-port-is-down
 
 ### Configuration Checks
 
@@ -95,11 +104,13 @@ Items                                         | Faults         | This Script    
 [L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[ISIS Redistribution Metric for MPod/Msite][c7]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[BGP Route-target Type for GOLF over L2EVPN][c8]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[APIC Container Bridge IP Overlap with APIC TEP][c9]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Per-Leaf Fabric Uplink Scale Validation][c10]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[OoB Mgmt Security][c11]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[ISIS Redistribution Metric for MPod/Msite][c8]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[BGP Route-target Type for GOLF over L2EVPN][c9]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[APIC Container Bridge IP Overlap with APIC TEP][c10] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c13]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -107,11 +118,13 @@ Items                                         | Faults         | This Script    
 [c4]: #l3out-mtu
 [c5]: #bgp-peer-profile-at-node-level-without-loopback
 [c6]: #l3out-route-map-importexport-direction
-[c7]: #isis-redistribution-metric-for-mpodmsite
-[c8]: #bgp-route-target-type-for-golf-over-l2evpn
-[c9]: #apic-container-bridge-ip-overlap-with-apic-tep
-[c10]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
-[c11]: #oob-mgmt-security
+[c7]: #l3out-route-map-match-rule-with-missing-target
+[c8]: #isis-redistribution-metric-for-mpodmsite
+[c9]: #bgp-route-target-type-for-golf-over-l2evpn
+[c10]: #apic-container-bridge-ip-overlap-with-apic-tep
+[c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
+[c12]: #oob-mgmt-security
+[c13]: #eecdh-ssl-cipher
 
 
 ### Defect Condition Checks
@@ -127,18 +140,22 @@ Items                                           | Defect       | This Script    
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[CoS 3 with Dynamic Packet Prioritization][d10]            | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12]            | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
 [d3]: #contract-port-22
-[d4]: #telemetry-stats
+[d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
 [d6]: #internal-vlan-pool
 [d7]: #apic-ca-cert-validation
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
-[d10]: #cos-3-with-dynamic-packet-prioritization
+[d10]: #sup-aa-high-memory-usage
+[d11]: #vmm-uplink-container-with-empty-actives
+[d12]: #cos-3-with-dynamic-packet-prioritization
 
 
 
@@ -302,6 +319,30 @@ If you start an Cisco APIC upgrade while an intersight Device Connector (DC) upg
 
 You can check the status of intersight DC from `System > System Settings > intersight`. If the upgrade of the DC is in progress, wait for a minute and retry the Cisco APIC upgrade. The upgrade of the Intersight Device Connector typically takes less than a minute.
 
+### Mini ACI Upgrade to 6.0(2) or later
+
+Starting with APIC Release 6.0(2), controllers use a new linux operating system which requires any virtual APIC to be redeployed on the target version.
+
+When upgrading from ACI release 6.0(1) or earlier to release 6.0(2) or later, any virtual APICs must be removed from the APIC cluster prior to upgrade. You must follow the documented steps under the [Mini ACI Upgrade Guide][18] for this specific upgrade path. A regular policy upgrade will fail and result in a diverged cluster.
+
+!!! tip
+    You can check whether any APICs are virtual by querying `topSystem` and looking at the `nodeType` attribute. `unspecified` is used for any physical APIC appliance while `virtual` is used for any virtual APIC.
+    ```
+    # top.System
+    address                  : 10.1.0.2
+    --- omit ---
+    dn                       : topology/pod-1/node-2/sys
+    lastRebootTime           : 2024-04-21T11:35:24.844-04:00
+    lastResetReason          : unknown
+    lcOwn                    : local
+    modTs                    : 2024-04-21T11:56:04.032-04:00
+    mode                     : unspecified
+    monPolDn                 : uni/fabric/monfab-default
+    name                     : vapic2
+    nameAlias                :
+    nodeType                 : virtual
+    --- omit ---
+    ```
 
 ## Fault Check Details
 
@@ -664,6 +705,166 @@ It is critical that you resolve these issues before the upgrade to prevent any i
     ```
 
 
+### Access (Untagged) Port Config
+The APIC GUI or REST previously accepted two different access encapsulations on the same port, despite raising a fault with code F0467 and "native-or-untagged-encap-failure" in the changeSet. This configuration, likely resulting from user error, presents a significant risk of outage during switch upgrades or stateless reloads.
+
+The script verifies these faults to ensure that a port is not configured as part of two access VLANs. You need to resolve the conflict causing this fault before any upgrades to prevent potential outages. Failure to do so may result in the deployment of a new VLAN/EPG on the port after the upgrade, leading to downtime in the environment.
+
+!!! example "Fault Example (F0467: native-or-untagged-encap-failure)"
+    ```
+    apic1# moquery -c faultInst  -x 'query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : configuration-failed
+    changeSet        : configQual:native-or-untagged-encap-failure, configSt:failed-to-apply, temporaryError:no
+    childAction      : 
+    created          : 2024-04-20T10:03:48.493+02:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-EEA-1/ap-APP1/epg-EPG-2 node 101 eth1/28 due to Only One Native or Untagged Encap Allowed on Interface, debug message: 
+    dn               : topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-EEA-1/ap-APP1/epg-EPG-2]/node-101/stpathatt-[eth1/28]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-20T10:03:53.045+02:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           : 
+    subject          : management
+    title            : 
+    type             : config
+    uid              : 
+    userdom          : all
+    apic1# 
+    ```
+Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
+
+
+### Encap Already in Use
+
+This is another type of the F0467 fault code family that you should check before an upgrade. This fault alerts that an interface configuration under an EPG or an SVI configuration for an L3Out has failed because the VLAN encapsulation for the interface is already used by another interface on the same switch for a different purpose. After an upgrade, it’s possible that the previous working configuration will break if this faulty policy is deployed first after the switch reloads.
+
+It is critical that you resolve these issues before the upgrade to prevent any unexpected outages when the switch(es) upgrade. The VLAN encapsulation on the interface that the fault is raised on should either be corrected or deleted in order to clear the fault. You can run the moquery in the example below on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well.
+
+!!! example "Fault Example (F0467: encap-already-in-use)"
+    The following shows three examples.
+
+    The first fault is for the interface configuration under the EPG `EPG1-2` in application profile `AP1` in tenant `TK` on node `101` interface `eth1/4` with VLAN `2011`. The fault description indicates that VLAN `2011` is already used by EPG `EPG1-1` in application profile `AP1` in tenant `TK`.
+
+    The second fault is for the SVI configuration under L3Out `BGP` in tenant `TK` on `node-103` interface `eth1/11` with VLAN `2013`. The fault description indicates that VLAN `2013` is already used by `EPG1-3` in application profile `AP1` in tenant `TK`.
+
+    The third fault is for the interface configuration under the EPG `EPG3-1` in application profile `AP1` in tenant `TK` on node `103` interface `eth1/1` with VLAN `2051`. The fault description indicates that VLAN `2051` is already used by L3Out `BGP` in tenant `TK`.
+
+    Note that the fault description may not include `(vlan-2011)` in `Encap (vlan-2011)` on older versions.
+    ```
+    admin@apic1:~> moquery -c faultInst -x 'query-target-filter=wcard(faultInst.descr,"encap-already-in-use")'
+    Total Objects shown: 3
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:02:20.878-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/ap-AP1/epg-EPG1-2 node 101 eth1/4 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2011) is already in use by TK:AP1:EPG1-1;
+    dn               : topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG1-2]/node-101/stpathatt-[eth1/4]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:04:25.300-07:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:59:31.948-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/out-BGP node 103 eth1/11 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2013) is already in use by TK:AP1:EPG1-3;
+    dn               : topology/pod-2/node-103/local/svc-policyelem-id-0/resPolCont/rtdOutCont/rtdOutDef-[uni/tn-TK/out-BGP]/node-103/stpathatt-[eth1/11]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:59:31.948-07:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+
+    # fault.Inst
+    code             : F0467
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : configuration-failed
+    changeSet        : configQual:encap-already-in-use, configSt:failed-to-apply, debugMessage:encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;, temporaryError:no
+    childAction      :
+    created          : 2024-04-19T21:58:02.758-07:00
+    delegated        : yes
+    descr            : Configuration failed for uni/tn-TK/ap-AP1/epg-EPG3-1 node 103 eth1/1 due to Encap Already Used in Another EPG, debug message: encap-already-in-use: Encap (vlan-2051) is already in use by TK:VRFA:l3out-BGP:vlan-2051;
+    dn               : topology/pod-2/node-103/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TK/ap-AP1/epg-EPG3-1]/node-103/stpathatt-[eth1/1]/nwissues/fault-F0467
+    domain           : tenant
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2024-04-19T21:58:02.758-07:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : minor
+    status           :
+    subject          : management
+    title            :
+    type             : config
+    uid              :
+    userdom          : all
+    ```
+
+
 ### L3Out Subnets
 
 There is another type of the F0467 fault code family that you should check before an upgrade. This fault alerts that an external EPG defined under a Layer3 Out (L3Out) has a subnet with the **External Subnet for the External EPG** scope configured that overlaps with another L3Out external EPG in the same VRF. After an upgrade, it’s possible that the previous working configuration will break if this faulty policy is deployed first after the switch reloads.
@@ -1016,6 +1217,52 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
     ```
 
 
+### Fabric Port is Down
+
+The script checks for fault code `F1394` with rule `ethpm-if-port-down-fabric`, which indicate that ACI has flagged configured Fabric ports for being in a down state.
+
+It is important to understand whether or not these downed fabric prots are preventing your leaf nodes from having redundant paths. If unexpected, address these issues before performing the ACI Upgrade.
+
+Failure to do so may lead to outages during switch upgrades due to leaf nodes not having redundant spine paths.
+
+!!! example "Fault Example (F0469: duplicate-subnets-within-ctx)"
+    ```
+    admin@f1-apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F1394"'
+    Total Objects shown: 4
+     
+    # fault.Inst
+    code             : F1394
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : interface-physical-down
+    changeSet        : lastLinkStChg (New: 2023-10-24T03:24:57.051+00:00), operBitset (New: 4-5,11,35)
+    childAction      : 
+    created          : 2023-09-09T08:53:35.125+00:00
+    delegated        : no
+    descr            : Port is down, reason:err-disabled-link-flaps(err-disabled), used by:Fabric
+    dn               : topology/pod-1/node-101/sys/phys-[eth1/53]/phys/fault-F1394
+    domain           : access
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2023-10-24T03:24:57.101+00:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F1394
+    rule             : ethpm-if-port-down-fabric
+    severity         : minor
+    status           : 
+    subject          : port-down
+    title            : 
+    type             : communications
+    uid              : 
+    userdom          : all
+    --- omit ---
+    ```
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -1109,7 +1356,7 @@ Due to this change, when upgrading from an older version to release 4.1(2) or la
     When multiple interfaces in the same node profile need to establish a BGP peer with the same peer IP, you might attempt to configure a **BGP Peer Connectivity Profile** at a node profile without a loopback so that the same BGP Peer configuration is applied, as a fallback due to the missing loopback, to each interface in the same node profile. This is because a **BGP Peer Connectivity Profile** with the same peer IP address could not be configured at multiple interface profiles within the same node profile. This limitation was loosened based on CSCvw88636 on 4.2(7f). Until then, for this specific requirement, you need to configure a node interface per interface profile and configure the **BGP Peer Connectivity Profile** at each interface profile in a different node profile.
 
 
-### L3Out Route Map import/export direction        
+### L3Out Route Map import/export direction
 
 Prior to upgrading to release 4.1(1) or later, you must ensure that the route map (route profile) configuration is correct.
 
@@ -1136,6 +1383,37 @@ Although this method is not the most common or recommended one among many ways t
     With this configuration, you don’t need **Export Route Control Subnet** or **Import Route Control Subnet** in the external EPGs, and you can have external EPGs that are dedicated for contracts or route leaking while you have the full control of routing protocol through route maps just like a normal router.
 
     Also note that any import direction route maps only take effect when **Route Control Enforcement** is enabled for import under `Tenant > Networking > L3Out > Main profile`. Otherwise, everything is imported (learned) by default.
+
+
+### L3Out Route Map Match Rule with missing-target
+
+Prior to upgrading to release 5.2(8), 6.0(2) or later, you must ensure that the route map (route profile) with type **Match Prefix AND Routing Policy** (type `combinable` in the object `rtctrlProfile`) does not contain a match rule with the `missing-target` state.
+
+Each context in an L3Out route-map with type **Match Prefix AND Routing Policy** creates a route-map sequence by combining multiple match conditions shown below:
+
+* Match rules referenced by the route-map context
+* L3Out subnets to which the route-map is associated directly or through an L3Out EPG.
+* BD subnets in a BD to which the route-map is associated
+
+!!! note
+    Match rule references in a route-map context is located at the following path in the APIC GUI:
+
+    * `Tenants > Networking > L3Outs > (your L3Out) > Route map for import and export route control > Contexts > Match Rules`
+
+    Whereas the match rule itself is located at the following path in the APIC GUI:
+
+    * `Tanants > Policies > Protocol > Match Rules`
+
+However, prior to the fix of CSCwc11570, when the state of the match rule reference in the route map was `missing-target`, that is when the target match rule didn't exist due to a mis-configuration, no route-map sequence was created even when there were other match conditions such as L3Out subnets or BD subnets.
+
+After the fix of CSCwc11570, a route-map sequence is created correctly based on other available match conditions (i.e. L3Out/BD subnets) even when the state of the match rule reference is `missing-target`.
+
+Because of this, if users have route maps with type **Match Prefix AND Routing Policy** and a match rule reference that resulted in `missing-target` prior to an upgrade, route-map sequences that weren't deployed prior to the upgrade may be deployed after the upgrade. This may change how the routes are exported(advertised) or imported(learned) through an L3Out after the upgrade.
+
+To avoid an unexpected behavior change after an upgrade, if the route map context has a match rule reference with `missing-target`, you should either remove the match rule reference or update it such that it points to an existing match rule.
+
+!!! Tip
+    When a match rule reference with `missing-target` is present for a route map with type **Match Prefix AND Routing Policy** prior to the upgrade and prior to the fix of CSCwx11570, the corresponding route-map context is not functioning. However, the fact that it has not been functioning without any operational impact indicates that the route map context may not be needed in the first place. If you remove the match rule reference with `missing-target`, a new route-map sequence will be deployed based on other match conditions which may or may not be needed. Thus, it is important for you to check the original intent of the route-map context and decide how to resolve it. If the route-map context is not needed in the first place, you would need to remove the entire route-map context instead of just removing the match rule reference with `missing-target`.
 
 
 ### ISIS Redistribution Metric for MPod/Msite      
@@ -1214,6 +1492,22 @@ This implies that for users running releases 4.2(7), 5.2(1), or 5.2(2), and when
 
 The script checks whether you should be aware of this change in behavior prior to your ACI upgrade so that appropriate subnets can be added to the configuration or you can prepare a workstation that is within the configured subnet, which will continue to be accessible to APICs even after the upgrade.
 
+### EECDH SSL Cipher
+
+Under `Fabric > Fabric Policies > Policies > Pod > Management Access > default`, there are multiple SSL ciphers which can be enabled or disabled by the user. Cipher states should only be modified if a configured cipher is declared insecure or weak by the IETF. When modifying any cipher it is important to validate that the configuration is valid otherwise NGINX may fail to validate and the GUI will become unusable due to no cipher match. For more information reference the [APIC Security Configuration Guide][19].
+
+EECDH is a key algorithm that many cipher suites use for HTTPS communication. If the key algorithm is disabled any cipher suite using this key algorithm will also be implicitly disabled. Cisco does not recommend disabling EECDH.
+
+When disabled, the nginx.conf configuration file may fail to validate and NGINX will continue to use the last known good configuration. On upgrade, nginx.conf will also fail to validate but there is no known good configuration so the APIC GUI will be down until EECDH is re-enabled.
+
+!!! tip
+    If the GUI is inaccessible due to the EECDH cipher being disabled, it can be re-enabled from the CLI using icurl.
+    ```
+    apic1# bash
+    admin@apic1:~> icurl -X POST 'http://localhost:7777/api/mo/uni/fabric/comm-default/https/cph-EECDH.json' -d '{"commCipher":{"attributes":{"state":"enabled"}}}'
+    {"totalCount":"0","imdata":[]}
+    admin@apic1:~>
+    ```
 
 ## Defect Check Details
 
@@ -1250,7 +1544,9 @@ Due to the defect CSCvt47850, if the switches are still on an older version than
 To avoid this issue, change the `collectorLocation` type to `none` through the API to prevent the object from being automatically deleted post upgrade.
 
 1. If `telemetryStatsServerP` exists with `collectorLocation="apic"`, use the API to change the `collectorLocation` type to `none`.
+
     !!! example
+        `collectorLocation` is set to `apic` so this fabric is susceptible to CSCvt47850. Use icurl to change `collectorLocation` to `none`.
         ```
         apic# moquery -c telemetryStatsServerP
         # telemetry.StatsServerP
@@ -1265,7 +1561,9 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 2. Upgrade both Cisco APICs and switches to the target version.
 
 3. After validating that all switches have been upgraded successfully, delete the `telemetryStatsSeverP` managed object.
+
     !!! example
+        Object can safely be removed from the fabric.
         ```
         apic# bash
         apic:~> icurl -kX POST "http://localhost:7777/api/mo/uni/fabric/servers/stserverp-default.xml" -d '<telemetryStatsServerP status="deleted"/>'
@@ -1317,8 +1615,50 @@ In certain cases, such as when frames goes through FCoE supported devices, these
 For example, on the UCS Fabric Interconnect COS3 value is hardcoded for fiber channel (FC) or fiber channel over ethernet (FCoE) traffic. FC/FCoE traffic is highly sensitive and is treated as non-droppable, and cannot exceed MTU of 2184 bytes long.
 
 This script checks if the target version is susceptible to CSCwf05073 and dynamic packet prioritization feature is set to "on".
+### SUP-A/A+ High Memory Usage
+
+Due to the increased memory utilization from 6.0(3), N9K-SUP-A or N9K-SUP-A+ will likely experience constant high memory utilization.
+
+It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0(5) if your fabric contains N9K-SUP-A and/or N9K-SUP-A+. Instead, wait for the memory optimization in a near-future Cisco ACI 6.0 maintenance release that will allow the N9K-SUP-A and N9K-SUP-A+ supervisors to operate in a normal memory condition.
+
+!!! note
+    This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
 
 
+### VMM Uplink Container with empty Actives
+
+Due to the defect CSCvr96408, affected versions with VMM domains having VMM parameters changed via the UI could have resulted in `fvUplinkOrderCont` objects created with the parameter `"active": ""` ('active' set to blank). This `active` parameter defines which uplinks should be set to active on the Vmware created EPG portgroup, and if blank, results in no active uplinks. In most cases, traffic issues due to this config were worked-around by manually modifying the active uplink configuration directly within VMware vCenter.
+
+The issue arises when an upgrade or VMM parameter change occurs. Either change causes a re-validation of the `fvUplinkOrderCont` VMM policy as defined in ACI. The result is that any `fvUplinkOrderCont` still having `active: ""` will push a config change into VMware vCenter to map back to APIC policy, resulting in the removal of active uplinks and a corresponding outage.
+
+This script checks for `fvUplinkOrderCont` with `active: ""` and alerts the user to their existence. The `active` parameter must match your current active configuration to avoid an outage on subsequent upgrade of VMM Parameter change.
+
+The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under the `active` field.
+
+!!! example
+    ```
+    apic1# moquery -c fvUplinkOrderCont
+    Total Objects shown: 1
+
+    # fv.UplinkOrderCont
+    active       : 1,2,3,4,5,6,7,8
+    annotation   : 
+    childAction  : 
+    descr        : 
+    dn           : uni/tn-test1/ap-ap3/epg-epg3/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder
+    extMngdBy    : 
+    lcOwn        : local
+    modTs        : 2024-04-30T16:15:06.815+00:00
+    name         : 
+    nameAlias    : 
+    ownerKey     : 
+    ownerTag     : 
+    rn           : uplinkorder
+    standby      : 
+    status       : 
+    uid          : 15374
+    userdom      : :all:common:
+    ```
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -1335,4 +1675,8 @@ This script checks if the target version is susceptible to CSCwf05073 and dynami
 [12]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/4-x/L2-configuration/Cisco-APIC-Layer2-Configuration-Guide-42x/Cisco-APIC-Layer2-Configuration-Guide-421_chapter_0110.html#id_109428
 [13]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#_Toc114493697
 [14]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#_Toc114493698
-
+[15]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-603.html
+[16]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-604.html
+[17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
+[18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
+[19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
