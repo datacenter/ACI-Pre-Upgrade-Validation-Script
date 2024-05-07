@@ -3084,24 +3084,36 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, **kwargs):
+def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwargs):
     title = 'N9K-C93108TC-FX3P/FX3H Interface Down'
     result = PASS
     msg = ''
-    headers = ["Node Id", "PID", "Warning"]
+    headers = ["Node ID", "Node Name", "Product ID"]
     data = []
     recommended_action = 'Change the target version to the fixed version of CSCwh81430'
     doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html'
     print_title(title, index, total_checks)
-    added_node_list = []
-    deviceMo = icurl('class', 'dhcpClient.json?query-target-filter=eq(dhcpClient.model,"N9K-C93108TC-FX3P")')
-    if len(deviceMo) >= 1:
-        for switchMo in deviceMo:
-            nodeId = switchMo["dhcpClient"]["attributes"].get("nodeId")
-            pid = switchMo["dhcpClient"]["attributes"].get("model")
-            if nodeId not in added_node_list:
-                added_node_list.append(nodeId)
-                data.append([nodeId,pid,"Attention Required"])
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if (
+        tversion.older_than("5.2(8h)")
+        or tversion.same_as("5.3(1d)")
+        or (tversion.major1 == "6" and tversion.older_than("6.0(4a)"))
+    ):
+        api = 'fabricNode.json'
+        api += '?query-target-filter=or('
+        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3P"),'
+        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3H"))'
+        nodes = icurl('class', api)
+        for node in nodes:
+            nodeid = node["fabricNode"]["attributes"]["id"]
+            name = node["fabricNode"]["attributes"]["name"]
+            pid = node["fabricNode"]["attributes"]["model"]
+            data.append([nodeid, name, pid])
+
     if data:
         result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
