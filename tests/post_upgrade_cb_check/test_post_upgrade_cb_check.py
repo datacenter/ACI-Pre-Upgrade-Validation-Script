@@ -19,7 +19,7 @@ mo3_new = "infraRsConnectivityProfileOpt.json?rsp-subtree-include=count"
 mo3_old = "infraRsConnectivityProfile.json?rsp-subtree-include=count"
 mo4_new = "infraAssocEncapInstDef.json?rsp-subtree-include=count"
 mo4_old = "infraRsToEncapInstDef.json?rsp-subtree-include=count"
-mo5_new = "compatSwitchHw.json?rsp-subtree-include=count&query-target-filter=eq(compatSwitchHw.suppBit,'32')"
+mo5_new = 'compatSwitchHw.json?rsp-subtree-include=count&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
 
 # icurl output sets
 mo_count_pass = {
