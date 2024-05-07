@@ -2808,7 +2808,7 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
         result = MANUAL
         msg = 'Target version not supplied. Skipping.'
     else:
-        if tversion.major1 == "5" and tversion.older_than("5.2(8e)") or tversion.major1 == "6" and tversion.older_than("6.0(3d)"):
+        if tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)") or tversion.major1 == "6" and tversion.older_than("6.0(3d)"):
             if lbpPol_check == "on":
                 result = FAIL_O
                 data.append(["CSCwf05073", "Target Version susceptible to Defect"])

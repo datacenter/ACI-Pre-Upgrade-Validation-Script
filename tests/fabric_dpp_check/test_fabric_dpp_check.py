@@ -59,6 +59,12 @@ lbpPol = "lbpPol.json"
             "6.0(3d)",
             script.PASS,
         ),
+         # DPP is onn and non affected version 5.0
+        (
+            {lbpPol: read_data(dir, "lbpPol_POS.json")},
+            "5.0(2h)",
+            script.PASS,
+        ),
     ],
 )
 def test_logic(mock_icurl, tversion, expected_result):
