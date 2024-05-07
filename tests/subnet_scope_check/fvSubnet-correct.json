@@ -1,0 +1,56 @@
+[
+        {
+            "fvSubnet": {
+                "attributes": {
+                    "annotation": "orchestrator:msc-shadow:no",
+                    "childAction": "",
+                    "configIssues": "",
+                    "ctrl": "nd",
+                    "debugMessage": "",
+                    "descr": "",
+                    "dn": "uni/tn-common/BD-DNS_BD/subnet-[10.66.178.1/26]",
+                    "extMngdBy": "",
+                    "ip": "10.66.178.1/26",
+                    "ipDPLearning": "enabled",
+                    "lcOwn": "local",
+                    "modTs": "2024-05-02T00:21:09.949+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "",
+                    "nameAlias": "",
+                    "preferred": "no",
+                    "scope": "public,shared",
+                    "status": "",
+                    "uid": "0",
+                    "userdom": ":all:",
+                    "virtual": "no"
+                }
+            }
+        },
+        {
+            "fvSubnet": {
+                "attributes": {
+                    "annotation": "orchestrator:msc-shadow:no",
+                    "childAction": "",
+                    "configIssues": "",
+                    "ctrl": "no-default-gateway",
+                    "debugMessage": "",
+                    "descr": "",
+                    "dn": "uni/tn-common/ap-SharedServices_ANP/epg-DNS_EPG/subnet-[10.66.178.1/26]",
+                    "extMngdBy": "",
+                    "ip": "10.66.178.1/26",
+                    "ipDPLearning": "enabled",
+                    "lcOwn": "local",
+                    "modTs": "2024-05-01T21:44:58.293+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "",
+                    "nameAlias": "",
+                    "preferred": "no",
+                    "scope": "public,shared",
+                    "status": "",
+                    "uid": "0",
+                    "userdom": ":all:",
+                    "virtual": "no"
+                }
+            }
+        }
+]

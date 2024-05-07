@@ -3055,6 +3055,34 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def subnet_scope_check(index, total_checks, **kwargs):
+	title = 'BD and EPG Subnet Scope Check'
+	result = FAIL_O
+	msg = ''
+	headers = ["Node ID", "Node Name", "Recommended Action"]
+	data = []
+	recommended_action = 'Configure the same Scope for the subnets for : '
+	doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303'
+	print_title(title, index, total_checks)
+	prefixes = {}
+	subnets = icurl('class', 'fvSubnet.json')
+	#Get Subnets and number of instances for each
+	for subnet in subnets:
+		prefixes[subnet['fvSubnet']['attributes']['ip']] = prefixes.get(subnet['fvSubnet']['attributes']['ip'], 0) + 1
+	
+	# Go through the list of Prefixes, check for prefixes with multiple fvSubnets.
+	for key, value in prefixes.items():
+		if value > 1:
+			filt = 'fvSubnet.json?query-target-filter=and(eq(fvSubnet.ip,"%s"))' % key
+			ip_scopes = icurl('class', filt )
+			if ip_scopes[0]['fvSubnet']['attributes']['scope'] != ip_scopes[1]['fvSubnet']['attributes']['scope']:
+				message = recommended_action + ip_scopes[0]['fvSubnet']['attributes']['dn'] + ' and ' + ip_scopes[1]['fvSubnet']['attributes']['dn']
+				data.append([ message ])
+	if not data:
+		result = PASS			
+				
+	print_result(title, result, msg, headers, data, doc_url=doc_url)
+	return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -3144,6 +3172,7 @@ if __name__ == "__main__":
         sup_hwrev_check,
         sup_a_high_memory_check,
         vmm_active_uplinks_check,
+        subnet_scope_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
