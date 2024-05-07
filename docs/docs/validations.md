@@ -1308,7 +1308,7 @@ Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot
 
 The script checks if the version and the SUP modules are susceptible to the defect.
 
-### Dynamic Packet Prioritization
+### CoS 3 with Dynamic Packet Prioritization
 
 Due to the defect CSCwf05073, ACI unexpectedly assigning a COS3 value to traffic egressing front ports. 
 
