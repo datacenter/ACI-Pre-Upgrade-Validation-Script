@@ -138,7 +138,7 @@ Items                                           | Defect       | This Script    
 [d7]: #apic-ca-cert-validation
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
-[d10]: #dynamic-packet-prioritization
+[d10]: #cos-3-with-dynamic-packet-prioritization
 
 
 
