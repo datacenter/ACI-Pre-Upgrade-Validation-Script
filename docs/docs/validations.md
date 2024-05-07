@@ -142,6 +142,7 @@ Items                                           | Defect       | This Script    
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12]            | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -154,6 +155,7 @@ Items                                           | Defect       | This Script    
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
 [d11]: #vmm-uplink-container-with-empty-actives
+[d12]: #cos-3-with-dynamic-packet-prioritization
 
 
 
@@ -1604,7 +1606,15 @@ Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot
 
 The script checks if the version and the SUP modules are susceptible to the defect.
 
+### CoS 3 with Dynamic Packet Prioritization
 
+Due to the defect CSCwf05073, ACI unexpectedly assigning a COS3 value to traffic egressing front ports. 
+
+In certain cases, such as when frames goes through FCoE supported devices, these get classified into the no drop FCoE class. In FCoE devices, this can cause drop of packets when the packet length is higher than the allowed 2184 bytes.
+
+For example, on the UCS Fabric Interconnect COS3 value is hardcoded for fiber channel (FC) or fiber channel over ethernet (FCoE) traffic. FC/FCoE traffic is highly sensitive and is treated as non-droppable, and cannot exceed MTU of 2184 bytes long.
+
+This script checks if the target version is susceptible to CSCwf05073 and dynamic packet prioritization feature is set to "on".
 ### SUP-A/A+ High Memory Usage
 
 Due to the increased memory utilization from 6.0(3), N9K-SUP-A or N9K-SUP-A+ will likely experience constant high memory utilization.

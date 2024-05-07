@@ -3056,6 +3056,34 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     return result
 
 
+def fabric_dpp_check(index, total_checks, tversion, **kwargs):
+    title = 'CoS 3 with Dynamic Packet Prioritization'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'Change the target version to the fixed version of CSCwf05073'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    lbpol_api =  'lbpPol.json'
+    lbpol_api += '?query-target-filter=eq(lbpPol.pri,"on")'
+
+    lbpPol = icurl('class', lbpol_api)
+    if lbpPol:
+        if ((tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)")) or 
+            (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))):
+                result = FAIL_O
+                data.append(["CSCwf05073", "Target Version susceptible to Defect"])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3144,6 +3172,8 @@ if __name__ == "__main__":
         sup_hwrev_check,
         sup_a_high_memory_check,
         vmm_active_uplinks_check,
+        fabric_dpp_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
