@@ -3066,16 +3066,17 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
     print_title(title, index, total_checks)
 
-    lbpPol = icurl('class', 'lbpPol.json')
-    if lbpPol:
-        lbpPol_check = lbpPol[0]["lbpPol"]["attributes"]["pri"]
-
     if not tversion:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
-    else:
-        if tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)") or tversion.major1 == "6" and tversion.older_than("6.0(3d)"):
-            if lbpPol_check == "on":
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    lbpol_api =  'lbpPol.json'
+    lbpol_api += '?query-target-filter=eq(lbpPol.pri,"on")'
+
+    lbpPol = icurl('class', lbpol_api)
+    if lbpPol:
+        if ((tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)")) or 
+            (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))):
                 result = FAIL_O
                 data.append(["CSCwf05073", "Target Version susceptible to Defect"])
 
