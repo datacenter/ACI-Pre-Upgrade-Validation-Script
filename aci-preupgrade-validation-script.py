@@ -3017,7 +3017,7 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         api = "{}.json?rsp-subtree-include=count"
         if new_mo == "compatSwitchHw":
             # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
-            api += "&query-target-filter=eq(compatSwitchHw.suppBit,'32')"
+            api += '&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
 
         temp_new_mo_count = icurl("class", api.format(new_mo))
         new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
@@ -3222,7 +3222,7 @@ if __name__ == "__main__":
         sup_a_high_memory_check,
         vmm_active_uplinks_check,
     ]
-    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
+    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
             r = check(idx + 1, len(checks), **inputs)
@@ -3245,7 +3245,7 @@ if __name__ == "__main__":
         f.write(jsonString)
 
     subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, NA, ERROR, 'TOTAL']
+    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:
