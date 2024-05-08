@@ -1,0 +1,16 @@
+[
+  {
+    "maintUpgJob": {
+      "attributes": {
+        "desiredVersion": "n9000-16.0(2h)",
+        "dn": "topology/pod-1/node-101/sys/fwstatuscont/upgjob",
+        "dnldPercent": "100",
+        "dnldStatus": "downloaded",
+        "startDate": "2023-11-16T10:15:22.894-08:00",
+        "status": "",
+        "upgradeStatus": "scheduled",
+        "upgradeStatusStr": "Scheduled"
+      }
+    }
+  }
+]

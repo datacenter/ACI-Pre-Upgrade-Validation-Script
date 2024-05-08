@@ -32,6 +32,8 @@ Items                                                        | This Script      
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -47,6 +49,7 @@ Items                                                        | This Script      
 [g12]: #switch-upgrade-group-guidelines
 [g13]: #intersight-device-connector-upgrade-status
 [g14]: #mini-aci-upgrade-to-602-or-later
+[g15]: #post-upgrade-callback-integrity
 
 
 ### Fault Checks
@@ -70,6 +73,8 @@ Items                                         | Faults         | This Script    
 [Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
+[Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+
 
 
 [f1]: #apic-disk-space-usage
@@ -90,7 +95,7 @@ Items                                         | Faults         | This Script    
 [f16]: #different-infra-vlan-via-lldp
 [f17]: #hw-programming-failure
 [f18]: #scalability-faults-related-to-capacity-dashboard
-
+[f19]: #fabric-port-is-down
 
 ### Configuration Checks
 
@@ -139,6 +144,9 @@ Items                                           | Defect       | This Script    
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -150,7 +158,9 @@ Items                                           | Defect       | This Script    
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
-
+[d11]: #vmm-uplink-container-with-empty-actives
+[d12]: #cos-3-with-dynamic-packet-prioritization
+[d13]: #n9k-c93108tc-fx3pfx3h-interface-down
 
 
 ## General Check Details
@@ -336,6 +346,55 @@ When upgrading from ACI release 6.0(1) or earlier to release 6.0(2) or later, an
     nameAlias                :
     nodeType                 : virtual
     --- omit ---
+    ```
+
+### Post Upgrade CallBack Integrity
+
+Post APIC cluster upgrade, APICs may invoke the post-upgrade callback against an existing object class, which will introduce an object of the new class corresponding to the existing class to extend/enhance/optimize an existing feature. This is also called data conversion.
+
+Once successfully completed, the number of objects for the existing and newly created classes should be the same.
+
+If the post-upgrade callback has failed or hasn't been able to fully complete for some reason, the data conversion will be incomplete.The impact of incomplete data conversion varies depending on the class that is missing as a result.
+
+The post-upgrade callback may fail due to a software defect, or due to an inappropriate human intervention during APIC upgrades such as decommissioning an APIC, rebooting an APIC etc.
+
+This validation checks whether the number of objects for the existing and newly created classes are the same.
+
+!!! tip
+    This validation **must** be performed after an APIC upgrade but before a switch upgrade.
+    
+    Regardless of this validation, it is a best practice to run this script twice, before an APIC upgrade AND before a switch upgrade, especially when the upgrade of the entire fabric cannot be completed within the same maintenance window. If you have been doing it, please keep doing it. If not, make sure to do that because this specific validation must be run after an APIC upgrade.
+    Because of this reason, this validation warns users to run the script again if the current APIC version and the target version are different when the script is run because it implies the script was run before an APIC upgrade.
+
+
+!!! example
+    If the existing class and the new class are `infraRsToEncapInstDef` and `infraAssocEncapInstDef`, the impact of incomplete post-upgrade callback (i.e. incomplete data conversion) is that VLANs will not be deployed on leaf switches after the upgrade of the switch.
+    You can check the number of objects for these classes via moquery and query option `rsp-subtree-include=count` as shown below.
+    If the Mo count for both classes are the same, it means that `infraAssocEncapInstDef` was created successfully after the APIC upgrade by `infraRsToEncapInstDef`'s post-upgrade callback.
+    ```
+    apic1# moquery -c infraAssocEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
+
+    apic1# moquery -c infraRsToEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
     ```
 
 ## Fault Check Details
@@ -1211,6 +1270,52 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
     ```
 
 
+### Fabric Port is Down
+
+The script checks for fault code `F1394` with rule `ethpm-if-port-down-fabric`, which indicate that ACI has flagged configured Fabric ports for being in a down state.
+
+It is important to understand whether or not these downed fabric prots are preventing your leaf nodes from having redundant paths. If unexpected, address these issues before performing the ACI Upgrade.
+
+Failure to do so may lead to outages during switch upgrades due to leaf nodes not having redundant spine paths.
+
+!!! example "Fault Example (F0469: duplicate-subnets-within-ctx)"
+    ```
+    admin@f1-apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F1394"'
+    Total Objects shown: 4
+     
+    # fault.Inst
+    code             : F1394
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : interface-physical-down
+    changeSet        : lastLinkStChg (New: 2023-10-24T03:24:57.051+00:00), operBitset (New: 4-5,11,35)
+    childAction      : 
+    created          : 2023-09-09T08:53:35.125+00:00
+    delegated        : no
+    descr            : Port is down, reason:err-disabled-link-flaps(err-disabled), used by:Fabric
+    dn               : topology/pod-1/node-101/sys/phys-[eth1/53]/phys/fault-F1394
+    domain           : access
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2023-10-24T03:24:57.101+00:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F1394
+    rule             : ethpm-if-port-down-fabric
+    severity         : minor
+    status           : 
+    subject          : port-down
+    title            : 
+    type             : communications
+    uid              : 
+    userdom          : all
+    --- omit ---
+    ```
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -1554,7 +1659,15 @@ Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot
 
 The script checks if the version and the SUP modules are susceptible to the defect.
 
+### CoS 3 with Dynamic Packet Prioritization
 
+Due to the defect CSCwf05073, ACI unexpectedly assigning a COS3 value to traffic egressing front ports. 
+
+In certain cases, such as when frames goes through FCoE supported devices, these get classified into the no drop FCoE class. In FCoE devices, this can cause drop of packets when the packet length is higher than the allowed 2184 bytes.
+
+For example, on the UCS Fabric Interconnect COS3 value is hardcoded for fiber channel (FC) or fiber channel over ethernet (FCoE) traffic. FC/FCoE traffic is highly sensitive and is treated as non-droppable, and cannot exceed MTU of 2184 bytes long.
+
+This script checks if the target version is susceptible to CSCwf05073 and dynamic packet prioritization feature is set to "on".
 ### SUP-A/A+ High Memory Usage
 
 Due to the increased memory utilization from 6.0(3), N9K-SUP-A or N9K-SUP-A+ will likely experience constant high memory utilization.
@@ -1563,6 +1676,55 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 
 !!! note
     This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
+
+
+### VMM Uplink Container with empty Actives
+
+Due to the defect CSCvr96408, affected versions with VMM domains having VMM parameters changed via the UI could have resulted in `fvUplinkOrderCont` objects created with the parameter `"active": ""` ('active' set to blank). This `active` parameter defines which uplinks should be set to active on the Vmware created EPG portgroup, and if blank, results in no active uplinks. In most cases, traffic issues due to this config were worked-around by manually modifying the active uplink configuration directly within VMware vCenter.
+
+The issue arises when an upgrade or VMM parameter change occurs. Either change causes a re-validation of the `fvUplinkOrderCont` VMM policy as defined in ACI. The result is that any `fvUplinkOrderCont` still having `active: ""` will push a config change into VMware vCenter to map back to APIC policy, resulting in the removal of active uplinks and a corresponding outage.
+
+This script checks for `fvUplinkOrderCont` with `active: ""` and alerts the user to their existence. The `active` parameter must match your current active configuration to avoid an outage on subsequent upgrade of VMM Parameter change.
+
+The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under the `active` field.
+
+!!! example
+    ```
+    apic1# moquery -c fvUplinkOrderCont
+    Total Objects shown: 1
+
+    # fv.UplinkOrderCont
+    active       : 1,2,3,4,5,6,7,8
+    annotation   : 
+    childAction  : 
+    descr        : 
+    dn           : uni/tn-test1/ap-ap3/epg-epg3/rsdomAtt-[uni/vmmp-VMware/dom-test-dvs]/uplinkorder
+    extMngdBy    : 
+    lcOwn        : local
+    modTs        : 2024-04-30T16:15:06.815+00:00
+    name         : 
+    nameAlias    : 
+    ownerKey     : 
+    ownerTag     : 
+    rn           : uplinkorder
+    standby      : 
+    status       : 
+    uid          : 15374
+    userdom      : :all:common:
+    ```
+
+
+### N9K-C93108TC-FX3P/FX3H Interface Down
+
+Due to the defect CSCwh81430, some RJ45 interfaces on Cisco Nexus N9K-C93108TC-FX3P and N9K-C93108TC-FX3H Switches might not come up, even when connected.
+
+This issue can be triggered by a switch reload that occurs for any reason, including a software upgrade, software reset, system crash, or the power being turned up or down.
+
+The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Optical ports Ethernet 1/49 - 54 and MGMT0 port are not affected.
+
+Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
+
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -1584,3 +1746,4 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
+[20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html

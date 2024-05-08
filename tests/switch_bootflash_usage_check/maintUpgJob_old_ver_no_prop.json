@@ -1,0 +1,10 @@
+[
+  {
+      "error": {
+          "attributes": {
+              "code": "121",
+              "text": "Prop 'dnldStatus' not found in class 'maintUpgJob' property table"
+          }
+      }
+  }
+]

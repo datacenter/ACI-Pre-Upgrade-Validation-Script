@@ -32,13 +32,14 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v1.7.0"
+SCRIPT_VERSION = "v1.8.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
 FAIL_UF = 'FAIL - UPGRADE FAILURE!!'
 ERROR = 'ERROR !!'
 MANUAL = 'MANUAL CHECK REQUIRED'
+POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
 ver_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
@@ -54,6 +55,16 @@ fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %
 subprocess.check_output(['mkdir', '-p', DIR])
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+class OldVerClassNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
+
+
+class OldVerPropNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
 
 
 class Connection(object):
@@ -612,8 +623,15 @@ def icurl(apitype, query):
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
     imdata = json.loads(response)['imdata']
-    if imdata and "error" in imdata[0].keys():
-        raise Exception('API call failed! Check debug log')
+    if imdata and "error" in imdata[0]:
+        if "not found in class" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('cversion does not have requested property')
+        elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
+        elif "not found" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
+        else:
+            raise Exception('API call failed! Check debug log')
     else:
         return imdata
 
@@ -701,13 +719,13 @@ def get_switch_version(**kwargs):
     for firmware in firmwares:
         versions.add(firmware['firmwareRunning']['attributes']['peVer'])
 
-    lowest_sw_ver = AciVersion(versions.pop())
-    for version in versions:
-        version = AciVersion(version)
-        if lowest_sw_ver.newer_than(str(version)):
-            lowest_sw_ver = version
+    if versions:
+        lowest_sw_ver = AciVersion(versions.pop())
+        for version in versions:
+            version = AciVersion(version)
+            if lowest_sw_ver.newer_than(str(version)):
+                lowest_sw_ver = version
 
-    prints('%s\n' % lowest_sw_ver)
     return lowest_sw_ver
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
@@ -1002,7 +1020,7 @@ def switch_group_guideline_check(index, total_checks, **kwargs):
     return result
 
 
-def switch_bootflash_usage_check(index, total_checks, **kwargs):
+def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
     title = 'Switch Node /bootflash usage'
     result = FAIL_UF
     msg = ''
@@ -1010,13 +1028,31 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
     data = []
     print_title(title, index, total_checks)
 
-    response_json = icurl('class',
-                          'eqptcapacityFSPartition.json?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")')
-    if not response_json:
+    partitions_api =  'eqptcapacityFSPartition.json'
+    partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
+
+    download_sts_api =  'maintUpgJob.json'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")' 
+    download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion)
+
+    partitions = icurl('class', partitions_api)
+    if not partitions:
         result = ERROR
         msg = 'bootflash objects not found'
 
-    for eqptcapacityFSPartition in response_json:
+    predownloaded_nodes = []
+    try:
+        download_sts = icurl('class', download_sts_api)
+    except OldVerPropNotFound:
+        # Older versions don't have 'dnldStatus' param
+        download_sts = []
+
+    for maintUpgJob in download_sts:
+        dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
+        node = dn.group("node")
+        predownloaded_nodes.append(node)
+
+    for eqptcapacityFSPartition in partitions:
         dn = re.search(node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
         pod = dn.group("pod")
         node = dn.group("node")
@@ -1024,11 +1060,12 @@ def switch_bootflash_usage_check(index, total_checks, **kwargs):
         used = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['used'])
 
         usage = (used / (avail + used)) * 100
-        if usage >= 50:
+        if (usage >= 50) and (node not in predownloaded_nodes):
             data.append([pod, node, usage, "Over 50% usage! Contact Cisco TAC for Support"])
+
     if not data:
         result = PASS
-        msg = 'all below 50%'
+        msg = 'All below 50% or pre-downloaded'
     print_result(title, result, msg, headers, data)
     return result
 
@@ -2507,8 +2544,8 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
     print_title(title, index, total_checks)
 
-    if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+    if not sw_cversion or not tversion:
+        print_result(title, MANUAL, 'Current and target Switch version not supplied. Skipping.')
         return MANUAL
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
@@ -2931,6 +2968,81 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
+def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Post Upgrade Callback Integrity'
+    result = PASS
+    msg = ''
+    headers = ["Missed Objects", "Impact"]
+    data = []
+    recommended_action = 'Contact Cisco TAC with Output'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-callback-integrity'
+    print_title(title, index, total_checks)
+
+    new_mo_dict = {
+        "infraImplicitSetPol": {
+            "CreatedBy": "",
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
+        },
+        "infraRsToImplicitSetPol": {
+            "CreatedBy": "infraImplicitSetPol",
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
+        },
+        "fvSlaDef": {
+            "CreatedBy": "fvIPSLAMonitoringPol",
+            "SinceVersion": "4.1(1i)",
+            "Impact": "IPSLA monitor policy will not be deployed",
+        },
+        "infraRsConnectivityProfileOpt": {
+            "CreatedBy": "infraRsConnectivityProfile",
+            "SinceVersion": "5.2(4d)",
+            "Impact": "VPC for missing Mo will not be deployed to leaf",
+        },
+        "infraAssocEncapInstDef": {
+            "CreatedBy": "infraRsToEncapInstDef",
+            "SinceVersion": "5.2(4d)",
+            "Impact": "VLAN for missing Mo will not be deployed to leaf",
+        },
+        "compatSwitchHw": {
+            "CreatedBy": "",  # suppBit attribute is available from 6.0(2h)
+            "SinceVersion": "6.0(2h)",
+            "Impact": "Unexpected 64/32 bit image can deploy to switches",
+        },
+    }
+    if not tversion or (tversion and cversion.older_than(str(tversion))):
+        print_result(title, POST, 'Re-run script after APICs are upgraded and back to Fully-Fit')
+        return POST
+
+    for new_mo in new_mo_dict:
+        since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+        created_by_mo = new_mo_dict[new_mo]['CreatedBy']
+
+        if since_version.newer_than(str(cversion)):
+            continue
+
+        api = "{}.json?rsp-subtree-include=count"
+        if new_mo == "compatSwitchHw":
+            # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
+            api += '&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
+
+        temp_new_mo_count = icurl("class", api.format(new_mo))
+        new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+        if created_by_mo == "":
+            if new_mo_count == 0:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+        else:
+            temp_createdby_mo_count = icurl('class', api.format(created_by_mo))
+            created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+            if created_by_mo_count != new_mo_count:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     title = 'EECDH SSL Cipher'
     result = FAIL_UF
@@ -2954,6 +3066,139 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     if not data:
         result = PASS
 
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def vmm_active_uplinks_check(index, total_checks, **kwargs):
+    title = 'fvUplinkOrderCont with blank active uplinks definition'
+    result = PASS
+    msg = ''
+    headers = ["Tenant", "Application Profile", "Application EPG", "VMM Domain"]
+    data = []
+    recommended_action = 'Identify Active Uplinks and apply this to the VMM domain association of each EPG'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#vmm-uplink-container-with-empty-actives'
+    print_title(title, index, total_checks)
+
+    uplink_api =  'fvUplinkOrderCont.json' 
+    uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
+    vmm_epg_regex=r"uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)/rsdomAtt-\[uni/vmmp-.+/dom-(?P<dom>.+)\]"
+
+    try:
+        affected_uplinks = icurl('class', uplink_api)
+    except OldVerClassNotFound:
+        # Pre 4.x did not have this class
+        msg = 'cversion does not have class fvUplinkOrderCont'
+        result = NA
+        print_result(title, result, msg)
+        return result
+
+    if affected_uplinks:
+        result = FAIL_O
+        for uplink in affected_uplinks:
+            dn = re.search(vmm_epg_regex, uplink['fvUplinkOrderCont']['attributes']['dn'])
+            data.append([dn.group("tenant"), dn.group("ap"), dn.group("epg"), dn.group("dom")])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def fabric_port_down_check(index, total_checks, **kwargs):
+    title = 'Fabric Port is Down (F1394 ethpm-if-port-down-fabric)'
+    result = FAIL_O
+    msg = ''
+    headers = ["Pod", "Node", "Int", "Reason"]
+    unformatted_headers = ['dn', 'Fault Description']
+    unformatted_data = []
+    data = []
+    recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
+    print_title(title, index, total_checks)
+    
+    fault_api =  'faultInst.json'
+    fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
+    fault_api += ',eq(faultInst.rule,"ethpm-if-port-down-fabric"))'
+
+    faultInsts = icurl('class',fault_api)
+    dn_re = node_regex + r'/.+/phys-\[(?P<int>eth\d/\d+)\]'
+
+    for faultInst in faultInsts:
+        m = re.search(dn_re, faultInst['faultInst']['attributes']['dn'])
+        if m:
+            podid = m.group('pod')
+            nodeid = m.group('node')
+            port = m.group('int')
+            reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
+            data.append([podid, nodeid, port, reason])
+        else:
+            unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
+
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def fabric_dpp_check(index, total_checks, tversion, **kwargs):
+    title = 'CoS 3 with Dynamic Packet Prioritization'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'Change the target version to the fixed version of CSCwf05073'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    lbpol_api =  'lbpPol.json'
+    lbpol_api += '?query-target-filter=eq(lbpPol.pri,"on")'
+
+    lbpPol = icurl('class', lbpol_api)
+    if lbpPol:
+        if ((tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)")) or 
+            (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))):
+                result = FAIL_O
+                data.append(["CSCwf05073", "Target Version susceptible to Defect"])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwargs):
+    title = 'N9K-C93108TC-FX3P/FX3H Interface Down'
+    result = PASS
+    msg = ''
+    headers = ["Node ID", "Node Name", "Product ID"]
+    data = []
+    recommended_action = 'Change the target version to the fixed version of CSCwh81430'
+    doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if (
+        tversion.older_than("5.2(8h)")
+        or tversion.same_as("5.3(1d)")
+        or (tversion.major1 == "6" and tversion.older_than("6.0(4a)"))
+    ):
+        api = 'fabricNode.json'
+        api += '?query-target-filter=or('
+        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3P"),'
+        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3H"))'
+        nodes = icurl('class', api)
+        for node in nodes:
+            nodeid = node["fabricNode"]["attributes"]["id"]
+            name = node["fabricNode"]["attributes"]["name"]
+            pid = node["fabricNode"]["attributes"]["model"]
+            data.append([nodeid, name, pid])
+
+    if data:
+        result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
@@ -2996,6 +3241,7 @@ if __name__ == "__main__":
         features_to_disable_check,
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
+        post_upgrade_cb_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -3016,6 +3262,7 @@ if __name__ == "__main__":
         lldp_with_infra_vlan_mismatch_check,
         hw_program_fail_check,
         scalability_faults_check,
+        fabric_port_down_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -3044,9 +3291,11 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
-        
+        vmm_active_uplinks_check,
+        fabric_dpp_check,
+        n9k_c93108tc_fx3p_interface_down_check,
     ]
-    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
+    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
             r = check(idx + 1, len(checks), **inputs)
@@ -3069,7 +3318,7 @@ if __name__ == "__main__":
         f.write(jsonString)
 
     subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, NA, ERROR, 'TOTAL']
+    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:
