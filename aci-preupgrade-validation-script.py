@@ -3000,7 +3000,7 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         "compatSwitchHw": {
             "CreatedBy": "",  # suppBit attribute is available from 6.0(2h)
             "SinceVersion": "6.0(2h)",
-            "Impact": "64/32 bit image can unexpectedly pushed to switches",
+            "Impact": "Unexpected 64/32 bit image can deploy to switches",
         },
     }
     if not tversion or (tversion and cversion.older_than(str(tversion))):
