@@ -2393,7 +2393,7 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
         result = FAIL_UF
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result 
+    return result
 
 
 def target_version_compatibility_check(index, total_checks, cversion, tversion, **kwargs):
