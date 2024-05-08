@@ -149,7 +149,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
-[d2]: #eventmgr-db-size
+[d2]: #eventmgr-db-size-defect-susceptibility
 [d3]: #contract-port-22
 [d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
@@ -1576,9 +1576,11 @@ To avoid this issue, it is critical that you upgrade to a fixed version of CSCvi
 
 ### Eventmgr DB size defect susceptibility
 
-Due to the defect CSCvn20175, the upgrade of APICs may get stuck or take unnecessarily long. This is because of a shard in the database growing too large due to the defect. To check the size of the shard requires a root access to the APICs which can be performed only through Cisco TAC.
+Due to defects CSCvn20175 or CSCvt07565, the upgrade of APICs may get stuck or take an unusually long time to complete. Either eventmanager defect results in a database shard with a replica 0 that grew exceptionally large. This, in turn, increases the time it takes for dataconvergence to complete.
 
-This script checks if the current version is susceptible to CSCvn20175 or not.
+Root access is required to check the current size of APIC database shards. A Cisco TAC SR is required for root access.
+
+This script checks if the current version is susceptible to either CSCvn20175 or CSCvt07565.
 
 
 ### Contract Port 22 Defect
