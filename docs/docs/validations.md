@@ -32,6 +32,8 @@ Items                                                        | This Script      
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -47,6 +49,7 @@ Items                                                        | This Script      
 [g12]: #switch-upgrade-group-guidelines
 [g13]: #intersight-device-connector-upgrade-status
 [g14]: #mini-aci-upgrade-to-602-or-later
+[g15]: #post-upgrade-callback-integrity
 
 
 ### Fault Checks
@@ -342,6 +345,55 @@ When upgrading from ACI release 6.0(1) or earlier to release 6.0(2) or later, an
     nameAlias                :
     nodeType                 : virtual
     --- omit ---
+    ```
+
+### Post Upgrade CallBack Integrity
+
+Post APIC cluster upgrade, APICs may invoke the post-upgrade callback against an existing object class, which will introduce an object of the new class corresponding to the existing class to extend/enhance/optimize an existing feature. This is also called data conversion.
+
+Once successfully completed, the number of objects for the existing and newly created classes should be the same.
+
+If the post-upgrade callback has failed or hasn't been able to fully complete for some reason, the data conversion will be incomplete.The impact of incomplete data conversion varies depending on the class that is missing as a result.
+
+The post-upgrade callback may fail due to a software defect, or due to an inappropriate human intervention during APIC upgrades such as decommissioning an APIC, rebooting an APIC etc.
+
+This validation checks whether the number of objects for the existing and newly created classes are the same.
+
+!!! tip
+    This validation **must** be performed after an APIC upgrade but before a switch upgrade.
+    
+    Regardless of this validation, it is a best practice to run this script twice, before an APIC upgrade AND before a switch upgrade, especially when the upgrade of the entire fabric cannot be completed within the same maintenance window. If you have been doing it, please keep doing it. If not, make sure to do that because this specific validation must be run after an APIC upgrade.
+    Because of this reason, this validation warns users to run the script again if the current APIC version and the target version are different when the script is run because it implies the script was run before an APIC upgrade.
+
+
+!!! example
+    If the existing class and the new class are `infraRsToEncapInstDef` and `infraAssocEncapInstDef`, the impact of incomplete post-upgrade callback (i.e. incomplete data conversion) is that VLANs will not be deployed on leaf switches after the upgrade of the switch.
+    You can check the number of objects for these classes via moquery and query option `rsp-subtree-include=count` as shown below.
+    If the Mo count for both classes are the same, it means that `infraAssocEncapInstDef` was created successfully after the APIC upgrade by `infraRsToEncapInstDef`'s post-upgrade callback.
+    ```
+    apic1# moquery -c infraAssocEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
+
+    apic1# moquery -c infraRsToEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
     ```
 
 ## Fault Check Details
