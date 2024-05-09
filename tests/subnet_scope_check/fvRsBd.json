@@ -1,0 +1,18 @@
+[
+  {
+    "fvRsBd": {
+      "attributes": {
+        "dn": "uni/tn-common/ap-myApp/epg-epg1/rsbd",
+        "tDn": "uni/tn-common/BD-myBd1"
+      }
+    }
+  },
+  {
+    "fvRsBd": {
+      "attributes": {
+        "dn": "uni/tn-test/ap-testApp/epg-testepg/rsbd",
+        "tDn": "uni/tn-common/BD-myBd2"
+      }
+    }
+  }
+]
