@@ -32,6 +32,8 @@ Items                                                        | This Script      
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -47,6 +49,7 @@ Items                                                        | This Script      
 [g12]: #switch-upgrade-group-guidelines
 [g13]: #intersight-device-connector-upgrade-status
 [g14]: #mini-aci-upgrade-to-602-or-later
+[g15]: #post-upgrade-callback-integrity
 
 
 ### Fault Checks
@@ -104,7 +107,7 @@ Items                                         | Faults         | This Script    
 [L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [ISIS Redistribution Metric for MPod/Msite][c8]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Route-target Type for GOLF over L2EVPN][c9]      | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [APIC Container Bridge IP Overlap with APIC TEP][c10] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
@@ -142,9 +145,11 @@ Items                                           | Defect       | This Script    
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
-[d2]: #eventmgr-db-size
+[d2]: #eventmgr-db-size-defect-susceptibility
 [d3]: #contract-port-22
 [d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
@@ -154,7 +159,8 @@ Items                                           | Defect       | This Script    
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
 [d11]: #vmm-uplink-container-with-empty-actives
-
+[d12]: #cos-3-with-dynamic-packet-prioritization
+[d13]: #n9k-c93108tc-fx3pfx3h-interface-down
 
 
 ## General Check Details
@@ -340,6 +346,55 @@ When upgrading from ACI release 6.0(1) or earlier to release 6.0(2) or later, an
     nameAlias                :
     nodeType                 : virtual
     --- omit ---
+    ```
+
+### Post Upgrade CallBack Integrity
+
+Post APIC cluster upgrade, APICs may invoke the post-upgrade callback against an existing object class, which will introduce an object of the new class corresponding to the existing class to extend/enhance/optimize an existing feature. This is also called data conversion.
+
+Once successfully completed, the number of objects for the existing and newly created classes should be the same.
+
+If the post-upgrade callback has failed or hasn't been able to fully complete for some reason, the data conversion will be incomplete.The impact of incomplete data conversion varies depending on the class that is missing as a result.
+
+The post-upgrade callback may fail due to a software defect, or due to an inappropriate human intervention during APIC upgrades such as decommissioning an APIC, rebooting an APIC etc.
+
+This validation checks whether the number of objects for the existing and newly created classes are the same.
+
+!!! tip
+    This validation **must** be performed after an APIC upgrade but before a switch upgrade.
+    
+    Regardless of this validation, it is a best practice to run this script twice, before an APIC upgrade AND before a switch upgrade, especially when the upgrade of the entire fabric cannot be completed within the same maintenance window. If you have been doing it, please keep doing it. If not, make sure to do that because this specific validation must be run after an APIC upgrade.
+    Because of this reason, this validation warns users to run the script again if the current APIC version and the target version are different when the script is run because it implies the script was run before an APIC upgrade.
+
+
+!!! example
+    If the existing class and the new class are `infraRsToEncapInstDef` and `infraAssocEncapInstDef`, the impact of incomplete post-upgrade callback (i.e. incomplete data conversion) is that VLANs will not be deployed on leaf switches after the upgrade of the switch.
+    You can check the number of objects for these classes via moquery and query option `rsp-subtree-include=count` as shown below.
+    If the Mo count for both classes are the same, it means that `infraAssocEncapInstDef` was created successfully after the APIC upgrade by `infraRsToEncapInstDef`'s post-upgrade callback.
+    ```
+    apic1# moquery -c infraAssocEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
+
+    apic1# moquery -c infraRsToEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
     ```
 
 ## Fault Check Details
@@ -1521,9 +1576,11 @@ To avoid this issue, it is critical that you upgrade to a fixed version of CSCvi
 
 ### Eventmgr DB size defect susceptibility
 
-Due to the defect CSCvn20175, the upgrade of APICs may get stuck or take unnecessarily long. This is because of a shard in the database growing too large due to the defect. To check the size of the shard requires a root access to the APICs which can be performed only through Cisco TAC.
+Due to defects CSCvn20175 or CSCvt07565, the upgrade of APICs may get stuck or take an unusually long time to complete. Either eventmanager defect results in a database shard with a replica 0 that grew exceptionally large. This, in turn, increases the time it takes for dataconvergence to complete.
 
-This script checks if the current version is susceptible to CSCvn20175 or not.
+Root access is required to check the current size of APIC database shards. A Cisco TAC SR is required for root access.
+
+This script checks if the current version is susceptible to either CSCvn20175 or CSCvt07565.
 
 
 ### Contract Port 22 Defect
@@ -1604,7 +1661,15 @@ Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot
 
 The script checks if the version and the SUP modules are susceptible to the defect.
 
+### CoS 3 with Dynamic Packet Prioritization
 
+Due to the defect CSCwf05073, ACI unexpectedly assigning a COS3 value to traffic egressing front ports. 
+
+In certain cases, such as when frames goes through FCoE supported devices, these get classified into the no drop FCoE class. In FCoE devices, this can cause drop of packets when the packet length is higher than the allowed 2184 bytes.
+
+For example, on the UCS Fabric Interconnect COS3 value is hardcoded for fiber channel (FC) or fiber channel over ethernet (FCoE) traffic. FC/FCoE traffic is highly sensitive and is treated as non-droppable, and cannot exceed MTU of 2184 bytes long.
+
+This script checks if the target version is susceptible to CSCwf05073 and dynamic packet prioritization feature is set to "on".
 ### SUP-A/A+ High Memory Usage
 
 Due to the increased memory utilization from 6.0(3), N9K-SUP-A or N9K-SUP-A+ will likely experience constant high memory utilization.
@@ -1650,6 +1715,19 @@ The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under th
     userdom      : :all:common:
     ```
 
+
+### N9K-C93108TC-FX3P/FX3H Interface Down
+
+Due to the defect CSCwh81430, some RJ45 interfaces on Cisco Nexus N9K-C93108TC-FX3P and N9K-C93108TC-FX3H Switches might not come up, even when connected.
+
+This issue can be triggered by a switch reload that occurs for any reason, including a software upgrade, software reset, system crash, or the power being turned up or down.
+
+The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Optical ports Ethernet 1/49 - 54 and MGMT0 port are not affected.
+
+Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
+
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1670,3 +1748,4 @@ The example shows a correctly defined `fvUplinkOrderCont`, with uplinks under th
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
+[20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html

@@ -1,0 +1,26 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-113",
+        "fabricSt": "active",
+        "id": "113",
+        "model": "N9K-C93108TC-FX3H",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf113"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-114",
+        "fabricSt": "active",
+        "id": "114",
+        "model": "N9K-C93108TC-FX3H",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf114"
+      }
+    }
+  }
+]

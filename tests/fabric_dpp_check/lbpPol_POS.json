@@ -1,0 +1,14 @@
+[
+      {
+        "lbpPol": {
+          "attributes": {
+            "dlbMode": "off",
+            "dn": "uni/fabric/lbp-default",
+            "hashGtp": "no",
+            "mode": "traditional",
+            "name": "default",
+            "pri": "on"
+          }
+        }
+      }
+]
