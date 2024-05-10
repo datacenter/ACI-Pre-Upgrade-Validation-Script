@@ -3200,6 +3200,45 @@ def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwar
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
+	title = 'Static Route Subnet and BD Subnet Overlap'
+	result = PASS
+	msg = ''
+	headers = ["Node ID", "Node Name", "Recommended Action"]
+	data = []
+	recommended_action = 'Do not use /32 routes that overlap with a BD subnet range '
+	doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb91766'
+	print_title(title, index, total_checks)
+	iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
+	bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
+	subnet_regex = r'uni/tn-(?P<tenant>[^/]+/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\])'
+	
+	if (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)") ):
+		staticRoutes = icurl('class', 'ipRouteP.json')
+		for staticRoute in staticRoutes:
+			staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
+			if staticroute_array and staticroute_array.group("netmask") == "32":
+				filter_vrf = 'l3extRsEctx.json?query-target-filter=and(wcard(l3extRsEctx.dn,"tn-'+ staticroute_array.group("tenant")+ '.*.' + staticroute_array.group("l3out") + '"))'
+				route_vrf = icurl('class', filter_vrf)
+				#Get BDs from the VRF	
+				filter_bds = 'fvRsCtx.json?query-target-filter=and(eq(fvRsCtx.tDn,"'+ route_vrf[0]['l3extRsEctx']['attributes']['tDn'] + '"))'
+				bds_in_vrf = icurl('class', filter_bds)
+				for bd in bds_in_vrf:
+					bd_array = re.search(bd_regex, bd['fvRsCtx']['attributes']['dn'])
+					filter_subnet = 'fvSubnet.json?query-target-filter=and(wcard(fvSubnet.dn,"uni/tn-' + bd_array.group("tenant") + '/BD-' + bd_array.group("bd") + '"))'
+					subnets_in_bd = icurl('class', filter_subnet)
+					for subnet in subnets_in_bd:
+						subnet_array = re.search(subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+						bdsubnet = subnet_array.group("subnet")
+						slash32 = staticroute_array.group("addr")
+						if IPAddress.ip_in_subnet(slash32, bdsubnet):
+							result = FAIL_O
+							error_message = 'Overlapping between Static Route ' +  staticroute_array.group("addr") + 'and BD Subnet' + subnet['fvSubnet']['attributes']['dn']
+							data.append([error_message, recommended_action])
+							
+	print_result(title, result, msg, headers, data, doc_url=doc_url)
+	return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))

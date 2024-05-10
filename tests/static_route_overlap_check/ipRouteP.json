@@ -1,0 +1,28 @@
+[
+        {
+            "ipRouteP": {
+                "attributes": {
+                    "aggregate": "no",
+                    "annotation": "",
+                    "childAction": "",
+                    "descr": "",
+                    "dn": "uni/tn-av/out-av_static/lnodep-av_static_nodeProfile/rsnodeL3OutAtt-[topology/pod-1/node-101]/rt-[81.81.81.81/32]",
+                    "extMngdBy": "",
+                    "fromPfxLen": "0",
+                    "ip": "81.81.81.81/32",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-15T04:23:57.234+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "",
+                    "nameAlias": "",
+                    "pref": "1",
+                    "rtCtrl": "",
+                    "status": "",
+                    "toPfxLen": "0",
+                    "type": "rt-static",
+                    "uid": "15374",
+                    "userdom": ":all:"
+                }
+            }
+        }
+    ]

@@ -1,0 +1,28 @@
+[
+        {
+            "l3extRsEctx": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "dn": "uni/tn-av/out-av_static/rsectx",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-15T05:49:59.397+00:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "state": "formed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fvCtx",
+                    "tContextDn": "",
+                    "tDn": "uni/tn-av/ctx-1",
+                    "tRn": "ctx-1",
+                    "tType": "name",
+                    "tnFvCtxName": "1",
+                    "uid": "0",
+                    "userdom": "all"
+                }
+            }
+        }
+    ]
