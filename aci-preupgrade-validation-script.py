@@ -3211,8 +3211,8 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303'
     print_title(title, index, total_checks)
 
-    if cversion.older_than("4.2(6d)"):
-        epg_api =  'fvAEPg.json?' 
+    if cversion.older_than("4.2(6d)") or (cversion.major1 == "5" and cversion.older_than("5.1(1h)")):
+        epg_api =  'fvAEPg.json?'
         epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
         fvAEPg = icurl('class', epg_api)

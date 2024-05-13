@@ -114,6 +114,8 @@ Items                                         | Faults         | This Script    
 [Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [EECDH SSL Cipher Disabled][c13]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[BD and EPG Subnet must have matching scopes][c14]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -128,6 +130,7 @@ Items                                         | Faults         | This Script    
 [c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c12]: #oob-mgmt-security
 [c13]: #eecdh-ssl-cipher
+[c14]: #bd-and-epg-subnet-must-have-matching-scopes
 
 
 ### Defect Condition Checks
@@ -1561,6 +1564,12 @@ When disabled, the nginx.conf configuration file may fail to validate and NGINX 
     {"totalCount":"0","imdata":[]}
     admin@apic1:~>
     ```
+
+### BD and EPG Subnet must have matching scopes
+
+Before the fix implemented in CSCvv30303, it was possible for a BD an associated EPG to have the same subnet defined but with mismatching scopes. A typical usage scenario seen for this was having the subnet defined under the BD as `public`, for L3out usage, and under the EPG as `shared` for Shared services configuration.
+
+After CSCvv30303, validations were pushed to prevent this configuration and enforce that subnets defined in both places shoudl have the same scope. Attempting to push a mismatching scope config was rejected, however upgrading from a version that did not have this validation could result in a subset of your previously working policy being applied. The EPG defined subnet scope would take precedence over the BD scope, and any policy relying on the BD scope definition would not be applied, typically resulting in an unexpected traffic flow or outage.
 
 ## Defect Check Details
 

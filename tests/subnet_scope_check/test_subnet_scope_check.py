@@ -32,6 +32,13 @@ epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=
         ),
         (
             {bd_api: read_data(dir, "fvBD.json"), 
+            epg_api: read_data(dir, "fvAEPg_pos.json"),
+            "fvRsBd.json": read_data(dir, "fvRsBd.json")},
+            "5.1(1a)",
+            script.FAIL_O,
+        ),
+        (
+            {bd_api: read_data(dir, "fvBD.json"), 
             epg_api: read_data(dir, "fvAEPg_neg.json"),
             "fvRsBd.json": read_data(dir, "fvRsBd.json")},
             "5.2(8h)",
