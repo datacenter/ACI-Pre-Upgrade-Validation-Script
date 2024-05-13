@@ -3201,74 +3201,67 @@ def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwar
     return result
 
 
-def subnet_scope_check(index, total_checks, **kwargs):
-	title = 'BD and EPG Subnet Scope Check'
-	result = PASS
-	msg = ''
-	headers = ["Node ID", "Node Name", "Recommended Action"]
-	data = []
-	recommended_action = 'Configure the same Scope for the subnets for : '
-	doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303'
-	print_title(title, index, total_checks)
+def subnet_scope_check(index, total_checks, cversion, **kwargs):
+    title = 'BD and EPG Subnet Scope Check'
+    result = PASS
+    msg = ''
+    headers = ["BD DN", "BD Scope", "EPG DN", "EPG Scope"]
+    data = []
+    recommended_action = 'Configure the same Scope for the identified subnet pairings'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303'
+    print_title(title, index, total_checks)
 
-    epg_api =  'fvAEPg.json?' 
-    epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
+    if cversion.older_than("4.2(6d)"):
+        epg_api =  'fvAEPg.json?' 
+        epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
-	epg_subnets = icurl('class', epg_api)
-    if not epg_subnets:
-        print_result(title, N/A, "0 EPG Subnets found. Skipping.")
-        return N/A
+        fvAEPg = icurl('class', epg_api)
+        if not fvAEPg:
+            print_result(title, N/A, "0 EPG Subnets found. Skipping.")
+            return N/A
 
-    bd_api =  'fvBD.json'
-    bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
+        bd_api =  'fvBD.json'
+        bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
-    epg_to_bd = icurl('class', 'fvRsBd.json')
-    bd_subnets = icurl('class', bd_api)
+        fvBD = icurl('class', bd_api)
+        fvRsBd = icurl('class', 'fvRsBd.json')
 
-	epg_lookup = {}
-	# EPG subnets *tend* to be fewer, build out lookup dict by EPG
-    # {"epg_dn": {subnet1: scope, subnet2: scope},...}
+        epg_to_subnets = {}
+        # EPG subnets *tend* to be fewer, build out lookup dict by EPG first
+        # {"epg_dn": {subnet1: scope, subnet2: scope},...}
+        for epg in fvAEPg:
+            subnet_scopes = {}
+            for subnet in epg['fvAEPg']['children']:
+                subnet_scopes[subnet["fvSubnet"]["attributes"]["ip"]] = subnet["fvSubnet"]["attributes"]["scope"]
+            epg_to_subnets[epg['fvAEPg']['attributes']['dn']] = subnet_scopes
 
-    # {bd_dn : {epg_dn: {subnet1: scope, subnet2: scope}}}}
-	for epg in epg_subnets:
-        subnet_scopes = {}
-        for subnet in epg['fvAEPg']['children']:
-            subnet_scopes[subnet["fvSubnet"]["attributes"]["ip"]] = subnet["fvSubnet"]["attributes"]["scope"]
-        epg_lookup[epg['fvAEPg']['attributes']['dn']] = subnet_scopes
-        #prefixes[subnet['fvSubnet']['attributes']['ip']] = prefixes.get(subnet['fvSubnet']['attributes']['ip'], 0) + 1
+        bd_to_epg = {}
+        # Build out epg to BD lookup if EPG has a subnet (entry in epg_to_subnets)
+        # {bd_tdn: [epg1, epg2, epg3...]}
+        for reln in fvRsBd:
+            epg_dn = reln["fvRsBd"]["attributes"]["dn"].replace('/rsbd', '')
+            bd_tdn = reln["fvRsBd"]["attributes"]["tDn"]
+            if epg_to_subnets.get(epg_dn):
+                bd_to_epg.setdefault(bd_tdn, []).append(epg_dn)
 
-    bd_lookup = {}
-    for reln in epg_to_bd:
-        epg_dn = reln["fvRsBd"]["attributes"]["dn"].replace('/rsbd', '')
-        bd_tdn = reln["fvRsBd"]["attributes"]["tDn"]
-        if epg_lookup.get(epg):
-            bd_lookup[bd_tdn] = {epg_dn: epg_lookup.get(epg_dn)}
+        # Build out epg to BD lookup if EPG has a subnet (entry in epg_to_subnets)
+        for bd in fvBD:
+            bd_dn = bd["fvBD"]["attributes"]["dn"]
+            epgs_to_check = bd_to_epg.get(bd_dn)
+            if epgs_to_check:
+                for fvSubnet in bd['fvBD']['children']:
+                    bd_subnet = fvSubnet["fvSubnet"]["attributes"]["ip"]
+                    bd_scope = fvSubnet["fvSubnet"]["attributes"]["scope"]
+                    for epg_dn in epgs_to_check:
+                        epg_scope = epg_to_subnets[epg_dn].get(bd_subnet)
+                        if bd_scope != epg_scope:
+                            data.append([bd_dn, bd_scope, epg_dn, epg_scope])
 
-    for bd in bd_subnets:
-        bd_dn = bd["fvBD"]["attributes"]["dn"]
-        if bd_lookup.get(bd_dn):
-            for subnet in bd['fvBD']['children']:
-                ip = subnet["fvSubnet"]["attributes"]["ip"]
-                scope = subnet["fvSubnet"]["attributes"]["scope"]
-                if bd_lookup[bd_dn]
-            
+    if data:
+        result = FAIL_O
 
-
-
-	'''# Go through the list of Prefixes, check for prefixes with multiple fvSubnets.
-	for key, value in prefixes.items():
-		if value > 1:
-			filt = 'fvSubnet.json?query-target-filter=and(eq(fvSubnet.ip,"%s"))' % key
-			ip_scopes = icurl('class', filt )
-			if ip_scopes[0]['fvSubnet']['attributes']['scope'] != ip_scopes[1]['fvSubnet']['attributes']['scope']:
-				message = recommended_action + ip_scopes[0]['fvSubnet']['attributes']['dn'] + ' and ' + ip_scopes[1]['fvSubnet']['attributes']['dn']
-				data.append([ message ])'''
-
-	if data:
-		result = FAIL_O			
-				
-	print_result(title, result, msg, headers, data, doc_url=doc_url)
-	return result
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 
 if __name__ == "__main__":

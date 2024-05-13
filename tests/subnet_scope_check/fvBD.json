@@ -32,5 +32,39 @@
             }
         ]
     }
-}
+  },
+  {
+    "fvBD": {
+        "attributes": {
+            "dn": "uni/tn-test3/BD-myBd3"
+        },
+        "children": [
+            {
+                "fvSubnet": {
+                    "attributes": {
+                        "ip": "192.168.1.2/24",
+                        "scope": "public"
+                    }
+                }
+            }
+        ]
+    }
+  },
+  {
+    "fvBD": {
+        "attributes": {
+            "dn": "uni/tn-test4/BD-myBd4"
+        },
+        "children": [
+            {
+                "fvSubnet": {
+                    "attributes": {
+                        "ip": "192.168.1.2/24",
+                        "scope": "public"
+                    }
+                }
+            }
+        ]
+    }
+  }
 ]

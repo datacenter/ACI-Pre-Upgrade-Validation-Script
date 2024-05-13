@@ -14,5 +14,21 @@
         "tDn": "uni/tn-common/BD-myBd2"
       }
     }
+  },
+  {
+    "fvRsBd": {
+      "attributes": {
+        "dn": "uni/tn-test3/ap-testApp/epg-testepg/rsbd",
+        "tDn": "uni/tn-test3/BD-myBd3"
+      }
+    }
+  },
+  {
+    "fvRsBd": {
+      "attributes": {
+        "dn": "uni/tn-test4/ap-testApp/epg-testepg/rsbd",
+        "tDn": "uni/tn-test4/BD-myBd4"
+      }
+    }
   }
 ]

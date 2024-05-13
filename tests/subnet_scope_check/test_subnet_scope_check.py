@@ -21,23 +21,25 @@ epg_api =  'fvAEPg.json?'
 epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
 @pytest.mark.parametrize(
-    "icurl_outputs, expected_result",
+    "icurl_outputs, cversion, expected_result",
     [
         (
             {bd_api: read_data(dir, "fvBD.json"), 
             epg_api: read_data(dir, "fvAEPg_pos.json"),
-            "fvRsBd.json": read_data(dir, "fvAEPg_pos.json")},
+            "fvRsBd.json": read_data(dir, "fvRsBd.json")},
+            "4.2(6a)",
             script.FAIL_O,
         ),
         (
             {bd_api: read_data(dir, "fvBD.json"), 
             epg_api: read_data(dir, "fvAEPg_neg.json"),
-            "fvRsBd.json": read_data(dir, "fvAEPg_pos.json")},
+            "fvRsBd.json": read_data(dir, "fvRsBd.json")},
+            "5.2(8h)",
             script.PASS,
         ),
 
     ],
 )
-def test_logic(mock_icurl, expected_result):
-    result = script.subnet_scope_check(1, 1)
+def test_logic(mock_icurl, cversion, expected_result):
+    result = script.subnet_scope_check(1, 1, script.AciVersion(cversion))
     assert result == expected_result

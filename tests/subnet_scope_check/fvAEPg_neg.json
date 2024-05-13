@@ -26,7 +26,7 @@
                 "fvSubnet": {
                     "attributes": {
                         "ip": "192.168.1.2/24",
-                        "scope": "shared"
+                        "scope": "public"
                     }
                 }
             }
@@ -43,7 +43,7 @@
                 "fvSubnet": {
                     "attributes": {
                         "ip": "192.168.1.2/24",
-                        "scope": "shared"
+                        "scope": "public"
                     }
                 }
             }
