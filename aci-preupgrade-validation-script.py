@@ -3217,8 +3217,8 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
 
         fvAEPg = icurl('class', epg_api)
         if not fvAEPg:
-            print_result(title, N/A, "0 EPG Subnets found. Skipping.")
-            return N/A
+            print_result(title, NA, "0 EPG Subnets found. Skipping.")
+            return NA
 
         bd_api =  'fvBD.json'
         bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
