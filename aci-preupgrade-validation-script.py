@@ -374,8 +374,6 @@ class Connection(object):
 class IPAddress:
     """Custom IP handling class since old APICs do not have `ipaddress` module.
     """
-    HEXTET_COUNT = 8
-
     @classmethod
     def ip_to_binary(cls, ip):
         if ':' in ip:
@@ -389,8 +387,9 @@ class IPAddress:
         octets_bin = [format(int(octet), "08b") for octet in octets]
         return "".join(octets_bin)
 
-    @classmethod
-    def ipv6_to_binary(cls, ipv6):
+    @staticmethod
+    def ipv6_to_binary(ipv6):
+        HEXTET_COUNT = 8
         _hextets = ipv6.split(":")
         dbl_colon_index = None
         if '' in _hextets:
@@ -401,7 +400,7 @@ class IPAddress:
                 _hextets = _hextets[:-1]
             # Uncompress all zero hextets represented by '::'
             dbl_colon_index = _hextets.index('')
-            skipped_hextets = cls.HEXTET_COUNT - len(_hextets) + 1
+            skipped_hextets = HEXTET_COUNT - len(_hextets) + 1
             hextets = _hextets[:dbl_colon_index]
             hextets += ['0'] * skipped_hextets
             hextets += _hextets[dbl_colon_index+1:]
