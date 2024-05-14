@@ -1,0 +1,53 @@
+[
+  {
+      "fvAEPg": {
+          "attributes": {
+              "dn": "uni/tn-common/ap-myApp/epg-epg1"
+          },
+          "children": [
+              {
+                  "fvSubnet": {
+                      "attributes": {
+                          "ip": "192.168.1.1/24",
+                          "scope": "public,shared"
+                      }
+                  }
+              }
+          ]
+      }
+  },
+  {
+    "fvAEPg": {
+        "attributes": {
+            "dn": "uni/tn-test/ap-testApp/epg-testepg"
+        },
+        "children": [
+            {
+                "fvSubnet": {
+                    "attributes": {
+                        "ip": "192.168.1.2/24",
+                        "scope": "public"
+                    }
+                }
+            }
+        ]
+    }
+  },
+  {
+    "fvAEPg": {
+        "attributes": {
+            "dn": "uni/tn-test3/ap-testApp/epg-testepg"
+        },
+        "children": [
+            {
+                "fvSubnet": {
+                    "attributes": {
+                        "ip": "192.168.1.2/24",
+                        "scope": "public"
+                    }
+                }
+            }
+        ]
+    }
+  }
+]

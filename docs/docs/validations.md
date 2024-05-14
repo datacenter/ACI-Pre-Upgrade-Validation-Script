@@ -114,6 +114,8 @@ Items                                         | Faults         | This Script    
 [Per-Leaf Fabric Uplink Scale Validation][c11]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c12]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [EECDH SSL Cipher Disabled][c13]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[BD and EPG Subnet must have matching scopes][c14]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -128,6 +130,7 @@ Items                                         | Faults         | This Script    
 [c11]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c12]: #oob-mgmt-security
 [c13]: #eecdh-ssl-cipher
+[c14]: #bd-and-epg-subnet-must-have-matching-scopes
 
 
 ### Defect Condition Checks
@@ -1545,6 +1548,7 @@ This implies that for users running releases 4.2(7), 5.2(1), or 5.2(2), and when
 
 The script checks whether you should be aware of this change in behavior prior to your ACI upgrade so that appropriate subnets can be added to the configuration or you can prepare a workstation that is within the configured subnet, which will continue to be accessible to APICs even after the upgrade.
 
+
 ### EECDH SSL Cipher
 
 Under `Fabric > Fabric Policies > Policies > Pod > Management Access > default`, there are multiple SSL ciphers which can be enabled or disabled by the user. Cipher states should only be modified if a configured cipher is declared insecure or weak by the IETF. When modifying any cipher it is important to validate that the configuration is valid otherwise NGINX may fail to validate and the GUI will become unusable due to no cipher match. For more information reference the [APIC Security Configuration Guide][19].
@@ -1561,6 +1565,21 @@ When disabled, the nginx.conf configuration file may fail to validate and NGINX 
     {"totalCount":"0","imdata":[]}
     admin@apic1:~>
     ```
+
+
+### BD and EPG Subnet must have matching scopes
+
+Bridge Domains and EPGs can both have subnets defined. Depending on the features in use, there are 3 scope options that can be applied on these BD and EPG subnets to enable specific functionality:
+
+- **Private** — The subnet applies only within its tenant. This is the default scope option.
+- **Public**  — The subnet can be exported to a routed connection. This scope option is used with matching L3Out definitions to export the subnet outside of the ACI Fabric.
+- **Shared**  — The subnet can be shared with and exported to multiple VRFs in the same tenant or across
+tenants as part of a "Shared Service" configuration within the ACI Fabric. An example of a shared service is a routed connection from one VRF having access to an EPG in a different VRF. The 'shared' scope option is required to enable traffic to pass in both directions across VRFs.
+
+Before the fix implemented in [CSCvv30303][21], it was possible for a BD and an associated EPG to have the same subnet defined, but with mismatching scopes. The non-deterministic nature of ACI meant that policy re-programmings, such as via Upgrade or Clean Reloads, could change which subnet scope option definition would take affect first, the BD or the EPG, and could result in a loss of expected traffic flows.
+
+[CSCvv30303][21] introduced policy validations to prevent this configuration and enforce that matching subnets defined in both the BD and related EPG have the same scope. It is imperative that identified mismatching subnet scopes are corrected within an ACI fabric to prevent unexpected traffic pattern issues in the future.
+
 
 ## Defect Check Details
 
@@ -1749,3 +1768,4 @@ Because of this, the target version of your upgrade must be a version with a fix
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
 [20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html
+[21]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303
