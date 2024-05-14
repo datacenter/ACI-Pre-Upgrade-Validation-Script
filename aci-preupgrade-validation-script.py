@@ -3208,7 +3208,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     headers = ["BD DN", "BD Scope", "EPG DN", "EPG Scope"]
     data = []
     recommended_action = 'Configure the same Scope for the identified subnet pairings'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#bd-and-epg-subnet-must-have-matching-scopes'
     print_title(title, index, total_checks)
 
     if cversion.older_than("4.2(6d)") or (cversion.major1 == "5" and cversion.older_than("5.1(1h)")):
@@ -3236,7 +3236,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
             epg_to_subnets[epg['fvAEPg']['attributes']['dn']] = subnet_scopes
 
         bd_to_epg = {}
-        # Build out epg to BD lookup if EPG has a subnet (entry in epg_to_subnets)
+        # Build out BD to epg lookup, if EPG has a subnet (entry in epg_to_subnets)
         # {bd_tdn: [epg1, epg2, epg3...]}
         for reln in fvRsBd:
             epg_dn = reln["fvRsBd"]["attributes"]["dn"].replace('/rsbd', '')
@@ -3244,7 +3244,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
             if epg_to_subnets.get(epg_dn):
                 bd_to_epg.setdefault(bd_tdn, []).append(epg_dn)
 
-        # Build out epg to BD lookup if EPG has a subnet (entry in epg_to_subnets)
+        # walk through BDs and lookup EPG subnets to check scope
         for bd in fvBD:
             bd_dn = bd["fvBD"]["attributes"]["dn"]
             epgs_to_check = bd_to_epg.get(bd_dn)
@@ -3340,6 +3340,7 @@ if __name__ == "__main__":
         uplink_limit_check,
         oob_mgmt_security_check,
         eecdh_cipher_check,
+        subnet_scope_check,
 
         # Bugs
         ep_announce_check,
@@ -3355,7 +3356,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
-        subnet_scope_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):

@@ -11,9 +11,6 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # icurl queries
-subnets =  'fvSubnet.json' 
-ip_scopes = 'fvSubnet.json?query-target-filter=and(eq(fvSubnet.ip,"10.66.178.1/26"))'
-
 bd_api =  'fvBD.json'
 bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
