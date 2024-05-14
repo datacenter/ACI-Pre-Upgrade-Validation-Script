@@ -3201,6 +3201,69 @@ def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwar
     return result
 
 
+def subnet_scope_check(index, total_checks, cversion, **kwargs):
+    title = 'BD and EPG Subnet Scope Check'
+    result = PASS
+    msg = ''
+    headers = ["BD DN", "BD Scope", "EPG DN", "EPG Scope"]
+    data = []
+    recommended_action = 'Configure the same Scope for the identified subnet pairings'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#bd-and-epg-subnet-must-have-matching-scopes'
+    print_title(title, index, total_checks)
+
+    if cversion.older_than("4.2(6d)") or (cversion.major1 == "5" and cversion.older_than("5.1(1h)")):
+        epg_api =  'fvAEPg.json?'
+        epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
+
+        fvAEPg = icurl('class', epg_api)
+        if not fvAEPg:
+            print_result(title, NA, "0 EPG Subnets found. Skipping.")
+            return NA
+
+        bd_api =  'fvBD.json'
+        bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
+
+        fvBD = icurl('class', bd_api)
+        fvRsBd = icurl('class', 'fvRsBd.json')
+
+        epg_to_subnets = {}
+        # EPG subnets *tend* to be fewer, build out lookup dict by EPG first
+        # {"epg_dn": {subnet1: scope, subnet2: scope},...}
+        for epg in fvAEPg:
+            subnet_scopes = {}
+            for subnet in epg['fvAEPg']['children']:
+                subnet_scopes[subnet["fvSubnet"]["attributes"]["ip"]] = subnet["fvSubnet"]["attributes"]["scope"]
+            epg_to_subnets[epg['fvAEPg']['attributes']['dn']] = subnet_scopes
+
+        bd_to_epg = {}
+        # Build out BD to epg lookup, if EPG has a subnet (entry in epg_to_subnets)
+        # {bd_tdn: [epg1, epg2, epg3...]}
+        for reln in fvRsBd:
+            epg_dn = reln["fvRsBd"]["attributes"]["dn"].replace('/rsbd', '')
+            bd_tdn = reln["fvRsBd"]["attributes"]["tDn"]
+            if epg_to_subnets.get(epg_dn):
+                bd_to_epg.setdefault(bd_tdn, []).append(epg_dn)
+
+        # walk through BDs and lookup EPG subnets to check scope
+        for bd in fvBD:
+            bd_dn = bd["fvBD"]["attributes"]["dn"]
+            epgs_to_check = bd_to_epg.get(bd_dn)
+            if epgs_to_check:
+                for fvSubnet in bd['fvBD']['children']:
+                    bd_subnet = fvSubnet["fvSubnet"]["attributes"]["ip"]
+                    bd_scope = fvSubnet["fvSubnet"]["attributes"]["scope"]
+                    for epg_dn in epgs_to_check:
+                        epg_scope = epg_to_subnets[epg_dn].get(bd_subnet)
+                        if bd_scope != epg_scope:
+                            data.append([bd_dn, bd_scope, epg_dn, epg_scope])
+
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3277,6 +3340,7 @@ if __name__ == "__main__":
         uplink_limit_check,
         oob_mgmt_security_check,
         eecdh_cipher_check,
+        subnet_scope_check,
 
         # Bugs
         ep_announce_check,
@@ -3292,6 +3356,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
