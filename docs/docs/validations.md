@@ -152,6 +152,8 @@ Items                                           | Defect       | This Script    
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Invalid FEX fabricPathEp DN References][d14]   | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -166,6 +168,7 @@ Items                                           | Defect       | This Script    
 [d11]: #vmm-uplink-container-with-empty-actives
 [d12]: #cos-3-with-dynamic-packet-prioritization
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
+[d14]: #invalid-fex-fabricpathep-dn-references
 
 
 ## General Check Details
@@ -1797,6 +1800,17 @@ The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Op
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
 
 
+### Invalid FEX fabricPathEp DN References
+
+If you have deployed a FEX on a version prior to having validations introduced in [CSCwh68103][22], it is possible that `fabricPathEp` objects were created with an incorrect DN format. As a result, the related `infraRsHPathAtt` objects pointing to those `fabricPathEp` will also contain the invalid DN in their DN formatting given how ACI builds out object relations.
+
+Having these invalid DNs and then upgrading to a version that has the validations introduced in [CSCwh68103][22] will result in validation failures while trying to make changes to access policies, blocking new config from being accepted. The validation failure will present itself with the text `Failed to decode IfIndex, id: 0x.......`.
+
+If invalid DNs are found, first identify if the FEX IDs are still in use in case a window needs to be planned. If not in use, delete the `infraRsHPathAtt` objects having an invalid DN. 
+
+This check queries `infraRsHPathAtt` objects related to eths, then check if any have DNs which are incorrectly formatted.
+
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -1820,3 +1834,4 @@ Because of this, the target version of your upgrade must be a version with a fix
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
 [20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html
 [21]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303
+[22]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103

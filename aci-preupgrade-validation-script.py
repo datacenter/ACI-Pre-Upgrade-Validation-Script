@@ -3425,7 +3425,7 @@ def invalid_fex_rs_check(index, total_checks, **kwargs):
     headers = ["FEX ID", "Invalid DN"]
     data = []
     recommended_action = 'Identify if FEX ID in use, then contact TAC for cleanup'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-dn'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-fabricpathep-dn-references'
     print_title(title, index, total_checks)
 
 
