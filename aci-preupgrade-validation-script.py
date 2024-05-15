@@ -739,6 +739,7 @@ def get_vpc_nodes(**kwargs):
 
     return vpc_nodes
 
+
 def get_switch_version(**kwargs):
     """ Returns lowest switch version as AciVersion instance """
     prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
@@ -757,6 +758,7 @@ def get_switch_version(**kwargs):
                 lowest_sw_ver = version
 
     return lowest_sw_ver
+
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
@@ -3016,6 +3018,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Mini ACI Upgrade to 6.0(2)+'
     result = FAIL_UF
@@ -3046,7 +3049,6 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
         result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
-
 
 
 def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
@@ -3416,6 +3418,34 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     return result
 
 
+def invalid_fex_rs_check(index, total_checks, **kwargs):
+    title = 'Invalid FEX Relation Source Check'
+    result = PASS
+    msg = ''
+    headers = ["FEX ID", "Invalid DN"]
+    data = []
+    recommended_action = 'Identify if FEX ID in use, then contact TAC for cleanup'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-dn'
+    print_title(title, index, total_checks)
+
+
+    hpath_api =  'infraRsHPathAtt.json?query-target-filter=wcard(infraRsHPathAtt.dn,"eth")'
+    infraRsHPathAtt = icurl('class', hpath_api)
+
+    for rs in infraRsHPathAtt:
+        dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
+        m = re.search(r'eth(?P<fex>\d+)\/\d\/\d', dn)
+        if m:
+            fex_id = m.group('fex')
+            data.append([fex_id, dn])
+
+    if data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3509,6 +3539,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
+        invalid_fex_rs_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
