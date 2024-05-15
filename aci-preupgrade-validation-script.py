@@ -2978,6 +2978,28 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     return result
 
 
+def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kwargs):
+    title = 'LLDP Custom Interface Description Defect'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Recommended Action"]
+    data = []
+    recommended_action = 'Custom interface descriptions and lazy VMM domain attachments detected. The target version %s is not recommended with these feature combination.' % (str(tversion))
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416'
+    print_title(title, index, total_checks)
+
+    if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
+        custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+        lazy_vmm_count = icurl('class','fvRsDomAtt.json?query-target-filter=and(eq(fvRsDomAtt.tCl,"vmmDomP"),eq(fvRsDomAtt.resImedcy,"lazy"))&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+
+        if int(custom_int_count) > 0 and int(lazy_vmm_count) > 0:
+            result = FAIL_O
+            data.append(['CSCwf00416', recommended_action])
+
+    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3064,6 +3086,7 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
+        lldp_custom_int_description_defect_check,
         
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}

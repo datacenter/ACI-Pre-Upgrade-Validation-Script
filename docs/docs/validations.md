@@ -139,6 +139,8 @@ Items                                           | Defect       | This Script    
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[LLDP Custom Interface Description][d11]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size
@@ -150,7 +152,7 @@ Items                                           | Defect       | This Script    
 [d8]: #fabric-domain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
-
+[d11]: #lldp-custom-interface-description
 
 
 ## General Check Details
@@ -1564,6 +1566,41 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 !!! note
     This is also called out in release notes of each version - [6.0(3)][15], [6.0(4)][16], [6.0(5)][17]:
 
+
+### LLDP Custom Interface Description
+
+Due to the defect [CSCwf00416][20], custom interface descriptions may override the port topology DN. In ACI LLDP should always advertise the topology DN as the port description irrespective of whether an interface description is configured or not.
+
+In cases where there is a custom interface description and a VMM-integrated deployment with deploy immediacy set to on-demand, connectivity may break on upgrade. If both of these features are enabled it is not recommended to upgrade to 6.0(1) or 6.0(2).
+
+!!! note
+    To check for any custom interface descriptions, you can use the following moquery command.
+    ```
+    apic1# moquery -c infraPortBlk -x query-target-filter=ne\(infraPortBlk.descr,""\)
+    Total Objects shown: 11
+
+    # infra.PortBlk
+    name         : portblock1
+    annotation   :
+    childAction  :
+    descr        : port 30 on Leaf 101 and 103 to FI-B      <<< Description is set
+    dn           : uni/infra/accportprof-system-port-profile-node-103/hports-system-port-selector-accbundle-VPC_FIB-typ-range/portblk-portblock1
+    --- omit ---
+    ```
+
+    To check for any VMM Domains using on-demand deploy immediacy, you can use the following moquery command.
+    ```
+    apic1# moquery -c fvRsDomAtt -x query-target-filter=and\(eq\(fvRsDomAtt.tCl,\"vmmDomP\"\),eq\(fvRsDomAtt.instrImedcy,\"lazy\"\)\)
+    Total Objects shown: 90
+
+    # fv.RsDomAtt
+    tDn                  : uni/vmmp-VMware/dom-shared-dvs
+    dn                   : uni/tn-prod/ap-inet/epg-epg1/rsdomAtt-[uni/vmmp-VMware/dom-shared-dvs]
+    instrImedcy          : lazy                            <<< deploy immediacy is on-demand
+    tCl                  : vmmDomP
+    --- omit ---
+    ```
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1584,3 +1621,4 @@ It is highly recommended not to upgrade your ACI fabric to 6.0(3), 6.0(4) or 6.0
 [17]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-605.html
 [18]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-mini-aci-fabric.html#Cisco_Task_in_List_GUI.dita_2d9ca023-714c-4341-9112-d96a7a598ee6
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
+[20]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416
