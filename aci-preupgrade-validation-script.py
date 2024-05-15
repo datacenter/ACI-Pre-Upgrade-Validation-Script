@@ -2988,6 +2988,10 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416'
     print_title(title, index, total_checks)
 
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
     if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
         custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
         lazy_vmm_count = icurl('class','fvRsDomAtt.json?query-target-filter=and(eq(fvRsDomAtt.tCl,"vmmDomP"),eq(fvRsDomAtt.resImedcy,"lazy"))&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
