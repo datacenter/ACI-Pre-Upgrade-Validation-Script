@@ -374,16 +374,46 @@ class Connection(object):
 class IPAddress:
     """Custom IP handling class since old APICs do not have `ipaddress` module.
     """
+    @classmethod
+    def ip_to_binary(cls, ip):
+        if ':' in ip:
+            return cls.ipv6_to_binary(ip)
+        else:
+            return cls.ipv4_to_binary(ip)
+
     @staticmethod
-    def ip_to_binary(ip):
-        octets = ip.split(".")
+    def ipv4_to_binary(ipv4):
+        octets = ipv4.split(".")
         octets_bin = [format(int(octet), "08b") for octet in octets]
         return "".join(octets_bin)
 
+    @staticmethod
+    def ipv6_to_binary(ipv6):
+        HEXTET_COUNT = 8
+        _hextets = ipv6.split(":")
+        dbl_colon_index = None
+        if '' in _hextets:
+            # leading/trailing '::' results in additional '' at the beginning/end.
+            if _hextets[0] == '':
+                _hextets = _hextets[1:]
+            if _hextets[-1] == '':
+                _hextets = _hextets[:-1]
+            # Uncompress all zero hextets represented by '::'
+            dbl_colon_index = _hextets.index('')
+            skipped_hextets = HEXTET_COUNT - len(_hextets) + 1
+            hextets = _hextets[:dbl_colon_index]
+            hextets += ['0'] * skipped_hextets
+            hextets += _hextets[dbl_colon_index+1:]
+        else:
+            hextets = _hextets
+        hextets_bin = [format(int(hextet, 16), "016b") for hextet in hextets]
+        return "".join(hextets_bin)
+
     @classmethod
     def get_network_binary(cls, ip, pfxlen):
+        maxlen = 128 if ':' in ip else 32
         ip_bin = cls.ip_to_binary(ip)
-        return ip_bin[0:32-(32-int(pfxlen))]
+        return ip_bin[0:maxlen-(maxlen-int(pfxlen))]
 
     @classmethod
     def ip_in_subnet(cls, ip, subnet):
@@ -1807,6 +1837,128 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
                         ctxP['rtctrlCtxP']['attributes']['name'],
                         ctxP['rtctrlCtxP']['attributes']['action'],
                         rsCtxPToSubjP['rtctrlRsCtxPToSubjP']['attributes']['tnRtctrlSubjPName'],
+                    ])
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
+    title = 'L3Out Loopback IP Overlap With L3Out Interfaces'
+    result = FAIL_O
+    msg = ''
+    headers = ['Tenant:VRF', 'Node ID', 'Loopback IP (Tenant:L3Out:NodeP)', 'Interface IP (Tenant:L3Out:NodeP:IFP)']
+    data = []
+    recommended_action = 'Change either the loopback or L3Out interface IP subnet to avoid overlap.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-loopback-ip-overlap-with-l3out-interfaces'
+    print_title(title, index, total_checks)
+
+    tn_regex = r'uni/tn-(?P<tenant>[^/]+)/'
+    path_regex = r'topology/pod-(?P<pod>\d+)/(?:prot)?paths-(?P<node1>\d+)(?:-(?P<node2>\d+))?'
+
+    vrfs = defaultdict(dict)
+    api = 'l3extOut.json'
+    api += '?rsp-subtree=full'
+    api += '&rsp-subtree-class=l3extRsEctx,l3extRsNodeL3OutAtt,l3extLoopBackIfP,l3extRsPathL3OutAtt,l3extMember'
+    l3outs = icurl('class', api)
+    for l3out in l3outs:
+        vrf = ""
+        loopback_ips = defaultdict(dict)
+        interface_ips = defaultdict(list)
+        for child in l3out['l3extOut'].get('children', []):
+            dn = re.search(tn_regex, l3out['l3extOut']['attributes']['dn'])
+            tenant_name = dn.group('tenant') if dn else ""
+            l3out_name = l3out['l3extOut']['attributes']['name']
+            # Get VRF
+            if child.get('l3extRsEctx'):
+                vrf_tdn = re.search(tn_regex, child['l3extRsEctx']['attributes']['tDn'])
+                if vrf_tdn:
+                    vrf = ':'.join([vrf_tdn.group('tenant'), child['l3extRsEctx']['attributes']['tnFvCtxName']])
+                else:
+                    vrf = child['l3extRsEctx']['attributes']['tDn']
+            # Get loopback and interface IPs
+            elif child.get('l3extLNodeP'):
+                nodep_name = child['l3extLNodeP']['attributes']['name']
+                for np_child in child['l3extLNodeP'].get('children', []):
+                    # Get the loopback IP for each node
+                    if np_child.get('l3extRsNodeL3OutAtt'):
+                        node = np_child['l3extRsNodeL3OutAtt']
+                        m = re.search(node_regex, node['attributes']['tDn'])
+                        if not m:
+                            logging.error('Failed to parse tDn - %s', node['attributes']['tDn'])
+                            continue
+                        node_id = m.group('node')
+
+                        loopback_ip = ''
+                        if node['attributes']['rtrIdLoopBack'] == 'yes':
+                            loopback_ip = node['attributes']['rtrId']
+                        else:
+                            for lb in node.get('children', []):
+                                # There should be only one l3extLoopBackIfP per node
+                                if lb.get('l3extLoopBackIfP'):
+                                    loopback_ip = lb['l3extLoopBackIfP']['attributes']['addr']
+                                    break
+                        if loopback_ip:
+                            loopback_ips[node_id] = {
+                                'addr': loopback_ip,
+                                'config': ':'.join([tenant_name, l3out_name, nodep_name]),
+                            }
+                    # Get interface IPs for each node
+                    elif np_child.get('l3extLIfP'):
+                        ifp_name = np_child['l3extLIfP']['attributes']['name']
+                        for ifp_child in np_child['l3extLIfP'].get('children', []):
+                            if not ifp_child.get('l3extRsPathL3OutAtt'):
+                                continue
+                            port = ifp_child['l3extRsPathL3OutAtt']
+                            m = re.search(path_regex, port['attributes']['tDn'])
+                            if not m:
+                                logging.error('Failed to parse tDn - %s', port['attributes']['tDn'])
+                                continue
+                            node1_id = m.group('node1')
+                            node2_id = m.group('node2')
+                            config = ':'.join([tenant_name, l3out_name, nodep_name, ifp_name])
+                            # non-vPC port
+                            if not node2_id:
+                                interface_ips[node1_id].append({
+                                    'addr': port['attributes']['addr'],
+                                    'config': config,
+                                })
+                            # vPC port
+                            else:
+                                for member in port.get('children', []):
+                                    if not member.get('l3extMember'):
+                                        continue
+                                    node_id = node1_id
+                                    if member['l3extMember']['attributes']['side'] == 'B':
+                                        node_id = node2_id
+                                    interface_ips[node_id].append({
+                                        'addr': member['l3extMember']['attributes']['addr'],
+                                        'config': config,
+                                    })
+        for node in loopback_ips:
+            if not vrfs[vrf].get(node):
+                vrfs[vrf][node] = {}
+            vrfs[vrf][node]['loopback'] = loopback_ips[node]
+        for node in interface_ips:
+            if not vrfs[vrf].get(node):
+                vrfs[vrf][node] = {}
+            vrfs[vrf][node]['interfaces'] = vrfs[vrf][node].get('interfaces', []) + interface_ips[node]
+
+    # Check overlaps
+    for vrf in vrfs:
+        for node in vrfs[vrf]:
+            loopback = vrfs[vrf][node].get('loopback')
+            interfaces = vrfs[vrf][node].get('interfaces')
+            if not loopback or not interfaces:
+                continue
+            for interface in interfaces:
+                if IPAddress.ip_in_subnet(loopback['addr'], interface['addr']):
+                    data.append([
+                        vrf,
+                        node,
+                        '{} ({})'.format(loopback['addr'], loopback['config']),
+                        '{} ({})'.format(interface['addr'], interface['config']),
                     ])
     if not data:
         result = PASS
@@ -3333,6 +3485,7 @@ if __name__ == "__main__":
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
         l3out_route_map_missing_target_check,
+        l3out_overlapping_loopback_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
