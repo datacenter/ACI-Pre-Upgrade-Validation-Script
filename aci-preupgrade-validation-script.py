@@ -3419,7 +3419,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
 
 
 def invalid_fex_rs_check(index, total_checks, **kwargs):
-    title = 'Invalid FEX Relation Source Check'
+    title = 'Invalid FEX Relation Source'
     result = PASS
     msg = ''
     headers = ["FEX ID", "Invalid DN"]
