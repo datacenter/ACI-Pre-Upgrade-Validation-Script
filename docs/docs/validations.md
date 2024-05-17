@@ -152,7 +152,7 @@ Items                                           | Defect       | This Script    
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Invalid FEX fabricPathEp DN References][d14]   | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Invalid FEX fabricPathEp DN References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
