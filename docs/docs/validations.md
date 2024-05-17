@@ -182,9 +182,12 @@ The script performs the equivalent check by querying objects `compatRsUpgRel`.
 
 ### Compatibility (CIMC Version)
 
-The [APIC Upgrade/Downgrade Support Matrix][1] should be checked for the supported UCS HUU version for your target Cisco APIC version to make sure all server components are running the version from the supported HUU bundle.
+The script checks the minimum recommended CIMC version for the given APIC model on the target version by querying `compatRsSuppHw` objects.
 
-The script checks the minimum recommended CIMC version for the given APIC model on the target version by querying objects `compatRsSuppHw`.
+As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
+
+!!! note
+    Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
 
 ### Compatibility (Switch Hardware)
 
@@ -1802,9 +1805,9 @@ Because of this, the target version of your upgrade must be a version with a fix
 
 ### Invalid FEX fabricPathEp DN References
 
-If you have deployed a FEX on a version prior to having validations introduced in [CSCwh68103][22], it is possible that `fabricPathEp` objects were created with an incorrect DN format. As a result, the related `infraRsHPathAtt` objects pointing to those `fabricPathEp` will also contain the invalid DN in their DN formatting given how ACI builds out object relations.
+If you have deployed a FEX on a version prior to having validations introduced in [CSCwh68103][23], it is possible that `fabricPathEp` objects were created with an incorrect DN format. As a result, the related `infraRsHPathAtt` objects pointing to those `fabricPathEp` will also contain the invalid DN in their DN formatting given how ACI builds out object relations.
 
-Having these invalid DNs and then upgrading to a version that has the validations introduced in [CSCwh68103][22] will result in validation failures while trying to make changes to access policies, blocking new config from being accepted. The validation failure will present itself with the text `Failed to decode IfIndex, id: 0x.......`.
+Having these invalid DNs and then upgrading to a version that has the validations introduced in [CSCwh68103][23] will result in validation failures while trying to make changes to access policies, blocking new config from being accepted. The validation failure will present itself with the text `Failed to decode IfIndex, id: 0x.......`.
 
 If invalid DNs are found, first identify if the FEX IDs are still in use in case a window needs to be planned. If not in use, delete the `infraRsHPathAtt` objects having an invalid DN. 
 
@@ -1834,4 +1837,5 @@ This check queries `infraRsHPathAtt` objects related to eths, then check if any 
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
 [20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html
 [21]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303
-[22]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103
+[22]: https://www.cisco.com/c/dam/en/us/td/docs/unified_computing/ucs/c/sw/CIMC-Upgrade-Downgrade-Matrix/index.html
+[23]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103

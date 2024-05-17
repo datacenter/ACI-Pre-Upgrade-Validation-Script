@@ -2345,10 +2345,10 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
     title = 'APIC CIMC Compatibility'
     result = FAIL_UF
     msg = ''
-    headers = ["Node ID", "Current CIMC version", "Minimum Recommended CIMC Version"]
+    headers = ["Node ID", "Model", "Current CIMC version", "Catalog Recommended CIMC Version", "Warning"]
     data = []
-    recommended_action = 'Plan to upgrade CIMC version prior to APIC upgrade'
-    doc_url = '"Compatibility (CIMC Versions)" from Pre-Upgrade Checklists'
+    recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
     print_title(title, index, total_checks)
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
@@ -2362,12 +2362,13 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
+                    warning = ""
                     if compatMo and recommended_cimc:
-                        if is_firstver_gt_secondver(current_cimc, recommended_cimc):
-                            pass
-                        else:
+                        if not is_firstver_gt_secondver(current_cimc, "3.0(3a)"):
+                            warning = "Multi-step Upgrade may be required, check UCS CIMC Matrix."
+                        if not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                            data.append([nodeid, current_cimc, recommended_cimc])
+                            data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
 
             if not data:
                 result = PASS
