@@ -2982,10 +2982,10 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     title = 'LLDP Custom Interface Description Defect'
     result = PASS
     msg = ''
-    headers = ["Potential Defect", "Recommended Action"]
+    headers = ["Potential Defect"]
     data = []
-    recommended_action = 'Custom interface descriptions and lazy VMM domain attachments detected. The target version %s is not recommended with these feature combination.' % (str(tversion))
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416'
+    recommended_action = 'Target version is not recommended; Custom interface descriptions and lazy VMM domain attachments found.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#lldp-custom-interface-description'
     print_title(title, index, total_checks)
 
     if not tversion:
@@ -2998,9 +2998,9 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
 
         if int(custom_int_count) > 0 and int(lazy_vmm_count) > 0:
             result = FAIL_O
-            data.append(['CSCwf00416', recommended_action])
+            data.append(['CSCwf00416'])
 
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
