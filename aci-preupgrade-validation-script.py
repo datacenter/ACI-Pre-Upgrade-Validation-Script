@@ -32,13 +32,14 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v1.7.0"
+SCRIPT_VERSION = "v2.0.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
 FAIL_UF = 'FAIL - UPGRADE FAILURE!!'
 ERROR = 'ERROR !!'
 MANUAL = 'MANUAL CHECK REQUIRED'
+POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
 ver_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
@@ -54,6 +55,11 @@ fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %
 subprocess.check_output(['mkdir', '-p', DIR])
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+class OldVerClassNotFound(Exception):
+    """ Later versions of ACI can have class properties not found in older versions """
+    pass
 
 
 class OldVerPropNotFound(Exception):
@@ -368,16 +374,46 @@ class Connection(object):
 class IPAddress:
     """Custom IP handling class since old APICs do not have `ipaddress` module.
     """
+    @classmethod
+    def ip_to_binary(cls, ip):
+        if ':' in ip:
+            return cls.ipv6_to_binary(ip)
+        else:
+            return cls.ipv4_to_binary(ip)
+
     @staticmethod
-    def ip_to_binary(ip):
-        octets = ip.split(".")
+    def ipv4_to_binary(ipv4):
+        octets = ipv4.split(".")
         octets_bin = [format(int(octet), "08b") for octet in octets]
         return "".join(octets_bin)
 
+    @staticmethod
+    def ipv6_to_binary(ipv6):
+        HEXTET_COUNT = 8
+        _hextets = ipv6.split(":")
+        dbl_colon_index = None
+        if '' in _hextets:
+            # leading/trailing '::' results in additional '' at the beginning/end.
+            if _hextets[0] == '':
+                _hextets = _hextets[1:]
+            if _hextets[-1] == '':
+                _hextets = _hextets[:-1]
+            # Uncompress all zero hextets represented by '::'
+            dbl_colon_index = _hextets.index('')
+            skipped_hextets = HEXTET_COUNT - len(_hextets) + 1
+            hextets = _hextets[:dbl_colon_index]
+            hextets += ['0'] * skipped_hextets
+            hextets += _hextets[dbl_colon_index+1:]
+        else:
+            hextets = _hextets
+        hextets_bin = [format(int(hextet, 16), "016b") for hextet in hextets]
+        return "".join(hextets_bin)
+
     @classmethod
     def get_network_binary(cls, ip, pfxlen):
+        maxlen = 128 if ':' in ip else 32
         ip_bin = cls.ip_to_binary(ip)
-        return ip_bin[0:32-(32-int(pfxlen))]
+        return ip_bin[0:maxlen-(maxlen-int(pfxlen))]
 
     @classmethod
     def ip_in_subnet(cls, ip, subnet):
@@ -620,6 +656,10 @@ def icurl(apitype, query):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
+        elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
+        elif "not found" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
     else:
@@ -699,6 +739,7 @@ def get_vpc_nodes(**kwargs):
 
     return vpc_nodes
 
+
 def get_switch_version(**kwargs):
     """ Returns lowest switch version as AciVersion instance """
     prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
@@ -709,14 +750,15 @@ def get_switch_version(**kwargs):
     for firmware in firmwares:
         versions.add(firmware['firmwareRunning']['attributes']['peVer'])
 
-    lowest_sw_ver = AciVersion(versions.pop())
-    for version in versions:
-        version = AciVersion(version)
-        if lowest_sw_ver.newer_than(str(version)):
-            lowest_sw_ver = version
+    if versions:
+        lowest_sw_ver = AciVersion(versions.pop())
+        for version in versions:
+            version = AciVersion(version)
+            if lowest_sw_ver.newer_than(str(version)):
+                lowest_sw_ver = version
 
-    prints('%s\n' % lowest_sw_ver)
     return lowest_sw_ver
+
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
@@ -1804,6 +1846,128 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
     return result
 
 
+def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
+    title = 'L3Out Loopback IP Overlap With L3Out Interfaces'
+    result = FAIL_O
+    msg = ''
+    headers = ['Tenant:VRF', 'Node ID', 'Loopback IP (Tenant:L3Out:NodeP)', 'Interface IP (Tenant:L3Out:NodeP:IFP)']
+    data = []
+    recommended_action = 'Change either the loopback or L3Out interface IP subnet to avoid overlap.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-loopback-ip-overlap-with-l3out-interfaces'
+    print_title(title, index, total_checks)
+
+    tn_regex = r'uni/tn-(?P<tenant>[^/]+)/'
+    path_regex = r'topology/pod-(?P<pod>\d+)/(?:prot)?paths-(?P<node1>\d+)(?:-(?P<node2>\d+))?'
+
+    vrfs = defaultdict(dict)
+    api = 'l3extOut.json'
+    api += '?rsp-subtree=full'
+    api += '&rsp-subtree-class=l3extRsEctx,l3extRsNodeL3OutAtt,l3extLoopBackIfP,l3extRsPathL3OutAtt,l3extMember'
+    l3outs = icurl('class', api)
+    for l3out in l3outs:
+        vrf = ""
+        loopback_ips = defaultdict(dict)
+        interface_ips = defaultdict(list)
+        for child in l3out['l3extOut'].get('children', []):
+            dn = re.search(tn_regex, l3out['l3extOut']['attributes']['dn'])
+            tenant_name = dn.group('tenant') if dn else ""
+            l3out_name = l3out['l3extOut']['attributes']['name']
+            # Get VRF
+            if child.get('l3extRsEctx'):
+                vrf_tdn = re.search(tn_regex, child['l3extRsEctx']['attributes']['tDn'])
+                if vrf_tdn:
+                    vrf = ':'.join([vrf_tdn.group('tenant'), child['l3extRsEctx']['attributes']['tnFvCtxName']])
+                else:
+                    vrf = child['l3extRsEctx']['attributes']['tDn']
+            # Get loopback and interface IPs
+            elif child.get('l3extLNodeP'):
+                nodep_name = child['l3extLNodeP']['attributes']['name']
+                for np_child in child['l3extLNodeP'].get('children', []):
+                    # Get the loopback IP for each node
+                    if np_child.get('l3extRsNodeL3OutAtt'):
+                        node = np_child['l3extRsNodeL3OutAtt']
+                        m = re.search(node_regex, node['attributes']['tDn'])
+                        if not m:
+                            logging.error('Failed to parse tDn - %s', node['attributes']['tDn'])
+                            continue
+                        node_id = m.group('node')
+
+                        loopback_ip = ''
+                        if node['attributes']['rtrIdLoopBack'] == 'yes':
+                            loopback_ip = node['attributes']['rtrId']
+                        else:
+                            for lb in node.get('children', []):
+                                # There should be only one l3extLoopBackIfP per node
+                                if lb.get('l3extLoopBackIfP'):
+                                    loopback_ip = lb['l3extLoopBackIfP']['attributes']['addr']
+                                    break
+                        if loopback_ip:
+                            loopback_ips[node_id] = {
+                                'addr': loopback_ip,
+                                'config': ':'.join([tenant_name, l3out_name, nodep_name]),
+                            }
+                    # Get interface IPs for each node
+                    elif np_child.get('l3extLIfP'):
+                        ifp_name = np_child['l3extLIfP']['attributes']['name']
+                        for ifp_child in np_child['l3extLIfP'].get('children', []):
+                            if not ifp_child.get('l3extRsPathL3OutAtt'):
+                                continue
+                            port = ifp_child['l3extRsPathL3OutAtt']
+                            m = re.search(path_regex, port['attributes']['tDn'])
+                            if not m:
+                                logging.error('Failed to parse tDn - %s', port['attributes']['tDn'])
+                                continue
+                            node1_id = m.group('node1')
+                            node2_id = m.group('node2')
+                            config = ':'.join([tenant_name, l3out_name, nodep_name, ifp_name])
+                            # non-vPC port
+                            if not node2_id:
+                                interface_ips[node1_id].append({
+                                    'addr': port['attributes']['addr'],
+                                    'config': config,
+                                })
+                            # vPC port
+                            else:
+                                for member in port.get('children', []):
+                                    if not member.get('l3extMember'):
+                                        continue
+                                    node_id = node1_id
+                                    if member['l3extMember']['attributes']['side'] == 'B':
+                                        node_id = node2_id
+                                    interface_ips[node_id].append({
+                                        'addr': member['l3extMember']['attributes']['addr'],
+                                        'config': config,
+                                    })
+        for node in loopback_ips:
+            if not vrfs[vrf].get(node):
+                vrfs[vrf][node] = {}
+            vrfs[vrf][node]['loopback'] = loopback_ips[node]
+        for node in interface_ips:
+            if not vrfs[vrf].get(node):
+                vrfs[vrf][node] = {}
+            vrfs[vrf][node]['interfaces'] = vrfs[vrf][node].get('interfaces', []) + interface_ips[node]
+
+    # Check overlaps
+    for vrf in vrfs:
+        for node in vrfs[vrf]:
+            loopback = vrfs[vrf][node].get('loopback')
+            interfaces = vrfs[vrf][node].get('interfaces')
+            if not loopback or not interfaces:
+                continue
+            for interface in interfaces:
+                if IPAddress.ip_in_subnet(loopback['addr'], interface['addr']):
+                    data.append([
+                        vrf,
+                        node,
+                        '{} ({})'.format(loopback['addr'], loopback['config']),
+                        '{} ({})'.format(interface['addr'], interface['config']),
+                    ])
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def bgp_peer_loopback_check(index, total_checks, **kwargs):
     """ Implementation change due to CSCvm28482 - 4.1(2) """
     title = 'BGP Peer Profile at node level without Loopback'
@@ -2181,10 +2345,10 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
     title = 'APIC CIMC Compatibility'
     result = FAIL_UF
     msg = ''
-    headers = ["Node ID", "Current CIMC version", "Minimum Recommended CIMC Version"]
+    headers = ["Node ID", "Model", "Current CIMC version", "Catalog Recommended CIMC Version", "Warning"]
     data = []
-    recommended_action = 'Plan to upgrade CIMC version prior to APIC upgrade'
-    doc_url = '"Compatibility (CIMC Versions)" from Pre-Upgrade Checklists'
+    recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
     print_title(title, index, total_checks)
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
@@ -2198,12 +2362,13 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
+                    warning = ""
                     if compatMo and recommended_cimc:
-                        if is_firstver_gt_secondver(current_cimc, recommended_cimc):
-                            pass
-                        else:
+                        if not is_firstver_gt_secondver(current_cimc, "3.0(3a)"):
+                            warning = "Multi-step Upgrade may be required, check UCS CIMC Matrix."
+                        if not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                            data.append([nodeid, current_cimc, recommended_cimc])
+                            data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
 
             if not data:
                 result = PASS
@@ -2368,16 +2533,21 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     title = 'Eventmgr DB size defect susceptibility'
     result = PASS
     msg = ''
-    headers = ["Potential Defect", "Recommended Action"]
+    headers = ["Potential Defect", "Doc URL"]
     data = []
     recommended_action = 'Contact Cisco TAC to check the DB size via root'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#eventmgr-db-size-defect-susceptibility'
     print_title(title, index, total_checks)
 
-    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')):
-        result = FAIL_UF
-        data.append(['CSCvn20175', recommended_action])
+    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')): 
+        data.append(['CSCvn20175', 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvn20175'])
+    if cversion.older_than('4.2(4i)') or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):  
+        data.append(['CSCvt07565', 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt07565'])
 
-    print_result(title, result, msg, headers, data)
+    if data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -2527,8 +2697,8 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850'
     print_title(title, index, total_checks)
 
-    if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+    if not sw_cversion or not tversion:
+        print_result(title, MANUAL, 'Current and target Switch version not supplied. Skipping.')
         return MANUAL
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
@@ -2849,6 +3019,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Mini ACI Upgrade to 6.0(2)+'
     result = FAIL_UF
@@ -2879,7 +3050,6 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
         result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
-
 
 
 def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
@@ -2951,6 +3121,81 @@ def access_untagged_check(index, total_checks, **kwargs):
     return result
 
 
+def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Post Upgrade Callback Integrity'
+    result = PASS
+    msg = ''
+    headers = ["Missed Objects", "Impact"]
+    data = []
+    recommended_action = 'Contact Cisco TAC with Output'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-callback-integrity'
+    print_title(title, index, total_checks)
+
+    new_mo_dict = {
+        "infraImplicitSetPol": {
+            "CreatedBy": "",
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
+        },
+        "infraRsToImplicitSetPol": {
+            "CreatedBy": "infraImplicitSetPol",
+            "SinceVersion": "3.2(10e)",
+            "Impact": "Infra implicit settings will not be deployed",
+        },
+        "fvSlaDef": {
+            "CreatedBy": "fvIPSLAMonitoringPol",
+            "SinceVersion": "4.1(1i)",
+            "Impact": "IPSLA monitor policy will not be deployed",
+        },
+        "infraRsConnectivityProfileOpt": {
+            "CreatedBy": "infraRsConnectivityProfile",
+            "SinceVersion": "5.2(4d)",
+            "Impact": "VPC for missing Mo will not be deployed to leaf",
+        },
+        "infraAssocEncapInstDef": {
+            "CreatedBy": "infraRsToEncapInstDef",
+            "SinceVersion": "5.2(4d)",
+            "Impact": "VLAN for missing Mo will not be deployed to leaf",
+        },
+        "compatSwitchHw": {
+            "CreatedBy": "",  # suppBit attribute is available from 6.0(2h)
+            "SinceVersion": "6.0(2h)",
+            "Impact": "Unexpected 64/32 bit image can deploy to switches",
+        },
+    }
+    if not tversion or (tversion and cversion.older_than(str(tversion))):
+        print_result(title, POST, 'Re-run script after APICs are upgraded and back to Fully-Fit')
+        return POST
+
+    for new_mo in new_mo_dict:
+        since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+        created_by_mo = new_mo_dict[new_mo]['CreatedBy']
+
+        if since_version.newer_than(str(cversion)):
+            continue
+
+        api = "{}.json?rsp-subtree-include=count"
+        if new_mo == "compatSwitchHw":
+            # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
+            api += '&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
+
+        temp_new_mo_count = icurl("class", api.format(new_mo))
+        new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+        if created_by_mo == "":
+            if new_mo_count == 0:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+        else:
+            temp_createdby_mo_count = icurl('class', api.format(created_by_mo))
+            created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+            if created_by_mo_count != new_mo_count:
+                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     title = 'EECDH SSL Cipher'
     result = FAIL_UF
@@ -2973,6 +3218,230 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
 
     if not data:
         result = PASS
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def vmm_active_uplinks_check(index, total_checks, **kwargs):
+    title = 'fvUplinkOrderCont with blank active uplinks definition'
+    result = PASS
+    msg = ''
+    headers = ["Tenant", "Application Profile", "Application EPG", "VMM Domain"]
+    data = []
+    recommended_action = 'Identify Active Uplinks and apply this to the VMM domain association of each EPG'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#vmm-uplink-container-with-empty-actives'
+    print_title(title, index, total_checks)
+
+    uplink_api =  'fvUplinkOrderCont.json' 
+    uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
+    vmm_epg_regex=r"uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)/rsdomAtt-\[uni/vmmp-.+/dom-(?P<dom>.+)\]"
+
+    try:
+        affected_uplinks = icurl('class', uplink_api)
+    except OldVerClassNotFound:
+        # Pre 4.x did not have this class
+        msg = 'cversion does not have class fvUplinkOrderCont'
+        result = NA
+        print_result(title, result, msg)
+        return result
+
+    if affected_uplinks:
+        result = FAIL_O
+        for uplink in affected_uplinks:
+            dn = re.search(vmm_epg_regex, uplink['fvUplinkOrderCont']['attributes']['dn'])
+            data.append([dn.group("tenant"), dn.group("ap"), dn.group("epg"), dn.group("dom")])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def fabric_port_down_check(index, total_checks, **kwargs):
+    title = 'Fabric Port is Down (F1394 ethpm-if-port-down-fabric)'
+    result = FAIL_O
+    msg = ''
+    headers = ["Pod", "Node", "Int", "Reason"]
+    unformatted_headers = ['dn', 'Fault Description']
+    unformatted_data = []
+    data = []
+    recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
+    print_title(title, index, total_checks)
+    
+    fault_api =  'faultInst.json'
+    fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
+    fault_api += ',eq(faultInst.rule,"ethpm-if-port-down-fabric"))'
+
+    faultInsts = icurl('class',fault_api)
+    dn_re = node_regex + r'/.+/phys-\[(?P<int>eth\d/\d+)\]'
+
+    for faultInst in faultInsts:
+        m = re.search(dn_re, faultInst['faultInst']['attributes']['dn'])
+        if m:
+            podid = m.group('pod')
+            nodeid = m.group('node')
+            port = m.group('int')
+            reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
+            data.append([podid, nodeid, port, reason])
+        else:
+            unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
+
+    if not data and not unformatted_data:
+        result = PASS
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def fabric_dpp_check(index, total_checks, tversion, **kwargs):
+    title = 'CoS 3 with Dynamic Packet Prioritization'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'Change the target version to the fixed version of CSCwf05073'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    lbpol_api =  'lbpPol.json'
+    lbpol_api += '?query-target-filter=eq(lbpPol.pri,"on")'
+
+    lbpPol = icurl('class', lbpol_api)
+    if lbpPol:
+        if ((tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)")) or 
+            (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))):
+                result = FAIL_O
+                data.append(["CSCwf05073", "Target Version susceptible to Defect"])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwargs):
+    title = 'N9K-C93108TC-FX3P/FX3H Interface Down'
+    result = PASS
+    msg = ''
+    headers = ["Node ID", "Node Name", "Product ID"]
+    data = []
+    recommended_action = 'Change the target version to the fixed version of CSCwh81430'
+    doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if (
+        tversion.older_than("5.2(8h)")
+        or tversion.same_as("5.3(1d)")
+        or (tversion.major1 == "6" and tversion.older_than("6.0(4a)"))
+    ):
+        api = 'fabricNode.json'
+        api += '?query-target-filter=or('
+        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3P"),'
+        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3H"))'
+        nodes = icurl('class', api)
+        for node in nodes:
+            nodeid = node["fabricNode"]["attributes"]["id"]
+            name = node["fabricNode"]["attributes"]["name"]
+            pid = node["fabricNode"]["attributes"]["model"]
+            data.append([nodeid, name, pid])
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def subnet_scope_check(index, total_checks, cversion, **kwargs):
+    title = 'BD and EPG Subnet Scope Check'
+    result = PASS
+    msg = ''
+    headers = ["BD DN", "BD Scope", "EPG DN", "EPG Scope"]
+    data = []
+    recommended_action = 'Configure the same Scope for the identified subnet pairings'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#bd-and-epg-subnet-must-have-matching-scopes'
+    print_title(title, index, total_checks)
+
+    if cversion.older_than("4.2(6d)") or (cversion.major1 == "5" and cversion.older_than("5.1(1h)")):
+        epg_api =  'fvAEPg.json?'
+        epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
+
+        fvAEPg = icurl('class', epg_api)
+        if not fvAEPg:
+            print_result(title, NA, "0 EPG Subnets found. Skipping.")
+            return NA
+
+        bd_api =  'fvBD.json'
+        bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
+
+        fvBD = icurl('class', bd_api)
+        fvRsBd = icurl('class', 'fvRsBd.json')
+
+        epg_to_subnets = {}
+        # EPG subnets *tend* to be fewer, build out lookup dict by EPG first
+        # {"epg_dn": {subnet1: scope, subnet2: scope},...}
+        for epg in fvAEPg:
+            subnet_scopes = {}
+            for subnet in epg['fvAEPg']['children']:
+                subnet_scopes[subnet["fvSubnet"]["attributes"]["ip"]] = subnet["fvSubnet"]["attributes"]["scope"]
+            epg_to_subnets[epg['fvAEPg']['attributes']['dn']] = subnet_scopes
+
+        bd_to_epg = {}
+        # Build out BD to epg lookup, if EPG has a subnet (entry in epg_to_subnets)
+        # {bd_tdn: [epg1, epg2, epg3...]}
+        for reln in fvRsBd:
+            epg_dn = reln["fvRsBd"]["attributes"]["dn"].replace('/rsbd', '')
+            bd_tdn = reln["fvRsBd"]["attributes"]["tDn"]
+            if epg_to_subnets.get(epg_dn):
+                bd_to_epg.setdefault(bd_tdn, []).append(epg_dn)
+
+        # walk through BDs and lookup EPG subnets to check scope
+        for bd in fvBD:
+            bd_dn = bd["fvBD"]["attributes"]["dn"]
+            epgs_to_check = bd_to_epg.get(bd_dn)
+            if epgs_to_check:
+                for fvSubnet in bd['fvBD']['children']:
+                    bd_subnet = fvSubnet["fvSubnet"]["attributes"]["ip"]
+                    bd_scope = fvSubnet["fvSubnet"]["attributes"]["scope"]
+                    for epg_dn in epgs_to_check:
+                        epg_scope = epg_to_subnets[epg_dn].get(bd_subnet)
+                        if bd_scope != epg_scope:
+                            data.append([bd_dn, bd_scope, epg_dn, epg_scope])
+
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def invalid_fex_rs_check(index, total_checks, **kwargs):
+    title = 'Invalid FEX Relation Source'
+    result = PASS
+    msg = ''
+    headers = ["FEX ID", "Invalid DN"]
+    data = []
+    recommended_action = 'Identify if FEX ID in use, then contact TAC for cleanup'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-fabricpathep-dn-references'
+    print_title(title, index, total_checks)
+
+
+    hpath_api =  'infraRsHPathAtt.json?query-target-filter=wcard(infraRsHPathAtt.dn,"eth")'
+    infraRsHPathAtt = icurl('class', hpath_api)
+
+    for rs in infraRsHPathAtt:
+        dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
+        m = re.search(r'eth(?P<fex>\d+)\/\d\/\d', dn)
+        if m:
+            fex_id = m.group('fex')
+            data.append([fex_id, dn])
+
+    if data:
+        result = FAIL_UF
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -3042,6 +3511,7 @@ if __name__ == "__main__":
         features_to_disable_check,
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
+        post_upgrade_cb_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -3062,6 +3532,7 @@ if __name__ == "__main__":
         lldp_with_infra_vlan_mismatch_check,
         hw_program_fail_check,
         scalability_faults_check,
+        fabric_port_down_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -3071,6 +3542,7 @@ if __name__ == "__main__":
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
         l3out_route_map_missing_target_check,
+        l3out_overlapping_loopback_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
@@ -3078,6 +3550,7 @@ if __name__ == "__main__":
         uplink_limit_check,
         oob_mgmt_security_check,
         eecdh_cipher_check,
+        subnet_scope_check,
 
         # Bugs
         ep_announce_check,
@@ -3090,10 +3563,14 @@ if __name__ == "__main__":
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
+        vmm_active_uplinks_check,
+        fabric_dpp_check,
+        n9k_c93108tc_fx3p_interface_down_check,
+        invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
-        
+
     ]
-    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, NA: 0, 'TOTAL': len(checks)}
+    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
             r = check(idx + 1, len(checks), **inputs)
@@ -3116,7 +3593,7 @@ if __name__ == "__main__":
         f.write(jsonString)
 
     subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, NA, ERROR, 'TOTAL']
+    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:

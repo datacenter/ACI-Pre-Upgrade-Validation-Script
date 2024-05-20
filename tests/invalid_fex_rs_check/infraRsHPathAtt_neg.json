@@ -1,0 +1,46 @@
+[
+  {
+      "infraRsHPathAtt": {
+          "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-105/extpaths-198/pathep-[eth1/7]]",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2021-10-23T08:33:12.722+09:00",
+              "rType": "mo",
+              "state": "unformed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fabricPathEp",
+              "tDn": "topology/pod-1/paths-105/extpaths-198/pathep-[eth1/7]",
+              "tType": "mo",
+              "uid": "15374",
+              "userdom": ""
+          }
+      }
+  },
+  {
+      "infraRsHPathAtt": {
+          "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/paths-101/pathep-[eth1/1]]",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2018-06-04T08:10:52.124+09:00",
+              "rType": "mo",
+              "state": "unformed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fabricPathEp",
+              "tDn": "topology/pod-1/paths-101/pathep-[eth1/1]",
+              "tType": "mo",
+              "uid": "15374",
+              "userdom": ""
+          }
+      }
+  }
+]

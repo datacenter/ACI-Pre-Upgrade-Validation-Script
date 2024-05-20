@@ -1,0 +1,10 @@
+[
+  {
+      "compatRsSuppHw": {
+          "attributes": {
+              "cimcVersion": "4.0(2f)",
+              "dn": "uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl2]"
+          }
+      }
+  }
+]

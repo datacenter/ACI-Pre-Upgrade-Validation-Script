@@ -1,0 +1,29 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "descr": "Port is down, reason:err-disabled-link-flaps(err-disabled), used by:Fabric",
+        "dn": "topology/pod-1/node-105/sys/phys-[eth1/53]/phys/fault-F1394",
+        "rule": "ethpm-if-port-down-fabric"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "descr": "Port is down, reason:linkNotConnected(connected), used by:Fabric",
+        "dn": "topology/pod-1/node-101/sys/phys-[eth1/53]/phys/fault-F1394",
+        "rule": "ethpm-if-port-down-fabric"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "descr": "Port is down, reason:linkNotConnected(connected), used by:Fabric",
+        "dn": "topology/pod-1/node-102/sys/phys-eth1/53/phys/fault-F1394",
+        "rule": "ethpm-if-port-down-fabric"
+      }
+    }
+  }
+]
