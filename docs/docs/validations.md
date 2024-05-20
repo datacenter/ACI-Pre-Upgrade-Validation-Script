@@ -153,6 +153,7 @@ Items                                           | Defect       | This Script    
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Invalid FEX fabricPathEp DN References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -169,6 +170,7 @@ Items                                           | Defect       | This Script    
 [d12]: #cos-3-with-dynamic-packet-prioritization
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
 [d14]: #invalid-fex-fabricpathep-dn-references
+[d15]: #lldp-custom-interface-description
 
 
 ## General Check Details
@@ -1815,6 +1817,41 @@ This check queries `infraRsHPathAtt` objects related to eths, then check if any 
 
 
 
+
+### LLDP Custom Interface Description
+
+Due to the defect [CSCwf00416][24], custom interface descriptions may override the port topology DN. In ACI LLDP should always advertise the topology DN as the port description irrespective of whether an interface description is configured or not.
+
+In cases where there is a custom interface description and a VMM-integrated deployment with deploy immediacy set to on-demand, connectivity may break on upgrade. If both of these features are enabled it is not recommended to upgrade to 6.0(1) or 6.0(2).
+
+!!! note
+    To check for any custom interface descriptions, you can use the following moquery command.
+    ```
+    apic1# moquery -c infraPortBlk -x query-target-filter=ne\(infraPortBlk.descr,""\)
+    Total Objects shown: 11
+
+    # infra.PortBlk
+    name         : portblock1
+    annotation   :
+    childAction  :
+    descr        : port 30 on Leaf 101 and 103 to FI-B      <<< Description is set
+    dn           : uni/infra/accportprof-system-port-profile-node-103/hports-system-port-selector-accbundle-VPC_FIB-typ-range/portblk-portblock1
+    --- omit ---
+    ```
+
+    To check for any VMM Domains using on-demand deploy immediacy, you can use the following moquery command.
+    ```
+    apic1# moquery -c fvRsDomAtt -x query-target-filter=and\(eq\(fvRsDomAtt.tCl,\"vmmDomP\"\),eq\(fvRsDomAtt.instrImedcy,\"lazy\"\)\)
+    Total Objects shown: 90
+
+    # fv.RsDomAtt
+    tDn                  : uni/vmmp-VMware/dom-shared-dvs
+    dn                   : uni/tn-prod/ap-inet/epg-epg1/rsdomAtt-[uni/vmmp-VMware/dom-shared-dvs]
+    instrImedcy          : lazy                            <<< deploy immediacy is on-demand
+    tCl                  : vmmDomP
+    --- omit ---
+    ```
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1839,3 +1876,4 @@ This check queries `infraRsHPathAtt` objects related to eths, then check if any 
 [21]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303
 [22]: https://www.cisco.com/c/dam/en/us/td/docs/unified_computing/ucs/c/sw/CIMC-Upgrade-Downgrade-Matrix/index.html
 [23]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103
+[24]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416

@@ -3447,6 +3447,32 @@ def invalid_fex_rs_check(index, total_checks, **kwargs):
     return result
 
 
+def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kwargs):
+    title = 'LLDP Custom Interface Description Defect'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect"]
+    data = []
+    recommended_action = 'Target version is not recommended; Custom interface descriptions and lazy VMM domain attachments found.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#lldp-custom-interface-description'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
+        custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+        lazy_vmm_count = icurl('class','fvRsDomAtt.json?query-target-filter=and(eq(fvRsDomAtt.tCl,"vmmDomP"),eq(fvRsDomAtt.resImedcy,"lazy"))&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+
+        if int(custom_int_count) > 0 and int(lazy_vmm_count) > 0:
+            result = FAIL_O
+            data.append(['CSCwf00416'])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3541,6 +3567,7 @@ if __name__ == "__main__":
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
         invalid_fex_rs_check,
+        lldp_custom_int_description_defect_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
