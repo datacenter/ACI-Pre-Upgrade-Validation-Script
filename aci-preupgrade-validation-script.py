@@ -755,7 +755,7 @@ def get_switch_version(**kwargs):
             version = AciVersion(version)
             if lowest_sw_ver.newer_than(str(version)):
                 lowest_sw_ver = version
-
+        prints('%s\n' % lowest_sw_ver)
     return lowest_sw_ver
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
