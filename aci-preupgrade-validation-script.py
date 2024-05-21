@@ -3415,6 +3415,43 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
+    title = 'Route-map Community Match Defect'
+    result = PASS
+    msg = ''
+    headers = ["Route-map DN", "Community Match", "Failure Reason"]
+    data = []
+    recommended_action = 'Add a prefix list match to each route-map prior to upgrading.'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if (tversion.major1 == "5" and tversion.major2 == "2" and tversion.older_than("5.2(8a)")):
+        rtctrlSubjPs = icurl('class', 'rtctrlSubjP.json?rsp-subtree=full&rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest&rsp-subtree-include=required')
+        if rtctrlSubjPs:
+            for rtctrlSubjP in rtctrlSubjPs:
+                has_comm = False
+                has_dest = False
+                dn = rtctrlSubjP['rtctrlSubjP']['attributes']['dn']
+                for child in rtctrlSubjP['rtctrlSubjP']['children']:
+                    objclass = list(child.keys())[0]
+                    if objclass == "rtctrlMatchCommTerm":
+                        has_comm = True
+                        community = child['rtctrlMatchCommTerm']['children'][0]['rtctrlMatchCommFactor']['attributes']['community']
+                    elif objclass == "rtctrlMatchRtDest":
+                        has_dest = True
+                if has_comm and not has_dest:
+                    data.append([dn, community, "No prefix list match found."])
+        
+        if data:
+            result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -3509,6 +3546,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
+        rtmap_comm_match_defect_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}

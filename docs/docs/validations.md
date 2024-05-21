@@ -152,6 +152,7 @@ Items                                           | Defect       | This Script    
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Route-map Community Match][d14]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -166,6 +167,7 @@ Items                                           | Defect       | This Script    
 [d11]: #vmm-uplink-container-with-empty-actives
 [d12]: #cos-3-with-dynamic-packet-prioritization
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
+[d14]: #route-map-community-match
 
 
 ## General Check Details
@@ -1796,6 +1798,12 @@ The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Op
 
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
 
+
+### Route-map Community Match
+
+Due to the defect CSCwb08081, if you have a route-map with a community match statement but there is no prefix list match the set clause may not be applied.
+
+It is recommended if you are upgrading to an affected release to add a prefix list match statement prior to upgrade.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
