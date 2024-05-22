@@ -1,0 +1,23 @@
+[
+        {
+            "fvSubnet": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "configIssues": "",
+                    "ctrl": "",
+                    "debugMessage": "",
+                    "descr": "",
+                    "dn": "uni/tn-AA/BD-bd1/subnet-[81.81.81.1/24]",
+                    "extMngdBy": "",
+                    "ip": "81.81.81.1/24",
+                    "ipDPLearning": "enabled",
+                    "scope": "private",
+                    "status": "",
+                    "uid": "15374",
+                    "userdom": ":all:",
+                    "virtual": "no"
+                }
+            }
+        }
+    ]

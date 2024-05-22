@@ -1,0 +1,23 @@
+[
+        {
+            "ipRouteP": {
+                "attributes": {
+                    "aggregate": "no",
+                    "annotation": "",
+                    "childAction": "",
+                    "descr": "",
+                    "dn": "uni/tn-AA/out-static/lnodep-static_nodeProfile/rsnodeL3OutAtt-[topology/pod-1/node-101]/rt-[81.81.91.81/32]",
+                    "extMngdBy": "",
+                    "fromPfxLen": "0",
+                    "ip": "81.81.91.81/32",
+                    "pref": "1",
+                    "rtCtrl": "",
+                    "status": "",
+                    "toPfxLen": "0",
+                    "type": "rt-static",
+                    "uid": "15374",
+                    "userdom": ":all:"
+                }
+            }
+        }
+    ]
