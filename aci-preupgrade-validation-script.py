@@ -3302,6 +3302,78 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
+	title = 'Static Route Subnet and BD Subnet Overlap'
+	result = PASS
+	msg = ''
+	headers = ["Node ID", "Node Name", "Recommended Action"]
+	data = []
+	recommended_action = 'Do not use /32 routes that overlap with a BD subnet range '
+	doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script'
+	print_title(title, index, total_checks)
+	iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
+	bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
+	subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
+	
+	if (cversion.older_than("5.0(1a)") and tversion.newer_than("5.2(4a)") ):
+		#4 API Calls, one for each class 
+		# Static Route (ipRouteP),  L3out to Ctx (l3extRsEctx),
+		# BD to Ctx (fvRsCtx) and BD Subnet (fvSubnet)
+		slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
+		staticRoutes = icurl('class', slash32filter)			
+		#Static Route Dictionary with VRF and L3out keys
+		#{"staticRoute_IP": {"vrf" : vrf_dn, "l3out": l3out_dn}}
+		staticroute_vrf = icurl('class', 'l3extRsEctx.json')
+		staticR_to_vrf = {}	
+		for staticRoute in staticRoutes:
+			staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
+			l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
+			
+			for l3outCtx in staticroute_vrf:
+				l3outCtx_Vrf = {}
+				if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
+					l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+					l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
+					staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
+							
+		#VRF Dictionary with BD List
+		#{"vrf1_dn" : [bd1_dn, bd1_dn ], }
+		bds_in_vrf = icurl('class', 'fvRsCtx.json')
+		vrf_to_bd = {}
+		for bd_ref in bds_in_vrf:
+			vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
+			bd_list = vrf_to_bd.get(vrf_name, [])
+			bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+			bd_list.append(bd_name)
+			vrf_to_bd[vrf_name] = bd_list
+
+		# BD Dictionary with Subnet List
+		# {"bd1_dn" : [ subnet1 , subnet2] }
+		subnets_in_bd = icurl('class', 'fvSubnet.json')		
+		bd_to_subnet = {}
+		for subnet in subnets_in_bd:
+			try:
+				subnet_array = re.search(subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+				bd_dn = 'uni/tn-' + subnet_array.group("tenant") + '/BD-' + subnet_array.group("bd")
+				subnet_list = bd_to_subnet.get(bd_dn, [])
+				subnet_list.append(subnet_array.group("subnet"))
+				bd_to_subnet[bd_dn] = subnet_list
+			except:
+				continue
+			
+		for static_route, info in staticR_to_vrf.items():
+			for bd in vrf_to_bd[info['vrf']]:
+				for subnet in bd_to_subnet[bd]:
+					if IPAddress.ip_in_subnet(static_route, subnet):
+						error_message = 'Overlapping between Static Route ' +  static_route + ' in L3out '+ info['l3out'] + ' and BD Subnet ' + subnet + ' in BD ' + bd
+						data.append([error_message])
+						
+		if data:
+			result = FAIL_O
+			
+			
+		print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+	return result	
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -3380,6 +3452,7 @@ if __name__ == "__main__":
         oob_mgmt_security_check,
         eecdh_cipher_check,
         subnet_scope_check,
+        static_route_overlap_check,
 
         # Bugs
         ep_announce_check,

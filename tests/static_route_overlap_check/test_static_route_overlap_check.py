@@ -11,29 +11,47 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # icurl queries
-staticRoutes =  'ipRouteP.json'
-route_vrf = 'l3extRsEctx.json?query-target-filter=and(wcard(l3extRsEctx.dn,"tn-av.*.av_static"))'
-bds_in_vrf = 'fvRsCtx.json?query-target-filter=and(eq(fvRsCtx.tDn,"uni/tn-av/ctx-1"))'
-subnets_in_bd = 'fvSubnet.json?query-target-filter=and(wcard(fvSubnet.dn,"uni/tn-av/BD-bd1"))'
+staticRoutes =  'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
+staticroute_vrf = 'l3extRsEctx.json'
+bds_in_vrf = 'fvRsCtx.json'
+subnets_in_bd = 'fvSubnet.json'
 
 
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
-    	##FAILING
+    	##FAILING = AFFECTED VERSION + AFFECTED MO
         (
-            {staticRoutes: read_data(dir, "ipRouteP.json"), route_vrf: read_data(dir, "l3extRsEctx.json"), 
-             bds_in_vrf: read_data(dir, "fvRsCtx.json"),subnets_in_bd: read_data(dir, "fvSubnet.json")},
-            "4.2(7f)", "5.2(8h)", script.FAIL_O,
+            {staticRoutes: read_data(dir, "ipRouteP.json"), 
+             staticroute_vrf: read_data(dir, "l3extRsEctx.json"), 
+             bds_in_vrf: read_data(dir, "fvRsCtx.json"),
+             subnets_in_bd: read_data(dir, "fvSubnet.json")},
+            "4.2(7f)", "5.2(4d)", script.FAIL_O,
         ),
-        ##PASSING
+        
+        ##PASSING = AFFECTED VERSION + NON-AFFECTED MO
         (
-            {staticRoutes: read_data(dir, "ipRouteP-outside.json"), route_vrf: read_data(dir, "l3extRsEctx.json"), 
-             bds_in_vrf: read_data(dir, "fvRsCtx.json"),subnets_in_bd: read_data(dir, "fvSubnet.json")},
-            "4.2(7f)", "5.2(8h)", script.FAIL_O,
+            {staticRoutes: read_data(dir, "ipRouteP-outside.json"), 
+             staticroute_vrf: read_data(dir, "l3extRsEctx.json"), 
+             bds_in_vrf: read_data(dir, "fvRsCtx.json"),
+             subnets_in_bd: read_data(dir, "fvSubnet.json")},
+            "4.2(7f)", "5.2(4d)", script.PASS,
         ),
+        ##PASSING = NON-AFFECTED VERSION + AFFECTED MO
         (
-        	{}, "5.0(1h)", "6.2(8h)", script.PASS,
+            {staticRoutes: read_data(dir, "ipRouteP.json"), 
+             staticroute_vrf: read_data(dir, "l3extRsEctx.json"), 
+             bds_in_vrf: read_data(dir, "fvRsCtx.json"),
+             subnets_in_bd: read_data(dir, "fvSubnet.json")},
+            "5.1(1a)", "5.2(4d)", script.PASS,
+        ),
+        ## PASSING = AFFECTED VERSION + AFFECTED MO NON EXISTING
+        (
+        	{staticRoutes: read_data(dir, "ipRouteP-notFound.json"),
+        	 staticroute_vrf: read_data(dir, "l3extRsEctx.json"), 
+             bds_in_vrf: read_data(dir, "fvRsCtx.json"),
+             subnets_in_bd: read_data(dir, "fvSubnet.json")},
+        	 "4.2(7f)", "5.2(4d)", script.PASS,
         ),
     ],
 )
