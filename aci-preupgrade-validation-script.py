@@ -32,7 +32,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v2.0.0"
+SCRIPT_VERSION = "v2.1.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
@@ -739,6 +739,7 @@ def get_vpc_nodes(**kwargs):
 
     return vpc_nodes
 
+
 def get_switch_version(**kwargs):
     """ Returns lowest switch version as AciVersion instance """
     prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
@@ -757,6 +758,7 @@ def get_switch_version(**kwargs):
                 lowest_sw_ver = version
         prints('%s\n' % lowest_sw_ver)
     return lowest_sw_ver
+
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     title = 'APIC Cluster is Fully-Fit'
@@ -2343,10 +2345,10 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
     title = 'APIC CIMC Compatibility'
     result = FAIL_UF
     msg = ''
-    headers = ["Node ID", "Current CIMC version", "Minimum Recommended CIMC Version"]
+    headers = ["Node ID", "Model", "Current CIMC version", "Catalog Recommended CIMC Version", "Warning"]
     data = []
-    recommended_action = 'Plan to upgrade CIMC version prior to APIC upgrade'
-    doc_url = '"Compatibility (CIMC Versions)" from Pre-Upgrade Checklists'
+    recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
     print_title(title, index, total_checks)
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
@@ -2360,12 +2362,13 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
+                    warning = ""
                     if compatMo and recommended_cimc:
-                        if is_firstver_gt_secondver(current_cimc, recommended_cimc):
-                            pass
-                        else:
+                        if not is_firstver_gt_secondver(current_cimc, "3.0(3a)"):
+                            warning = "Multi-step Upgrade may be required, check UCS CIMC Matrix."
+                        if not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                            data.append([nodeid, current_cimc, recommended_cimc])
+                            data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
 
             if not data:
                 result = PASS
@@ -3016,6 +3019,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Mini ACI Upgrade to 6.0(2)+'
     result = FAIL_UF
@@ -3046,7 +3050,6 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
         result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
-
 
 
 def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
@@ -3473,6 +3476,60 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def invalid_fex_rs_check(index, total_checks, **kwargs):
+    title = 'Invalid FEX Relation Source'
+    result = PASS
+    msg = ''
+    headers = ["FEX ID", "Invalid DN"]
+    data = []
+    recommended_action = 'Identify if FEX ID in use, then contact TAC for cleanup'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-fabricpathep-dn-references'
+    print_title(title, index, total_checks)
+
+
+    hpath_api =  'infraRsHPathAtt.json?query-target-filter=wcard(infraRsHPathAtt.dn,"eth")'
+    infraRsHPathAtt = icurl('class', hpath_api)
+
+    for rs in infraRsHPathAtt:
+        dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
+        m = re.search(r'eth(?P<fex>\d+)\/\d\/\d', dn)
+        if m:
+            fex_id = m.group('fex')
+            data.append([fex_id, dn])
+
+    if data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kwargs):
+    title = 'LLDP Custom Interface Description Defect'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect"]
+    data = []
+    recommended_action = 'Target version is not recommended; Custom interface descriptions and lazy VMM domain attachments found.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#lldp-custom-interface-description'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
+        custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+        lazy_vmm_count = icurl('class','fvRsDomAtt.json?query-target-filter=and(eq(fvRsDomAtt.tCl,"vmmDomP"),eq(fvRsDomAtt.resImedcy,"lazy"))&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+
+        if int(custom_int_count) > 0 and int(lazy_vmm_count) > 0:
+            result = FAIL_O
+            data.append(['CSCwf00416'])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3566,6 +3623,8 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
+        invalid_fex_rs_check,
+        lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
 
     ]
