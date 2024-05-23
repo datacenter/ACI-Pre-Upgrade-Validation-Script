@@ -3419,10 +3419,10 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     title = 'Route-map Community Match Defect'
     result = PASS
     msg = ''
-    headers = ["Route-map DN", "Community Match", "Failure Reason"]
+    headers = ["Route-map DN", "Route-map Match DN", "Failure Reason"]
     data = []
     recommended_action = 'Add a prefix list match to each route-map prior to upgrading.'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#route-map-community-match'
     print_title(title, index, total_checks)
 
     if not tversion:
@@ -3432,20 +3432,40 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     if (tversion.major1 == "5" and tversion.major2 == "2" and tversion.older_than("5.2(8a)")):
         rtctrlSubjPs = icurl('class', 'rtctrlSubjP.json?rsp-subtree=full&rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest&rsp-subtree-include=required')
         if rtctrlSubjPs:
+            subj_dn_list = []
             for rtctrlSubjP in rtctrlSubjPs:
                 has_comm = False
                 has_dest = False
                 dn = rtctrlSubjP['rtctrlSubjP']['attributes']['dn']
                 for child in rtctrlSubjP['rtctrlSubjP']['children']:
-                    objclass = list(child.keys())[0]
-                    if objclass == "rtctrlMatchCommTerm":
+                    if child.get("rtctrlMatchCommTerm"):
                         has_comm = True
-                        community = child['rtctrlMatchCommTerm']['children'][0]['rtctrlMatchCommFactor']['attributes']['community']
-                    elif objclass == "rtctrlMatchRtDest":
+                    elif child.get("rtctrlMatchRtDest"):
                         has_dest = True
                 if has_comm and not has_dest:
-                    data.append([dn, community, "No prefix list match found."])
-        
+                    subj_dn_list.append(dn)
+            
+            # Now check if affected match statement is in use by any route-map
+            if len(subj_dn_list) > 0:
+                rtctrlCtxPs = icurl('class','rtctrlCtxP.json?rsp-subtree=full&rsp-subtree-class=rtctrlRsCtxPToSubjP,rtctrlRsScopeToAttrP&rsp-subtree-include=required')
+                if rtctrlCtxPs:
+                    for rtctrlCtxP in rtctrlCtxPs:
+                        has_affected_subj = False
+                        has_set = False
+                        for child in rtctrlCtxP['rtctrlCtxP']['children']:
+                            if child.get("rtctrlRsCtxPToSubjP") and child['rtctrlRsCtxPToSubjP']['attributes']['tDn'] in subj_dn_list:
+                                has_affected_subj = True
+                                subj_dn = child['rtctrlRsCtxPToSubjP']['attributes']['tDn']
+                            if child.get("rtctrlScope"):
+                                for subchild in child['rtctrlScope']['children']:
+                                    if subchild.get("rtctrlRsScopeToAttrP"):
+                                        has_set = True
+
+                        if has_affected_subj and has_set:
+                            dn = rtctrlCtxP['rtctrlCtxP']['attributes']['dn']
+                            parent_dn = '/'.join(dn.rsplit('/', 1)[:-1])
+                            data.append([parent_dn,subj_dn,"Route-map has community match statement but no prefix list."])
+
         if data:
             result = FAIL_O
 

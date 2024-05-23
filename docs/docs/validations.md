@@ -1801,9 +1801,33 @@ Because of this, the target version of your upgrade must be a version with a fix
 
 ### Route-map Community Match
 
-Due to the defect CSCwb08081, if you have a route-map with a community match statement but there is no prefix list match the set clause may not be applied.
+Due to the defect [CSCwb08081][22], if you have a route-map with a community match statement but there is no prefix list match the set clause may not be applied.
 
 It is recommended if you are upgrading to an affected release to add a prefix list match statement prior to upgrade.
+
+!!! example
+    In this example, the Route-map match rule `rtctrlSubjP` has a community match `rtctrlMatchCommFactor` but no prefix list match `rtctrlMatchRtDest`. This match rule would be affected by the defect.
+    ```
+    apic1# moquery -c rtctrlSubjP -x rsp-subtree=full -x rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest | egrep "^#|dn "
+    # rtctrl.SubjP
+    dn           : uni/tn-Cisco/subj-match-comm
+    # rtctrl.MatchCommTerm
+    dn           : uni/tn-Cisco/subj-match-comm/commtrm-test
+    # rtctrl.MatchCommFactor
+        dn           : uni/tn-Cisco/subj-match-comm/commtrm-test/commfct-regular:as2-nn2:4:15
+    ```
+    In order to fix this, navigate to `Tenants > "Cisco" > Policies > Protocol > Match Rules > "match-comm"` and add a prefix-list.
+    ```
+    apic1# moquery -c rtctrlSubjP -x rsp-subtree=full -x rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest | egrep "^#|dn "
+    # rtctrl.SubjP
+    dn           : uni/tn-Cisco/subj-match-comm
+    # rtctrl.MatchCommTerm
+    dn           : uni/tn-Cisco/subj-match-comm/commtrm-test
+    # rtctrl.MatchCommFactor
+        dn           : uni/tn-Cisco/subj-match-comm/commtrm-test/commfct-regular:as2-nn2:4:15
+    # rtctrl.MatchRtDest
+    dn           : uni/tn-Cisco/subj-match-comm/dest-[0.0.0.0/0]
+    ```
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -1828,3 +1852,4 @@ It is recommended if you are upgrading to an affected release to add a prefix li
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
 [20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html
 [21]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303
+[22]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081
