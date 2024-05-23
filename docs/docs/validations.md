@@ -154,7 +154,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Invalid FEX fabricPathEp DN References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-
+[Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -171,6 +171,8 @@ Items                                           | Defect       | This Script    
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
 [d14]: #invalid-fex-fabricpathep-dn-references
 [d15]: #lldp-custom-interface-description
+[d16]: #route-map-community-match
+
 
 
 ## General Check Details
@@ -1805,6 +1807,7 @@ The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Op
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
 
 
+
 ### Invalid FEX fabricPathEp DN References
 
 If you have deployed a FEX on a version prior to having validations introduced in [CSCwh68103][23], it is possible that `fabricPathEp` objects were created with an incorrect DN format. As a result, the related `infraRsHPathAtt` objects pointing to those `fabricPathEp` will also contain the invalid DN in their DN formatting given how ACI builds out object relations.
@@ -1814,7 +1817,6 @@ Having these invalid DNs and then upgrading to a version that has the validation
 If invalid DNs are found, first identify if the FEX IDs are still in use in case a window needs to be planned. If not in use, delete the `infraRsHPathAtt` objects having an invalid DN. 
 
 This check queries `infraRsHPathAtt` objects related to eths, then check if any have DNs which are incorrectly formatted.
-
 
 
 
@@ -1852,6 +1854,36 @@ In cases where there is a custom interface description and a VMM-integrated depl
     --- omit ---
     ```
 
+### Route-map Community Match
+
+Due to the defect [CSCwb08081][25], if you have a route-map with a community match statement but there is no prefix list match the set clause may not be applied.
+
+It is recommended if you are upgrading to an affected release to add a prefix list match statement prior to upgrade.
+
+!!! example
+    In this example, the Route-map match rule `rtctrlSubjP` has a community match `rtctrlMatchCommFactor` but no prefix list match `rtctrlMatchRtDest`. This match rule would be affected by the defect.
+    ```
+    apic1# moquery -c rtctrlSubjP -x rsp-subtree=full -x rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest | egrep "^#|dn "
+    # rtctrl.SubjP
+    dn           : uni/tn-Cisco/subj-match-comm
+    # rtctrl.MatchCommTerm
+    dn           : uni/tn-Cisco/subj-match-comm/commtrm-test
+    # rtctrl.MatchCommFactor
+        dn           : uni/tn-Cisco/subj-match-comm/commtrm-test/commfct-regular:as2-nn2:4:15
+    ```
+    In order to fix this, navigate to `Tenants > "Cisco" > Policies > Protocol > Match Rules > "match-comm"` and add a prefix-list.
+    ```
+    apic1# moquery -c rtctrlSubjP -x rsp-subtree=full -x rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest | egrep "^#|dn "
+    # rtctrl.SubjP
+    dn           : uni/tn-Cisco/subj-match-comm
+    # rtctrl.MatchCommTerm
+    dn           : uni/tn-Cisco/subj-match-comm/commtrm-test
+    # rtctrl.MatchCommFactor
+        dn           : uni/tn-Cisco/subj-match-comm/commtrm-test/commfct-regular:as2-nn2:4:15
+    # rtctrl.MatchRtDest
+    dn           : uni/tn-Cisco/subj-match-comm/dest-[0.0.0.0/0]
+    ```
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1877,3 +1909,4 @@ In cases where there is a custom interface description and a VMM-integrated depl
 [22]: https://www.cisco.com/c/dam/en/us/td/docs/unified_computing/ucs/c/sw/CIMC-Upgrade-Downgrade-Matrix/index.html
 [23]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103
 [24]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416
+[25]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081
