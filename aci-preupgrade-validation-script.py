@@ -3497,6 +3497,8 @@ def sixty_four_and_thirty_two_memory_image_check(index, total_checks, cversion, 
 				
 		if (is32BUp == True and is64BUp == True):
 			result = PASS
+		else:
+			data.append[recommended_action]
 			
 	else: #Target Version prior to 6.0-2 
 		result = NA
