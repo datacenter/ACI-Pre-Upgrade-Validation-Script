@@ -1,0 +1,20 @@
+[
+        {
+            "firmwareFirmware": {
+                "attributes": {
+                    "bitInfo": "32",
+                    "checksum": "dfc238a8049b8778a464b9aaec350746",
+                    "dnldStatus": "downloaded",
+                    "fullVersion": "n9000-16.0(2h)",
+                    "name": "aci-n9000-system.16.0.2h.bin",
+                    "origFileName": "aci-n9000-dk9.16.0.2h.bin",
+                    "type": "switch",
+                    "uid": "0",
+                    "url": "/fwrepo/aci-n9000-dk9.16.0.2h.bin",
+                    "userdom": ":",
+                    "version": "16.0"
+                }
+            }
+        }
+        
+]
