@@ -1,0 +1,40 @@
+ [
+        {
+            "firmwareFirmware": {
+                "attributes": {
+                    "annotation": "",
+                    "autoloadCatalog": "no",
+                    "bitInfo": "32",
+                    "checksum": "8b8107e31ce1accbc2e5d9361f91e1ad",
+                    "childAction": "",
+                    "deleteIt": "no",
+                    "description": "",
+                    "dn": "fwrepo/fw-aci-n9000-system.15.2.8e.bin",
+                    "dnldStatus": "downloaded",
+                    "downloadDate": "2023-10-18T10:30:31.713-04:00",
+                    "extMngdBy": "",
+                    "fullVersion": "n9000-15.2(8e)",
+                    "iUrl": "/var/run/mgmt/fwrepos/fwrepo/aci-n9000-dk9.15.2.8e.bin",
+                    "isoname": "aci-n9000-dk9.15.2.8e.bin",
+                    "latest": "no",
+                    "lcOwn": "local",
+                    "minorVersion": "(8e)",
+                    "modTs": "2023-12-15T12:37:10.376-04:00",
+                    "name": "aci-n9000-system.15.2.8e.bin",
+                    "origFileName": "",
+                    "releaseDate": "2023-08-02T21:58:34.000-04:00",
+                    "restartType": "NA",
+                    "size": "2086253061",
+                    "size64": "2086253061",
+                    "status": "",
+                    "syncComplete": "111",
+                    "type": "switch",
+                    "uid": "0",
+                    "url": "/fwrepo/aci-n9000-dk9.15.2.8e.bin",
+                    "userdom": "all",
+                    "version": "15.2"
+                }
+            }
+        }
+
+]

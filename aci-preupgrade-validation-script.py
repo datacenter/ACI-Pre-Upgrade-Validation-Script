@@ -3472,6 +3472,38 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def sixty_four_and_thirty_two_memory_image_check(index, total_checks, cversion, tversion, **kwargs):
+	title = '32 and 64-Bit Firmware Image for Switches'
+	result = FAIL_O
+	msg = ''
+	headers = ["Node ID", "Node Name", "Recommended Action"]
+	data = []
+	recommended_action = 'Upload the 32 or 64 bit Switch Image missing to the Firmware repository'
+	doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/'
+	print_title(title, index, total_checks)
+	switchVersion_regex = r'n9000-1(?P<version>[^$])'
+
+	if tversion.newer_than("6.0(2a)"):
+		is32BUp = False
+		is64BUp = False
+		firmwareFiles = icurl('class', 'firmwareFirmware.json')
+		for firmwareFile in firmwareFiles:
+			switchVersion = 'n9000-1' + tversion.version
+			if (switchVersion == firmwareFile['firmwareFirmware']['attributes']['fullVersion'] and firmwareFile['firmwareFirmware']['attributes']['bitInfo'] == '32'):
+				is32BUp = True
+				
+			elif (switchVersion == firmwareFile['firmwareFirmware']['attributes']['fullVersion'] and firmwareFile['firmwareFirmware']['attributes']['bitInfo'] == '64'):
+				is64BUp = True
+				
+		if (is32BUp == True and is64BUp == True):
+			result = PASS
+			
+	else: #Target Version prior to 6.0-2 
+		result = NA
+	
+		
+	print_result(title, result, msg, headers, data, doc_url=doc_url)
+	return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))

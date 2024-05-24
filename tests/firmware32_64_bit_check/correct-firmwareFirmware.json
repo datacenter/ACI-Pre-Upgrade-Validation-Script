@@ -1,0 +1,47 @@
+[
+        {
+            "firmwareFirmware": {
+                "attributes": {
+                    "annotation": "",
+                    "autoloadCatalog": "no",
+                    "bitInfo": "32",
+                    "fullVersion": "n9000-16.0(2h)",
+                    "iUrl": "/var/run/mgmt/fwrepos/fwrepo/aci-n9000-dk9.16.0.2h.bin",
+                    "isoname": "aci-n9000-dk9.16.0.2h.bin",
+                    "latest": "no",
+                    "lcOwn": "local",
+                    "minorVersion": "(2h)",
+                    "modTs": "2024-05-21T13:54:33.030-04:00",
+                    "name": "aci-n9000-system.16.0.2h.bin",
+                    "type": "switch",
+                    "uid": "0",
+                    "url": "/fwrepo/aci-n9000-dk9.16.0.2h.bin",
+                    "userdom": ":",
+                    "version": "16.0"
+                }
+            }
+        },
+        {
+            "firmwareFirmware": {
+                "attributes": {
+                    "annotation": "",
+                    "autoloadCatalog": "no",
+                    "bitInfo": "64",
+                    "fullVersion": "n9000-16.0(2h)",
+                    "iUrl": "/var/run/mgmt/fwrepos/fwrepo/aci-n9000-dk9.16.0.2h-cs_64.bin",
+                    "isoname": "aci-n9000-dk9.16.0.2h-cs_64.bin",
+                    "latest": "no",
+                    "lcOwn": "local",
+                    "minorVersion": "(2h)",
+                    "modTs": "2024-03-20T08:31:23.159-04:00",
+                    "name": "aci-n9000-system.16.0.2h-cs_64.bin",
+                    "type": "switch",
+                    "uid": "0",
+                    "url": "/fwrepo/aci-n9000-dk9.16.0.2h-cs_64.bin",
+                    "userdom": ":",
+                    "version": "16.0"
+                }
+            }
+        }
+
+    ]
