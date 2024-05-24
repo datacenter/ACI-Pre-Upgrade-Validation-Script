@@ -3546,6 +3546,7 @@ if __name__ == "__main__":
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
+        sixty_four_and_thirty_two_memory_image_check,
 
         # Faults
         apic_disk_space_faults_check,
