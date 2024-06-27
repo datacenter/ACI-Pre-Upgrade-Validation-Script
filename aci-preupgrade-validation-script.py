@@ -3530,6 +3530,50 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     return result
 
 
+def unsupported_fec_configuration_ex_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Unsupported FEC Configuration For N9K-C93180YC-EX'
+    result = PASS
+    msg = ''
+    headers = ["Pod ID", "Node ID", "Switch Model", "Interface", "FEC Mode"]
+    data = []
+    recommended_action = 'Nexus C93180YC-EX switches do not support IEEE-RS-FEC or CONS16-RS-FEC mode. Misconfigured ports will be hardware disabled upon upgrade. Remove unsupported FEC configuration prior to upgrade.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
+        topSystems = icurl('class', 'topSystem.json?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh&rsp-subtree-filter=or(and(eq(l1PhysIf.fecMode,"ieee-rs-fec"),\
+                           eq(l1PhysIf.fecMode,"cons16-rs-fec")),eq(eqptCh.model,"N9K-C93180YC-EX"))&rsp-subtree-include=required')
+        if topSystems:
+            for topSystem in topSystems:
+                has_eqptCh = False
+                has_l1PhysIf = False
+                l1PhysIfs = []
+                for child in topSystem['topSystem']['children']:
+                    if child.get("eqptCh"):
+                        has_eqptCh = True
+                        model = child['eqptCh']['attributes']['model']
+                    elif child.get("l1PhysIf"):
+                        if not has_l1PhysIf:
+                            has_l1PhysIf = True
+                        interface = child['l1PhysIf']['attributes']['id']
+                        fecMode = child['l1PhysIf']['attributes']['fecMode']
+                        l1PhysIfs.append({"interface":interface,"fecMode":fecMode})
+                if has_eqptCh and has_l1PhysIf:
+                    pod_id = topSystem['topSystem']['attributes']['podId']
+                    node_id = topSystem['topSystem']['attributes']['id']
+                    for l1PhysIf in l1PhysIfs:
+                        data.append([pod_id,node_id,model,l1PhysIf['interface'],l1PhysIf['fecMode']])
+        if data:
+            result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3608,6 +3652,7 @@ if __name__ == "__main__":
         oob_mgmt_security_check,
         eecdh_cipher_check,
         subnet_scope_check,
+        unsupported_fec_configuration_ex_check,
 
         # Bugs
         ep_announce_check,
