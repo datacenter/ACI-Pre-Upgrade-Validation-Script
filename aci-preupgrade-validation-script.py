@@ -3530,7 +3530,7 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     return result
 
 
-def unsupported_fec_configuration_ex_check(index, total_checks, cversion, tversion, **kwargs):
+def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tversion, **kwargs):
     title = 'Unsupported FEC Configuration For N9K-C93180YC-EX'
     result = PASS
     msg = ''
@@ -3544,9 +3544,8 @@ def unsupported_fec_configuration_ex_check(index, total_checks, cversion, tversi
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
     
-    if cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
-        topSystems = icurl('class', 'topSystem.json?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh&rsp-subtree-filter=or(and(eq(l1PhysIf.fecMode,"ieee-rs-fec"),\
-                           eq(l1PhysIf.fecMode,"cons16-rs-fec")),eq(eqptCh.model,"N9K-C93180YC-EX"))&rsp-subtree-include=required')
+    if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
+        topSystems = icurl('class', 'topSystem.json?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh&rsp-subtree-filter=or(eq(l1PhysIf.fecMode,"ieee-rs-fec"),eq(l1PhysIf.fecMode,"cons16-rs-fec"),eq(eqptCh.model,"N9K-C93180YC-EX"))&rsp-subtree-include=required')
         if topSystems:
             for topSystem in topSystems:
                 has_eqptCh = False
