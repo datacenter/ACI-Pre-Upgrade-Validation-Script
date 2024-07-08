@@ -3545,27 +3545,26 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
         return MANUAL
     
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
-        topSystems = icurl('class', 'topSystem.json?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh&rsp-subtree-filter=or(eq(l1PhysIf.fecMode,"ieee-rs-fec"),eq(l1PhysIf.fecMode,"cons16-rs-fec"),eq(eqptCh.model,"N9K-C93180YC-EX"))&rsp-subtree-include=required')
-        if topSystems:
-            for topSystem in topSystems:
-                has_eqptCh = False
-                has_l1PhysIf = False
-                l1PhysIfs = []
-                for child in topSystem['topSystem']['children']:
-                    if child.get("eqptCh"):
-                        has_eqptCh = True
-                        model = child['eqptCh']['attributes']['model']
-                    elif child.get("l1PhysIf"):
-                        if not has_l1PhysIf:
-                            has_l1PhysIf = True
-                        interface = child['l1PhysIf']['attributes']['id']
-                        fecMode = child['l1PhysIf']['attributes']['fecMode']
-                        l1PhysIfs.append({"interface":interface,"fecMode":fecMode})
-                if has_eqptCh and has_l1PhysIf:
-                    pod_id = topSystem['topSystem']['attributes']['podId']
-                    node_id = topSystem['topSystem']['attributes']['id']
-                    for l1PhysIf in l1PhysIfs:
-                        data.append([pod_id,node_id,model,l1PhysIf['interface'],l1PhysIf['fecMode']])
+        api = 'topSystem.json'
+        api += '?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh'
+        api += '&rsp-subtree-filter=or(eq(l1PhysIf.fecMode,"ieee-rs-fec"),eq(l1PhysIf.fecMode,"cons16-rs-fec"),eq(eqptCh.model,"N9K-C93180YC-EX"))'
+        api += '&rsp-subtree-include=required'
+        topSystems = icurl('class', api)
+        for topSystem in topSystems:
+            model = None
+            l1PhysIfs = []
+            for child in topSystem['topSystem']['children']:
+                if child.get("eqptCh"):
+                    model = child['eqptCh']['attributes']['model']
+                elif child.get("l1PhysIf"):
+                    interface = child['l1PhysIf']['attributes']['id']
+                    fecMode = child['l1PhysIf']['attributes']['fecMode']
+                    l1PhysIfs.append({"interface":interface,"fecMode":fecMode})
+            if model and l1PhysIfs:
+                pod_id = topSystem['topSystem']['attributes']['podId']
+                node_id = topSystem['topSystem']['attributes']['id']
+                for l1PhysIf in l1PhysIfs:
+                    data.append([pod_id,node_id,model,l1PhysIf['interface'],l1PhysIf['fecMode']])
         if data:
             result = FAIL_O
 

@@ -44,7 +44,7 @@ topSystems += '&rsp-subtree-include=required'
             script.PASS,
         ),
         (
-            {topSystems: ""},
+            {topSystems: []},
             "4.2(7f)",
             "5.2(5c)",
             script.PASS,
