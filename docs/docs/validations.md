@@ -116,6 +116,7 @@ Items                                         | Faults         | This Script    
 [OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 
 [c1]: #vpc-paired-leaf-switches
@@ -133,6 +134,7 @@ Items                                         | Faults         | This Script    
 [c13]: #oob-mgmt-security
 [c14]: #eecdh-ssl-cipher
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
+[c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 
 
 ### Defect Condition Checks
@@ -1641,6 +1643,38 @@ Before the fix implemented in [CSCvv30303][21], it was possible for a BD and an 
 
 [CSCvv30303][21] introduced policy validations to prevent this configuration and enforce that matching subnets defined in both the BD and related EPG have the same scope. It is imperative that identified mismatching subnet scopes are corrected within an ACI fabric to prevent unexpected traffic pattern issues in the future.
 
+### Unsupported FEC Configuration for N9K-C93180YC-EX
+
+Nexus C93180YC-EX switches [do not support CONS16-RS-FEC or IEEE-RS-FEC][26] mode. In older versions a FEC mode misconfiguration does not cause the interface to be down. However after upgrading to 5.0(1) or later the port will become hardware disabled until the misconfiguration is removed. 
+
+It is important to remove any unsupported configuration prior to ugprade to avoid any unexpected downtime.
+
+!!! example
+    On each N9K-C93180YC-EX switch, you can check the FEC mode for each interface with the following query:
+    ```
+    leaf101# moquery -c l1PhysIf -x query-target-filter=or\(eq\(l1PhysIf.fecMode,\"ieee-rs-fec\"\),eq\(l1PhysIf.fecMode,\"cons16-rs-fec\"\)\)
+    Total Objects shown: 1
+
+    # l1.PhysIf
+    id                             : eth1/1
+    adminSt                        : up
+    autoNeg                        : on
+    breakT                         : nonbroken
+    bw                             : 0
+    childAction                    :
+    delay                          : 1
+    descr                          :
+    dfeDelayMs                     : 0
+    dn                             : sys/phys-[eth1/1]
+    dot1qEtherType                 : 0x8100
+    emiRetrain                     : disable
+    enablePoap                     : no
+    ethpmCfgFailedBmp              : 
+    ethpmCfgFailedTs               : 00:00:00:00.000
+    ethpmCfgState                  : 2
+    fcotChannelNumber              : Channel32
+    fecMode                        : ieee-rs-fec   <<<
+    ```
 
 ## Defect Check Details
 
@@ -1910,3 +1944,4 @@ It is recommended if you are upgrading to an affected release to add a prefix li
 [23]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103
 [24]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416
 [25]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081
+[26]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b_Cisco_ACI_and_Forward_Error_Correction.html#Cisco_Reference.dita_5cef69b3-b7fa-4bde-ba60-38129c9e7d82

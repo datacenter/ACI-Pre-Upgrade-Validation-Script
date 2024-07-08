@@ -1,0 +1,92 @@
+[
+    {
+      "topSystem": {
+        "attributes": {
+          "dn": "topology/pod-1/node-104/sys",
+          "id": "104",
+          "podId": "1"
+        },
+        "children": [
+          {
+            "l1PhysIf": {
+              "attributes": {
+                "fecMode": "ieee-rs-fec",
+                "id": "eth1/1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "topSystem": {
+        "attributes": {
+          "dn": "topology/pod-1/node-101/sys",
+          "id": "101",
+          "podId": "1"
+        },
+        "children": [
+          {
+            "eqptCh": {
+              "attributes": {
+                "model": "N9K-C93180YC-EX"
+              }
+            }
+          },
+          {
+            "l1PhysIf": {
+              "attributes": {
+                "fecMode": "ieee-rs-fec",
+                "id": "eth1/1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "topSystem": {
+        "attributes": {
+          "dn": "topology/pod-1/node-102/sys",
+          "id": "102",
+          "podId": "1"
+        },
+        "children": [
+          {
+            "eqptCh": {
+              "attributes": {
+                "model": "N9K-C93180YC-EX"
+              }
+            }
+          },
+          {
+            "l1PhysIf": {
+              "attributes": {
+                "fecMode": "ieee-rs-fec",
+                "id": "eth1/1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "topSystem": {
+        "attributes": {
+          "dn": "topology/pod-1/node-103/sys",
+          "id": "103",
+          "podId": "1"
+        },
+        "children": [
+          {
+            "l1PhysIf": {
+              "attributes": {
+                "fecMode": "ieee-rs-fec",
+                "id": "eth1/1"
+              }
+            }
+          }
+        ]
+      }
+    }
+]
