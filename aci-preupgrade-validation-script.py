@@ -180,7 +180,6 @@ class Connection(object):
             logging.debug(
                 "spawning new pexpect connection: ssh %s@%s -p %d" % (self.username, self.hostname, self.port))
             no_verify = " -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
-            no_verify += " -o HostKeyAlgorithms=+ssh-dss"
             if self.verify: no_verify = ""
             self.child = pexpect.spawn("ssh %s %s@%s -p %d" % (no_verify, self.username, self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
