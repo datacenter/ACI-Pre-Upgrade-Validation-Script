@@ -3491,7 +3491,7 @@ def invalid_fex_rs_check(index, total_checks, **kwargs):
 
     for rs in infraRsHPathAtt:
         dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
-        m = re.search(r'eth(?P<fex>\d{3,4})\/\d\/\d', dn)
+        m = re.search(r'eth(?P<fex>\d{3})\/\d\/\d', dn)
         if m:
             fex_id = m.group('fex')
             if int(fex_id) >= 101:
