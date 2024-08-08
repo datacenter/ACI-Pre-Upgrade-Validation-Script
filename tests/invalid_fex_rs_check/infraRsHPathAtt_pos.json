@@ -42,5 +42,27 @@
               "userdom": ""
           }
       }
+  },
+  {
+    "infraRsHPathAtt": {
+        "attributes": {
+            "annotation": "",
+            "childAction": "",
+            "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-105/pathep-[eth13/1/7]]",
+            "extMngdBy": "",
+            "forceResolve": "yes",
+            "lcOwn": "local",
+            "modTs": "2021-10-23T08:33:12.722+09:00",
+            "rType": "mo",
+            "state": "unformed",
+            "stateQual": "none",
+            "status": "",
+            "tCl": "fabricPathEp",
+            "tDn": "topology/pod-1/paths-105/pathep-[eth198/1/7]",
+            "tType": "mo",
+            "uid": "15374",
+            "userdom": ""
+        }
+    }
   }
 ]
