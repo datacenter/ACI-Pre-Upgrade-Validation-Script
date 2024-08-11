@@ -3156,6 +3156,11 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
             "SinceVersion": "5.2(4d)",
             "Impact": "VLAN for missing Mo will not be deployed to leaf",
         },
+        "infraRsToInterfacePolProfileOpt": {
+            "CreatedBy": "infraRsToInterfacePolProfile",
+            "SinceVersion": ["5.2(8d)","6.0(3d)"],
+            "Impact": "VLAN for missing Mo will not be deployed to leaf",
+        },
         "compatSwitchHw": {
             "CreatedBy": "",  # suppBit attribute is available from 6.0(2h)
             "SinceVersion": "6.0(2h)",
@@ -3167,12 +3172,15 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         return POST
 
     for new_mo in new_mo_dict:
-        since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+        if isinstance(new_mo_dict[new_mo]['SinceVersion'],list):
+            for version in new_mo_dict[new_mo]['SinceVersion']:
+                if AciVersion(version).newer_than(str(cversion)):
+                    continue
+        else:
+            since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+            if since_version.newer_than(str(cversion)):
+                continue
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
-
-        if since_version.newer_than(str(cversion)):
-            continue
-
         api = "{}.json?rsp-subtree-include=count"
         if new_mo == "compatSwitchHw":
             # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
