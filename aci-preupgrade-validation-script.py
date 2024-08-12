@@ -3626,7 +3626,6 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
                 for bd in vrf_to_bd[info['vrf']]:
                     for subnet in bd_to_subnet[bd]:
                         if IPAddress.ip_in_subnet(static_route, subnet):
-                            # error_message = 'Overlapping between Static Route ' +  static_route + ' in L3out '+ info['l3out'] + ' and BD Subnet ' + subnet + ' in BD ' + bd
                             data.append([info['l3out'], static_route, bd, subnet])
 
         if data:
