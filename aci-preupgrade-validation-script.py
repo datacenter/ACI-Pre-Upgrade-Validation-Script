@@ -3417,6 +3417,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     title = 'Route-map Community Match Defect'
     result = PASS
@@ -3635,6 +3636,45 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     return result	
 
 
+def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
+    title = '32 and 64-Bit Firmware Image for Switches'
+    result = PASS
+    msg = ''
+    headers = ["Target Switch Version", "32-Bit Image Found", "64-Bit Image Found"]
+    data = []
+    recommended_action = 'Upload the missing 32 or 64 bit Switch Image to the Firmware repository'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#602-requires-32-and-64-bit-switch-images'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if tversion.newer_than("6.0(2a)"):
+        found32 = found64 = False
+        target_sw_ver = 'n9000-1' + tversion.version
+        firmware_api =	'firmwareFirmware.json'
+        firmware_api +=	'?query-target-filter=eq(firmwareFirmware.fullVersion,"%s")' % (target_sw_ver)  
+        firmwares = icurl('class', firmware_api)
+
+        for firmware in firmwares:
+            if firmware['firmwareFirmware']['attributes']['bitInfo'] == '32':
+                found32 = True
+            elif firmware['firmwareFirmware']['attributes']['bitInfo'] == '64':
+                found64 = True
+
+        if not found32 or not found64:
+            result = FAIL_UF
+            data.append([target_sw_ver, found32, found64])
+
+    else:
+        result = NA
+        msg = 'Target version below 6.0(2)'
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3674,6 +3714,7 @@ if __name__ == "__main__":
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
+        validate_32_64_bit_image_check,
 
         # Faults
         apic_disk_space_faults_check,
