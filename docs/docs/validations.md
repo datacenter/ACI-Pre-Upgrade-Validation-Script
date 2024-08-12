@@ -33,6 +33,7 @@ Items                                                        | This Script      
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[6.0(2)+ requires 32 and 64 bit switch images][g16]      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 
 [g1]: #compatibility-target-aci-version
@@ -50,7 +51,7 @@ Items                                                        | This Script      
 [g13]: #intersight-device-connector-upgrade-status
 [g14]: #mini-aci-upgrade-to-602-or-later
 [g15]: #post-upgrade-callback-integrity
-
+[g16]: #602-requires-32-and-64-bit-switch-images
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -409,6 +410,14 @@ This validation checks whether the number of objects for the existing and newly 
     rn           : cnt
     status       :
     ```
+
+
+### 6.0(2)+ requires 32 and 64 bit switch images
+
+When targeting any version that is 6.0(2) or greater, download both the 32-bit and 64-bit Cisco ACI-mode switch images to the Cisco APIC. Downloading only one of the images may result in errors during the upgrade process.
+
+For additional information, see the [Guidelines and Limitations for Upgrading or Downgrading][25] section of the Cisco APIC Installation and ACI Upgrade and Downgrade Guide.
+
 
 ## Fault Check Details
 
@@ -1877,3 +1886,4 @@ In cases where there is a custom interface description and a VMM-integrated depl
 [22]: https://www.cisco.com/c/dam/en/us/td/docs/unified_computing/ucs/c/sw/CIMC-Upgrade-Downgrade-Matrix/index.html
 [23]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh68103
 [24]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416
+[25]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
