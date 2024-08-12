@@ -150,6 +150,8 @@ Items                                           | Defect       | This Script    
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[L3out /32 overlap with BD Subnet][d14]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -164,6 +166,7 @@ Items                                           | Defect       | This Script    
 [d11]: #vmm-uplink-container-with-empty-actives
 [d12]: #cos-3-with-dynamic-packet-prioritization
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
+[d14]: #l3out-32-overlap-with-bd-subnet
 
 
 ## General Check Details
@@ -1747,6 +1750,13 @@ Because of this, the target version of your upgrade must be a version with a fix
 
 
 
+### L3out /32 overlap with BD Subnet
+
+Due to defect [CSCwb91766][22], L3out /32 Static Routes that overlap with BD Subnets within the same VRF will be programmed into RIB but not FIB of the relevant switches in the forwarding path. This will cause traffic loss as packets will not be able to take the /32 route, resulting in unexpecteded forwarding issues.
+
+This check will look for any such subnet overlaps and flag them for correction.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1769,3 +1779,4 @@ Because of this, the target version of your upgrade must be a version with a fix
 [19]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/security-configuration/cisco-apic-security-configuration-guide-release-52x/https-access-52x.html
 [20]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html
 [21]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvv30303
+[22]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb91766
