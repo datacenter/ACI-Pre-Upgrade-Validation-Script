@@ -3480,9 +3480,13 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     headers = ["Target Switch Version", "32-Bit Image Found", "64-Bit Image Found"]
     data = []
     recommended_action = 'Upload the missing 32 or 64 bit Switch Image to the Firmware repository'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#602-requires-32-and-64-bit-switch-images'
     print_title(title, index, total_checks)
 
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
     if tversion.newer_than("6.0(2a)"):
         found32 = found64 = False
         target_sw_ver = 'n9000-1' + tversion.version
