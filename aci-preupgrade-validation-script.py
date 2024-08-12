@@ -3714,11 +3714,7 @@ if __name__ == "__main__":
         oob_mgmt_security_check,
         eecdh_cipher_check,
         subnet_scope_check,
-<<<<<<< HEAD
-        static_route_overlap_check,
-=======
         unsupported_fec_configuration_ex_check,
->>>>>>> master
 
         # Bugs
         ep_announce_check,
@@ -3737,6 +3733,7 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
+        static_route_overlap_check
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
