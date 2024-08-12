@@ -3572,6 +3572,69 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     return result
 
 
+def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'L3out /32 Static Route and BD Subnet Overlap'
+    result = PASS
+    msg = ''
+    headers = ['L3out', '/32 Static Route', 'BD', 'BD Subnet']
+    data = []
+    recommended_action = 'Change /32 static route design or target a fixed version'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
+    print_title(title, index, total_checks)
+    iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
+    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
+    bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
+        
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+        slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
+        staticRoutes = icurl('class', slash32filter)
+        if staticRoutes:
+            staticroute_vrf = icurl('class', 'l3extRsEctx.json')
+            staticR_to_vrf = {}	
+            for staticRoute in staticRoutes:
+                staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
+                
+                for l3outCtx in staticroute_vrf:
+                    l3outCtx_Vrf = {}
+                    if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
+                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
+                        staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
+                                
+
+            bds_in_vrf = icurl('class', 'fvRsCtx.json')
+            vrf_to_bd = {}
+            for bd_ref in bds_in_vrf:
+                vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
+                bd_list = vrf_to_bd.get(vrf_name, [])
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_list.append(bd_name)
+                vrf_to_bd[vrf_name] = bd_list
+
+            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            bd_to_subnet = {}
+            for subnet in subnets_in_bd:
+                bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+                if bd_subnet_re:
+                    bd_dn = 'uni/tn-' + bd_subnet_re.group("tenant") + '/BD-' + bd_subnet_re.group("bd")
+                    subnet_list = bd_to_subnet.get(bd_dn, [])
+                    subnet_list.append(bd_subnet_re.group("subnet"))
+                    bd_to_subnet[bd_dn] = subnet_list
+
+            for static_route, info in staticR_to_vrf.items():
+                for bd in vrf_to_bd[info['vrf']]:
+                    for subnet in bd_to_subnet[bd]:
+                        if IPAddress.ip_in_subnet(static_route, subnet):
+                            data.append([info['l3out'], static_route, bd, subnet])
+
+        if data:
+            result = FAIL_O
+			
+        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result	
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3669,6 +3732,7 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
+        static_route_overlap_check
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}

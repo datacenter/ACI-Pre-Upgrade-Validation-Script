@@ -1,0 +1,24 @@
+[
+        {
+            "fvRsCtx": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "dn": "uni/tn-AA/BD-bd1/rsctx",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "state": "formed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fvCtx",
+                    "tContextDn": "",
+                    "tDn": "uni/tn-AA/ctx-1",
+                    "tRn": "ctx-1",
+                    "tType": "name",
+                    "tnFvCtxName": "1",
+                    "uid": "0",
+                    "userdom": "all"
+                }
+            }
+        }
+    ]

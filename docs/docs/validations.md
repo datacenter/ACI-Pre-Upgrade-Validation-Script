@@ -157,6 +157,8 @@ Items                                           | Defect       | This Script    
 [Invalid FEX fabricPathEp DN References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -174,7 +176,7 @@ Items                                           | Defect       | This Script    
 [d14]: #invalid-fex-fabricpathep-dn-references
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
-
+[d17]: #l3out-32-overlap-with-bd-subnet
 
 
 ## General Check Details
@@ -1841,7 +1843,6 @@ The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Op
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
 
 
-
 ### Invalid FEX fabricPathEp DN References
 
 If you have deployed a FEX on a version prior to having validations introduced in [CSCwh68103][23], it is possible that `fabricPathEp` objects were created with an incorrect DN format. As a result, the related `infraRsHPathAtt` objects pointing to those `fabricPathEp` will also contain the invalid DN in their DN formatting given how ACI builds out object relations.
@@ -1918,6 +1919,14 @@ It is recommended if you are upgrading to an affected release to add a prefix li
     dn           : uni/tn-Cisco/subj-match-comm/dest-[0.0.0.0/0]
     ```
 
+
+### L3out /32 overlap with BD Subnet
+
+Due to defect [CSCwb91766][27], L3out /32 Static Routes that overlap with BD Subnets within the same VRF will be programmed into RIB but not FIB of the relevant switches in the forwarding path. This will cause traffic loss as packets will not be able to take the /32 route, resulting in unexpecteded forwarding issues.
+
+If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1945,3 +1954,4 @@ It is recommended if you are upgrading to an affected release to add a prefix li
 [24]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416
 [25]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081
 [26]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b_Cisco_ACI_and_Forward_Error_Correction.html#Cisco_Reference.dita_5cef69b3-b7fa-4bde-ba60-38129c9e7d82
+[27]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb91766
