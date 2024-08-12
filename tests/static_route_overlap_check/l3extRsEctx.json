@@ -1,0 +1,24 @@
+[
+        {
+            "l3extRsEctx": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "dn": "uni/tn-AA/out-static/rsectx",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "state": "formed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fvCtx",
+                    "tContextDn": "",
+                    "tDn": "uni/tn-AA/ctx-1",
+                    "tRn": "ctx-1",
+                    "tType": "name",
+                    "tnFvCtxName": "1",
+                    "uid": "0",
+                    "userdom": "all"
+                }
+            }
+        }
+    ]

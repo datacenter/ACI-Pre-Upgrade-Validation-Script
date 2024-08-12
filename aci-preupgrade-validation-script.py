@@ -180,7 +180,6 @@ class Connection(object):
             logging.debug(
                 "spawning new pexpect connection: ssh %s@%s -p %d" % (self.username, self.hostname, self.port))
             no_verify = " -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
-            no_verify += " -o HostKeyAlgorithms=+ssh-dss"
             if self.verify: no_verify = ""
             self.child = pexpect.spawn("ssh %s %s@%s -p %d" % (no_verify, self.username, self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
@@ -756,7 +755,7 @@ def get_switch_version(**kwargs):
             version = AciVersion(version)
             if lowest_sw_ver.newer_than(str(version)):
                 lowest_sw_ver = version
-
+        prints('%s\n' % lowest_sw_ver)
     return lowest_sw_ver
 
 
@@ -3418,6 +3417,63 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
+    title = 'Route-map Community Match Defect'
+    result = PASS
+    msg = ''
+    headers = ["Route-map DN", "Route-map Match DN", "Failure Reason"]
+    data = []
+    recommended_action = 'Add a prefix list match to each route-map prior to upgrading.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#route-map-community-match'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if (tversion.major1 == "5" and tversion.major2 == "2" and tversion.older_than("5.2(8a)")):
+        rtctrlSubjPs = icurl('class', 'rtctrlSubjP.json?rsp-subtree=full&rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest&rsp-subtree-include=required')
+        if rtctrlSubjPs:
+            subj_dn_list = []
+            for rtctrlSubjP in rtctrlSubjPs:
+                has_comm = False
+                has_dest = False
+                dn = rtctrlSubjP['rtctrlSubjP']['attributes']['dn']
+                for child in rtctrlSubjP['rtctrlSubjP']['children']:
+                    if child.get("rtctrlMatchCommTerm"):
+                        has_comm = True
+                    elif child.get("rtctrlMatchRtDest"):
+                        has_dest = True
+                if has_comm and not has_dest:
+                    subj_dn_list.append(dn)
+            
+            # Now check if affected match statement is in use by any route-map
+            if len(subj_dn_list) > 0:
+                rtctrlCtxPs = icurl('class','rtctrlCtxP.json?rsp-subtree=full&rsp-subtree-class=rtctrlRsCtxPToSubjP,rtctrlRsScopeToAttrP&rsp-subtree-include=required')
+                if rtctrlCtxPs:
+                    for rtctrlCtxP in rtctrlCtxPs:
+                        has_affected_subj = False
+                        has_set = False
+                        for child in rtctrlCtxP['rtctrlCtxP']['children']:
+                            if child.get("rtctrlRsCtxPToSubjP") and child['rtctrlRsCtxPToSubjP']['attributes']['tDn'] in subj_dn_list:
+                                has_affected_subj = True
+                                subj_dn = child['rtctrlRsCtxPToSubjP']['attributes']['tDn']
+                            if child.get("rtctrlScope"):
+                                for subchild in child['rtctrlScope']['children']:
+                                    if subchild.get("rtctrlRsScopeToAttrP"):
+                                        has_set = True
+
+                        if has_affected_subj and has_set:
+                            dn = rtctrlCtxP['rtctrlCtxP']['attributes']['dn']
+                            parent_dn = '/'.join(dn.rsplit('/', 1)[:-1])
+                            data.append([parent_dn,subj_dn,"Route-map has community match statement but no prefix list."])
+
+        if data:
+            result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 
 def invalid_fex_rs_check(index, total_checks, **kwargs):
     title = 'Invalid FEX Relation Source'
@@ -3435,10 +3491,11 @@ def invalid_fex_rs_check(index, total_checks, **kwargs):
 
     for rs in infraRsHPathAtt:
         dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
-        m = re.search(r'eth(?P<fex>\d+)\/\d\/\d', dn)
+        m = re.search(r'eth(?P<fex>\d{3})\/\d\/\d', dn)
         if m:
             fex_id = m.group('fex')
-            data.append([fex_id, dn])
+            if int(fex_id) >= 101:
+                data.append([fex_id, dn])
 
     if data:
         result = FAIL_UF
@@ -3471,6 +3528,216 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
+
+
+def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tversion, **kwargs):
+    title = 'Unsupported FEC Configuration For N9K-C93180YC-EX'
+    result = PASS
+    msg = ''
+    headers = ["Pod ID", "Node ID", "Switch Model", "Interface", "FEC Mode"]
+    data = []
+    recommended_action = 'Nexus C93180YC-EX switches do not support IEEE-RS-FEC or CONS16-RS-FEC mode. Misconfigured ports will be hardware disabled upon upgrade. Remove unsupported FEC configuration prior to upgrade.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
+        api = 'topSystem.json'
+        api += '?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh'
+        api += '&rsp-subtree-filter=or(eq(l1PhysIf.fecMode,"ieee-rs-fec"),eq(l1PhysIf.fecMode,"cons16-rs-fec"),eq(eqptCh.model,"N9K-C93180YC-EX"))'
+        api += '&rsp-subtree-include=required'
+        topSystems = icurl('class', api)
+        for topSystem in topSystems:
+            model = None
+            l1PhysIfs = []
+            for child in topSystem['topSystem']['children']:
+                if child.get("eqptCh"):
+                    model = child['eqptCh']['attributes']['model']
+                elif child.get("l1PhysIf"):
+                    interface = child['l1PhysIf']['attributes']['id']
+                    fecMode = child['l1PhysIf']['attributes']['fecMode']
+                    l1PhysIfs.append({"interface":interface,"fecMode":fecMode})
+            if model and l1PhysIfs:
+                pod_id = topSystem['topSystem']['attributes']['podId']
+                node_id = topSystem['topSystem']['attributes']['id']
+                for l1PhysIf in l1PhysIfs:
+                    data.append([pod_id,node_id,model,l1PhysIf['interface'],l1PhysIf['fecMode']])
+        if data:
+            result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'L3out /32 Static Route and BD Subnet Overlap'
+    result = PASS
+    msg = ''
+    headers = ['L3out', '/32 Static Route', 'BD', 'BD Subnet']
+    data = []
+    recommended_action = 'Change /32 static route design or target a fixed version'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
+    print_title(title, index, total_checks)
+    iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
+    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
+    bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
+        
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+        slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
+        staticRoutes = icurl('class', slash32filter)
+        if staticRoutes:
+            staticroute_vrf = icurl('class', 'l3extRsEctx.json')
+            staticR_to_vrf = {}	
+            for staticRoute in staticRoutes:
+                staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
+                
+                for l3outCtx in staticroute_vrf:
+                    l3outCtx_Vrf = {}
+                    if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
+                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
+                        staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
+                                
+
+            bds_in_vrf = icurl('class', 'fvRsCtx.json')
+            vrf_to_bd = {}
+            for bd_ref in bds_in_vrf:
+                vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
+                bd_list = vrf_to_bd.get(vrf_name, [])
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_list.append(bd_name)
+                vrf_to_bd[vrf_name] = bd_list
+
+            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            bd_to_subnet = {}
+            for subnet in subnets_in_bd:
+                bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+                if bd_subnet_re:
+                    bd_dn = 'uni/tn-' + bd_subnet_re.group("tenant") + '/BD-' + bd_subnet_re.group("bd")
+                    subnet_list = bd_to_subnet.get(bd_dn, [])
+                    subnet_list.append(bd_subnet_re.group("subnet"))
+                    bd_to_subnet[bd_dn] = subnet_list
+
+            for static_route, info in staticR_to_vrf.items():
+                for bd in vrf_to_bd[info['vrf']]:
+                    for subnet in bd_to_subnet[bd]:
+                        if IPAddress.ip_in_subnet(static_route, subnet):
+                            data.append([info['l3out'], static_route, bd, subnet])
+
+        if data:
+            result = FAIL_O
+			
+        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result	
+
+
+def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tversion, **kwargs):
+    title = 'Unsupported FEC Configuration For N9K-C93180YC-EX'
+    result = PASS
+    msg = ''
+    headers = ["Pod ID", "Node ID", "Switch Model", "Interface", "FEC Mode"]
+    data = []
+    recommended_action = 'Nexus C93180YC-EX switches do not support IEEE-RS-FEC or CONS16-RS-FEC mode. Misconfigured ports will be hardware disabled upon upgrade. Remove unsupported FEC configuration prior to upgrade.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
+        api = 'topSystem.json'
+        api += '?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh'
+        api += '&rsp-subtree-filter=or(eq(l1PhysIf.fecMode,"ieee-rs-fec"),eq(l1PhysIf.fecMode,"cons16-rs-fec"),eq(eqptCh.model,"N9K-C93180YC-EX"))'
+        api += '&rsp-subtree-include=required'
+        topSystems = icurl('class', api)
+        for topSystem in topSystems:
+            model = None
+            l1PhysIfs = []
+            for child in topSystem['topSystem']['children']:
+                if child.get("eqptCh"):
+                    model = child['eqptCh']['attributes']['model']
+                elif child.get("l1PhysIf"):
+                    interface = child['l1PhysIf']['attributes']['id']
+                    fecMode = child['l1PhysIf']['attributes']['fecMode']
+                    l1PhysIfs.append({"interface":interface,"fecMode":fecMode})
+            if model and l1PhysIfs:
+                pod_id = topSystem['topSystem']['attributes']['podId']
+                node_id = topSystem['topSystem']['attributes']['id']
+                for l1PhysIf in l1PhysIfs:
+                    data.append([pod_id,node_id,model,l1PhysIf['interface'],l1PhysIf['fecMode']])
+        if data:
+            result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'L3out /32 Static Route and BD Subnet Overlap'
+    result = PASS
+    msg = ''
+    headers = ['L3out', '/32 Static Route', 'BD', 'BD Subnet']
+    data = []
+    recommended_action = 'Change /32 static route design or target a fixed version'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
+    print_title(title, index, total_checks)
+    iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
+    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
+    bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
+        
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+        slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
+        staticRoutes = icurl('class', slash32filter)
+        if staticRoutes:
+            staticroute_vrf = icurl('class', 'l3extRsEctx.json')
+            staticR_to_vrf = {}	
+            for staticRoute in staticRoutes:
+                staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
+                
+                for l3outCtx in staticroute_vrf:
+                    l3outCtx_Vrf = {}
+                    if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
+                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
+                        staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
+                                
+
+            bds_in_vrf = icurl('class', 'fvRsCtx.json')
+            vrf_to_bd = {}
+            for bd_ref in bds_in_vrf:
+                vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
+                bd_list = vrf_to_bd.get(vrf_name, [])
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_list.append(bd_name)
+                vrf_to_bd[vrf_name] = bd_list
+
+            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            bd_to_subnet = {}
+            for subnet in subnets_in_bd:
+                bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+                if bd_subnet_re:
+                    bd_dn = 'uni/tn-' + bd_subnet_re.group("tenant") + '/BD-' + bd_subnet_re.group("bd")
+                    subnet_list = bd_to_subnet.get(bd_dn, [])
+                    subnet_list.append(bd_subnet_re.group("subnet"))
+                    bd_to_subnet[bd_dn] = subnet_list
+
+            for static_route, info in staticR_to_vrf.items():
+                for bd in vrf_to_bd[info['vrf']]:
+                    for subnet in bd_to_subnet[bd]:
+                        if IPAddress.ip_in_subnet(static_route, subnet):
+                            data.append([info['l3out'], static_route, bd, subnet])
+
+        if data:
+            result = FAIL_O
+			
+        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result	
 
 
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
@@ -3591,6 +3858,7 @@ if __name__ == "__main__":
         oob_mgmt_security_check,
         eecdh_cipher_check,
         subnet_scope_check,
+        unsupported_fec_configuration_ex_check,
 
         # Bugs
         ep_announce_check,
@@ -3608,6 +3876,8 @@ if __name__ == "__main__":
         n9k_c93108tc_fx3p_interface_down_check,
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
+        rtmap_comm_match_defect_check,
+        static_route_overlap_check
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}

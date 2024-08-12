@@ -1,0 +1,40 @@
+[
+    {
+      "topSystem": {
+        "attributes": {
+          "dn": "topology/pod-1/node-104/sys",
+          "id": "104",
+          "podId": "1"
+        },
+        "children": [
+          {
+            "l1PhysIf": {
+              "attributes": {
+                "fecMode": "ieee-rs-fec",
+                "id": "eth1/1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "topSystem": {
+        "attributes": {
+          "dn": "topology/pod-1/node-103/sys",
+          "id": "103",
+          "podId": "1"
+        },
+        "children": [
+          {
+            "l1PhysIf": {
+              "attributes": {
+                "fecMode": "ieee-rs-fec",
+                "id": "eth1/1"
+              }
+            }
+          }
+        ]
+      }
+    }
+]
