@@ -1,0 +1,860 @@
+[
+  {
+    "l3extOut": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/tn-common/out-default",
+        "enforceRtctrl": "export",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2023-10-10T19:29:01.074-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "default",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "targetDscp": "unspecified",
+        "uid": "0"
+      },
+      "children": [
+        {
+          "l3extRsEctx": {
+            "attributes": {
+              "annotation": "",
+              "childAction": "",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2023-10-10T19:29:01.074-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsectx",
+              "state": "formed",
+              "stateQual": "default-target",
+              "status": "",
+              "tCl": "fvCtx",
+              "tContextDn": "",
+              "tDn": "uni/tn-common/ctx-default",
+              "tRn": "ctx-default",
+              "tType": "name",
+              "tnFvCtxName": "",
+              "uid": "0"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "l3extOut": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/tn-mgmt/out-INB_OSPF",
+        "enforceRtctrl": "export",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-04-11T12:06:10.596-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "INB_OSPF",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "targetDscp": "unspecified",
+        "uid": "15374"
+      },
+      "children": [
+        {
+          "l3extLNodeP": {
+            "attributes": {
+              "annotation": "orchestrator:terraform",
+              "childAction": "",
+              "configIssues": "",
+              "descr": "",
+              "extMngdBy": "",
+              "lcOwn": "local",
+              "modTs": "2024-04-11T12:06:13.262-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "name": "INB_OSPF",
+              "nameAlias": "",
+              "ownerKey": "",
+              "ownerTag": "",
+              "rn": "lnodep-INB_OSPF",
+              "status": "",
+              "tag": "yellow-green",
+              "targetDscp": "unspecified",
+              "uid": "15374"
+            },
+            "children": [
+              {
+                "l3extLIfP": {
+                  "attributes": {
+                    "addr": "0.0.0.0",
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "descr": "",
+                    "encap": "unknown",
+                    "extMngdBy": "",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-11T12:06:18.258-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "INB_OSPF",
+                    "nameAlias": "",
+                    "ownerKey": "",
+                    "ownerTag": "",
+                    "prio": "unspecified",
+                    "rn": "lifp-INB_OSPF",
+                    "status": "",
+                    "tag": "yellow-green",
+                    "targetDscp": "unspecified",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extRsPathL3OutAtt": {
+                        "attributes": {
+                          "addr": "10.10.10.1/24",
+                          "annotation": "orchestrator:terraform",
+                          "autostate": "disabled",
+                          "childAction": "",
+                          "configIssues": "",
+                          "descr": "",
+                          "encap": "vlan-10",
+                          "encapScope": "local",
+                          "extMngdBy": "",
+                          "forceResolve": "yes",
+                          "ifInstT": "sub-interface",
+                          "ipv6Dad": "enabled",
+                          "lcOwn": "local",
+                          "llAddr": "::",
+                          "mac": "00:22:BD:F8:19:FF",
+                          "modTs": "2024-04-11T12:06:19.600-07:00",
+                          "mode": "regular",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "mtu": "9000",
+                          "rType": "mo",
+                          "rn": "rspathL3OutAtt-[topology/pod-1/paths-101/pathep-[eth1/13]]",
+                          "state": "unformed",
+                          "stateQual": "none",
+                          "status": "",
+                          "tCl": "fabricPathEp",
+                          "tDn": "topology/pod-1/paths-101/pathep-[eth1/13]",
+                          "tType": "mo",
+                          "targetDscp": "unspecified",
+                          "uid": "15374"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "configIssues": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-11T12:06:14.870-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-101]",
+                    "rtrId": "1.0.0.101",
+                    "rtrIdLoopBack": "no",
+                    "state": "unformed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-101",
+                    "tType": "mo",
+                    "uid": "15374"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "l3extRsEctx": {
+            "attributes": {
+              "annotation": "orchestrator:terraform",
+              "childAction": "",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2024-04-11T12:06:11.387-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsectx",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fvCtx",
+              "tContextDn": "",
+              "tDn": "uni/tn-mgmt/ctx-inb",
+              "tRn": "ctx-inb",
+              "tType": "name",
+              "tnFvCtxName": "inb",
+              "uid": "0"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "l3extOut": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/tn-TK/out-OSPF",
+        "enforceRtctrl": "export",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-04-12T09:55:53.592-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "OSPF",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "targetDscp": "unspecified",
+        "uid": "15374"
+      },
+      "children": [
+        {
+          "l3extLNodeP": {
+            "attributes": {
+              "annotation": "orchestrator:terraform",
+              "childAction": "",
+              "configIssues": "",
+              "descr": "",
+              "extMngdBy": "",
+              "lcOwn": "local",
+              "modTs": "2024-04-12T09:55:55.504-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "name": "IPv4",
+              "nameAlias": "",
+              "ownerKey": "",
+              "ownerTag": "",
+              "rn": "lnodep-IPv4",
+              "status": "",
+              "tag": "yellow-green",
+              "targetDscp": "unspecified",
+              "uid": "15374"
+            },
+            "children": [
+              {
+                "l3extLIfP": {
+                  "attributes": {
+                    "addr": "0.0.0.0",
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "descr": "",
+                    "encap": "unknown",
+                    "extMngdBy": "",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-12T09:56:01.299-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "IFP",
+                    "nameAlias": "",
+                    "ownerKey": "",
+                    "ownerTag": "",
+                    "prio": "unspecified",
+                    "rn": "lifp-IFP",
+                    "status": "",
+                    "tag": "yellow-green",
+                    "targetDscp": "unspecified",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extRsPathL3OutAtt": {
+                        "attributes": {
+                          "addr": "0.0.0.0",
+                          "annotation": "orchestrator:terraform",
+                          "autostate": "disabled",
+                          "childAction": "",
+                          "configIssues": "",
+                          "descr": "",
+                          "encap": "vlan-1053",
+                          "encapScope": "local",
+                          "extMngdBy": "",
+                          "forceResolve": "yes",
+                          "ifInstT": "ext-svi",
+                          "ipv6Dad": "enabled",
+                          "lcOwn": "local",
+                          "llAddr": "::",
+                          "mac": "00:22:BD:F8:19:FF",
+                          "modTs": "2024-04-12T09:56:04.207-07:00",
+                          "mode": "regular",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "mtu": "9000",
+                          "rType": "mo",
+                          "rn": "rspathL3OutAtt-[topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]]",
+                          "state": "unformed",
+                          "stateQual": "none",
+                          "status": "",
+                          "tCl": "fabricPathEp",
+                          "tDn": "topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]",
+                          "tType": "mo",
+                          "targetDscp": "unspecified",
+                          "uid": "15374"
+                        },
+                        "children": [
+                          {
+                            "l3extMember": {
+                              "attributes": {
+                                "addr": "10.53.0.4/24",
+                                "annotation": "orchestrator:terraform",
+                                "childAction": "",
+                                "descr": "",
+                                "extMngdBy": "",
+                                "ipv6Dad": "enabled",
+                                "lcOwn": "local",
+                                "llAddr": "::",
+                                "modTs": "2024-05-08T12:56:24.560-07:00",
+                                "monPolDn": "uni/tn-common/monepg-default",
+                                "name": "",
+                                "nameAlias": "",
+                                "rn": "mem-B",
+                                "side": "B",
+                                "status": "",
+                                "uid": "15374"
+                              }
+                            }
+                          },
+                          {
+                            "l3extMember": {
+                              "attributes": {
+                                "addr": "10.53.0.3/24",
+                                "annotation": "orchestrator:terraform",
+                                "childAction": "",
+                                "descr": "",
+                                "extMngdBy": "",
+                                "ipv6Dad": "enabled",
+                                "lcOwn": "local",
+                                "llAddr": "::",
+                                "modTs": "2024-05-08T12:56:24.560-07:00",
+                                "monPolDn": "uni/tn-common/monepg-default",
+                                "name": "",
+                                "nameAlias": "",
+                                "rn": "mem-A",
+                                "side": "A",
+                                "status": "",
+                                "uid": "15374"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "configIssues": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-05-08T16:57:36.152-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-103]",
+                    "rtrId": "10.0.0.3",
+                    "rtrIdLoopBack": "no",
+                    "state": "unformed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-103",
+                    "tType": "mo",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extLoopBackIfP": {
+                        "attributes": {
+                          "addr": "10.0.0.103",
+                          "annotation": "",
+                          "childAction": "",
+                          "descr": "",
+                          "extMngdBy": "",
+                          "lcOwn": "local",
+                          "modTs": "2024-05-08T16:57:33.717-07:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "rn": "lbp-[10.0.0.103]",
+                          "status": "",
+                          "uid": "15374"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "configIssues": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-05-08T16:57:52.274-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-104]",
+                    "rtrId": "10.0.0.4",
+                    "rtrIdLoopBack": "no",
+                    "state": "unformed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-104",
+                    "tType": "mo",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extLoopBackIfP": {
+                        "attributes": {
+                          "addr": "10.0.0.104",
+                          "annotation": "",
+                          "childAction": "",
+                          "descr": "",
+                          "extMngdBy": "",
+                          "lcOwn": "local",
+                          "modTs": "2024-05-08T16:57:49.774-07:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "rn": "lbp-[10.0.0.104]",
+                          "status": "",
+                          "uid": "15374"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "l3extRsEctx": {
+            "attributes": {
+              "annotation": "orchestrator:terraform",
+              "childAction": "",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2024-04-12T09:55:54.049-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsectx",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fvCtx",
+              "tContextDn": "",
+              "tDn": "uni/tn-TK/ctx-VRFA",
+              "tRn": "ctx-VRFA",
+              "tType": "name",
+              "tnFvCtxName": "VRFA",
+              "uid": "0"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "l3extOut": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/tn-TK/out-BGP",
+        "enforceRtctrl": "export",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-04-12T09:55:53.557-07:00",
+        "monPolDn": "uni/tn-common/monepg-default",
+        "name": "BGP",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "targetDscp": "unspecified",
+        "uid": "15374"
+      },
+      "children": [
+        {
+          "l3extLNodeP": {
+            "attributes": {
+              "annotation": "orchestrator:terraform",
+              "childAction": "",
+              "configIssues": "",
+              "descr": "",
+              "extMngdBy": "",
+              "lcOwn": "local",
+              "modTs": "2024-04-12T09:55:55.488-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "name": "IPv4",
+              "nameAlias": "",
+              "ownerKey": "",
+              "ownerTag": "",
+              "rn": "lnodep-IPv4",
+              "status": "",
+              "tag": "yellow-green",
+              "targetDscp": "unspecified",
+              "uid": "15374"
+            },
+            "children": [
+              {
+                "l3extLIfP": {
+                  "attributes": {
+                    "addr": "0.0.0.0",
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "descr": "",
+                    "encap": "unknown",
+                    "extMngdBy": "",
+                    "lcOwn": "local",
+                    "modTs": "2024-04-12T09:56:01.299-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "name": "IFP",
+                    "nameAlias": "",
+                    "ownerKey": "",
+                    "ownerTag": "",
+                    "prio": "unspecified",
+                    "rn": "lifp-IFP",
+                    "status": "",
+                    "tag": "yellow-green",
+                    "targetDscp": "unspecified",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extRsPathL3OutAtt": {
+                        "attributes": {
+                          "addr": "0.0.0.0",
+                          "annotation": "orchestrator:terraform",
+                          "autostate": "disabled",
+                          "childAction": "",
+                          "configIssues": "",
+                          "descr": "",
+                          "encap": "vlan-1051",
+                          "encapScope": "local",
+                          "extMngdBy": "",
+                          "forceResolve": "yes",
+                          "ifInstT": "ext-svi",
+                          "ipv6Dad": "enabled",
+                          "lcOwn": "local",
+                          "llAddr": "::",
+                          "mac": "00:22:BD:F8:19:FF",
+                          "modTs": "2024-04-12T09:56:03.804-07:00",
+                          "mode": "regular",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "mtu": "9000",
+                          "rType": "mo",
+                          "rn": "rspathL3OutAtt-[topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]]",
+                          "state": "unformed",
+                          "stateQual": "none",
+                          "status": "",
+                          "tCl": "fabricPathEp",
+                          "tDn": "topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]",
+                          "tType": "mo",
+                          "targetDscp": "unspecified",
+                          "uid": "15374"
+                        },
+                        "children": [
+                          {
+                            "l3extMember": {
+                              "attributes": {
+                                "addr": "10.0.0.40/24",
+                                "annotation": "orchestrator:terraform",
+                                "childAction": "",
+                                "descr": "",
+                                "extMngdBy": "",
+                                "ipv6Dad": "enabled",
+                                "lcOwn": "local",
+                                "llAddr": "::",
+                                "modTs": "2024-05-08T16:54:22.525-07:00",
+                                "monPolDn": "uni/tn-common/monepg-default",
+                                "name": "",
+                                "nameAlias": "",
+                                "rn": "mem-B",
+                                "side": "B",
+                                "status": "",
+                                "uid": "15374"
+                              }
+                            }
+                          },
+                          {
+                            "l3extMember": {
+                              "attributes": {
+                                "addr": "10.0.0.30/24",
+                                "annotation": "orchestrator:terraform",
+                                "childAction": "",
+                                "descr": "",
+                                "extMngdBy": "",
+                                "ipv6Dad": "enabled",
+                                "lcOwn": "local",
+                                "llAddr": "::",
+                                "modTs": "2024-05-08T16:54:22.525-07:00",
+                                "monPolDn": "uni/tn-common/monepg-default",
+                                "name": "",
+                                "nameAlias": "",
+                                "rn": "mem-A",
+                                "side": "A",
+                                "status": "",
+                                "uid": "15374"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "configIssues": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-05-08T16:53:57.758-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-104]",
+                    "rtrId": "10.0.0.4",
+                    "rtrIdLoopBack": "no",
+                    "state": "unformed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-104",
+                    "tType": "mo",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extInfraNodeP": {
+                        "attributes": {
+                          "annotation": "",
+                          "childAction": "",
+                          "descr": "",
+                          "extMngdBy": "",
+                          "fabricExtCtrlPeering": "no",
+                          "fabricExtIntersiteCtrlPeering": "no",
+                          "lcOwn": "local",
+                          "modTs": "2024-05-08T16:44:55.748-07:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "rn": "infranodep",
+                          "spineRole": "",
+                          "status": "",
+                          "uid": "15374"
+                        }
+                      }
+                    },
+                    {
+                      "ipRouteP": {
+                        "attributes": {
+                          "aggregate": "no",
+                          "annotation": "orchestrator:terraform",
+                          "childAction": "",
+                          "descr": "",
+                          "extMngdBy": "",
+                          "fromPfxLen": "0",
+                          "ip": "10.51.255.34",
+                          "lcOwn": "local",
+                          "modTs": "2024-04-12T09:55:58.319-07:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "pref": "1",
+                          "rn": "rt-[10.51.255.34]",
+                          "rtCtrl": "",
+                          "status": "",
+                          "toPfxLen": "0",
+                          "type": "rt-static",
+                          "uid": "15374"
+                        },
+                        "children": [
+                          {
+                            "ipNexthopP": {
+                              "attributes": {
+                                "annotation": "orchestrator:terraform",
+                                "childAction": "",
+                                "descr": "",
+                                "extMngdBy": "",
+                                "lcOwn": "local",
+                                "modTs": "2024-04-12T09:55:59.300-07:00",
+                                "monPolDn": "uni/tn-common/monepg-default",
+                                "name": "",
+                                "nameAlias": "",
+                                "nhAddr": "10.51.0.34",
+                                "pref": "1",
+                                "rn": "nh-[10.51.0.34]",
+                                "status": "",
+                                "type": "prefix",
+                                "uid": "15374"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "annotation": "orchestrator:terraform",
+                    "childAction": "",
+                    "configIssues": "",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2024-05-08T16:44:41.371-07:00",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "rType": "mo",
+                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-103]",
+                    "rtrId": "10.0.0.3",
+                    "rtrIdLoopBack": "no",
+                    "state": "unformed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-103",
+                    "tType": "mo",
+                    "uid": "15374"
+                  },
+                  "children": [
+                    {
+                      "l3extInfraNodeP": {
+                        "attributes": {
+                          "annotation": "",
+                          "childAction": "",
+                          "descr": "",
+                          "extMngdBy": "",
+                          "fabricExtCtrlPeering": "no",
+                          "fabricExtIntersiteCtrlPeering": "no",
+                          "lcOwn": "local",
+                          "modTs": "2024-05-08T13:50:08.561-07:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "rn": "infranodep",
+                          "spineRole": "",
+                          "status": "",
+                          "uid": "15374"
+                        }
+                      }
+                    },
+                    {
+                      "ipRouteP": {
+                        "attributes": {
+                          "aggregate": "no",
+                          "annotation": "orchestrator:terraform",
+                          "childAction": "",
+                          "descr": "",
+                          "extMngdBy": "",
+                          "fromPfxLen": "0",
+                          "ip": "10.51.255.34",
+                          "lcOwn": "local",
+                          "modTs": "2024-04-12T09:55:58.336-07:00",
+                          "monPolDn": "uni/tn-common/monepg-default",
+                          "name": "",
+                          "nameAlias": "",
+                          "pref": "1",
+                          "rn": "rt-[10.51.255.34]",
+                          "rtCtrl": "",
+                          "status": "",
+                          "toPfxLen": "0",
+                          "type": "rt-static",
+                          "uid": "15374"
+                        },
+                        "children": [
+                          {
+                            "ipNexthopP": {
+                              "attributes": {
+                                "annotation": "orchestrator:terraform",
+                                "childAction": "",
+                                "descr": "",
+                                "extMngdBy": "",
+                                "lcOwn": "local",
+                                "modTs": "2024-04-12T09:55:59.300-07:00",
+                                "monPolDn": "uni/tn-common/monepg-default",
+                                "name": "",
+                                "nameAlias": "",
+                                "nhAddr": "10.51.0.34",
+                                "pref": "1",
+                                "rn": "nh-[10.51.0.34]",
+                                "status": "",
+                                "type": "prefix",
+                                "uid": "15374"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "l3extRsEctx": {
+            "attributes": {
+              "annotation": "orchestrator:terraform",
+              "childAction": "",
+              "extMngdBy": "",
+              "forceResolve": "yes",
+              "lcOwn": "local",
+              "modTs": "2024-04-12T09:55:54.049-07:00",
+              "monPolDn": "uni/tn-common/monepg-default",
+              "rType": "mo",
+              "rn": "rsectx",
+              "state": "formed",
+              "stateQual": "none",
+              "status": "",
+              "tCl": "fvCtx",
+              "tContextDn": "",
+              "tDn": "uni/tn-TK/ctx-VRFA",
+              "tRn": "ctx-VRFA",
+              "tType": "name",
+              "tnFvCtxName": "VRFA",
+              "uid": "0"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

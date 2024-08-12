@@ -1,0 +1,40 @@
+[
+  {
+      "eqptCh": {
+          "attributes": {
+              "bootSource": "bootflash",
+              "cimcVersion": "1.5(4e)",
+              "configRole": "unspecified",
+              "descr": "APIC-SERVER-L2",
+              "dn": "topology/pod-1/node-1/sys/ch",
+              "hybridMode": "no",
+              "model": "APIC-SERVER-L2"
+          }
+      }
+  },
+  {
+      "eqptCh": {
+          "attributes": {
+              "bootSource": "bootflash",
+              "cimcVersion": "1.5(4e)",
+              "descr": "APIC-SERVER-L2",
+              "dn": "topology/pod-1/node-2/sys/ch",
+              "hybridMode": "no",
+              "model": "APIC-SERVER-L2"
+          }
+      }
+  },
+  {
+      "eqptCh": {
+          "attributes": {
+              "bootSource": "bootflash",
+              "cimcVersion": "1.5(4e)",
+              "configRole": "unspecified",
+              "descr": "APIC-SERVER-M1",
+              "dn": "topology/pod-2/node-3/sys/ch",
+              "hybridMode": "no",
+              "model": "APIC-SERVER-M1"
+          }
+      }
+  }
+]
