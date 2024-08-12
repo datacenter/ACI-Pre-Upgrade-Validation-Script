@@ -3173,8 +3173,14 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
 
     for new_mo in new_mo_dict:
         if isinstance(new_mo_dict[new_mo]['SinceVersion'],list):
+            major_version_matched=False
             for version in new_mo_dict[new_mo]['SinceVersion']:
-                if AciVersion(version).newer_than(str(cversion)):
+                if version[0]==str(cversion)[0]:
+                    major_version_matched=True
+                    if AciVersion(version).newer_than(str(cversion)):
+                        continue
+            if not major_version_matched:
+                if cversion.older_than(AciVersion(new_mo_dict[new_mo]['SinceVersion'][0])):
                     continue
         else:
             since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
