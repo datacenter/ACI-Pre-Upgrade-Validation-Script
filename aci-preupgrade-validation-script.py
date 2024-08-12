@@ -3472,40 +3472,41 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
-def sixty_four_and_thirty_two_memory_image_check(index, total_checks, cversion, tversion, **kwargs):
-	title = '32 and 64-Bit Firmware Image for Switches'
-	result = FAIL_O
-	msg = ''
-	headers = ["Node ID", "Node Name", "Recommended Action"]
-	data = []
-	recommended_action = 'Upload the 32 or 64 bit Switch Image missing to the Firmware repository'
-	doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/'
-	print_title(title, index, total_checks)
-	switchVersion_regex = r'n9000-1(?P<version>[^$])'
 
-	if tversion.newer_than("6.0(2a)"):
-		is32BUp = False
-		is64BUp = False
-		firmwareFiles = icurl('class', 'firmwareFirmware.json')
-		for firmwareFile in firmwareFiles:
-			switchVersion = 'n9000-1' + tversion.version
-			if (switchVersion == firmwareFile['firmwareFirmware']['attributes']['fullVersion'] and firmwareFile['firmwareFirmware']['attributes']['bitInfo'] == '32'):
-				is32BUp = True
-				
-			elif (switchVersion == firmwareFile['firmwareFirmware']['attributes']['fullVersion'] and firmwareFile['firmwareFirmware']['attributes']['bitInfo'] == '64'):
-				is64BUp = True
-				
-		if (is32BUp == True and is64BUp == True):
-			result = PASS
-		else:
-			data.append[recommended_action]
-			
-	else: #Target Version prior to 6.0-2 
-		result = NA
-	
-		
-	print_result(title, result, msg, headers, data, doc_url=doc_url)
-	return result
+def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
+    title = '32 and 64-Bit Firmware Image for Switches'
+    result = PASS
+    msg = ''
+    headers = ["Target Switch Version", "32-Bit Image Found", "64-Bit Image Found"]
+    data = []
+    recommended_action = 'Upload the missing 32 or 64 bit Switch Image to the Firmware repository'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/'
+    print_title(title, index, total_checks)
+
+    if tversion.newer_than("6.0(2a)"):
+        found32 = found64 = False
+        target_sw_ver = 'n9000-1' + tversion.version
+        firmware_api =	'firmwareFirmware.json'
+        firmware_api +=	'?query-target-filter=eq(firmwareFirmware.fullVersion,"%s")' % (target_sw_ver)  
+        firmwares = icurl('class', firmware_api)
+
+        for firmware in firmwares:
+            if firmware['firmwareFirmware']['attributes']['bitInfo'] == '32':
+                found32 = True
+            elif firmware['firmwareFirmware']['attributes']['bitInfo'] == '64':
+                found64 = True
+
+        if not found32 or not found64:
+            result = FAIL_UF
+            data.append([target_sw_ver, found32, found64])
+
+    else:
+        result = NA
+        msg = 'Target version below 6.0(2)'
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -3546,7 +3547,7 @@ if __name__ == "__main__":
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
-        sixty_four_and_thirty_two_memory_image_check,
+        validate_32_64_bit_image_check,
 
         # Faults
         apic_disk_space_faults_check,
