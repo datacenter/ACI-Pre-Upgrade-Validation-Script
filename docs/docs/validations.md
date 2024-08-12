@@ -1754,8 +1754,7 @@ Because of this, the target version of your upgrade must be a version with a fix
 
 Due to defect [CSCwb91766][22], L3out /32 Static Routes that overlap with BD Subnets within the same VRF will be programmed into RIB but not FIB of the relevant switches in the forwarding path. This will cause traffic loss as packets will not be able to take the /32 route, resulting in unexpecteded forwarding issues.
 
-This check will look for any such subnet overlaps and flag them for correction.
-
+If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
