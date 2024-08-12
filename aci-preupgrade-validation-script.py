@@ -3275,7 +3275,7 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     print_title(title, index, total_checks)
     iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
     # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
-    subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
+    bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
         
     if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
         slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
@@ -3307,14 +3307,12 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
             subnets_in_bd = icurl('class', 'fvSubnet.json')		
             bd_to_subnet = {}
             for subnet in subnets_in_bd:
-                try:
-                    subnet_array = re.search(subnet_regex, subnet['fvSubnet']['attributes']['dn'])
-                    bd_dn = 'uni/tn-' + subnet_array.group("tenant") + '/BD-' + subnet_array.group("bd")
+                bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+                if bd_subnet_re:
+                    bd_dn = 'uni/tn-' + bd_subnet_re.group("tenant") + '/BD-' + bd_subnet_re.group("bd")
                     subnet_list = bd_to_subnet.get(bd_dn, [])
-                    subnet_list.append(subnet_array.group("subnet"))
+                    subnet_list.append(bd_subnet_re.group("subnet"))
                     bd_to_subnet[bd_dn] = subnet_list
-                except:
-                    continue
 
             for static_route, info in staticR_to_vrf.items():
                 for bd in vrf_to_bd[info['vrf']]:

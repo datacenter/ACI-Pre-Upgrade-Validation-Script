@@ -50,7 +50,7 @@ subnets_in_bd = 'fvSubnet.json'
         	 staticroute_vrf: read_data(dir, "l3extRsEctx.json"), 
              bds_in_vrf: read_data(dir, "fvRsCtx.json"),
              subnets_in_bd: read_data(dir, "fvSubnet.json")},
-        	 "4.2(7f)", "5.2(4d)", script.PASS,
+            "4.2(7f)", "5.2(4d)", script.PASS,
         ),
         ## PASS = NON-AFFECTED VERSION + AFFECTED MO
         (
@@ -58,7 +58,7 @@ subnets_in_bd = 'fvSubnet.json'
         	 staticroute_vrf: read_data(dir, "l3extRsEctx.json"), 
              bds_in_vrf: read_data(dir, "fvRsCtx.json"),
              subnets_in_bd: read_data(dir, "fvSubnet.json")},
-        	 "4.2(7f)", "5.2(6e)", script.PASS,
+            "4.2(7f)", "5.2(6e)", script.PASS,
         ),
     ],
 )

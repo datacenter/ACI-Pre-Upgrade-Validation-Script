@@ -1,23 +1,31 @@
 [
-        {
-            "fvSubnet": {
-                "attributes": {
-                    "annotation": "",
-                    "childAction": "",
-                    "configIssues": "",
-                    "ctrl": "",
-                    "debugMessage": "",
-                    "descr": "",
-                    "dn": "uni/tn-AA/BD-bd1/subnet-[81.81.81.1/24]",
-                    "extMngdBy": "",
-                    "ip": "81.81.81.1/24",
-                    "ipDPLearning": "enabled",
-                    "scope": "private",
-                    "status": "",
-                    "uid": "15374",
-                    "userdom": ":all:",
-                    "virtual": "no"
-                }
+    {
+        "fvSubnet": {
+            "attributes": {
+                "dn": "uni/tn-AA/BD-bd1/subnet-[81.81.81.1/24]",
+                "extMngdBy": "",
+                "ip": "81.81.81.1/24",
+                "ipDPLearning": "enabled",
+                "scope": "private"
             }
         }
-    ]
+    },
+    {
+        "fvSubnet": {
+            "attributes": {
+                "dn": "uni/tn-bcg1/ap-ap1/epg-epg-dhcpserver/subnet-[10.1.126.1/24]",
+                "extMngdBy": "",
+                "ip": "10.1.126.1/24",
+                "ipDPLearning": "enabled",
+                "lcOwn": "local",
+                "modTs": "2022-11-18T22:09:03.879+00:00",
+                "monPolDn": "uni/tn-common/monepg-default",
+                "name": "",
+                "nameAlias": "",
+                "preferred": "no",
+                "rn": "subnet-[10.1.126.1/24]",
+                "scope": "public"
+            }
+        }
+    }
+]
