@@ -3172,20 +3172,20 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         return POST
 
     for new_mo in new_mo_dict:
+        skip_current_mo=False
         if isinstance(new_mo_dict[new_mo]['SinceVersion'],list):
-            major_version_matched=False
+            if cversion.older_than(new_mo_dict[new_mo]['SinceVersion'][0]):
+                continue
             for version in new_mo_dict[new_mo]['SinceVersion']:
                 if version[0]==str(cversion)[0]:
-                    major_version_matched=True
                     if AciVersion(version).newer_than(str(cversion)):
-                        continue
-            if not major_version_matched:
-                if cversion.older_than(AciVersion(new_mo_dict[new_mo]['SinceVersion'][0])):
-                    continue
+                        skip_current_mo=True
         else:
-            since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
-            if since_version.newer_than(str(cversion)):
+            SinceVersion=AciVersion(new_mo_dict[new_mo]['SinceVersion'])
+            if SinceVersion.newer_than(str(cversion)):
                 continue
+        if skip_current_mo:
+            continue
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
         api = "{}.json?rsp-subtree-include=count"
         if new_mo == "compatSwitchHw":
