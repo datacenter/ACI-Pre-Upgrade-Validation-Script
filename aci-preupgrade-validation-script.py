@@ -2894,19 +2894,18 @@ def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-# TODO: Add tversion handling when CSCwb86706 is fixed.
 def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Spine SUP HW Revision'
     result = FAIL_O
     msg = ''
     headers = ["Pod", "Node", "Sup Slot", "Part Number"]
     data = []
-    recommended_action = "Do not upgrade yet. Contact TAC and share these results."
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706'
+    recommended_action = "Consider changing target version to a fixed release from CSCwf44222"
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#spine-sup-hw-revision'
 
     print_title(title, index, total_checks)
 
-    if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)"):
+    if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)") and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)")):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
         if not sups:
@@ -2915,7 +2914,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
         for sup in sups:
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
-            if prtNum in ['73-18562-02', '73-18570-02']:
+            if prtNum in ['73-18562-02', '73-18570-02', '73-18570-03']:
                 dn = re.search(node_regex+sup_re, sup['eqptSpCmnBlk']['attributes']['dn'])
                 pod_id = dn.group("pod")
                 node_id = dn.group("node")

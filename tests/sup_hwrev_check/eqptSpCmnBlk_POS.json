@@ -38,5 +38,15 @@
         "prtNum": "73-18570-02"
       }
     }
+  },
+  {
+    "eqptSpCmnBlk": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1203/sys/ch/supslot-1/sup/spsup/spcmn",
+        "oem": "Cisco Systems, Inc.",
+        "pdNum": "N9K-SUP-B",
+        "prtNum": "73-18570-03"
+      }
+    }
   }
 ]
