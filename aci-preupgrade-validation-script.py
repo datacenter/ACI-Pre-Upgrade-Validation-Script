@@ -2901,7 +2901,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     headers = ["Pod", "Node", "Sup Slot", "Part Number"]
     data = []
     recommended_action = "Consider changing target version to a fixed release from CSCwf44222"
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#spine-sup-hw-revision'
 
     print_title(title, index, total_checks)
 
