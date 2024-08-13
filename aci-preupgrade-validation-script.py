@@ -2944,19 +2944,17 @@ def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
 
     if cversion.older_than("6.0(1a)") and tversion.newer_than("6.0(1a)"):
         port_profiles = icurl('class', 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")')
-        if not port_profiles or (len(port_profiles) < 57):
-            return result
+        if len(port_profiles) > 56:
+            node_count = {}
+            for pp in port_profiles:
+                dn = re.search(node_regex, pp['eqptPortP']['attributes']['dn'])
+                node_id = dn.group("node")
+                node_count.setdefault(node_id, 0)
+                node_count[node_id] += 1
 
-        node_count = {}
-        for pp in port_profiles:
-            dn = re.search(node_regex, pp['eqptPortP']['attributes']['dn'])
-            node_id = dn.group("node")
-            node_count.setdefault(node_id, 0)
-            node_count[node_id] += 1
-
-        for node, count in node_count.items():
-            if count > 56:
-                data.append([node, count])
+            for node, count in node_count.items():
+                if count > 56:
+                    data.append([node, count])
 
     if data:
         result = FAIL_O

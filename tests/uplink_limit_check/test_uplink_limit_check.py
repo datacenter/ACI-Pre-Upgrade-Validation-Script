@@ -26,6 +26,14 @@ eqptPortP = 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")'
         ),
         (
             {
+                eqptPortP: read_data(dir, "eqptPortP_empty.json")
+            },
+            "5.2(3g)",
+            "6.0(2h)",
+            script.PASS,
+        ),
+        (
+            {
                 eqptPortP: read_data(dir, "eqptPortP_POS.json")
             },
             "5.2(3g)",
