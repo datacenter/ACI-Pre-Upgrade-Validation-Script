@@ -2791,10 +2791,10 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
         if pki_fabric_ca_mo:
             # Prep csr
             passphrase = pki_fabric_ca_mo[0]['pkiFabricSelfCAEp']['attributes']['currCertReqPassphrase']
-            cert_gen_filename = "gen.cnf"
-            key_pem = 'temp.key.pem'
-            csr_pem = 'temp.csr.pem'
-            sign = 'temp.sign'
+            cert_gen_filename = "preupgrade_gen.cnf"
+            key_pem = 'preupgrade_temp.key.pem'
+            csr_pem = 'preupgrade_temp.csr.pem'
+            sign = 'preupgrade_temp.sign'
             cert_gen_cnf = '''
             [ req ]
             default_bits        = 2048
@@ -2806,6 +2806,20 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             [ req_distinguished_name ]
             commonName                      = aci_pre_upgrade
             '''
+            # Re-run cleanup for Issue #120
+            if os.path.exists(cert_gen_filename):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(cert_gen_filename))
+                os.remove(cert_gen_filename)
+            if os.path.exists(key_pem):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(key_pem))
+                os.remove(key_pem)
+            if os.path.exists(csr_pem):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(csr_pem))
+                os.remove(csr_pem)
+            if os.path.exists(sign):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(sign))
+                os.remove(sign)
+
             with open(cert_gen_filename, 'w') as f:
                 f.write(cert_gen_cnf)
 
