@@ -150,7 +150,7 @@ Items                                           | Defect       | This Script    
 [Internal VLAN Pool Check][d6]                  | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
@@ -1782,9 +1782,11 @@ The script checks if the target version is 6.0(2) and if the fabric name contain
 
 ### Spine SUP HW Revision
 
-Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot after an upgrade depending on the hardware revision (part number) of the SUP modules.
+Due to the defect [CSCwb86706][29], ACI modular spine switches may not be able to boot after an upgrade depending on the hardware revision (part number) of the SUP modules.
 
 The script checks if the version and the SUP modules are susceptible to the defect.
+
+If this check is flagged, Known Fixed Releases documented in [CSCwf44222][30] should be assessed as a target image to avoid the defect condition.
 
 ### CoS 3 with Dynamic Packet Prioritization
 
@@ -1965,3 +1967,5 @@ If found, the target version of your upgrade should be a version with a fix for 
 [26]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b_Cisco_ACI_and_Forward_Error_Correction.html#Cisco_Reference.dita_5cef69b3-b7fa-4bde-ba60-38129c9e7d82
 [27]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb91766
 [28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
+[29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
+[30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
