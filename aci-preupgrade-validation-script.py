@@ -2791,10 +2791,10 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
         if pki_fabric_ca_mo:
             # Prep csr
             passphrase = pki_fabric_ca_mo[0]['pkiFabricSelfCAEp']['attributes']['currCertReqPassphrase']
-            cert_gen_filename = "gen.cnf"
-            key_pem = 'temp.key.pem'
-            csr_pem = 'temp.csr.pem'
-            sign = 'temp.sign'
+            cert_gen_filename = "preupgrade_gen.cnf"
+            key_pem = 'preupgrade_temp.key.pem'
+            csr_pem = 'preupgrade_temp.csr.pem'
+            sign = 'preupgrade_temp.sign'
             cert_gen_cnf = '''
             [ req ]
             default_bits        = 2048
@@ -2806,6 +2806,20 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             [ req_distinguished_name ]
             commonName                      = aci_pre_upgrade
             '''
+            # Re-run cleanup for Issue #120
+            if os.path.exists(cert_gen_filename):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(cert_gen_filename))
+                os.remove(cert_gen_filename)
+            if os.path.exists(key_pem):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(key_pem))
+                os.remove(key_pem)
+            if os.path.exists(csr_pem):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(csr_pem))
+                os.remove(csr_pem)
+            if os.path.exists(sign):
+                logging.debug('CA CHECK file found and removed: ' + ''.join(sign))
+                os.remove(sign)
+
             with open(cert_gen_filename, 'w') as f:
                 f.write(cert_gen_cnf)
 
@@ -2880,19 +2894,18 @@ def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-# TODO: Add tversion handling when CSCwb86706 is fixed.
 def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Spine SUP HW Revision'
     result = FAIL_O
     msg = ''
     headers = ["Pod", "Node", "Sup Slot", "Part Number"]
     data = []
-    recommended_action = "Do not upgrade yet. Contact TAC and share these results."
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706'
+    recommended_action = "Consider changing target version to a fixed release from CSCwf44222"
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#spine-sup-hw-revision'
 
     print_title(title, index, total_checks)
 
-    if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)"):
+    if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)") and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)")):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
         if not sups:
@@ -2901,7 +2914,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
         for sup in sups:
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
-            if prtNum in ['73-18562-02', '73-18570-02']:
+            if prtNum in ['73-18562-02', '73-18570-02', '73-18570-03']:
                 dn = re.search(node_regex+sup_re, sup['eqptSpCmnBlk']['attributes']['dn'])
                 pod_id = dn.group("pod")
                 node_id = dn.group("node")
@@ -2931,19 +2944,17 @@ def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
 
     if cversion.older_than("6.0(1a)") and tversion.newer_than("6.0(1a)"):
         port_profiles = icurl('class', 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")')
-        if not port_profiles or (len(port_profiles) < 57):
-            return result
+        if len(port_profiles) > 56:
+            node_count = {}
+            for pp in port_profiles:
+                dn = re.search(node_regex, pp['eqptPortP']['attributes']['dn'])
+                node_id = dn.group("node")
+                node_count.setdefault(node_id, 0)
+                node_count[node_id] += 1
 
-        node_count = {}
-        for pp in port_profiles:
-            dn = re.search(node_regex, pp['eqptPortP']['attributes']['dn'])
-            node_id = dn.group("node")
-            node_count.setdefault(node_id, 0)
-            node_count[node_id] += 1
-
-        for node, count in node_count.items():
-            if count > 56:
-                data.append([node, count])
+            for node, count in node_count.items():
+                if count > 56:
+                    data.append([node, count])
 
     if data:
         result = FAIL_O
@@ -3426,6 +3437,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     title = 'Route-map Community Match Defect'
     result = PASS
@@ -3581,6 +3593,108 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     return result
 
 
+def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'L3out /32 Static Route and BD Subnet Overlap'
+    result = PASS
+    msg = ''
+    headers = ['L3out', '/32 Static Route', 'BD', 'BD Subnet']
+    data = []
+    recommended_action = 'Change /32 static route design or target a fixed version'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
+    print_title(title, index, total_checks)
+    iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
+    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
+    bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
+        
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+        slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
+        staticRoutes = icurl('class', slash32filter)
+        if staticRoutes:
+            staticroute_vrf = icurl('class', 'l3extRsEctx.json')
+            staticR_to_vrf = {}	
+            for staticRoute in staticRoutes:
+                staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
+                
+                for l3outCtx in staticroute_vrf:
+                    l3outCtx_Vrf = {}
+                    if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
+                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
+                        staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
+                                
+
+            bds_in_vrf = icurl('class', 'fvRsCtx.json')
+            vrf_to_bd = {}
+            for bd_ref in bds_in_vrf:
+                vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
+                bd_list = vrf_to_bd.get(vrf_name, [])
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_list.append(bd_name)
+                vrf_to_bd[vrf_name] = bd_list
+
+            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            bd_to_subnet = {}
+            for subnet in subnets_in_bd:
+                bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
+                if bd_subnet_re:
+                    bd_dn = 'uni/tn-' + bd_subnet_re.group("tenant") + '/BD-' + bd_subnet_re.group("bd")
+                    subnet_list = bd_to_subnet.get(bd_dn, [])
+                    subnet_list.append(bd_subnet_re.group("subnet"))
+                    bd_to_subnet[bd_dn] = subnet_list
+
+            for static_route, info in staticR_to_vrf.items():
+                for bd in vrf_to_bd[info['vrf']]:
+                    for subnet in bd_to_subnet[bd]:
+                        if IPAddress.ip_in_subnet(static_route, subnet):
+                            data.append([info['l3out'], static_route, bd, subnet])
+
+        if data:
+            result = FAIL_O
+			
+        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result	
+
+
+def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
+    title = '32 and 64-Bit Firmware Image for Switches'
+    result = PASS
+    msg = ''
+    headers = ["Target Switch Version", "32-Bit Image Found", "64-Bit Image Found"]
+    data = []
+    recommended_action = 'Upload the missing 32 or 64 bit Switch Image to the Firmware repository'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#602-requires-32-and-64-bit-switch-images'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if tversion.newer_than("6.0(2a)"):
+        found32 = found64 = False
+        target_sw_ver = 'n9000-1' + tversion.version
+        firmware_api =	'firmwareFirmware.json'
+        firmware_api +=	'?query-target-filter=eq(firmwareFirmware.fullVersion,"%s")' % (target_sw_ver)  
+        firmwares = icurl('class', firmware_api)
+
+        for firmware in firmwares:
+            if firmware['firmwareFirmware']['attributes']['bitInfo'] == '32':
+                found32 = True
+            elif firmware['firmwareFirmware']['attributes']['bitInfo'] == '64':
+                found64 = True
+
+        if not found32 or not found64:
+            result = FAIL_UF
+            data.append([target_sw_ver, found32, found64])
+
+    else:
+        result = NA
+        msg = 'Target version below 6.0(2)'
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -3620,6 +3734,7 @@ if __name__ == "__main__":
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
+        validate_32_64_bit_image_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -3678,6 +3793,7 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
+        static_route_overlap_check
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}

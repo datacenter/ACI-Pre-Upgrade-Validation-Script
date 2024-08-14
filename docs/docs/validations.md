@@ -33,6 +33,7 @@ Items                                                        | This Script      
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[6.0(2)+ requires 32 and 64 bit switch images][g16]      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 
 [g1]: #compatibility-target-aci-version
@@ -50,7 +51,7 @@ Items                                                        | This Script      
 [g13]: #intersight-device-connector-upgrade-status
 [g14]: #mini-aci-upgrade-to-602-or-later
 [g15]: #post-upgrade-callback-integrity
-
+[g16]: #602-requires-32-and-64-bit-switch-images
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -149,7 +150,7 @@ Items                                           | Defect       | This Script    
 [Internal VLAN Pool Check][d6]                  | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Spine SUP HW Revision Check][d9]               | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
@@ -157,6 +158,8 @@ Items                                           | Defect       | This Script    
 [Invalid FEX fabricPathEp DN References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -174,7 +177,7 @@ Items                                           | Defect       | This Script    
 [d14]: #invalid-fex-fabricpathep-dn-references
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
-
+[d17]: #l3out-32-overlap-with-bd-subnet
 
 
 ## General Check Details
@@ -416,6 +419,14 @@ This validation checks whether the number of objects for the existing and newly 
     ```
 
     If the Mo count for both old/new classes are the same, it means that new class was created successfully after the APIC upgrade by the old class's post-upgrade callback.
+
+
+### 6.0(2)+ requires 32 and 64 bit switch images
+
+When targeting any version that is 6.0(2) or greater, download both the 32-bit and 64-bit Cisco ACI-mode switch images to the Cisco APIC. Downloading only one of the images may result in errors during the upgrade process.
+
+For additional information, see the [Guidelines and Limitations for Upgrading or Downgrading][28] section of the Cisco APIC Installation and ACI Upgrade and Downgrade Guide.
+
 
 ## Fault Check Details
 
@@ -1774,9 +1785,11 @@ The script checks if the target version is 6.0(2) and if the fabric name contain
 
 ### Spine SUP HW Revision
 
-Due to the defect CSCwb86706, ACI modular spine switches may not be able to boot after an upgrade depending on the hardware revision (part number) of the SUP modules.
+Due to the defect [CSCwb86706][29], ACI modular spine switches may not be able to boot after an upgrade depending on the hardware revision (part number) of the SUP modules.
 
 The script checks if the version and the SUP modules are susceptible to the defect.
+
+If this check is flagged, Known Fixed Releases documented in [CSCwf44222][30] should be assessed as a target image to avoid the defect condition.
 
 ### CoS 3 with Dynamic Packet Prioritization
 
@@ -1842,7 +1855,6 @@ This issue can be triggered by a switch reload that occurs for any reason, inclu
 The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Optical ports Ethernet 1/49 - 54 and MGMT0 port are not affected.
 
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
-
 
 
 ### Invalid FEX fabricPathEp DN References
@@ -1921,6 +1933,14 @@ It is recommended if you are upgrading to an affected release to add a prefix li
     dn           : uni/tn-Cisco/subj-match-comm/dest-[0.0.0.0/0]
     ```
 
+
+### L3out /32 overlap with BD Subnet
+
+Due to defect [CSCwb91766][27], L3out /32 Static Routes that overlap with BD Subnets within the same VRF will be programmed into RIB but not FIB of the relevant switches in the forwarding path. This will cause traffic loss as packets will not be able to take the /32 route, resulting in unexpecteded forwarding issues.
+
+If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1948,3 +1968,7 @@ It is recommended if you are upgrading to an affected release to add a prefix li
 [24]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf00416
 [25]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb08081
 [26]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b_Cisco_ACI_and_Forward_Error_Correction.html#Cisco_Reference.dita_5cef69b3-b7fa-4bde-ba60-38129c9e7d82
+[27]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb91766
+[28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
+[29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
+[30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
