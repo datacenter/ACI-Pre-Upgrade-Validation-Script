@@ -3144,32 +3144,37 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
     new_mo_dict = {
         "infraImplicitSetPol": {
             "CreatedBy": "",
-            "SinceVersion": "3.2(10e)",
+            "SinceVersion": ["3.2(10e)"],
             "Impact": "Infra implicit settings will not be deployed",
         },
         "infraRsToImplicitSetPol": {
             "CreatedBy": "infraImplicitSetPol",
-            "SinceVersion": "3.2(10e)",
+            "SinceVersion": ["3.2(10e)"],
             "Impact": "Infra implicit settings will not be deployed",
         },
         "fvSlaDef": {
             "CreatedBy": "fvIPSLAMonitoringPol",
-            "SinceVersion": "4.1(1i)",
+            "SinceVersion": ["4.1(1i)"],
             "Impact": "IPSLA monitor policy will not be deployed",
         },
         "infraRsConnectivityProfileOpt": {
             "CreatedBy": "infraRsConnectivityProfile",
-            "SinceVersion": "5.2(4d)",
+            "SinceVersion": ["5.2(4d)"],
             "Impact": "VPC for missing Mo will not be deployed to leaf",
         },
         "infraAssocEncapInstDef": {
             "CreatedBy": "infraRsToEncapInstDef",
-            "SinceVersion": "5.2(4d)",
+            "SinceVersion": ["5.2(4d)"],
+            "Impact": "VLAN for missing Mo will not be deployed to leaf",
+        },
+        "infraRsToInterfacePolProfileOpt": {
+            "CreatedBy": "infraRsToInterfacePolProfile",
+            "SinceVersion": ["5.2(8d)","6.0(3d)"],
             "Impact": "VLAN for missing Mo will not be deployed to leaf",
         },
         "compatSwitchHw": {
             "CreatedBy": "",  # suppBit attribute is available from 6.0(2h)
-            "SinceVersion": "6.0(2h)",
+            "SinceVersion": ["6.0(2h)"],
             "Impact": "Unexpected 64/32 bit image can deploy to switches",
         },
     }
@@ -3178,12 +3183,16 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         return POST
 
     for new_mo in new_mo_dict:
-        since_version = AciVersion(new_mo_dict[new_mo]['SinceVersion'])
-        created_by_mo = new_mo_dict[new_mo]['CreatedBy']
-
-        if since_version.newer_than(str(cversion)):
+        skip_current_mo=False
+        if cversion.older_than(new_mo_dict[new_mo]['SinceVersion'][0]):
             continue
-
+        for version in new_mo_dict[new_mo]['SinceVersion']:
+            if version[0]==str(cversion)[0]:
+                if AciVersion(version).newer_than(str(cversion)):
+                    skip_current_mo=True
+        if skip_current_mo:
+            continue
+        created_by_mo = new_mo_dict[new_mo]['CreatedBy']
         api = "{}.json?rsp-subtree-include=count"
         if new_mo == "compatSwitchHw":
             # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.

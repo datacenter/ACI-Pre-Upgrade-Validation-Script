@@ -13,13 +13,22 @@ dir = os.path.dirname(os.path.abspath(__file__))
 # icurl queries
 mo1_new = "infraRsToImplicitSetPol.json?rsp-subtree-include=count"
 mo1_old = "infraImplicitSetPol.json?rsp-subtree-include=count"
+
 mo2_new = "fvSlaDef.json?rsp-subtree-include=count"
 mo2_old = "fvIPSLAMonitoringPol.json?rsp-subtree-include=count"
+
 mo3_new = "infraRsConnectivityProfileOpt.json?rsp-subtree-include=count"
 mo3_old = "infraRsConnectivityProfile.json?rsp-subtree-include=count"
+
 mo4_new = "infraAssocEncapInstDef.json?rsp-subtree-include=count"
 mo4_old = "infraRsToEncapInstDef.json?rsp-subtree-include=count"
-mo5_new = 'compatSwitchHw.json?rsp-subtree-include=count&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
+
+mo5_new = "infraRsToInterfacePolProfileOpt.json?rsp-subtree-include=count"
+mo5_old = "infraRsToInterfacePolProfile.json?rsp-subtree-include=count"
+
+mo6_new = 'compatSwitchHw.json?rsp-subtree-include=count&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
+
+
 
 # icurl output sets
 mo_count_pass = {
@@ -32,6 +41,8 @@ mo_count_pass = {
     mo4_new: read_data(dir, "moCount_10.json"),
     mo4_old: read_data(dir, "moCount_10.json"),
     mo5_new: read_data(dir, "moCount_10.json"),
+    mo5_old: read_data(dir, "moCount_10.json"),
+    mo6_new: read_data(dir, "moCount_10.json"),
 }
 mo_count_fail = {
     # Both infraImplicitSetPol and infraRsToImplicitSetPol are brand new classes.
@@ -46,9 +57,11 @@ mo_count_fail = {
     mo3_old: read_data(dir, "moCount_10.json"),
     mo4_new: read_data(dir, "moCount_8.json"),
     mo4_old: read_data(dir, "moCount_10.json"),
+    mo5_new: read_data(dir, "moCount_8.json"),
+    mo5_old: read_data(dir, "moCount_10.json"),
     # suppBit is a new attribute in 6.0.2 that can be either 32 or 64.
     # When postUpgradeCb failed, there may be no compatSwitch with suppBit being 32.
-    mo5_new: read_data(dir, "moCount_0.json"),
+    mo6_new: read_data(dir, "moCount_0.json"),
 }
 
 

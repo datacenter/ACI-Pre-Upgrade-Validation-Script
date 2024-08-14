@@ -388,22 +388,10 @@ This validation checks whether the number of objects for the existing and newly 
 
 
 !!! example
-    If the existing class and the new class are `infraRsToEncapInstDef` and `infraAssocEncapInstDef`, the impact of incomplete post-upgrade callback (i.e. incomplete data conversion) is that VLANs will not be deployed on leaf switches after the upgrade of the switch.
-    You can check the number of objects for these classes via moquery and query option `rsp-subtree-include=count` as shown below.
-    If the Mo count for both classes are the same, it means that `infraAssocEncapInstDef` was created successfully after the APIC upgrade by `infraRsToEncapInstDef`'s post-upgrade callback.
+    If the old/new class result is `infraRsToEncapInstDef`/`infraAssocEncapInstDef` or `infraRsToInterfacePolProfile`/`infraRsToInterfacePolProfileOpt`, the impact of incomplete post-upgrade callback (i.e. incomplete data conversion) is that VLANs will not be deployed on leaf switches after the upgrade of the switch.
+
+    You can check the number of objects for each of these classes via moquery and the query option `rsp-subtree-include=count`:
     ```
-    apic1# moquery -c infraAssocEncapInstDef -x rsp-subtree-include=count
-    Total Objects shown: 1
-
-    # mo.Count
-    childAction  :
-    count        : 11
-    dn           : cnt
-    lcOwn        : local
-    modTs        : never
-    rn           : cnt
-    status       :
-
     apic1# moquery -c infraRsToEncapInstDef -x rsp-subtree-include=count
     Total Objects shown: 1
 
@@ -415,7 +403,22 @@ This validation checks whether the number of objects for the existing and newly 
     modTs        : never
     rn           : cnt
     status       :
+
+
+    apic1# moquery -c infraAssocEncapInstDef -x rsp-subtree-include=count
+    Total Objects shown: 1
+
+    # mo.Count
+    childAction  :
+    count        : 11
+    dn           : cnt
+    lcOwn        : local
+    modTs        : never
+    rn           : cnt
+    status       :
     ```
+
+    If the Mo count for both old/new classes are the same, it means that new class was created successfully after the APIC upgrade by the old class's post-upgrade callback.
 
 
 ### 6.0(2)+ requires 32 and 64 bit switch images
