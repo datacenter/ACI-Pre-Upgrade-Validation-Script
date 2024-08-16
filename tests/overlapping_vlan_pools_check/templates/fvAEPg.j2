@@ -1,0 +1,27 @@
+{% import 'macros.j2' as m %}
+[
+{% for epg in epgs %}
+  {
+    "fvAEPg": {
+      "attributes": {
+        "dn": "uni/tn-{{ epg.tenant }}/ap-{{ epg.ap }}/epg-{{ epg.epg }}",
+        "floodOnEncap": "disabled",
+        "name": "{{ epg.epg }}"
+      },
+      "children": [
+      {% for dom in epg.domains %}
+        {
+          "fvRsDomAtt": {
+            "attributes": {
+              "rn": "rsdomAtt-[{{ m.domain_dn(dom.name, dom.class) }}]",
+              "tCl": "{{ dom.class|default("physDomP") }}",
+              "tDn": "{{ m.domain_dn(dom.name, dom.class) }}"
+            }
+          }
+        }{% if not loop.last -%},{%- endif %}
+      {% endfor %}
+      ]
+    }
+  }{% if not loop.last -%},{%- endif %}
+{% endfor %}
+]

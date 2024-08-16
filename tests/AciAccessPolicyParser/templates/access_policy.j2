@@ -1,0 +1,231 @@
+{% import 'macros.j2' as m %}
+[
+{% for node in nodes %}
+  {
+    "infraNodeP": {
+    "attributes": { "dn": "uni/infra/nprof-{{ node.name }}", "name": "{{ node.name }}" }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "dn": "uni/infra/nprof-{{ node.name }}/rsaccPortP-[uni/infra/accportprof-{{ node.ifp_name }}]",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-{{ node.ifp_name }}"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": { "dn": "uni/infra/nprof-{{ node.name }}/leaves-{{ node.name }}-typ-range", "name": "{{ node.name }}", "type": "range" }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "dn": "uni/infra/nprof-{{ node.name }}/leaves-{{ node.name }}-typ-range/nodeblk-{{ node.from }}",
+        "from_": "{{ node.from }}",
+        "name": "{{ node.from }}",
+        "to_": "{{ node.to }}"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": { "dn": "uni/infra/accportprof-{{ node.ifp_name }}", "name": "{{ node.ifp_name }}", "nodeId": "0" }
+    }
+  },
+{% endfor %}
+{% for port in ports %}
+  {
+    "infraHPortS": {
+      "attributes": {
+        "descr": "",
+        "dn": "{{ m.ifp_dn(port.ifp, port.fexp) }}/hports-{{ m.port_name(port.card, port.port, port.subport) }}-typ-range",
+        "name": "{{ m.port_name(port.card, port.port, port.subport) }}",
+        "type": "range"
+      }
+    }
+  },
+  {
+    "{{ 'infraSubPortBlk' if port.subport else 'infraPortBlk' }}": {
+      "attributes": {
+        "descr": "",
+        "dn": "{{ m.ifp_dn(port.ifp, port.fexp) }}/hports-{{ m.port_name(port.card, port.port, port.subport) }}-typ-range/portblk-{{ m.port_name(port.card, port.port, port.subport) }}",
+        "fromCard": "{{ port.card }}",
+        "fromPort": "{{ port.port }}",
+        {% if port.subport -%}
+        "fromSubPort": "{{ port.subport }}",
+        "toSubPort": "{{ port.subport }}",
+        {%- endif %}
+        "name": "{{ m.port_name(port.card, port.port, port.subport) }}",
+        "toCard": "{{ port.card }}",
+        "toPort": "{{ port.port }}"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+      "dn": "{{ m.ifp_dn(port.ifp, port.fexp) }}/hports-{{ m.port_name(port.card, port.port, port.subport) }}-typ-range/rsaccBaseGrp",
+        "fexId": "{{ port.fex|default(101) }}",
+        "tCl": "{{ port.ifpg_class }}",
+        "tDn": "{{ m.ifpg_dn(port.ifpg_name, port.ifpg_class) }}"
+      }
+    }
+  },
+{% endfor %}
+{% for override in override_ports %}
+  {
+    "infraHPathS": {
+        "attributes": {
+          "dn": "uni/infra/hpaths-{{ override.node}}_{{ override.path }}",
+          "name": "{{ override.node}}_{{ override.path }}"
+        }
+    }
+  },
+  {
+    "infraRsHPathAtt": {
+      "attributes": {
+      "dn": "uni/infra/hpaths-{{ override.node}}_{{ override.path }}/rsHPathAtt-[{{ m.pathep_dn(1, override.node, override.path) }}]",
+        "tCl": "fabricPathEp",
+        "tDn": "{{ m.pathep_dn(1, override.node, override.path) }}"
+      }
+    }
+  },
+  {
+    "infraRsPathToAccBaseGrp": {
+      "attributes": {
+        "dn": "uni/infra/hpaths-{{ override.node}}_{{ override.path }}/rspathToAccBaseGrp",
+        "tCl": "{{ override.ifpg_class }}",
+        "tDn": "{{ m.ifpg_dn(override.ifpg_name, override.ifpg_class) }}"
+      }
+    }
+  },
+{% endfor %}
+{% for ifpg in ifpgs %}
+  {
+    "{{ ifpg.class }}": {
+      "attributes": {
+        {% if ifpg.class in ["infraAccBndlGrp", "infraFexBndlGrp"] -%}
+          "lagT": "{{ ifpg.lagT }}",
+        {%- endif %}
+        "dn": "{{ m.ifpg_dn(ifpg.name, ifpg.class) }}",
+        "name": "{{ ifpg.name }}"
+      }
+    }
+  },
+  {% if ifpg.class == "infraFexBndlGrp" %}
+    {
+      "infraFexP": {
+        "attributes": {
+          "dn": "uni/infra/fexprof-{{ ifpg.name }}",
+          "fexId": "unspecified",
+          "name": "{{ ifpg.name }}",
+          "nodeId": "0"
+        }
+      }
+    },
+  {% else %}
+    {
+      "infraRsAttEntP": {
+        "attributes": {
+          "dn": "{{ m.ifpg_dn(ifpg.name, ifpg.class) }}/rsattEntP",
+          "tCl": "infraAttEntityP",
+          "tDn": "uni/infra/attentp-{{ ifpg.aep }}"
+        }
+      }
+    },
+    {
+      "l2RtL2IfPol": {
+        "attributes": {
+          "dn": "uni/infra/l2IfP-{{ ifpg.l2if }}/rtinfraL2IfPol-[{{ m.ifpg_dn(ifpg.name, ifpg.class) }}]",
+          "tCl": "{{ ifpg.class }}",
+          "tDn": "{{ m.ifpg_dn(ifpg.name, ifpg.class) }}"
+        }
+      }
+    },
+  {% endif %}
+{% endfor %}
+{% for aep in aeps %}
+  {
+    "infraAttEntityP": {
+    "attributes": { "dn": "uni/infra/attentp-{{ aep }}", "name": "{{ aep }}" }
+    }
+  },
+{% endfor %}
+{% for domain in domains %}
+  {% for aep in domain.aeps %}
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "dn": "uni/infra/attentp-{{ aep }}/rsdomP-[{{ m.domain_dn(domain.name, domain.class) }}]",
+        "tCl": "{{ domain.class|default("physDomP") }}",
+        "tDn": "{{ m.domain_dn(domain.name, domain.class) }}"
+      }
+    }
+  },
+  {% endfor %}
+{% endfor %}
+{% for vpool in vpools %}
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "{{ vpool.mode }}",
+        "dn": "uni/infra/vlanns-[{{ vpool.name }}]-{{ vpool.mode }}",
+        "name": "{{ vpool.name }}"
+      }
+    }
+  },
+  {% for vlan in vpool.vlan_ranges %}
+    {
+      "fvnsEncapBlk": {
+        "attributes": {
+        "allocMode": "{{ vlan.mode|default("inherit") }}",
+          "descr": "",
+          "dn": "uni/infra/vlanns-[{{ vpool.name }}]-{{ vpool.mode }}/from-[vlan-{{ vlan.from }}]-to-[vlan-{{ vlan.to }}]",
+          "from": "vlan-{{ vlan.from }}",
+          "name": "",
+          "role": "external",
+          "to": "vlan-{{ vlan.to }}"
+        }
+      }
+    },
+  {% endfor %}
+  {% for dom in vpool.domains %}
+    {
+      "fvnsRtVlanNs": {
+        "attributes": {
+          "dn": "uni/infra/vlanns-[{{ vpool.name }}]-{{ vpool.mode }}/rtinfraVlanNs-[{{ m.domain_dn(dom.name, dom.class) }}]",
+          "tCl": "{{ dom.class|default("physDomP") }}",
+          "tDn": "{{ m.domain_dn(dom.name, dom.class) }}"
+        }
+      }
+    },
+  {% endfor %}
+{% endfor %}
+  {
+    "l2IfPol": {
+      "attributes": {
+        "descr": "",
+        "dn": "uni/infra/l2IfP-default",
+        "name": "default",
+        "qinq": "disabled",
+        "vepa": "disabled",
+        "vlanScope": "global"
+      }
+    }
+  },
+  {
+    "l2IfPol": {
+      "attributes": {
+        "descr": "",
+        "dn": "uni/infra/l2IfP-VLAN_SCOPE_LOCAL",
+        "name": "VLAN_SCOPE_LOCAL",
+        "qinq": "disabled",
+        "vepa": "disabled",
+        "vlanScope": "portlocal"
+      }
+    }
+  }
+]

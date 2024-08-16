@@ -4,6 +4,9 @@ pexpect == 2.4
 
 # For testing
 pytest==4.6.11
+jinja2==2.11.3
+pyyaml==5.4.1
+
 
 # Depencencies
 atomicwrites==1.4.1
