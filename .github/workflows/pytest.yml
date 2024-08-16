@@ -52,10 +52,9 @@ jobs:
         # pip 21.0 does not support py2 but the default pip in this container
         # is too old and fails. Hence the pip version must be 20.3.4.
         run: |
-          pip install --trusted-host pypi.python.org --upgrade pip==20.3.4
-          pip install virtualenv
           virtualenv venv27
           source venv27/bin/activate
+          pip install --trusted-host pypi.python.org --upgrade pip==20.3.4
           pip install --trusted-host pypi.python.org -r tests/requirements-py27.txt
       - name: Test with pytest
         run: |
