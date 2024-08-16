@@ -1,0 +1,63 @@
+name: Pytest
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  test-py38:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8.10
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install virtualenv
+          virtualenv venv38
+          source venv38/bin/activate
+          pip install -r tests/requirements-py38.txt
+      - name: Test with pytest
+        run: |
+          source venv38/bin/activate
+          pytest --junitxml=report.xml
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          check_name: py38 report
+          report_paths: report.xml
+
+  test-py27:
+    runs-on: ubuntu-20.04
+    container: python:2.7.11-wheezy
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # glibc on python:2.7.11 is too old for newer actions/checkout
+      - uses: actions/checkout@v1
+      - name: Install dependencies
+        # pip 21.0 does not support py2 but the default pip in this container
+        # is too old and fails. Hence the pip version must be 20.3.4.
+        run: |
+          pip install --trusted-host pypi.python.org --upgrade pip==20.3.4
+          pip install virtualenv
+          virtualenv venv27
+          source venv27/bin/activate
+          pip install --trusted-host pypi.python.org -r tests/requirements-py27.txt
+      - name: Test with pytest
+        run: |
+          source venv27/bin/activate
+          pytest
