@@ -1362,10 +1362,251 @@ The script checks if all leaf switch nodes are in a vPC pair. The APIC built-in 
 
 Overlapping VLAN blocks across different VLAN pools may result in some forwarding issues, such as:
 
-* Packet loss due to issues in endpoint learning
-* Spanning tree loop due to BPDU forwarding domains
+* Packet loss due to issues in endpoint learning with vPC
+* STP BPDUs, or any BUM traffic when using Flood-in-Encap, are not flooded to all ports within the same VLAN ID.
 
 **These issues may suddenly appear after upgrading your switches** because switches fetch the policies from scratch after an upgrade and may apply the same VLAN ID from a different pool than what was used prior to the upgrade. As a result, the VLAN ID is mapped to a different VXLAN VNID than other switch nodes. This causes the two problems mentioned above.
+
+
+!!! Tip "VLAN Pools and VXLAN VNID on switches"
+    In ACI, multiple VLANs and EPGs can be mapped to the same bridge domain, which serves as the Layer 2 domain. As a result, most Layer 2 forwarding, such as bridging or flooding a packet, uses the VXLAN VNID of the bridge domain. However, each VLAN within the bridge domain is also mapped to a unique VXLAN VNID, distict from that of the bridge domain. This is known as Forwarding Domain (FD) VNID or VLAN VNID, and it's used for special purposes such as:
+
+    * Endpoint synchronization between vPC peer switches.
+    * Flooding STP BPDUs across switches.
+    * Flooding BUM (Broadcast, Unknown Unicast, Multicast) traffic across switches when `Flood-in-Encap` is configured on the bridge domain or EPG.
+
+    To prevent the impact for these mechanism, VLAN VNID mapping must be consistent across switches as needed.
+
+
+!!! Tip "How VLAN Pools are tied to the VLAN on switches"
+    Each switch port can be associated to multiple VLAN pools that may or may not have VLAN ID ranges overlapping with each other.
+
+    ``` mermaid
+    graph LR
+      A[Port] --> B[Interface Policy Group] --> C[AEP];
+      C[AEP] --> D(Phy Domain A):::dom --> E[VLAN Pool 1];
+      C[AEP] --> F(Phy Domain B):::dom --> G[VLAN Pool 2];
+      C[AEP] --> H(VMM Domain C):::dom --> G[VLAN Pool 2];
+      classDef dom fill:#fff
+    ```
+
+    When configuring a switch port (node-101 eth1/1) with VLAN 10 as EPG A, two things are checked:
+
+    1. Whether node-101 eth1/1 is associated to VLAN 10 via `AEP -> Domain -> VLAN Pool`
+    2. Whether EPG A is associated with the same domain
+
+    If the port is associated with multiple domains/VLAN pools as shown above, and EPG A is associated only with `Phy Domain A`, then only `VLAN Pool 1` is available for the port in the context of EPG A, avoiding any overlapping VLAN pool issues. However, if VLAN 10 is not included in `VLAN Pool 1`, it cannot be deployed on the port via EPG A. The same principle applies when deploying a VLAN through AEP binding, as it serves as a shortcut to specify all ports within the AEP.
+
+    This conecpt of domains is crucial in multi-domain tenancy to ensure the tenant/EPG has the appropriate set of ports and VLANs.
+
+    However, if EPG A is associated with both `Phy Domain A` and `Phy Domain B`, the port can use either `VLAN Pool 1` or `VLAN Pool 2` to pull a VLAN. If VLAN 10 is configured in both pools, EPG A and its VLAN 10 are susceptible to an overlapping VLAN pool issue.
+
+
+!!! example "Bad Example 1"
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      B[AEP] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+    In this scenario, VLAN 10 can be pulled from either `VLAN Pool 1` or `VLAN Pool2` because the port (`node-101 eth 1/1`) and the EPG are associated to both pools. And VLAN ID 10 is also configured on both pools.
+
+    As a result, VNID mapping for VLAN 10 on node-101 may become inconsistent after an upgrade or when the switch initializes and downloads configurations from the APICs.
+
+    This can be resolved by associating EPG A to only one of the domains, associating the AEP to only one of the domains, or associating the domains to the same VLAN Pool as shown below.
+
+    **Resolution 1:**
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      B[AEP] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+    **Resolution 2:**
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+    **Resolution 3:**
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      B[AEP] --> E(Domain B):::dom --> vpool1;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+!!! example "Bad Example 2"
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-101
+      eth1/2`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1-2
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+    In this scenario, VLAN 10 can be pulled from either `VLAN Pool 1` or `VLAN Pool2` from the EPG's perspective. However, each port is associated to only one VLAN pool respectively.
+
+    This is a problem because both ports are on the same switch. Essentially, this VLAN Pool design attempts to map a different VNID for VLAN 10 on eth1/1 and eth1/2 on the same switch, which isn't allowed - there can be only one VLAN 10 per switch except for when using VLAN scope `local`.
+
+    As a result, VNID mapping for VLAN 10 on node-101 may become inconsistent after an upgrade or when the switch initializes and downloads configurations from the APICs.
+
+    This can be resolved by associating AEPs to the same domain or associating the domains to the same VLAN Pool as shown below.
+
+    **Resolution 1**
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-101
+      eth1/2`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1-2
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> C(Domain A):::dom
+      E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+    **Resolution 2**
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-101
+      eth1/2`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      X["`EPG A
+      node-101 eth1/1-2
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> E(Domain B):::dom --> vpool1;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+!!! example "Example: good only for a specific use case"
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-102
+      eth1/1`"]:::red;
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      node-102 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+      classDef red stroke:#f00
+    ```
+    In this scenario, each port is tied to a different VLAN pool for VLAN 10, but each port is on a different node. This ensures that the VLAN VNID mapping remains consistent within each node even after an upgrade, with no ambiguity about which VLAN pool is used. However, VLAN 10 on each node will map to a different VLAN VNID, which may or may not be your intent.
+
+    Without the Flood-in-Encap feature, VLAN VNIDs act as flooding domains for spanning tree BPDUs. Even if VLAN 10 on node 101 and 102 map to different VLAN VNIDs, regular traffic is forwarded without issues via bridge domain VNID or VRF VNID.
+
+    This VLAN pool design is ideal for keeping the spanning tree domains small, such as in a multi-pod fabric with one STP domain per pod where each pod is physically separate with no L2 connecitivity between them except for the IPN. It helps contain spanning tree issues within a single pod. For instance, if Pod 1 continuously receives STP TCNs due to a malfuncationing device in the external network in Pod 1, the impact of flushing endpoints and causing connectivity issues due to TCNs is contained within that pod, keeping other pods unaffected.
+
+    However, this design is not suitable if you prefer a simpler configuration, if the nodes belong to the same vPC switch pair, or if the VLAN uses the Flood-in-Encap feature.
+
 
 It is critical to ensure that there are no overlapping VLAN pools in your fabric unless it is on purpose with the appropriate understanding of VLAN ID and VXLAN ID mapping behind the scene. If you are not sure, consider **Enforce EPG VLAN Validation** under `System > System Settings > Fabric Wide Setting` in the Cisco APIC GUI [available starting with release 3.2(6)], which prevents the most common problematic configuration (two domains containing overlapping VLAN pools being associated to the same EPG).
 
