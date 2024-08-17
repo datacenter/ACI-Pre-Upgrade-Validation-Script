@@ -14,7 +14,7 @@ test:py27:
   before_script:
     # pip 21.0 does not support py2 but the default pip in this container
     # is too old and fails. Hence the pip version must be 20.3.4.
-    - pip install --upgrade pip==20.3.4
+    - pip install --trusted-host pypi.python.org --upgrade pip==20.3.4
     - python --version ; pip --version
     - pip install virtualenv
     - virtualenv venv27
