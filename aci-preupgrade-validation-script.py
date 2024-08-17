@@ -836,9 +836,9 @@ class AciAccessPolicyParser(AciObjectCrawler):
                     "node": node,
                     "fex": fex,
                     "port": port,
-                    "override_ifpg_name": ifpg["name"],
+                    "override_ifpg_name": ifpg.get("name", ""),
                     "vlan_scope": vlan_scope,
-                    "aep_name": aep["name"],
+                    "aep_name": aep.get("name", ""),
                     "domain_dns": [dom["dn"] for dom in doms],
                 })
 
