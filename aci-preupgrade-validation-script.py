@@ -416,6 +416,8 @@ class IPAddress:
 
     @classmethod
     def ip_in_subnet(cls, ip, subnet):
+        if "/" not in subnet:
+            return False
         subnet_ip, subnet_pfxlen = subnet.split("/")
         subnet_network = cls.get_network_binary(subnet_ip, subnet_pfxlen)
         ip_network = cls.get_network_binary(ip, subnet_pfxlen)
