@@ -2172,7 +2172,7 @@ def vnid_mismatch_check(index, total_checks, **kwargs):
     data = []
     mismatch_hits = []
     recommended_action = 'Remove any domains with overlapping VLAN Pools from above EPGs, then redeploy VLAN'
-    doc_url = '"Overlapping VLAN Pool" from Pre-Upgrade Check Lists'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnid-mismatch'
     print_title(title, index, total_checks)
 
     vlanCktEps = icurl('class', 'vlanCktEp.json?query-target-filter=ne(vlanCktEp.name,"")')
