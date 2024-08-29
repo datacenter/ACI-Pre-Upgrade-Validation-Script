@@ -1397,7 +1397,7 @@ Overlapping VLAN blocks across different VLAN pools may result in some forwardin
 
     If the port is associated with multiple domains/VLAN pools as shown above, and EPG A is associated only with `Phy Domain A`, then only `VLAN Pool 1` is available for the port in the context of EPG A, avoiding any overlapping VLAN pool issues. However, if VLAN 10 is not included in `VLAN Pool 1`, it cannot be deployed on the port via EPG A. The same principle applies when deploying a VLAN through AEP binding, as it serves as a shortcut to specify all ports within the AEP.
 
-    This conecpt of domains is crucial in multi-domain tenancy to ensure the tenant/EPG has the appropriate set of ports and VLANs.
+    This concept of domains is crucial in multi-domain tenancy to ensure the tenant/EPG has the appropriate set of ports and VLANs.
 
     However, if EPG A is associated with both `Phy Domain A` and `Phy Domain B`, the port can use either `VLAN Pool 1` or `VLAN Pool 2` to pull a VLAN. If VLAN 10 is configured in both pools, EPG A and its VLAN 10 are susceptible to an overlapping VLAN pool issue.
 
