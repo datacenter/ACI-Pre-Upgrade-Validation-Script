@@ -1,0 +1,19 @@
+{% import 'macros.j2' as m %}
+[
+{% for epg in epgs -%}
+  {% set epg_loop = loop -%}
+  {% for bind in epg.bindings -%}
+    {% set bind_loop = loop -%}
+    {% for node in bind.node.split("-") -%}
+      {% set node_loop = loop -%}
+      {
+        "fvIfConn": {
+          "attributes": {
+          "dn": "uni/epp/fv-[uni/tn-{{ epg.tenant }}/ap-{{ epg.ap }}/epg-{{ epg.epg }}]/node-{{ node }}/{{ m.ifconn_type(type=bind.type, node_id=node, pathname=bind.port, fex_id=bind.fex, aep=bind.aep) }}/conndef/conn-[vlan-{{ bind.vlan }}]-[0.0.0.0]"
+          }
+        }
+      }{% if not (epg_loop.last and bind_loop.last and node_loop.last) -%},{%- endif %}
+    {%- endfor %}
+  {%- endfor %}
+{%- endfor %}
+]

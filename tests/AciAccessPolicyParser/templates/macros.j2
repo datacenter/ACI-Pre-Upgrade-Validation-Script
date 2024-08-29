@@ -1,0 +1,48 @@
+{% macro ifp_dn(ifp="", fexp="") -%}
+  {% if ifp -%}
+  uni/infra/accportprof-{{ ifp }}
+  {%- else -%}
+  uni/infra/fexprof-{{ fexp }}
+  {%- endif %}
+{%- endmacro %}
+
+{% macro ifpg_dn(name, class) -%}
+  {% if class == "infraAccPortGrp" -%}
+    uni/infra/funcprof/accportgrp-{{ name }}
+  {%- elif class == "infraAccBndlGrp" -%}
+    uni/infra/funcprof/accbundle-{{ name }}
+  {%- elif class == "infraAccBndlPolGrp" -%}
+    uni/infra/funcprof/accbundlepolgrp-{{ name }}
+  {%- elif class == "infraBrkoutPortGrp" -%}
+    uni/infra/funcprof/brkoutportgrp-{{ name }}
+  {%- elif class == "infraFexBndlGrp" -%}
+    uni/infra/fexprof-{{ name }}/fexbundle-{{ name }}
+  {%- endif %}
+{%- endmacro %}
+
+{% macro port_name(card, port, subport) -%}
+  {% if subport -%}
+    ETH{{ card }}-{{ port }}-{{ subport }}
+  {%- else -%}
+    ETH{{ card }}-{{ port }}
+  {%- endif %}
+{%- endmacro %}
+
+{% macro domain_dn(name, class) -%}
+  {% if class|default("physDomP") == "physDomP" -%}
+  uni/phys-{{ name }}
+  {%- elif class|default("physDomP") == "l3extDomP" -%}
+  uni/l3dom-{{ name }}
+  {%- elif class|default("physDomP") == "vmmDomP" -%}
+  uni/vmmp-VMware/dom-{{ name }}
+  {%- endif %}
+{%- endmacro %}
+
+{% macro pathep_dn(pod, node, path) -%}
+  {% if node.split("-")|length > 1 %}
+    {% set n = node.split("-") %}
+    topology/pod-{{pod}}/protpaths-{{n[0]}}-{{n[1]}}/pathep-[{{path}}]
+  {%- else -%}
+    topology/pod-{{pod}}/paths-{{node}}/pathep-[{{path}}]
+  {%- endif %}
+{%- endmacro %}
