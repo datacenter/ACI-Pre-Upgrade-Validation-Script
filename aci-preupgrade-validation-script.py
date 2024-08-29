@@ -32,7 +32,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v2.2.0"
+SCRIPT_VERSION = "v2.2.1"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
