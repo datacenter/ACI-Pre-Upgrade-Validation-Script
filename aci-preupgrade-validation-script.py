@@ -122,7 +122,7 @@ class Connection(object):
         self.protocol = "ssh"
         self.port = None
         self.timeout = 30
-        self.prompt = "[^#]#[ ]*(\x1b[\x5b-\x5f][\x40-\x7e])*[ ]*$"
+        self.prompt = "#\s.*$" #"[^#]#[ ]*(.*)*[ ]*$"
         self.verify = False
         self.searchwindowsize = 256
         self.force_wait = 0
@@ -258,7 +258,6 @@ class Connection(object):
             "yes/no": "(?i)yes/no",
             "username": "(?i)(user(name)*|login)[ as]*[ \t]*:[ \t]*$",
             "password": "(?i)password[ \t]*:[ \t]*$",
-            "enable": ">[ \t]*$",
             "prompt": self.prompt
         }
 
@@ -281,18 +280,10 @@ class Connection(object):
             elif match == "password":
                 # don't log passwords to the logfile
                 self.stop_log()
-                if last_match == "enable":
-                    # if last match was enable prompt, then send enable password
-                    logging.debug("matched password prompt, send enable password")
-                    self.child.sendline(self.enable_password)
-                else:
-                    logging.debug("matched password prompt, send password")
-                    self.child.sendline(self.password)
+                logging.debug("matched password prompt, send password")
+                self.child.sendline(self.password)
                 # restart logging
                 self.start_log()
-            elif match == "enable":
-                logging.debug("matched enable prompt, send enable")
-                self.child.sendline("enable")
             elif match == "prompt":
                 logging.debug("successful login")
                 self._login = True
