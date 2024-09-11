@@ -80,7 +80,6 @@ class Connection(object):
 
         username         (opt) username credential (default 'admin')
         password         (opt) password credential (default 'cisco')
-        enable_password  (opt) enable password credential (IOS only) (default 'cisco')
         protocol         (opt) telnet/ssh option (default 'ssh')
         port             (opt) port to connect on (if different from telnet/ssh default)
         timeout          (opt) wait in seconds between each command (default 30)
@@ -118,11 +117,10 @@ class Connection(object):
         self.log = None
         self.username = 'admin'
         self.password = 'cisco'
-        self.enable_password = 'cisco'
         self.protocol = "ssh"
         self.port = None
         self.timeout = 30
-        self.prompt = "[^#]#[ ]*(\x1b[\x5b-\x5f][\x40-\x7e])*[ ]*$"
+        self.prompt = "#\s.*$" #"[^#]#[ ]*(.*)*[ ]*$"
         self.verify = False
         self.searchwindowsize = 256
         self.force_wait = 0
@@ -251,14 +249,13 @@ class Connection(object):
         # successfully logged in at a different time
         if not self.__connected(): self.connect()
         # check for user provided 'prompt' which indicates successful login
-        # else provide approriate username/password/enable_password
+        # else provide approriate username/password
         matches = {
             "console": "(?i)press return to get started",
             "refuse": "(?i)connection refused",
             "yes/no": "(?i)yes/no",
             "username": "(?i)(user(name)*|login)[ as]*[ \t]*:[ \t]*$",
             "password": "(?i)password[ \t]*:[ \t]*$",
-            "enable": ">[ \t]*$",
             "prompt": self.prompt
         }
 
@@ -281,18 +278,10 @@ class Connection(object):
             elif match == "password":
                 # don't log passwords to the logfile
                 self.stop_log()
-                if last_match == "enable":
-                    # if last match was enable prompt, then send enable password
-                    logging.debug("matched password prompt, send enable password")
-                    self.child.sendline(self.enable_password)
-                else:
-                    logging.debug("matched password prompt, send password")
-                    self.child.sendline(self.password)
+                logging.debug("matched password prompt, send password")
+                self.child.sendline(self.password)
                 # restart logging
                 self.start_log()
-            elif match == "enable":
-                logging.debug("matched enable prompt, send enable")
-                self.child.sendline("enable")
             elif match == "prompt":
                 logging.debug("successful login")
                 self._login = True
