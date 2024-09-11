@@ -80,7 +80,6 @@ class Connection(object):
 
         username         (opt) username credential (default 'admin')
         password         (opt) password credential (default 'cisco')
-        enable_password  (opt) enable password credential (IOS only) (default 'cisco')
         protocol         (opt) telnet/ssh option (default 'ssh')
         port             (opt) port to connect on (if different from telnet/ssh default)
         timeout          (opt) wait in seconds between each command (default 30)
@@ -118,7 +117,6 @@ class Connection(object):
         self.log = None
         self.username = 'admin'
         self.password = 'cisco'
-        self.enable_password = 'cisco'
         self.protocol = "ssh"
         self.port = None
         self.timeout = 30
@@ -251,7 +249,7 @@ class Connection(object):
         # successfully logged in at a different time
         if not self.__connected(): self.connect()
         # check for user provided 'prompt' which indicates successful login
-        # else provide approriate username/password/enable_password
+        # else provide approriate username/password
         matches = {
             "console": "(?i)press return to get started",
             "refuse": "(?i)connection refused",
