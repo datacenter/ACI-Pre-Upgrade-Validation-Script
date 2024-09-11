@@ -3696,6 +3696,49 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def validate_lldp_adj_check(index, total_checks, **kwargs):
+    title = 'LLDP Adjacency Redundancy check '
+    result = PASS
+    msg = ''
+    headers = ["Node ID", "Neighbor", ]
+    data = []
+    recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
+    doc_url = ''
+    print_title(title, index, total_checks)
+
+    # icurl queries
+    leaf_nodes_api = 'fabricNode.json'
+    leaf_nodes_api += '?query-target-filter=eq(fabricNode.role,"leaf")'
+    lldp_adj_api = 'lldpAdjEp.json'
+    lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
+
+    fabricNodes = icurl('class', leaf_nodes_api)
+    leaf_nodes = [dn['fabricNode']['attributes']['dn'] for dn in fabricNodes]
+    
+    lldp_adj = icurl('class', lldp_adj_api)
+
+    #Check for LLDP Adj Matching with Node DN, count Number of neighbors, break if there are more than 2
+    for leaf in leaf_nodes:
+        neighbors = {}
+        for lldp_neighbor in lldp_adj:
+            if leaf in lldp_neighbor['lldpAdjEp']['attributes']['dn']:
+                # Add Neighborship count based on Spine name
+                spine = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
+                neighbors[spine] = neighbors.get(spine, 0 ) + 1
+            else:
+                continue
+        if len(neighbors) > 1:
+            # Leaf has more than 1 Spine as neighbor check passed
+            continue
+        else:
+            # Leaf has only 1 neighbor Check fails
+            data.append([leaf, neighbors.keys()])
+    if data:
+        result = FAIL_UF
+    
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -3737,6 +3780,7 @@ if __name__ == "__main__":
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
+        validate_lldp_adj_check,
 
         # Faults
         apic_disk_space_faults_check,
