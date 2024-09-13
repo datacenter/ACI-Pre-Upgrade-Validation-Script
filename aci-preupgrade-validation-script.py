@@ -2042,7 +2042,7 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                 'fex': str(port_data.get('fex', '')),
                 'port': str(port_data.get('port', '')),
                 'vlan': str(dn.group('vlan')),
-                'aep': str(port_data.get('aep', '')),
+                'aep': str(port_data.get('aep_name', '')),
                 'domain_dns': port_data.get('domain_dns', []),
                 'pc_type': str(port_data.get('pc_type', '')),
                 'vlan_scope': str(port_data.get('vlan_scope', '')),
@@ -2077,27 +2077,30 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
         ports_per_node = defaultdict(dict)
         epg_dn = re.search(epg_regex, fvAEPg['fvAEPg']['attributes']['dn'])
         epg_key = ':'.join([epg_dn.group('tenant'), epg_dn.group('ap'), epg_dn.group('epg')])
-        logging.debug('EPG - %s', epg_key)
         epg_ports = ports_per_epg.get(epg_key, [])
         for port in epg_ports:
             vlan_id = int(port['vlan'])
             if vlan_id not in overlap_vlan_ids:
                 continue
-            logging.debug(port)
 
             # Get domains that are attached to the port and the EPG
             common_domain_dns = set(port['domain_dns']).intersection(rsDom_dns)
-            # Get domains with the VLAN ID for the port
-            inuse_domain_dns = [dn for dn in common_domain_dns if vlan_id in mos.vpool_per_dom.get(dn, {}).get('vlan_ids', [])]
-            if not inuse_domain_dns:
-                # Invalid path/vlan
+            # Get VLAN pools for the VLAN ID of the port
+            # Also store domains for each VLAN pool for the final output
+            inuse_vpools = defaultdict(list)
+            for dom_dn in common_domain_dns:
+                vpool = mos.vpool_per_dom.get(dom_dn, {})
+                if vlan_id not in vpool.get('vlan_ids', []):
+                    continue
+                inuse_vpools[vpool['name']].append(vpool['dom_name'])
+            if not inuse_vpools:
                 continue
 
-            # len(inuse_domain_dns) == 1 at this point means that there is no
+            # len(inuse_vpools) == 1 at this point means that there is no
             # overlapping VLAN pool issue with this port alone.
             # But do not skip such a port yet because there may be another port
-            # on the same node with the same VLAN ID with a different inuse_domain.
-            port['inuse_domain_dns'] = inuse_domain_dns
+            # on the same node with the same VLAN ID with a different VLAN pool.
+            port['inuse_vpools'] = inuse_vpools
             vlan_scope = port.get('vlan_scope', 'global')
             # handle all non-portlocal scope as global
             if vlan_scope not in ['global', 'portlocal']:
@@ -2111,15 +2114,17 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
         for ports_per_vlanid in ports_per_node.values():
             for ports_per_scope in ports_per_vlanid.values():
                 for ports in ports_per_scope.values():
-                    inuse_domain_dns_per_node = set()
+                    inuse_vpools_across_ports = set()
                     has_vpc = False
                     for port in ports:
-                        inuse_domain_dns_per_node.update(port['inuse_domain_dns'])
+                        inuse_vpools_across_ports.update(
+                            port.get('inuse_vpools', {}).keys()
+                        )
                         if port.get('pc_type') == 'vpc':
                             has_vpc = True
 
-                    # All ports on the node with the same VLAN ID use the same domain
-                    if len(inuse_domain_dns_per_node) < 2:
+                    # All ports on the node with the same VLAN ID use the same VLAN pool
+                    if len(inuse_vpools_across_ports) < 2:
                         continue
 
                     if has_vpc:
@@ -2132,10 +2137,9 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                         if port.get('fex') != "0":
                             node += '(FEX {})'.format(port['fex'])
                         vpool_domains = []
-                        for domain_dn in port['inuse_domain_dns']:
-                            vpool = mos.vpool_per_dom[domain_dn]
+                        for v_name, d_names in iteritems(port.get('inuse_vpools', {})):
                             vpool_domains.append(
-                                '{}({})'.format(vpool['name'], vpool['dom_name'])
+                                '{}({})'.format(v_name, ','.join(sorted(d_names)))
                             )
                         data.append([
                             port['tenant'],
@@ -2145,7 +2149,7 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                             port['port'],
                             port['vlan_scope'],
                             port['vlan'],
-                            ','.join(vpool_domains),
+                            ', '.join(vpool_domains),
                             impact,
                         ])
 
