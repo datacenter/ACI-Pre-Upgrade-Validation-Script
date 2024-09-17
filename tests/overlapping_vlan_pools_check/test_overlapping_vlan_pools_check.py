@@ -413,6 +413,146 @@ params = [
         ],
     },
     {
+        "id": "one_port_one_pool_two_domains_vpc",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+                "bindings": [
+                    {
+                        "type": "static",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2011",
+                    }
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "24",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            }
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+        ],
+    },
+    {
+        "id": "one_port_two_pools_three_domains_vpc",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}, {"name": "PHYDOM3"}],
+                "bindings": [
+                    {
+                        "type": "static",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2011",
+                    }
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "24",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            }
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1"]},
+            {"name": "PHYDOM3", "aeps": ["AEP1"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+            {
+                "name": "VLANPool2",
+                "mode": "static",
+                "vlan_ranges": [{"from": "1000", "to": "1050"}],
+                "domains": [{"name": "PHYDOM3"}],
+            },
+        ],
+    },
+    {
+        "id": "one_port_two_pools_three_domains_vpc2",
+        "result": script.FAIL_O,
+        "num_bad_ports": 2,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}, {"name": "PHYDOM3"}],
+                "bindings": [
+                    {
+                        "type": "static",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2011",
+                    }
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "24",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            }
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1"]},
+            {"name": "PHYDOM3", "aeps": ["AEP1"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+            {
+                "name": "VLANPool2",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2020"}],
+                "domains": [{"name": "PHYDOM3"}],
+            },
+        ],
+    },
+    {
         "id": "one_port_multiple_pools_vpc_local",
         "result": script.FAIL_O,
         "num_bad_ports": 2,
@@ -1315,6 +1455,61 @@ params = [
         ],
     },
     {
+        "id": "two_ports_one_pool_two_domains_vpc",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+                "bindings": [
+                    {
+                        "type": "static",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "static",
+                        "node": "101",
+                        "port": "eth1/2",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1", "AEP2"]},
+            {"name": "PHYDOM2", "aeps": ["AEP2"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+        ],
+    },
+    {
         "id": "two_ports_multiple_pools_vpc_one_local",
         "result": script.MANUAL,
         "num_bad_ports": 1,
@@ -1559,6 +1754,122 @@ params = [
         ],
     },
     {
+        "id": "two_ports_one_pool_two_domains_vpc_dy",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "VMMDOM1", "class": "vmmDomP"}, {"name": "VMMDOM2", "class": "vmmDomP"}],
+                "bindings": [
+                    {
+                        "type": "dynamic",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "dynamic",
+                        "node": "101",
+                        "port": "eth1/2",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "VMMDOM1", "aeps": ["AEP1", "AEP2"], "class": "vmmDomP"},
+            {"name": "VMMDOM2", "aeps": ["AEP1", "AEP2"], "class": "vmmDomP"},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "dynamic",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "VMMDOM1", "class": "vmmDomP"}, {"name": "VMMDOM2", "class": "vmmDomP"}],
+            },
+        ],
+    },
+    {
+        "id": "two_ports_one_pool_two_domains_vpc_dy2",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "VMMDOM1", "class": "vmmDomP"}, {"name": "VMMDOM2", "class": "vmmDomP"}],
+                "bindings": [
+                    {
+                        "type": "dynamic",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "dynamic",
+                        "node": "101-102",
+                        "port": "IFPG_VPC1",
+                        "vlan": "2012",
+                    },
+                    {
+                        "type": "dynamic",
+                        "node": "101",
+                        "port": "eth1/2",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "VMMDOM1", "aeps": ["AEP1", "AEP2"], "class": "vmmDomP"},
+            {"name": "VMMDOM2", "aeps": ["AEP1", "AEP2"], "class": "vmmDomP"},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "dynamic",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "VMMDOM1", "class": "vmmDomP"}, {"name": "VMMDOM2", "class": "vmmDomP"}],
+            },
+        ],
+    },
+    {
         "id": "two_ports_multiple_pools_vpc_aep",
         "result": script.FAIL_O,
         "num_bad_ports": 2,
@@ -1616,6 +1927,253 @@ params = [
                 "mode": "static",
                 "vlan_ranges": [{"from": "2000", "to": "2020"}],
                 "domains": [{"name": "PHYDOM2"}],
+            },
+        ],
+    },
+    {
+        "id": "two_ports_one_pool_two_domains_vpc_aep",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+                "bindings": [
+                    {
+                        "type": "aep",
+                        "aep": "AEP1",
+                        "node": "101-102",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "aep",
+                        "aep": "AEP2",
+                        "node": "101",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1", "AEP2"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1", "AEP2"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+        ],
+    },
+    {
+        "id": "two_ports_two_pools_three_domains_vpc_aep",
+        "result": script.PASS,
+        "num_bad_ports": 0,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}, {"name": "PHYDOM3"}],
+                "bindings": [
+                    {
+                        "type": "aep",
+                        "aep": "AEP1",
+                        "node": "101-102",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "aep",
+                        "aep": "AEP2",
+                        "node": "103",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1"]},
+            {"name": "PHYDOM3", "aeps": ["AEP2"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+            {
+                "name": "VLANPool2",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2020"}],
+                "domains": [{"name": "PHYDOM3"}],
+            },
+        ],
+    },
+    {
+        "id": "two_ports_two_pools_three_domains_vpc_aep2",
+        "result": script.FAIL_O,
+        "num_bad_ports": 2,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}, {"name": "PHYDOM3"}],
+                "bindings": [
+                    {
+                        "type": "aep",
+                        "aep": "AEP1",
+                        "node": "101-102",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "aep",
+                        "aep": "AEP2",
+                        "node": "101",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1"]},
+            {"name": "PHYDOM3", "aeps": ["AEP2"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}],
+            },
+            {
+                "name": "VLANPool2",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2020"}],
+                "domains": [{"name": "PHYDOM3"}],
+            },
+        ],
+    },
+    {
+        "id": "two_ports_three_pools_three_domains_vpc_aep3",
+        "result": script.FAIL_O,
+        "num_bad_ports": 2,
+        "epgs": [
+            {
+                "tenant": "TN1",
+                "ap": "AP1",
+                "epg": "EPG1",
+                "domains": [{"name": "PHYDOM1"}, {"name": "PHYDOM2"}, {"name": "PHYDOM3"}],
+                "bindings": [
+                    {
+                        "type": "aep",
+                        "aep": "AEP1",
+                        "node": "101-102",
+                        "vlan": "2011",
+                    },
+                    {
+                        "type": "aep",
+                        "aep": "AEP2",
+                        "node": "101",
+                        "vlan": "2011",
+                    },
+                ],
+            }
+        ],
+        "ports": [
+            {
+                "ifp": "L101-102",
+                "card": "1",
+                "port": "1",
+                "ifpg_class": "infraAccBndlGrp",
+                "ifpg_name": "IFPG_VPC1",
+            },
+            {
+                "ifp": "L101",
+                "card": "1",
+                "port": "2",
+                "ifpg_class": "infraAccPortGrp",
+                "ifpg_name": "IFPG2",
+            },
+        ],
+        "domains": [
+            {"name": "PHYDOM1", "aeps": ["AEP1"]},
+            {"name": "PHYDOM2", "aeps": ["AEP1"]},
+            {"name": "PHYDOM3", "aeps": ["AEP2"]},
+        ],
+        "vpools": [
+            {
+                "name": "VLANPool1",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2050"}],
+                "domains": [{"name": "PHYDOM1"}],
+            },
+            {
+                "name": "VLANPool2",
+                "mode": "static",
+                "vlan_ranges": [{"from": "1000", "to": "1020"}],
+                "domains": [{"name": "PHYDOM2"}],
+            },
+            {
+                "name": "VLANPool3",
+                "mode": "static",
+                "vlan_ranges": [{"from": "2000", "to": "2020"}],
+                "domains": [{"name": "PHYDOM3"}],
             },
         ],
     },
