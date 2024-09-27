@@ -4175,7 +4175,7 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
         if data:
             result = FAIL_O
 			
-        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result	
 
 
