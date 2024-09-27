@@ -3428,6 +3428,10 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
     print_title(title, index, total_checks)
 
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
     if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)") and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)")):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
