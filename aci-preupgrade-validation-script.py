@@ -4126,37 +4126,35 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
     print_title(title, index, total_checks)
     iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
-    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
     bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
-        
-    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)")):
         slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
         staticRoutes = icurl('class', slash32filter)
         if staticRoutes:
             staticroute_vrf = icurl('class', 'l3extRsEctx.json')
-            staticR_to_vrf = {}	
+            staticR_to_vrf = {}
             for staticRoute in staticRoutes:
                 staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
-                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
-                
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out") + '/rsectx'
+
                 for l3outCtx in staticroute_vrf:
                     l3outCtx_Vrf = {}
                     if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
-                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['vrf'] = l3outCtx['l3extRsEctx']['attributes']['tDn']
                         l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
                         staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
-                                
 
             bds_in_vrf = icurl('class', 'fvRsCtx.json')
             vrf_to_bd = {}
             for bd_ref in bds_in_vrf:
                 vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
                 bd_list = vrf_to_bd.get(vrf_name, [])
-                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx', '')
                 bd_list.append(bd_name)
                 vrf_to_bd[vrf_name] = bd_list
 
-            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            subnets_in_bd = icurl('class', 'fvSubnet.json')
             bd_to_subnet = {}
             for subnet in subnets_in_bd:
                 bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
@@ -4174,9 +4172,9 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
 
         if data:
             result = FAIL_O
-			
+
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result	
+    return result
 
 
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
