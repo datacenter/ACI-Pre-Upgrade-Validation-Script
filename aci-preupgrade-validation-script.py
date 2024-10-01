@@ -31,6 +31,7 @@ import json
 import sys
 import os
 import re
+import argparse
 
 SCRIPT_VERSION = "v2.2.1"
 DONE = 'DONE'
@@ -1091,7 +1092,7 @@ def get_current_version():
     return current_version
 
 
-def get_target_version():
+def get_target_version(t_version=None):
     """ Returns: AciVersion instance """
     prints("Gathering APIC Versions from Firmware Repository...\n")
     repo_list = []
@@ -1108,6 +1109,8 @@ def get_target_version():
 
         version_choice = None
         while version_choice is None:
+            if t_version:
+                break
             version_choice = input("What is the Target Version?     : ")
             try:
                 version_choice = int(version_choice)
@@ -1116,7 +1119,10 @@ def get_target_version():
                 prints("Please select a value between 1 and %s" % len(repo_list))
                 version_choice = None
 
-        version = repo_list[version_choice - 1]
+        if t_version:
+            version = t_version
+        else:
+            version = repo_list[version_choice - 1]
         target_version = AciVersion(version)
         prints('\nYou have chosen version "%s"\n' % target_version)
         return target_version
@@ -4226,10 +4232,22 @@ if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
     prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
-    username, password = get_credentials()
+    parser = argparse.ArgumentParser(description="ACI Pre-upgrade Validation Script")
+    parser.add_argument('--username', help='ACI Username')
+    parser.add_argument('--password', help='ACI Password')
+    parser.add_argument('--aci_target_version', help='ACI Target Version')
+    argument = parser.parse_args()
+    if argument.username and argument.password:
+        username = argument.username
+        password = argument.password
+    else:
+        username, password = get_credentials()
     try:
         cversion = get_current_version()
-        tversion = get_target_version()
+        if argument.aci_target_version:
+            tversion = get_target_version(t_version = argument.aci_target_version)
+        else:
+            tversion = get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
