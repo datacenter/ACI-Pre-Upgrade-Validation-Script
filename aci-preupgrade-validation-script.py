@@ -3696,12 +3696,13 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
-def validate_lldp_adj_check(index, total_checks, **kwargs):
-    title = 'LLDP Adjacency Redundancy check '
+def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
+    title = 'Leaf to Spine Redundancy check'
     result = PASS
     msg = ''
-    headers = ["Node ID", "Neighbor", ]
+    headers = [" Leaf ", " Spine ", "Message" ]
     data = []
+    problem = 'The Leaf Switch is connected to a Single Spine'
     recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
     doc_url = ''
     print_title(title, index, total_checks)
@@ -3709,22 +3710,27 @@ def validate_lldp_adj_check(index, total_checks, **kwargs):
     # icurl queries
     leaf_nodes_api = 'fabricNode.json'
     leaf_nodes_api += '?query-target-filter=eq(fabricNode.role,"leaf")'
+    spine_nodes_api = 'fabricNode.json'
+    spine_nodes_api += '?query-target-filter=eq(fabricNode.role,"spine")'
     lldp_adj_api = 'lldpAdjEp.json'
     lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
-    fabricNodes = icurl('class', leaf_nodes_api)
-    leaf_nodes = [dn['fabricNode']['attributes']['dn'] for dn in fabricNodes]
-    
+    leaf_nodes = icurl('class', leaf_nodes_api)
+    fabricNodes = icurl('class', spine_nodes_api)
+    spine_nodes = [dn['fabricNode']['attributes']['name'] for dn in fabricNodes]
     lldp_adj = icurl('class', lldp_adj_api)
 
     #Check for LLDP Adj Matching with Node DN, count Number of neighbors, break if there are more than 2
     for leaf in leaf_nodes:
+        if leaf['fabricNode']['attributes']['nodeType'] == 'tier-2-leaf':
+            continue #Skip for any tier-2 Leaf
         neighbors = {}
         for lldp_neighbor in lldp_adj:
-            if leaf in lldp_neighbor['lldpAdjEp']['attributes']['dn']:
+            if leaf['fabricNode']['attributes']['dn'] in lldp_neighbor['lldpAdjEp']['attributes']['dn']:
                 # Add Neighborship count based on Spine name
                 spine = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
-                neighbors[spine] = neighbors.get(spine, 0 ) + 1
+                if spine in spine_nodes:
+                    neighbors[spine] = neighbors.get(spine, 0 ) + 1
             else:
                 continue
         if len(neighbors) > 1:
@@ -3732,9 +3738,9 @@ def validate_lldp_adj_check(index, total_checks, **kwargs):
             continue
         else:
             # Leaf has only 1 neighbor Check fails
-            data.append([leaf, neighbors.keys()])
+            data.append([leaf['fabricNode']['attributes']['name'], list(neighbors.keys())[0], problem])
     if data:
-        result = FAIL_UF
+        result = FAIL_O
     
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -3765,7 +3771,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        # General Checks
+        #General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
@@ -3780,7 +3786,7 @@ if __name__ == "__main__":
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
-        validate_lldp_adj_check,
+        leaf_to_spine_redundancy_check,
 
         # Faults
         apic_disk_space_faults_check,

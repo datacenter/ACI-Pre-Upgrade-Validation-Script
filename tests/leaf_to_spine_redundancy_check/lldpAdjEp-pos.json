@@ -38,5 +38,15 @@
                 "sysName": "SP1002"
             }
         }
+    },
+    {
+        "lldpAdjEp": {
+            "attributes": {
+                "dn": "topology/pod-1/node-103/sys/lldp/inst/if-[eth1/49]/adj-1",
+                "portDesc": "topology/pod-1/paths-102/pathep-[eth1/10]",
+                "sysDesc": "topology/pod-1/node-102",
+                "sysName": "LF1002"
+            }
+        }
     }
 ]

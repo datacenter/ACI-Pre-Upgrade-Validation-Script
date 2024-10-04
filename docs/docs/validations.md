@@ -34,7 +34,7 @@ Items                                                        | This Script      
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-
+[Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -52,6 +52,7 @@ Items                                                        | This Script      
 [g14]: #mini-aci-upgrade-to-602-or-later
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
+[g17]: #leaf-to-spine-redundancy-validation
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -427,6 +428,10 @@ When targeting any version that is 6.0(2) or greater, download both the 32-bit a
 
 For additional information, see the [Guidelines and Limitations for Upgrading or Downgrading][28] section of the Cisco APIC Installation and ACI Upgrade and Downgrade Guide.
 
+### Leaf to Spine Redundancy Validation
+When Upgrading the Spine Switches Data plane traffic will be affected, any Leaf Switch connecting to that Spine will failover to another active Spine.
+If a Leaf Switch is single homed to a Spine, traffic for and from the Leaf will be black holed during upgrade process.
+For additional information, check [Cisco ACI Best Practices Quick Summary][31]
 
 ## Fault Check Details
 
@@ -1972,3 +1977,4 @@ If found, the target version of your upgrade should be a version with a fix for 
 [28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
 [29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
+[31]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#SwitchConnectivity 
