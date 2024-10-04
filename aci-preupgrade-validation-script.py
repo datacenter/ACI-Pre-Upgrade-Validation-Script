@@ -1044,16 +1044,19 @@ def print_result(title, result, msg='',
     prints(output)
 
 
-def icurl(apitype, query):
+def _icurl(apitype, query, page=0, page_size=100000):
     if apitype not in ['class', 'mo']:
         print('invalid API type - %s' % apitype)
         return []
+    pre = '&' if '?' in query else '?'
+    query += '{}page={}&page-size={}'.format(pre, page, page_size)
     uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
     cmd = ['icurl', '-gs', uri]
     logging.info('cmd = ' + ' '.join(cmd))
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
-    imdata = json.loads(response)['imdata']
+    data = json.loads(response)
+    imdata = data['imdata']
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
@@ -1064,7 +1067,21 @@ def icurl(apitype, query):
         else:
             raise Exception('API call failed! Check debug log')
     else:
-        return imdata
+        return data
+
+
+def icurl(apitype, query, page_size=100000):
+    total_data = []
+    total_cnt = 999999
+    page = 0
+    while total_cnt > len(total_data):
+        data = _icurl(apitype, query, page, page_size)
+        if not data['imdata']:
+            break
+        total_data += data['imdata']
+        total_cnt = int(data['totalCount'])
+        page += 1
+    return total_data
 
 
 def get_credentials():
