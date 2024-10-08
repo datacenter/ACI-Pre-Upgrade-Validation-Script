@@ -159,6 +159,7 @@ Items                                           | Defect       | This Script    
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Decomissioned Switch Check][d18]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -178,6 +179,7 @@ Items                                           | Defect       | This Script    
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
+[d18]: #decommissioned-switch-check
 
 
 ## General Check Details
@@ -2181,6 +2183,10 @@ Due to defect [CSCwb91766][27], L3out /32 Static Routes that overlap with BD Sub
 
 If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
 
+
+### Decomissioned Switch Check
+
+Due to a behavior change from 5.2(3e) and above, for any existed fabricRsDecommissionNode with targetId to a spine switch, irrepective which pod the switch belong to, after upgrading from an earlier version to 5.2(3e) or above but older than 6.0(3d), fabricRsDecommissionNode.targetId pointed spine switch will be deleted from ACI leaf switches' coop adjacency list, as such ACI leaf switch will stop publish EP reachability to the spine and caused packet drop for spine proxy traffic hashed to the impacted spine.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html

@@ -4217,6 +4217,43 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def decomissioned_spine_check(index, total_checks, tversion, **kwargs):
+    title = 'Decomissioned Spine Switches Check'
+    result = PASS
+    msg = ''
+    headers = ["Target Switch Version", "Switch Node Id"]
+    data = []
+    recommended_action = 'Remove Stale fabricRsDecommissionNode Mo before APIC upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#decommissioned-switch-check'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if tversion.newer_than("5.2(3d)") and tversion.older_than("6.0(3d)"):
+        decomissioned_api ='fabricRsDecommissionNode.json'
+        decomissioned_switch_mo = icurl('class', decomissioned_api)
+        if len(decomissioned_switch_mo)>=1:
+            decommissioned_switch_list = []
+            for switch in decomissioned_switch_mo:
+                node_id = switch['fabricRsDecommissionNode']['attributes']['targetId']
+                decommissioned_switch_list.append(node_id)
+
+            active_spine_api = 'topSystem.json'
+            active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
+            active_spine_mo = icurl('class', active_spine_api)
+
+            for spine in active_spine_mo:
+                node_id = spine['topSystem']['attributes']['id']
+                if node_id in decommissioned_switch_list:
+                    data.append([tversion,node_id])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -4316,8 +4353,9 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
-        static_route_overlap_check
-
+        decomissioned_spine_check,
+        static_route_overlap_check,
+        
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
