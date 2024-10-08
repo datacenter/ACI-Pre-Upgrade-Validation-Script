@@ -1044,6 +1044,18 @@ def print_result(title, result, msg='',
     prints(output)
 
 
+def _icurl_error_handler(imdata):
+    if imdata and "error" in imdata[0]:
+        if "not found in class" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('cversion does not have requested property')
+        elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
+        elif "not found" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('cversion does not have requested class')
+        else:
+            raise Exception('API call failed! Check debug log')
+
+
 def _icurl(apitype, query, page=0, page_size=100000):
     if apitype not in ['class', 'mo']:
         print('invalid API type - %s' % apitype)
@@ -1056,32 +1068,22 @@ def _icurl(apitype, query, page=0, page_size=100000):
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
     data = json.loads(response)
-    imdata = data['imdata']
-    if imdata and "error" in imdata[0]:
-        if "not found in class" in imdata[0]['error']['attributes']['text']:
-            raise OldVerPropNotFound('cversion does not have requested property')
-        elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
-            raise OldVerClassNotFound('cversion does not have requested class')
-        elif "not found" in imdata[0]['error']['attributes']['text']:
-            raise OldVerClassNotFound('cversion does not have requested class')
-        else:
-            raise Exception('API call failed! Check debug log')
-    else:
-        return data
+    _icurl_error_handler(data['imdata'])
+    return data
 
 
 def icurl(apitype, query, page_size=100000):
-    total_data = []
+    total_imdata = []
     total_cnt = 999999
     page = 0
-    while total_cnt > len(total_data):
+    while total_cnt > len(total_imdata):
         data = _icurl(apitype, query, page, page_size)
         if not data['imdata']:
             break
-        total_data += data['imdata']
+        total_imdata += data['imdata']
         total_cnt = int(data['totalCount'])
         page += 1
-    return total_data
+    return total_imdata
 
 
 def get_credentials():
