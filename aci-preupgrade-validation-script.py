@@ -4214,6 +4214,28 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def cloudsec_encryption_check(index, total_checks, tversion, **kwargs):
+    title = 'ClouSec Encrpytion Check'
+    result = NA
+    msg = ''
+    headers = []
+    data = []
+    recommended_action = 'The feature is deprecated beginning on version 6.0(6)'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec_encryption_check'
+    print_title(title, index, total_checks)
+
+
+    cloudsec_api =  'cloudsecPreSharedKey.json'
+    cloudsecPreSharedKey = icurl('class', cloudsec_api)
+
+    if cloudsecPreSharedKey and tversion.newer_than("6.0(6a)") :
+        msg = 'The CloudSec Encryption feature is deprecated in target version'
+        result = FAIL_O
+    elif not cloudsecPreSharedKey and tversion.newer_than("6.0(6a)"):
+        result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4294,6 +4316,7 @@ if __name__ == "__main__":
         eecdh_cipher_check,
         subnet_scope_check,
         unsupported_fec_configuration_ex_check,
+        cloudsec_encryption_check,
 
         # Bugs
         ep_announce_check,

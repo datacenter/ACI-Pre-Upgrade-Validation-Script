@@ -118,7 +118,7 @@ Items                                         | Faults         | This Script    
 [EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-
+[CloudSec Encryption Check][c17]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -136,6 +136,7 @@ Items                                         | Faults         | This Script    
 [c14]: #eecdh-ssl-cipher
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
+[c17]: #cloudsec_encryption_check
 
 
 ### Defect Condition Checks
@@ -1931,6 +1932,13 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fecMode                        : ieee-rs-fec   <<<
     ```
 
+### CloudSec Encrpytion Check
+
+Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated as mentioned in the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][31]
+
+It is important to review if the feature is in use prior to upgrading to 6.0(6) or later.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2213,3 +2221,4 @@ If found, the target version of your upgrade should be a version with a fix for 
 [28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
 [29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
+[31]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-606.html
