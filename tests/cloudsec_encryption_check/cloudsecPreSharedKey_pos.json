@@ -1,0 +1,15 @@
+[
+    {
+        "cloudsecPreSharedKey": {
+            "attributes": {
+                "dn": "uni/tn-infra/cloudsecifp-default/psk-1",
+                "monPolDn": "uni/tn-common/monepg-default",
+                "name": "",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "status": ""
+            }
+        }
+    }
+]
