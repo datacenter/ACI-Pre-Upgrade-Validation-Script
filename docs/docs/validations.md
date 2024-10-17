@@ -118,7 +118,7 @@ Items                                         | Faults         | This Script    
 [EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-
+[Out-of-Service Ports check][c17]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -136,6 +136,7 @@ Items                                         | Faults         | This Script    
 [c14]: #eecdh-ssl-cipher
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
+[c17]: #out_of_service_ports_check
 
 
 ### Defect Condition Checks
@@ -1930,6 +1931,15 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fcotChannelNumber              : Channel32
     fecMode                        : ieee-rs-fec   <<<
     ```
+### Out-of-Service Ports Check
+
+Any Port that has been disabled in the in the APIC GUI gets a corresponding fabricRsOosPath object which are listed under the "Disabled Interfaces and Decommissioned Switches" view. 
+A user can enable the ports manually by going to the switch CLI : configure terminal -> interface eth1/X -> no shutdown 
+This overwrites the APIC policy, but the fabricRsOosPath objects created to disable the interfaces will remain in the configuration policy. 
+
+When an upgrade for a switch is triggered, the APICs will push the policies to the switches again. This will push the fabricRsOosPath policy to the switch again, thus disabling the ports-
+
+To avoid this, make sure no fabricRsOosPath Ports is enabled from the switch before the upgrade.
 
 ## Defect Check Details
 
