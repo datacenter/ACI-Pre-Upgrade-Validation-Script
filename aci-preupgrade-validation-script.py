@@ -4224,6 +4224,40 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def out_of_service_ports_check(index, total_checks, **kwargs):
+    title = 'Out-of-Service Ports Check'
+    result = NA
+    msg = ''
+    headers = [ "Pod ID", "Node ID", "Port ID", "State from Switch" ]
+    data = []
+    recommended_action = 'Review the list of Disabled Ports by GUI but enabled by CLI, to make sure these do not get disabled upon upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out_of_service_ports_check'
+    print_title(title, index, total_checks)
+    oospath_regex = r'uni/fabric/outofsvc/rsoosPath-\[topology/pod-(?P<pod>[^/]+)/paths-(?P<node>\d{3,4})/pathep-\[eth(?P<int>.+)\]\]'
+    ##Validate fabricRsOosPath.dn against ethpmPhysIf.dn and ethpmPhysIf.operSt 
+    oospath_api = 'fabricRsOosPath.json'
+    oospath = icurl('class', oospath_api)
+    oosports = []
+    for oosint in oospath:
+        oosint_array = re.search(oospath_regex, oosint['fabricRsOosPath']['attributes']['dn'])
+        oosports.append([oosint_array.group("pod"), oosint_array.group("node"), oosint_array.group("int")])
+    if oosports:
+        result = PASS
+        ethpmphysif_api = 'ethpmPhysIf.json'
+        ethpmphysif = icurl('class', ethpmphysif_api)
+        for pod, node, interface in oosports:
+            port_dn = 'topology/pod-'+ pod +'/node-'+ node+'/sys/phys-[eth'+interface+']/phys'
+            for ethpmport in ethpmphysif:
+                if ethpmport['ethpmPhysIf']['attributes']['dn'] == port_dn and ethpmport['ethpmPhysIf']['attributes']['operSt'] == 'up':
+                    data.append([pod, node, interface, ethpmport['ethpmPhysIf']['attributes']['operSt']])
+                else:
+                    continue
+    if data:
+       result = FAIL_O 
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4304,6 +4338,7 @@ if __name__ == "__main__":
         eecdh_cipher_check,
         subnet_scope_check,
         unsupported_fec_configuration_ex_check,
+        out_of_service_ports_check,
 
         # Bugs
         ep_announce_check,
@@ -4323,7 +4358,6 @@ if __name__ == "__main__":
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
         static_route_overlap_check
-
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
