@@ -2186,7 +2186,7 @@ If found, the target version of your upgrade should be a version with a fix for 
 
 ### FC/FCOE support for -EX switches
 
-Due to defect [CSCwm92166][31], ACI switches with model names ending in -EX no longer support FC/FCOE configurations after upgrading to releases 6.0(7e) or 6.1(1f), and fault F4511 is raised.
+Due to defect [CSCwm92166][31], ACI switches with model numbers ending in -EX no longer support FC/FCOE configurations after upgrading to releases 6.0(7e) or 6.1(1f). The FC/FCOE interface will remain down, and fault F4511 will be raised.
 
 For a complete list of devices supported for FC/FCOE, refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)][32].
 
