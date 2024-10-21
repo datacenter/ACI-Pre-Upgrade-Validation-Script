@@ -159,6 +159,8 @@ Items                                           | Defect       | This Script    
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FC/FCOE support for -EX switches][d18]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 
 [d1]: #ep-announce-compatibility
@@ -178,6 +180,7 @@ Items                                           | Defect       | This Script    
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
+[d18]: #fcfcoe-support-for--ex-switches
 
 
 ## General Check Details
@@ -2181,6 +2184,16 @@ Due to defect [CSCwb91766][27], L3out /32 Static Routes that overlap with BD Sub
 
 If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
 
+### FC/FCOE support for -EX switches
+
+Due to defect [CSCwm92166][31], ACI switches with model names ending in -EX no longer support FC/FCOE configurations after upgrading to releases 6.0(7e) or 6.1(1f), and fault F4511 is raised.
+
+For a complete list of devices supported for FC/FCOE, refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)][32].
+
+The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives. If the defect is found, avoid upgrading to the affected release or ensure your upgrade includes a version that addresses the CSCwm92166 fix.
+
+
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2213,3 +2226,5 @@ If found, the target version of your upgrade should be a version with a fix for 
 [28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
 [29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
+[31]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm92166
+[32]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/l2-configuration/cisco-apic-layer-2-networking-configuration-guide-61x/fcoe-connections-61x.html

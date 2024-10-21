@@ -4243,6 +4243,49 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def fc_ex_model_check(index, total_checks, tversion, **kwargs):
+    title = 'FC/FCOE support for -EX platforms'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'The target version is not recommended. Refer to bug CSCwm92166 for further details.'
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm92166'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if tversion.same_as("6.0(7e)") or tversion.same_as("6.1(1f)"):
+        fcEntitys =  icurl('class', 'fcEntity.json')
+        node_dns = []
+
+        if fcEntitys:
+            for fcEntity in fcEntitys:
+                node_dns.append(fcEntity['fcEntity']['attributes']['dn'].split('/sys')[0])
+        else:
+            result = NA
+            msg = 'No FC/FCOE configuration found'
+            
+
+        if node_dns:
+            fabricNodes = icurl('class', 'fabricNode.json')
+            for node in fabricNodes:
+                 node_dn = node['fabricNode']['attributes']['dn']
+                 if node_dn in node_dns:
+                      model = node['fabricNode']['attributes']['model']
+                      if model not in ["N9K-C93180YC-FX", "N9K-C93108TC-FX"]:
+                            result = FAIL_O
+                            data.append(["CSCwm92166", "Target Version susceptible to Defect"])
+                            break
+    else:
+        result = NA
+        msg = 'Target version not applicable'
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4268,7 +4311,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        # General Checks
+        #General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
@@ -4341,7 +4384,8 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
-        static_route_overlap_check
+        static_route_overlap_check,
+        fc_ex_model_check
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
