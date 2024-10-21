@@ -4311,7 +4311,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        #General Checks
+        # General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
