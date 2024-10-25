@@ -2176,68 +2176,6 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
     return result
 
 
-def vnid_mismatch_check(index, total_checks, **kwargs):
-    title = 'VNID Mismatch'
-    result = FAIL_O
-    msg = ''
-    headers = ["EPG", "Access Encap", "Node ID", "Fabric Encap"]
-    data = []
-    mismatch_hits = []
-    recommended_action = 'Remove any domains with overlapping VLAN Pools from above EPGs, then redeploy VLAN'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnid-mismatch'
-    print_title(title, index, total_checks)
-
-    vlanCktEps = icurl('class', 'vlanCktEp.json?query-target-filter=ne(vlanCktEp.name,"")')
-    if not vlanCktEps:
-        result = ERROR
-        msg = 'Deployed VLANs (vlanCktEp) not found'
-
-    epg_encap_dict = {}
-    for vlanCktEp in vlanCktEps:
-        dn = re.search(node_regex, vlanCktEp['vlanCktEp']['attributes']['dn'])
-        node = dn.group("node")
-        access_encap = vlanCktEp['vlanCktEp']['attributes']['encap']
-        epg_dn = vlanCktEp['vlanCktEp']['attributes']['epgDn']
-        fab_encap = vlanCktEp['vlanCktEp']['attributes']['fabEncap']
-
-        if epg_dn not in epg_encap_dict:
-            epg_encap_dict[epg_dn] = {}
-
-        if access_encap not in epg_encap_dict[epg_dn]:
-            epg_encap_dict[epg_dn][access_encap] = []
-
-        epg_encap_dict[epg_dn][access_encap].append({'node': node, 'fabEncap': fab_encap})
-
-    # Iterate through, check for overlaps, and print
-    for key, epg in iteritems(epg_encap_dict):
-        for vlanKey, vlan in iteritems(epg):
-            fab_encap_to_check = ""
-            for deployment in vlan:
-                if fab_encap_to_check == "" or deployment["fabEncap"] == fab_encap_to_check:
-                    fab_encap_to_check = deployment["fabEncap"]
-                else:  # something is wrong
-                    tmp_hit = {}
-                    tmp_hit["epgDn"] = key
-                    tmp_hit["epgDeployment"] = epg
-                    if tmp_hit not in mismatch_hits:  # some epg has more than one access encap.
-                        mismatch_hits.append(tmp_hit)
-                    break
-
-    if not mismatch_hits:
-        result = PASS
-
-    mismatch_hits.sort(key=lambda d: d.get("epgDn", ""))
-    for epg in mismatch_hits:
-        for access_encap, nodeFabEncaps in iteritems(epg["epgDeployment"]):
-            for nodeFabEncap in nodeFabEncaps:
-                node_id = nodeFabEncap['node']
-                fabric_encap = nodeFabEncap['fabEncap']
-                data.append([epg["epgDn"], access_encap, node_id, fabric_encap])
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
-
-
 def scalability_faults_check(index, total_checks, **kwargs):
     title = 'Scalability (faults related to Capacity Dashboard)'
     result = FAIL_O
@@ -4308,7 +4246,6 @@ if __name__ == "__main__":
         # Configurations
         vpc_paired_switches_check,
         overlapping_vlan_pools_check,
-        vnid_mismatch_check,
         l3out_mtu_check,
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,

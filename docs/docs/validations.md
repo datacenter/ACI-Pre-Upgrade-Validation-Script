@@ -104,7 +104,6 @@ Items                                         | Faults         | This Script    
 ------------------------------------------------------|--------------------|---------------------------|-------------------------------
 [VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[VNID Mismatch][c3]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
@@ -122,7 +121,6 @@ Items                                         | Faults         | This Script    
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
-[c3]: #vnid-mismatch
 [c4]: #l3out-mtu
 [c5]: #bgp-peer-profile-at-node-level-without-loopback
 [c6]: #l3out-route-map-importexport-direction
@@ -1616,11 +1614,6 @@ Refer to the following documents to understand how overlapping VLAN pools become
 * [ACI: Common migration issue / Overlapping VLAN pools][11]
 * [Validating Overlapping VLANs in the Cisco APIC Layer 2 Networking Configuration Guide, Release 4.2(x)][12]
 * [VLAN Pool - ACI Best Practice Quick Summary][13]
-
-
-### VNID Mismatch                                  
-
-A VNID mismatch can arise due to an [Overlapping VLAN Pool][c2] situation. This verification is closely tied to the [Overlapping VLAN Pool][c2] scenario, which often leads to problems post-upgrade. Nonetheless, if your fabric is currently experiencing any VNID mismatches, you might encounter the challenges outlined in [Overlapping VLAN Pool][c2] even without undergoing an upgrade. This situation also implies the presence of an overlapping VLAN pool configuration, potentially resulting in a VNID mismatch at a distinct EPG following an upgrade, causing different impact to your traffic.
 
 
 ### L3Out MTU                                      
