@@ -3366,9 +3366,9 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
                 f.write(cert_gen_cnf)
 
             # Generate csr for certreq
-            cmd = '/bin/openssl genrsa -out ' + key_pem + ' 2048'
-            cmd = cmd + ' && /bin/openssl req -config ' + cert_gen_filename + ' -new -key ' + key_pem + ' -out ' + csr_pem
-            cmd = cmd + ' && /bin/openssl dgst -sha256 -hmac ' + passphrase + ' -out ' + sign + ' ' + csr_pem
+            cmd = 'openssl genrsa -out ' + key_pem + ' 2048'
+            cmd = cmd + ' && openssl req -config ' + cert_gen_filename + ' -new -key ' + key_pem + ' -out ' + csr_pem
+            cmd = cmd + ' && openssl dgst -sha256 -hmac ' + passphrase + ' -out ' + sign + ' ' + csr_pem
             logging.debug('cmd = '+''.join(cmd))
             genrsa_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             genrsa_proc.communicate()[0].strip()
