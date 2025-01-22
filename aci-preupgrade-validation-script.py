@@ -4142,6 +4142,52 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     return result
 
 
+def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'L4-L7 vzAny-vzAny Service EPG configuration check'
+    result = PASS
+    msg = ''
+    headers = ["Potential Defect", "Reason"]
+    data = []
+    recommended_action = 'Review Software Advisory for details'
+    doc_url = 'Cisco Software Advisory Notices for CSCwk228974 - http://cs.co/9007yh22H'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        result = MANUAL
+        msg = 'Target version not supplied. Skipping.'
+
+    if cversion.older_than("5.0(1)") and tversion.newer_than("5.0(1)"):
+        # check if a SG is attached to a contract
+        vzRsSubjGraphAtts = icurl('class', 'vzRsSubjGraphAtt.json')
+
+        if len(vzRsSubjGraphAtts) > 0:
+            for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
+                # check if there is vzAny-vzAny configuration associated with this contract
+                vzBrCP_name_regex = r'brc-(?P<brc_name>[^/]+)'
+                match = re.search(vzBrCP_name_regex, vzRsSubjGraphAtt['vzRsSubjGraphAtt']['attributes']['dn'])
+                
+                if match:
+                    vzBrCP_name = match.group('brc_name')
+                    vzBrCP_api =  'vzBrCP.json'
+                    vzBrCP_api += '?query-target-filter=eq(vzBrCP.name,"%s")' % (vzBrCP_name)
+                    vzBrCP_api += '&rsp-subtree=children&rsp-subtree-class=vzRtAnyToCons,vzRtAnyToProv'
+                    vzBrCPs = icurl('class', vzBrCP_api)
+
+                    for vzBrCP in vzBrCPs:
+                        for child in vzBrCP.get('vzBrCP', {}).get('children', []):
+                            if 'vzRtAnyToCons' in child:
+                                 has_vzRtAnyToCons = True
+                            if 'vzRtAnyToProv' in child:
+                                 has_vzRtAnyToProv = True
+
+                        if has_vzRtAnyToCons and has_vzRtAnyToProv:
+                            result = MANUAL
+                            data.append(["CSCwk228974", "Service Graph with vzAny-vzAny, pcTag allocation change in Target Version"])
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     title = '32 and 64-Bit Firmware Image for Switches'
     result = PASS
@@ -4278,7 +4324,8 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
-        static_route_overlap_check
+        static_route_overlap_check,
+        vzany_vzany_service_epg_check
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
