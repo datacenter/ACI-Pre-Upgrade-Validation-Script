@@ -4149,7 +4149,7 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
     headers = ["Potential Defect", "Reason"]
     data = []
     recommended_action = 'Review Software Advisory for details'
-    doc_url = 'Cisco Software Advisory Notices for CSCwk228974 - http://cs.co/9007yh22H'
+    doc_url = 'Cisco Software Advisory Notices for CSCwh75475 - https://cdetsng.cisco.com/summary/#/defect/CSCwh75475/note?noteTitle=Release-note'
     print_title(title, index, total_checks)
 
     if not tversion:
@@ -4165,7 +4165,7 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
                 # check if there is vzAny-vzAny configuration associated with this contract
                 vzBrCP_name_regex = r'brc-(?P<brc_name>[^/]+)'
                 match = re.search(vzBrCP_name_regex, vzRsSubjGraphAtt['vzRsSubjGraphAtt']['attributes']['dn'])
-                
+
                 if match:
                     vzBrCP_name = match.group('brc_name')
                     vzBrCP_api =  'vzBrCP.json'
@@ -4182,7 +4182,8 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
 
                         if has_vzRtAnyToCons and has_vzRtAnyToProv:
                             result = MANUAL
-                            data.append(["CSCwk228974", "Service Graph with vzAny-vzAny, pcTag allocation change in Target Version"])
+                            data.append(["CSCwh75475", "Service Graph with vzAny-vzAny, pcTag allocation change in Target Version"])
+                            break
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
