@@ -137,7 +137,6 @@ Items                                         | Faults         | This Script    
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 
-
 ### Defect Condition Checks
 
 Items                                           | Defect       | This Script        |  APIC built-in            | Pre-Upgrade Validator (App)
@@ -159,6 +158,7 @@ Items                                           | Defect       | This Script    
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -178,6 +178,7 @@ Items                                           | Defect       | This Script    
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
+[d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
 
 
 ## General Check Details
@@ -1936,6 +1937,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fecMode                        : ieee-rs-fec   <<<
     ```
 
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2187,6 +2189,33 @@ Due to defect [CSCwb91766][27], L3out /32 Static Routes that overlap with BD Sub
 If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
 
 
+### vzAny-to-vzAny Service Graph when crossing 5.0 release
+
+When your APIC upgrade is crossing 5.0 release, for instance upgrading from 4.2(7w) to 5.2(8i), traffic hitting a vzAny-to-vzAny contract with Service Graph may experience disruption for a short amount of time.
+
+!!! note
+    A vzAny-to-vzAny contract refers to a contract that is provided and consumed by the same VRF (vzAny) so that the contract is applied to all traffic in the said VRF.
+
+    The potential transient traffic disruption occurs during an APIC upgrade instead of a switch upgrade.
+
+The script checks the two points:
+
+1. The combination of your source and target version is susceptible
+2. You have any vzAny-to-vzAny contract with Service Graph
+
+When both conditions are met, the script results in `FAIL - OUTAGE WARNING!!` to inform you of potential disruption to your traffic going through such Service Graph. In such a case, make sure to upgrade your APICs during a maintenance window that can tolerate some traffic impact.
+
+This transient disruption is because the pcTag of the service EPG for a vzAny-vzAny Service Graph is updated from APIC and re-programmed on switches due to an internal architecture update in [APIC Release 5.0][31] (See also [CSCwh75475][32]).
+Depending on the timing and how fast the re-programming finishes, you may not see any traffic disruption. Unfortunately, it is difficult to estimate the amount of time the re-programming takes but it generally depends on the number of VRFs, service graphs, contract rules etc.
+
+!!! tip
+    With L4-L7 Service Graph, ACI deploys an internal/hidden EPG representing the service node to be inserted via the Service Graph. Such a hidden EPG is called Service EPG. When a Service Graph is applied to a contract, internally a service EPG is inserted between the provider and consumer EPGs so that the traffic flow will be consumer EPG to service EPG (i.e. service node such as firewall), coming back from the service node, then service EPG to provider EPG. Because of this, if the pcTag of service EPG is updated, such traffic flow gets impacted while it's being re-programmed in the switch hardware.
+
+    Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
+
+
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2218,3 +2247,5 @@ If found, the target version of your upgrade should be a version with a fix for 
 [28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
 [29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
+[31]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease501
+[32]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh75475
