@@ -4142,6 +4142,78 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     return result
 
 
+def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "vzAny-to-vzAny Service Graph when crossing 5.0 release"
+    result = PASS
+    msg = ""
+    headers = ["VRF (Tn:VRF)", "Contract (Tn:Contract)", "Service Graph (Tn:SG)"]
+    data = []
+    recommended_action = "Be aware of transient traffic disruption for vzAny-to-vzAny Service Graph during APIC upgrade."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-to-vzany-service-graph-when-crossing-50-release"
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if not (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)")):
+        print_result(title, NA)
+        return NA
+
+    tn_regex = r"uni/tn-(?P<tn>[^/]+)"
+    vrf_regex = tn_regex + r"/ctx-(?P<vrf>[^/]+)"
+    brc_regex = tn_regex + r"/brc-(?P<brc>[^/]+)"
+    sg_regex = tn_regex + r"/AbsGraph-(?P<sg>[^/]+)"
+
+    # check if a SG is attached to a contract
+    vzRsSubjGraphAtts = icurl("class", "vzRsSubjGraphAtt.json")
+    for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
+        graphAtt_rns = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["dn"].split("/")
+        if len(graphAtt_rns) < 3:
+            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.")
+            return ERROR
+
+        # Get vzAny(VRF) relations of the contract. There can be multiple VRFs per contract.
+        vrfs = defaultdict(set)  # key: VRF, value: vzRtAnyToCons, vzRtAnyToProv
+        vzBrCP_dn = "/".join(graphAtt_rns[:3])  # Contract DN (uni/tn-xx/brc.xxx)
+        vzBrCP_api = vzBrCP_dn + ".json"
+        vzBrCP_api += "?query-target=children&target-subtree-class=vzRtAnyToCons,vzRtAnyToProv"
+        vzRtAnys = icurl("mo", vzBrCP_api)
+        for vzRtAny in vzRtAnys:
+            if "vzRtAnyToCons" in vzRtAny:
+                rel_class = "vzRtAnyToCons"
+            elif "vzRtAnyToProv" in vzRtAny:
+                rel_class = "vzRtAnyToProv"
+            else:
+                logging.warning("Unexpected class - %s", vzRtAny.keys())
+                continue
+            vrf_tdn = vzRtAny[rel_class]["attributes"]["tDn"]
+            vrf_match = re.search(vrf_regex, vrf_tdn)
+            if vrf_match:
+                vrf = vrf_match.group("tn") + ":" + vrf_match.group("vrf")
+            else:
+                vrf = vrf_tdn
+            vrfs[vrf].add(rel_class)
+        for vrf, relations in vrfs.items():
+            if len(relations) == 2:  # both cons and prov mean vzAny-to-vzAny
+                brc_match = re.search(brc_regex, vzBrCP_dn)
+                if brc_match:
+                    contract = brc_match.group("tn") + ":" + brc_match.group("brc")
+                else:
+                    contract = vzBrCP_dn
+                sg_dn = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["tDn"]
+                sg_match = re.search(sg_regex, sg_dn)
+                if sg_match:
+                    sg = sg_match.group("tn") + ":" + sg_match.group("sg")
+                else:
+                    sg = sg_dn
+                data.append([vrf, contract, sg])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     title = '32 and 64-Bit Firmware Image for Switches'
     result = PASS
@@ -4278,7 +4350,8 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
-        static_route_overlap_check
+        static_route_overlap_check,
+        vzany_vzany_service_epg_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
