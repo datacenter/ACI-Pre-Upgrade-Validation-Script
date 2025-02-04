@@ -1941,7 +1941,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
 
 ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policies (dbgAcPath) [CSCvy45102][33]
 The script validates the configured policies do not exceed the maximum supported number. 
-Exceeding the atomic counter limit can create issues when collecting techsupport and/or configuration export
+Exceeding the atomic counter limit can create issues when collecting techsupport and/or configuration export.
 
 ## Defect Check Details
 
