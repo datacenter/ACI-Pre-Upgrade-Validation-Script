@@ -118,7 +118,7 @@ Items                                         | Faults         | This Script    
 [EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-
+[TEP-to-TEP atomic counters Scalability Check][c17]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -136,6 +136,7 @@ Items                                         | Faults         | This Script    
 [c14]: #eecdh-ssl-cipher
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
+[c17]: #tep-to-tep-atomic-counter-scalibility-check
 
 ### Defect Condition Checks
 
@@ -1936,7 +1937,11 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fcotChannelNumber              : Channel32
     fecMode                        : ieee-rs-fec   <<<
     ```
+### TEP-to-TEP Atomic counter scalability check
 
+ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policies (dbgAcPath) [CSCvy45102][33]
+The script validates the configured policies do not exceed the maximum supported number. 
+Exceeding the atomic counter limit can create issues when collecting techsupport and/or configuration export
 
 ## Defect Check Details
 
@@ -2249,3 +2254,4 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
 [31]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease501
 [32]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh75475
+[33]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvy45102

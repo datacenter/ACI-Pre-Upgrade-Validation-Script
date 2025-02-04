@@ -4252,6 +4252,33 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
+    title = 'TEP-to-TEP Atomic Counter scalability'
+    result = NA
+    msg = ''
+    headers = ["Number of TEP-to-TEP Atomic Counter", "Supported number"]
+    data = []
+    recommended_action = 'Delete any TEP-to-TEP Atomic Counter(dbgAcPath) beyond the Supported number'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counter-scalibility-check'
+    print_title(title, index, total_checks)
+    atomic_counter_api = 'dbgAcPath.json'
+    atomic_counter_api += '?&rsp-subtree-include=count'  
+    atomic_counter_number = icurl('class', atomic_counter_api)
+    atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
+    #IF  the number of dbgAcPath exceed the supported limit
+    if atomic_counter_number >= 1600:
+        result = FAIL_UF
+        data.append([atomic_counter_number, 'Unsupported'])
+        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    #IF the number of dbgAcPath is supported
+    elif atomic_counter_number > 0 and atomic_counter_number < 1600 :
+        result = PASS
+        data.append([atomic_counter_number, 'Supported'])
+        print_result(title, result)
+    #ELSE is 0, then it doesn't apply
+    if result == NA:
+        print_result(title, result)
+    return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -4332,6 +4359,7 @@ if __name__ == "__main__":
         eecdh_cipher_check,
         subnet_scope_check,
         unsupported_fec_configuration_ex_check,
+        validate_tep_to_tep_ac_counter_check,
 
         # Bugs
         ep_announce_check,
