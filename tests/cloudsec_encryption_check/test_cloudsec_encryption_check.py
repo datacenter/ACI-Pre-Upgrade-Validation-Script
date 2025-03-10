@@ -19,31 +19,37 @@ cloudsecPreSharedKey = 'cloudsecPreSharedKey.json'
     "icurl_outputs, tversion, expected_result",
     [
         (
-            ## TARGET VERSION IS OLDER THAN 6.0(6), CLOUDSEC IS PRESENT, VALIDATION RESULT : N/A
+            ## TARGET VERSION IS OLDER THAN 6.0(6), Single KEY PRESENT, VALIDATION RESULT : N/A
             {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_pos.json")},
             "5.2(6a)",
             script.NA,
         ),
         (
-            ## TARGET VERSION IS OLDER THAN 6.0(6), NO CLOUDSEC PRESENT, VALIDATION RESULT : N/A
+            ## TARGET VERSION IS OLDER THAN 6.0(6), NO KEYS PRESENT, VALIDATION RESULT : N/A
             {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_neg.json")},
             "5.2(6b)",
             script.NA,
         ),
         (
-            ## TARGET VERSION IS NEWER THAN 6.0(6), NO CLOUDSEC PRESENT, VALIDATION RESULT : PASS
+            ## TARGET VERSION IS NEWER THAN 6.0(6), NO KEYS PRESENT, VALIDATION RESULT : PASS
             {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_neg.json")},
             "6.0(6b)",
             script.PASS,
         ),
         (
-            ## TARGET VERSION IS NEWER THAN 6.0(6), CLOUDSEC PRESENT, VALIDATION RESULT : FAIL_O            
+            ## TARGET VERSION IS NEWER THAN 6.0(6), Single KEY PRESENT, VALIDATION RESULT : FAIL_O            
             {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_pos.json")},
             "6.0(6b)",
-            script.FAIL_O,
+            script.MANUAL,
+        ),
+        (
+            ## TARGET VERSION IS NEWER THAN 6.0(6), MULTIPLE KEYs PRESENT, VALIDATION RESULT : FAIL_O            
+            {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_pos2.json")},
+            "6.0(6b)",
+            script.MANUAL,
         ),
     ],
 )
 def test_logic(mock_icurl, tversion, expected_result):
-    result = script.cloudsec_encryption_check(1, 1, script.AciVersion(tversion))
+    result = script.cloudsec_encryption_depr_check(1, 1, script.AciVersion(tversion))
     assert result == expected_result
