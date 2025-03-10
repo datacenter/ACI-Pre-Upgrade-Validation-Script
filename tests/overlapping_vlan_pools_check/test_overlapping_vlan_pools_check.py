@@ -2020,7 +2020,7 @@ params = [
                 "ifpg_name": "IFPG_VPC1",
             },
             {
-                "ifp": "L101",
+                "ifp": "L103",
                 "card": "1",
                 "port": "2",
                 "ifpg_class": "infraAccPortGrp",
