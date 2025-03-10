@@ -4304,7 +4304,7 @@ def cloudsec_encryption_check(index, total_checks, tversion, **kwargs):
     headers = []
     data = []
     recommended_action = 'The feature is deprecated beginning on version 6.0(6)'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec_encryption_check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec-encryption-check'
     print_title(title, index, total_checks)
 
 
