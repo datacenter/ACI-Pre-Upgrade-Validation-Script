@@ -32,7 +32,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v2.2.1"
+SCRIPT_VERSION = "v2.4.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
@@ -1044,16 +1044,7 @@ def print_result(title, result, msg='',
     prints(output)
 
 
-def icurl(apitype, query):
-    if apitype not in ['class', 'mo']:
-        print('invalid API type - %s' % apitype)
-        return []
-    uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
-    cmd = ['icurl', '-gs', uri]
-    logging.info('cmd = ' + ' '.join(cmd))
-    response = subprocess.check_output(cmd)
-    logging.debug('response: ' + str(response))
-    imdata = json.loads(response)['imdata']
+def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
@@ -1063,8 +1054,36 @@ def icurl(apitype, query):
             raise OldVerClassNotFound('cversion does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
-    else:
-        return imdata
+
+
+def _icurl(apitype, query, page=0, page_size=100000):
+    if apitype not in ['class', 'mo']:
+        print('invalid API type - %s' % apitype)
+        return []
+    pre = '&' if '?' in query else '?'
+    query += '{}page={}&page-size={}'.format(pre, page, page_size)
+    uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
+    cmd = ['icurl', '-gs', uri]
+    logging.info('cmd = ' + ' '.join(cmd))
+    response = subprocess.check_output(cmd)
+    logging.debug('response: ' + str(response))
+    data = json.loads(response)
+    _icurl_error_handler(data['imdata'])
+    return data
+
+
+def icurl(apitype, query, page_size=100000):
+    total_imdata = []
+    total_cnt = 999999
+    page = 0
+    while total_cnt > len(total_imdata):
+        data = _icurl(apitype, query, page, page_size)
+        if not data['imdata']:
+            break
+        total_imdata += data['imdata']
+        total_cnt = int(data['totalCount'])
+        page += 1
+    return total_imdata
 
 
 def get_credentials():
@@ -2042,7 +2061,7 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                 'fex': str(port_data.get('fex', '')),
                 'port': str(port_data.get('port', '')),
                 'vlan': str(dn.group('vlan')),
-                'aep': str(port_data.get('aep', '')),
+                'aep': str(port_data.get('aep_name', '')),
                 'domain_dns': port_data.get('domain_dns', []),
                 'pc_type': str(port_data.get('pc_type', '')),
                 'vlan_scope': str(port_data.get('vlan_scope', '')),
@@ -2077,27 +2096,30 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
         ports_per_node = defaultdict(dict)
         epg_dn = re.search(epg_regex, fvAEPg['fvAEPg']['attributes']['dn'])
         epg_key = ':'.join([epg_dn.group('tenant'), epg_dn.group('ap'), epg_dn.group('epg')])
-        logging.debug('EPG - %s', epg_key)
         epg_ports = ports_per_epg.get(epg_key, [])
         for port in epg_ports:
             vlan_id = int(port['vlan'])
             if vlan_id not in overlap_vlan_ids:
                 continue
-            logging.debug(port)
 
             # Get domains that are attached to the port and the EPG
             common_domain_dns = set(port['domain_dns']).intersection(rsDom_dns)
-            # Get domains with the VLAN ID for the port
-            inuse_domain_dns = [dn for dn in common_domain_dns if vlan_id in mos.vpool_per_dom.get(dn, {}).get('vlan_ids', [])]
-            if not inuse_domain_dns:
-                # Invalid path/vlan
+            # Get VLAN pools for the VLAN ID of the port
+            # Also store domains for each VLAN pool for the final output
+            inuse_vpools = defaultdict(list)
+            for dom_dn in common_domain_dns:
+                vpool = mos.vpool_per_dom.get(dom_dn, {})
+                if vlan_id not in vpool.get('vlan_ids', []):
+                    continue
+                inuse_vpools[vpool['name']].append(vpool['dom_name'])
+            if not inuse_vpools:
                 continue
 
-            # len(inuse_domain_dns) == 1 at this point means that there is no
+            # len(inuse_vpools) == 1 at this point means that there is no
             # overlapping VLAN pool issue with this port alone.
             # But do not skip such a port yet because there may be another port
-            # on the same node with the same VLAN ID with a different inuse_domain.
-            port['inuse_domain_dns'] = inuse_domain_dns
+            # on the same node with the same VLAN ID with a different VLAN pool.
+            port['inuse_vpools'] = inuse_vpools
             vlan_scope = port.get('vlan_scope', 'global')
             # handle all non-portlocal scope as global
             if vlan_scope not in ['global', 'portlocal']:
@@ -2111,15 +2133,17 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
         for ports_per_vlanid in ports_per_node.values():
             for ports_per_scope in ports_per_vlanid.values():
                 for ports in ports_per_scope.values():
-                    inuse_domain_dns_per_node = set()
+                    inuse_vpools_across_ports = set()
                     has_vpc = False
                     for port in ports:
-                        inuse_domain_dns_per_node.update(port['inuse_domain_dns'])
+                        inuse_vpools_across_ports.update(
+                            port.get('inuse_vpools', {}).keys()
+                        )
                         if port.get('pc_type') == 'vpc':
                             has_vpc = True
 
-                    # All ports on the node with the same VLAN ID use the same domain
-                    if len(inuse_domain_dns_per_node) < 2:
+                    # All ports on the node with the same VLAN ID use the same VLAN pool
+                    if len(inuse_vpools_across_ports) < 2:
                         continue
 
                     if has_vpc:
@@ -2132,10 +2156,9 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                         if port.get('fex') != "0":
                             node += '(FEX {})'.format(port['fex'])
                         vpool_domains = []
-                        for domain_dn in port['inuse_domain_dns']:
-                            vpool = mos.vpool_per_dom[domain_dn]
+                        for v_name, d_names in iteritems(port.get('inuse_vpools', {})):
                             vpool_domains.append(
-                                '{}({})'.format(vpool['name'], vpool['dom_name'])
+                                '{}({})'.format(v_name, ','.join(sorted(d_names)))
                             )
                         data.append([
                             port['tenant'],
@@ -2145,71 +2168,9 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                             port['port'],
                             port['vlan_scope'],
                             port['vlan'],
-                            ','.join(vpool_domains),
+                            ', '.join(vpool_domains),
                             impact,
                         ])
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
-
-
-def vnid_mismatch_check(index, total_checks, **kwargs):
-    title = 'VNID Mismatch'
-    result = FAIL_O
-    msg = ''
-    headers = ["EPG", "Access Encap", "Node ID", "Fabric Encap"]
-    data = []
-    mismatch_hits = []
-    recommended_action = 'Remove any domains with overlapping VLAN Pools from above EPGs, then redeploy VLAN'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnid-mismatch'
-    print_title(title, index, total_checks)
-
-    vlanCktEps = icurl('class', 'vlanCktEp.json?query-target-filter=ne(vlanCktEp.name,"")')
-    if not vlanCktEps:
-        result = ERROR
-        msg = 'Deployed VLANs (vlanCktEp) not found'
-
-    epg_encap_dict = {}
-    for vlanCktEp in vlanCktEps:
-        dn = re.search(node_regex, vlanCktEp['vlanCktEp']['attributes']['dn'])
-        node = dn.group("node")
-        access_encap = vlanCktEp['vlanCktEp']['attributes']['encap']
-        epg_dn = vlanCktEp['vlanCktEp']['attributes']['epgDn']
-        fab_encap = vlanCktEp['vlanCktEp']['attributes']['fabEncap']
-
-        if epg_dn not in epg_encap_dict:
-            epg_encap_dict[epg_dn] = {}
-
-        if access_encap not in epg_encap_dict[epg_dn]:
-            epg_encap_dict[epg_dn][access_encap] = []
-
-        epg_encap_dict[epg_dn][access_encap].append({'node': node, 'fabEncap': fab_encap})
-
-    # Iterate through, check for overlaps, and print
-    for key, epg in iteritems(epg_encap_dict):
-        for vlanKey, vlan in iteritems(epg):
-            fab_encap_to_check = ""
-            for deployment in vlan:
-                if fab_encap_to_check == "" or deployment["fabEncap"] == fab_encap_to_check:
-                    fab_encap_to_check = deployment["fabEncap"]
-                else:  # something is wrong
-                    tmp_hit = {}
-                    tmp_hit["epgDn"] = key
-                    tmp_hit["epgDeployment"] = epg
-                    if tmp_hit not in mismatch_hits:  # some epg has more than one access encap.
-                        mismatch_hits.append(tmp_hit)
-                    break
-
-    if not mismatch_hits:
-        result = PASS
-
-    mismatch_hits.sort(key=lambda d: d.get("epgDn", ""))
-    for epg in mismatch_hits:
-        for access_encap, nodeFabEncaps in iteritems(epg["epgDeployment"]):
-            for nodeFabEncap in nodeFabEncaps:
-                node_id = nodeFabEncap['node']
-                fabric_encap = nodeFabEncap['fabEncap']
-                data.append([epg["epgDn"], access_encap, node_id, fabric_encap])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -3424,6 +3385,10 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
     print_title(title, index, total_checks)
 
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
     if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)") and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)")):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
@@ -4122,37 +4087,39 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
     print_title(title, index, total_checks)
     iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
-    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
     bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
-        
-    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)")):
         slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
         staticRoutes = icurl('class', slash32filter)
         if staticRoutes:
             staticroute_vrf = icurl('class', 'l3extRsEctx.json')
-            staticR_to_vrf = {}	
+            staticR_to_vrf = {}
             for staticRoute in staticRoutes:
                 staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
-                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
-                
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out") + '/rsectx'
+
                 for l3outCtx in staticroute_vrf:
                     l3outCtx_Vrf = {}
                     if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
-                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['vrf'] = l3outCtx['l3extRsEctx']['attributes']['tDn']
                         l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
                         staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
-                                
 
             bds_in_vrf = icurl('class', 'fvRsCtx.json')
             vrf_to_bd = {}
             for bd_ref in bds_in_vrf:
                 vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
                 bd_list = vrf_to_bd.get(vrf_name, [])
-                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx', '')
                 bd_list.append(bd_name)
                 vrf_to_bd[vrf_name] = bd_list
 
-            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            subnets_in_bd = icurl('class', 'fvSubnet.json')
             bd_to_subnet = {}
             for subnet in subnets_in_bd:
                 bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
@@ -4170,9 +4137,81 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
 
         if data:
             result = FAIL_O
-			
-        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result	
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "vzAny-to-vzAny Service Graph when crossing 5.0 release"
+    result = PASS
+    msg = ""
+    headers = ["VRF (Tn:VRF)", "Contract (Tn:Contract)", "Service Graph (Tn:SG)"]
+    data = []
+    recommended_action = "Be aware of transient traffic disruption for vzAny-to-vzAny Service Graph during APIC upgrade."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-to-vzany-service-graph-when-crossing-50-release"
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if not (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)")):
+        print_result(title, NA)
+        return NA
+
+    tn_regex = r"uni/tn-(?P<tn>[^/]+)"
+    vrf_regex = tn_regex + r"/ctx-(?P<vrf>[^/]+)"
+    brc_regex = tn_regex + r"/brc-(?P<brc>[^/]+)"
+    sg_regex = tn_regex + r"/AbsGraph-(?P<sg>[^/]+)"
+
+    # check if a SG is attached to a contract
+    vzRsSubjGraphAtts = icurl("class", "vzRsSubjGraphAtt.json")
+    for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
+        graphAtt_rns = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["dn"].split("/")
+        if len(graphAtt_rns) < 3:
+            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.")
+            return ERROR
+
+        # Get vzAny(VRF) relations of the contract. There can be multiple VRFs per contract.
+        vrfs = defaultdict(set)  # key: VRF, value: vzRtAnyToCons, vzRtAnyToProv
+        vzBrCP_dn = "/".join(graphAtt_rns[:3])  # Contract DN (uni/tn-xx/brc.xxx)
+        vzBrCP_api = vzBrCP_dn + ".json"
+        vzBrCP_api += "?query-target=children&target-subtree-class=vzRtAnyToCons,vzRtAnyToProv"
+        vzRtAnys = icurl("mo", vzBrCP_api)
+        for vzRtAny in vzRtAnys:
+            if "vzRtAnyToCons" in vzRtAny:
+                rel_class = "vzRtAnyToCons"
+            elif "vzRtAnyToProv" in vzRtAny:
+                rel_class = "vzRtAnyToProv"
+            else:
+                logging.warning("Unexpected class - %s", vzRtAny.keys())
+                continue
+            vrf_tdn = vzRtAny[rel_class]["attributes"]["tDn"]
+            vrf_match = re.search(vrf_regex, vrf_tdn)
+            if vrf_match:
+                vrf = vrf_match.group("tn") + ":" + vrf_match.group("vrf")
+            else:
+                vrf = vrf_tdn
+            vrfs[vrf].add(rel_class)
+        for vrf, relations in vrfs.items():
+            if len(relations) == 2:  # both cons and prov mean vzAny-to-vzAny
+                brc_match = re.search(brc_regex, vzBrCP_dn)
+                if brc_match:
+                    contract = brc_match.group("tn") + ":" + brc_match.group("brc")
+                else:
+                    contract = vzBrCP_dn
+                sg_dn = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["tDn"]
+                sg_match = re.search(sg_regex, sg_dn)
+                if sg_match:
+                    sg = sg_match.group("tn") + ":" + sg_match.group("sg")
+                else:
+                    sg = sg_dn
+                data.append([vrf, contract, sg])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
@@ -4214,6 +4253,50 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
+    title = 'Leaf to Spine Redundancy check'
+    result = PASS
+    msg = ''
+    headers = ["Leaf Switch Name", "Spine Adjacencies", "Message" ]
+    data = []
+    problem = 'The Leaf Switch has one or less spine adjacencies'
+    recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
+    doc_url = ''
+    print_title(title, index, total_checks)
+
+    fabric_nodes_api = 'fabricNode.json'
+    fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
+
+    lldp_adj_api = 'lldpAdjEp.json'
+    lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
+
+    fabricNodes= icurl('class', fabric_nodes_api)
+    all_spine_names = [node['fabricNode']['attributes']['name'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
+    
+    lldp_adj = icurl('class', lldp_adj_api)
+    for node in fabricNodes:
+        neighbors = set()
+        if node['fabricNode']['attributes']['role'] == 'leaf':
+            leaf_dn = node['fabricNode']['attributes']['dn']
+            leaf_name = node['fabricNode']['attributes']['name']
+            for lldp_neighbor in lldp_adj:
+                spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
+                lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
+                if leaf_dn in lldp_dn and spine_name in all_spine_names:
+                        neighbors.add(spine_name)
+                if len(neighbors) > 1:
+                    # Leaf has more than 1 Spine neighbor check passed
+                    break
+
+            if len(neighbors) <= 1:
+                data.append([leaf_name, "".join(neighbors), problem])
+    if data:
+        result = FAIL_O
+    
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def cloudsec_encryption_check(index, total_checks, tversion, **kwargs):
     title = 'ClouSec Encrpytion Check'
     result = NA
@@ -4235,6 +4318,7 @@ def cloudsec_encryption_check(index, total_checks, tversion, **kwargs):
         result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -4261,7 +4345,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        # General Checks
+        #General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
@@ -4276,6 +4360,7 @@ if __name__ == "__main__":
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
+        leaf_to_spine_redundancy_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -4301,7 +4386,6 @@ if __name__ == "__main__":
         # Configurations
         vpc_paired_switches_check,
         overlapping_vlan_pools_check,
-        vnid_mismatch_check,
         l3out_mtu_check,
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
@@ -4335,7 +4419,8 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
-        static_route_overlap_check
+        static_route_overlap_check,
+        vzany_vzany_service_epg_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
