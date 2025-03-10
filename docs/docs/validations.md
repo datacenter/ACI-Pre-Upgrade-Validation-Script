@@ -140,7 +140,7 @@ Items                                         | Faults         | This Script    
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 [c17]: #cloudsec-encryption-check
-[c18]: #out_of_service_ports_check
+[c18]: #out-of-service-ports-check
 
 
 
@@ -1964,13 +1964,13 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 ### Out-of-Service Ports Check
 
-Any Port that has been disabled in the in the APIC GUI gets a corresponding fabricRsOosPath object which are listed under the "Disabled Interfaces and Decommissioned Switches" view. 
-A user can enable the ports manually by going to the switch CLI : configure terminal -> interface eth1/X -> no shutdown 
-This overwrites the APIC policy, but the fabricRsOosPath objects created to disable the interfaces will remain in the configuration policy. 
+Any Port that has been disabled via policy creates a `fabricRsOosPath` object. These objects can be found within the "Disabled Interfaces and Decommissioned Switches" UI view.
 
-When an upgrade for a switch is triggered, the APICs will push the policies to the switches again. This will push the fabricRsOosPath policy to the switch again, thus disabling the ports-
+While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this will remain undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
 
-To avoid this, make sure no fabricRsOosPath Ports is enabled from the switch before the upgrade.
+A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the fabricRsOosPath policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
+
+This check will warn the user to all found out-of-service policies. It is up to the user to determine which out-of-service policies should remain, and which should be removed, to ensure that expected data paths return after switch node upgrades.
 
 
 ## Defect Check Details
