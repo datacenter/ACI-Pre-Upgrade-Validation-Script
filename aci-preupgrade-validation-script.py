@@ -4290,10 +4290,35 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
 
             if len(neighbors) <= 1:
                 data.append([leaf_name, "".join(neighbors), problem])
-            print(neighbors)
     if data:
         result = FAIL_O
     
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
+    title = 'CloudSec Encrpytion Deprecated Check'
+    result = NA
+    msg = ''
+    headers = ["Findings"]
+    data = []
+    recommended_action = 'Validate if CloudSec Encryption is enabled within Nexus Dashboard Orchestrator'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec-encryption-check'
+    print_title(title, index, total_checks)
+
+    cloudsec_api =  'cloudsecPreSharedKey.json'
+    cloudsecPreSharedKey = icurl('class', cloudsec_api)
+
+    if tversion.newer_than("6.0(6a)"):
+        if len(cloudsecPreSharedKey) > 1:
+            data.append(['Multiple CloudSec Encryption Keys found'])
+            result = MANUAL
+        elif len(cloudsecPreSharedKey) == 1:
+            data.append(['Single CloudSec Encryption Key found'])
+            result = MANUAL
+        else:
+            result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
@@ -4378,6 +4403,7 @@ if __name__ == "__main__":
         eecdh_cipher_check,
         subnet_scope_check,
         unsupported_fec_configuration_ex_check,
+        cloudsec_encryption_depr_check,
 
         # Bugs
         ep_announce_check,
