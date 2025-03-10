@@ -4252,49 +4252,45 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
     title = 'Leaf to Spine Redundancy check'
     result = PASS
     msg = ''
-    headers = [" Leaf ", " Spine ", "Message" ]
+    headers = ["Leaf Switch Name", "Spine Adjacencies", "Message" ]
     data = []
-    problem = 'The Leaf Switch is connected to a Single Spine'
+    problem = 'The Leaf Switch has one or less spine adjacencies'
     recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
     doc_url = ''
     print_title(title, index, total_checks)
 
-    # icurl queries
-    leaf_nodes_api = 'fabricNode.json'
-    leaf_nodes_api += '?query-target-filter=eq(fabricNode.role,"leaf")'
-    spine_nodes_api = 'fabricNode.json'
-    spine_nodes_api += '?query-target-filter=eq(fabricNode.role,"spine")'
+    fabric_nodes_api = 'fabricNode.json'
+    fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
+
     lldp_adj_api = 'lldpAdjEp.json'
     lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
-    leaf_nodes = icurl('class', leaf_nodes_api)
-    fabricNodes = icurl('class', spine_nodes_api)
-    spine_nodes = [dn['fabricNode']['attributes']['name'] for dn in fabricNodes]
+    fabricNodes= icurl('class', fabric_nodes_api)
+    all_spine_names = [node['fabricNode']['attributes']['name'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
+    
     lldp_adj = icurl('class', lldp_adj_api)
+    for node in fabricNodes:
+        neighbors = set()
+        if node['fabricNode']['attributes']['role'] == 'leaf':
+            leaf_dn = node['fabricNode']['attributes']['dn']
+            leaf_name = node['fabricNode']['attributes']['name']
+            for lldp_neighbor in lldp_adj:
+                spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
+                lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
+                if leaf_dn in lldp_dn and spine_name in all_spine_names:
+                        neighbors.add(spine_name)
+                if len(neighbors) > 1:
+                    # Leaf has more than 1 Spine neighbor check passed
+                    break
 
-    #Check for LLDP Adj Matching with Node DN, count Number of neighbors, break if there are more than 2
-    for leaf in leaf_nodes:
-        if leaf['fabricNode']['attributes']['nodeType'] == 'tier-2-leaf':
-            continue #Skip for any tier-2 Leaf
-        neighbors = {}
-        for lldp_neighbor in lldp_adj:
-            if leaf['fabricNode']['attributes']['dn'] in lldp_neighbor['lldpAdjEp']['attributes']['dn']:
-                # Add Neighborship count based on Spine name
-                spine = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
-                if spine in spine_nodes:
-                    neighbors[spine] = neighbors.get(spine, 0 ) + 1
-            else:
-                continue
-        if len(neighbors) > 1:
-            # Leaf has more than 1 Spine as neighbor check passed
-            continue
-        else:
-            # Leaf has only 1 neighbor Check fails
-            data.append([leaf['fabricNode']['attributes']['name'], list(neighbors.keys())[0], problem])
+            if len(neighbors) <= 1:
+                data.append([leaf_name, "".join(neighbors), problem])
+            print(neighbors)
     if data:
         result = FAIL_O
     

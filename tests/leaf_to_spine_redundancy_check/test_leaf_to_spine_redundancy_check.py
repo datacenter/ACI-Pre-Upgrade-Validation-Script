@@ -9,13 +9,11 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-# icurl queries
-leaf_nodes_api =	'fabricNode.json'
-leaf_nodes_api +=	'?query-target-filter=eq(fabricNode.role,"leaf")'
 
-#icurl queries
-spine_nodes_api = 'fabricNode.json'
-spine_nodes_api += '?query-target-filter=eq(fabricNode.role,"spine")'
+
+
+fabric_nodes_api = 'fabricNode.json'
+fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
 
 # icurl queries
 lldp_adj_api =	'lldpAdjEp.json'
@@ -28,18 +26,16 @@ lldp_adj_api +=	'?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
         ##FAILING =  ONE LEAF SWITCH IS SINGLE-HOMED, OTHER IS MULTI-HOMED, TIER2 LEAF IN THE NODE LIST
         (
             {
-                leaf_nodes_api: read_data(dir, "fabricNode-leaf.json"),
-                lldp_adj_api: read_data(dir, "lldpAdjEp-neg.json"),
-                spine_nodes_api: read_data(dir, "fabricNode-spine.json") 
+                fabric_nodes_api: read_data(dir, "fabricNode.json"),
+                lldp_adj_api: read_data(dir, "lldpAdjEp_pos.json"),
             },
             script.FAIL_O,
         ),
         ##PASSING = ALL LEAF SWITCHES ARE MULTI-HOMED , TIER2 LEAF IN THE NODE LIST
         (
             {
-                leaf_nodes_api: read_data(dir, "fabricNode-leaf.json"),
-                lldp_adj_api: read_data(dir, "lldpAdjEp-pos.json"),
-                spine_nodes_api: read_data(dir, "fabricNode-spine.json") 
+                fabric_nodes_api: read_data(dir, "fabricNode.json"),
+                lldp_adj_api: read_data(dir, "lldpAdjEp_neg.json"),
             },
             script.PASS,
         ),
