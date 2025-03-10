@@ -137,7 +137,7 @@ Items                                         | Faults         | This Script    
 [c14]: #eecdh-ssl-cipher
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
-[c17]: #cloudsec_encryption_check
+[c17]: #cloudsec-encryption-check
 
 
 ### Defect Condition Checks
@@ -1947,7 +1947,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fecMode                        : ieee-rs-fec   <<<
     ```
 
-### CloudSec Encrpytion Check
+### CloudSec Encryption Check
 
 Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated as mentioned in the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][33]
 
