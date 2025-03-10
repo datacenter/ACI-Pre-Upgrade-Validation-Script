@@ -1949,9 +1949,12 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
 
 ### CloudSec Encryption Check
 
-Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated as mentioned in the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][33]
+Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated. This is documented within the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][33]
 
-It is important to review if the feature is in use prior to upgrading to 6.0(6) or later.
+This check will look for configured Pre-shared keys (PSK) within your APIC cluster. Note the following behaviors on these objects:
+
+1. Due to [CSCwe67926][34], if even a single PSK was configured for CloudSec Encryption at any point, even if never used, the object will remain and this check will alert you to this finding.
+2. The only way to truly validate whether or not CloudSec Encryption is in use on your ACI fabric is to validate if CloudSec Encryption is enabled from within the [Nexus Dashboard Orchstrator Configuration][35]
 
 
 ## Defect Check Details
@@ -2266,3 +2269,5 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 [31]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease501
 [32]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh75475
 [33]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-606.html
+[34]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe67926
+[35]: https://www.cisco.com/c/en/us/td/docs/dcn/ndo/3x/configuration/cisco-nexus-dashboard-orchestrator-configuration-guide-aci-371/ndo-configuration-aci-infra-cloudsec-37x.html#id_76319
