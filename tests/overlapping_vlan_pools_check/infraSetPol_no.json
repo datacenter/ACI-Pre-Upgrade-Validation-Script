@@ -1,0 +1,38 @@
+[
+  {
+    "infraSetPol": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dampFactor": "1",
+        "descr": "",
+        "disableEpDampening": "no",
+        "dn": "uni/infra/settings",
+        "domainValidation": "yes",
+        "enableMoStreaming": "yes",
+        "enableRemoteLeafDirect": "yes",
+        "enforceSubnetCheck": "yes",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "leafOpflexpAuthenticateClients": "yes",
+        "leafOpflexpUseSsl": "yes",
+        "modTs": "2024-07-25T11:35:12.291-07:00",
+        "name": "default",
+        "nameAlias": "",
+        "opflexpAuthenticateClients": "no",
+        "opflexpSslProtocols": "TLSv1.1,TLSv1.2",
+        "opflexpUseSsl": "yes",
+        "ownerKey": "",
+        "ownerTag": "",
+        "policySyncNodeBringup": "yes",
+        "reallocateGipo": "no",
+        "restrictInfraVLANTraffic": "no",
+        "status": "",
+        "uid": "0",
+        "unicastXrEpLearnDisable": "no",
+        "userdom": ":",
+        "validateOverlappingVlans": "no"
+      }
+    }
+  }
+]

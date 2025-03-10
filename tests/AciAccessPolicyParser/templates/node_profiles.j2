@@ -1,0 +1,34 @@
+{% extends "./access_policy.j2" %}
+{% block node_profiles %}
+  {% for node in nodes %}
+  {
+    "infraNodeP": {
+    "attributes": { "dn": "uni/infra/nprof-{{ node.name }}", "name": "{{ node.name }}" }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "dn": "uni/infra/nprof-{{ node.name }}/rsaccPortP-[uni/infra/accportprof-{{ node.ifp_name }}]",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-{{ node.ifp_name }}"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": { "dn": "uni/infra/nprof-{{ node.name }}/leaves-{{ node.name }}-typ-range", "name": "{{ node.name }}", "type": "range" }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "dn": "uni/infra/nprof-{{ node.name }}/leaves-{{ node.name }}-typ-range/nodeblk-{{ node.from }}",
+        "from_": "{{ node.from }}",
+        "name": "{{ node.from }}",
+        "to_": "{{ node.to }}"
+      }
+    }
+  },
+  {% endfor %}
+{% endblock %}

@@ -1,0 +1,11 @@
+[
+  {
+    "vzRtAnyToProv": {
+      "attributes": {
+        "dn": "uni/tn-T1/brc-contract1/rtanyToProv-[uni/tn-T1/ctx-VRFA/any]",
+        "tCl": "vzAny",
+        "tDn": "uni/tn-T1/ctx-VRFA/any"
+      }
+    }
+  }
+]

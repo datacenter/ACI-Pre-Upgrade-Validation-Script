@@ -105,7 +105,7 @@ Items                                         | Faults         | This Script    
 ------------------------------------------------------|--------------------|---------------------------|-------------------------------
 [VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[VNID Mismatch][c3]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[VNID Mismatch][c3] (deprecated)                      | :warning:          | :no_entry_sign:           | :no_entry_sign:
 [L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
@@ -138,7 +138,6 @@ Items                                         | Faults         | This Script    
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 
-
 ### Defect Condition Checks
 
 Items                                           | Defect       | This Script        |  APIC built-in            | Pre-Upgrade Validator (App)
@@ -160,6 +159,7 @@ Items                                           | Defect       | This Script    
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -179,6 +179,7 @@ Items                                           | Defect       | This Script    
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
+[d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
 
 
 ## General Check Details
@@ -428,10 +429,13 @@ When targeting any version that is 6.0(2) or greater, download both the 32-bit a
 
 For additional information, see the [Guidelines and Limitations for Upgrading or Downgrading][28] section of the Cisco APIC Installation and ACI Upgrade and Downgrade Guide.
 
+
 ### Leaf to Spine Redundancy Validation
-When Upgrading the Spine Switches Data plane traffic will be affected, any Leaf Switch connecting to that Spine will failover to another active Spine.
-If a Leaf Switch is single homed to a Spine, traffic for and from the Leaf will be black holed during upgrade process.
-For additional information, check [Cisco ACI Best Practices Quick Summary][31]
+
+When upgrading the Switches, traffic traversing any Leaf Switch that is connected to only a single spine will exhibit a Data Path Outage during the spine upgrade as there will be no alternate dataplane paths available.
+
+To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches. This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch.
+
 
 ## Fault Check Details
 
@@ -1367,10 +1371,251 @@ The script checks if all leaf switch nodes are in a vPC pair. The APIC built-in 
 
 Overlapping VLAN blocks across different VLAN pools may result in some forwarding issues, such as:
 
-* Packet loss due to issues in endpoint learning
-* Spanning tree loop due to BPDU forwarding domains
+* Packet loss due to issues in endpoint learning with vPC
+* STP BPDUs, or any BUM traffic when using Flood-in-Encap, are not flooded to all ports within the same VLAN ID.
 
 **These issues may suddenly appear after upgrading your switches** because switches fetch the policies from scratch after an upgrade and may apply the same VLAN ID from a different pool than what was used prior to the upgrade. As a result, the VLAN ID is mapped to a different VXLAN VNID than other switch nodes. This causes the two problems mentioned above.
+
+
+!!! Tip "VLAN Pools and VXLAN VNID on switches"
+    In ACI, multiple VLANs and EPGs can be mapped to the same bridge domain, which serves as the Layer 2 domain. As a result, most Layer 2 forwarding, such as bridging or flooding a packet, uses the VXLAN VNID of the bridge domain. However, each VLAN within the bridge domain is also mapped to a unique VXLAN VNID, distict from that of the bridge domain. This is known as Forwarding Domain (FD) VNID or VLAN VNID, and it's used for special purposes such as:
+
+    * Endpoint synchronization between vPC peer switches.
+    * Flooding STP BPDUs across switches.
+    * Flooding BUM (Broadcast, Unknown Unicast, Multicast) traffic across switches when `Flood-in-Encap` is configured on the bridge domain or EPG.
+
+    To prevent the impact for these mechanism, VLAN VNID mapping must be consistent across switches as needed.
+
+
+!!! Tip "How VLAN Pools are tied to the VLAN on switches"
+    Each switch port can be associated to multiple VLAN pools that may or may not have VLAN ID ranges overlapping with each other.
+
+    ``` mermaid
+    graph LR
+      A[Port] --> B[Interface Policy Group] --> C[AEP];
+      C[AEP] --> D(Phy Domain A):::dom --> E[VLAN Pool 1];
+      C[AEP] --> F(Phy Domain B):::dom --> G[VLAN Pool 2];
+      C[AEP] --> H(VMM Domain C):::dom --> G[VLAN Pool 2];
+      classDef dom fill:#fff
+    ```
+
+    When configuring a switch port (node-101 eth1/1) with VLAN 10 as EPG A, two things are checked:
+
+    1. Whether node-101 eth1/1 is associated to VLAN 10 via `AEP -> Domain -> VLAN Pool`
+    2. Whether EPG A is associated with the same domain
+
+    If the port is associated with multiple domains/VLAN pools as shown above, and EPG A is associated only with `Phy Domain A`, then only `VLAN Pool 1` is available for the port in the context of EPG A, avoiding any overlapping VLAN pool issues. However, if VLAN 10 is not included in `VLAN Pool 1`, it cannot be deployed on the port via EPG A. The same principle applies when deploying a VLAN through AEP binding, as it serves as a shortcut to specify all ports within the AEP.
+
+    This concept of domains is crucial in multi-domain tenancy to ensure the tenant/EPG has the appropriate set of ports and VLANs.
+
+    However, if EPG A is associated with both `Phy Domain A` and `Phy Domain B`, the port can use either `VLAN Pool 1` or `VLAN Pool 2` to pull a VLAN. If VLAN 10 is configured in both pools, EPG A and its VLAN 10 are susceptible to an overlapping VLAN pool issue.
+
+
+!!! example "Bad Example 1"
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      B[AEP] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+    In this scenario, VLAN 10 can be pulled from either `VLAN Pool 1` or `VLAN Pool2` because the port (`node-101 eth 1/1`) and the EPG are associated to both pools. And VLAN ID 10 is also configured on both pools.
+
+    As a result, VNID mapping for VLAN 10 on node-101 may become inconsistent after an upgrade or when the switch initializes and downloads configurations from the APICs.
+
+    This can be resolved by associating EPG A to only one of the domains, associating the AEP to only one of the domains, or associating the domains to the same VLAN Pool as shown below.
+
+    **Resolution 1:**
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      B[AEP] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+    **Resolution 2:**
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+    **Resolution 3:**
+    ``` mermaid
+    graph LR
+      port["`node-101
+      eth1/1`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port --> B[AEP];
+      B[AEP] --> C(Domain A):::dom --> vpool1;
+      B[AEP] --> E(Domain B):::dom --> vpool1;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+!!! example "Bad Example 2"
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-101
+      eth1/2`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1-2
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+    In this scenario, VLAN 10 can be pulled from either `VLAN Pool 1` or `VLAN Pool2` from the EPG's perspective. However, each port is associated to only one VLAN pool respectively.
+
+    This is a problem because both ports are on the same switch. Essentially, this VLAN Pool design attempts to map a different VNID for VLAN 10 on eth1/1 and eth1/2 on the same switch, which isn't allowed - there can be only one VLAN 10 per switch except for when using VLAN scope `local`.
+
+    As a result, VNID mapping for VLAN 10 on node-101 may become inconsistent after an upgrade or when the switch initializes and downloads configurations from the APICs.
+
+    This can be resolved by associating AEPs to the same domain or associating the domains to the same VLAN Pool as shown below.
+
+    **Resolution 1**
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-101
+      eth1/2`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1-2
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> C(Domain A):::dom
+      E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+    **Resolution 2**
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-101
+      eth1/2`"];
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      X["`EPG A
+      node-101 eth1/1-2
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> E(Domain B):::dom --> vpool1;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+    ```
+
+!!! example "Example: good only for a specific use case"
+    ``` mermaid
+    graph LR
+      port1["`node-101
+      eth1/1`"];
+      port2["`node-102
+      eth1/1`"]:::red;
+      vpool1["`VLAN Pool 1
+      (VLAN 1-20)`"];
+      vpool2["`VLAN Pool 2
+      (VLAN 10-20)`"];
+      X["`EPG A
+      node-101 eth1/1
+      node-102 eth1/1
+      VLAN 10`"]
+
+      subgraph one [Access Policies]
+      port1 --> aep2[AEP 2] --> C(Domain A):::dom --> vpool1;
+      port2 --> aep1[AEP 1] --> E(Domain B):::dom --> vpool2;
+      end
+      X --> C(Domain A):::dom;
+      X --> E(Domain B):::dom;
+      classDef dom fill:#fff
+      classDef red stroke:#f00
+    ```
+    In this scenario, each port is tied to a different VLAN pool for VLAN 10, but each port is on a different node. This ensures that the VLAN VNID mapping remains consistent within each node even after an upgrade, with no ambiguity about which VLAN pool is used. However, VLAN 10 on each node will map to a different VLAN VNID, which may or may not be your intent.
+
+    Without the Flood-in-Encap feature, VLAN VNIDs act as flooding domains for spanning tree BPDUs. Even if VLAN 10 on node 101 and 102 map to different VLAN VNIDs, regular traffic is forwarded without issues via bridge domain VNID or VRF VNID.
+
+    This VLAN pool design is ideal for keeping the spanning tree domains small, such as in a multi-pod fabric with one STP domain per pod where each pod is physically separate with no L2 connecitivity between them except for the IPN. It helps contain spanning tree issues within a single pod. For instance, if Pod 1 continuously receives STP TCNs due to a malfuncationing device in the external network in Pod 1, the impact of flushing endpoints and causing connectivity issues due to TCNs is contained within that pod, keeping other pods unaffected.
+
+    However, this design is not suitable if you prefer a simpler configuration, if the nodes belong to the same vPC switch pair, or if the VLAN uses the Flood-in-Encap feature.
+
 
 It is critical to ensure that there are no overlapping VLAN pools in your fabric unless it is on purpose with the appropriate understanding of VLAN ID and VXLAN ID mapping behind the scene. If you are not sure, consider **Enforce EPG VLAN Validation** under `System > System Settings > Fabric Wide Setting` in the Cisco APIC GUI [available starting with release 3.2(6)], which prevents the most common problematic configuration (two domains containing overlapping VLAN pools being associated to the same EPG).
 
@@ -1382,9 +1627,14 @@ Refer to the following documents to understand how overlapping VLAN pools become
 * [VLAN Pool - ACI Best Practice Quick Summary][13]
 
 
-### VNID Mismatch                                  
+### <del>VNID Mismatch</del>
 
-A VNID mismatch can arise due to an [Overlapping VLAN Pool][c2] situation. This verification is closely tied to the [Overlapping VLAN Pool][c2] scenario, which often leads to problems post-upgrade. Nonetheless, if your fabric is currently experiencing any VNID mismatches, you might encounter the challenges outlined in [Overlapping VLAN Pool][c2] even without undergoing an upgrade. This situation also implies the presence of an overlapping VLAN pool configuration, potentially resulting in a VNID mismatch at a distinct EPG following an upgrade, causing different impact to your traffic.
+!!! warning "Deprecated"
+    This check was deprecated and removed as it had not only become redundant after the updates in the [Overlapping VLAN Pool][c2] check but also contained a risk of rainsing a false alarm. See [PR #182](https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/pull/182) for details.
+
+<span style="color:lightgray">
+A VNID mismatch can arise due to an [Overlapping VLAN Pool][c2] situation. This verification is closely tied to the [Overlapping VLAN Pool][c2] scenario, which often leads to problems post-upgrade. Nonetheless, if your fabric is currently experiencing any VNID mismatches, you might encounter the challenges outlined in [Overlapping VLAN Pool][c2] even without undergoing an upgrade. This situation also implies the presence of an overlapping VLAN pool configuration, potentially resulting in a VNID mismatch at a distinct EPG following an upgrade, causing different impact to your traffic. 
+</span>
 
 
 ### L3Out MTU                                      
@@ -1695,6 +1945,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fecMode                        : ieee-rs-fec   <<<
     ```
 
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -1946,6 +2197,33 @@ Due to defect [CSCwb91766][27], L3out /32 Static Routes that overlap with BD Sub
 If found, the target version of your upgrade should be a version with a fix for CSCwb91766. Otherwise, the other option is to change the routing design of the affected fabric.
 
 
+### vzAny-to-vzAny Service Graph when crossing 5.0 release
+
+When your APIC upgrade is crossing 5.0 release, for instance upgrading from 4.2(7w) to 5.2(8i), traffic hitting a vzAny-to-vzAny contract with Service Graph may experience disruption for a short amount of time.
+
+!!! note
+    A vzAny-to-vzAny contract refers to a contract that is provided and consumed by the same VRF (vzAny) so that the contract is applied to all traffic in the said VRF.
+
+    The potential transient traffic disruption occurs during an APIC upgrade instead of a switch upgrade.
+
+The script checks the two points:
+
+1. The combination of your source and target version is susceptible
+2. You have any vzAny-to-vzAny contract with Service Graph
+
+When both conditions are met, the script results in `FAIL - OUTAGE WARNING!!` to inform you of potential disruption to your traffic going through such Service Graph. In such a case, make sure to upgrade your APICs during a maintenance window that can tolerate some traffic impact.
+
+This transient disruption is because the pcTag of the service EPG for a vzAny-vzAny Service Graph is updated from APIC and re-programmed on switches due to an internal architecture update in [APIC Release 5.0][31] (See also [CSCwh75475][32]).
+Depending on the timing and how fast the re-programming finishes, you may not see any traffic disruption. Unfortunately, it is difficult to estimate the amount of time the re-programming takes but it generally depends on the number of VRFs, service graphs, contract rules etc.
+
+!!! tip
+    With L4-L7 Service Graph, ACI deploys an internal/hidden EPG representing the service node to be inserted via the Service Graph. Such a hidden EPG is called Service EPG. When a Service Graph is applied to a contract, internally a service EPG is inserted between the provider and consumer EPGs so that the traffic flow will be consumer EPG to service EPG (i.e. service node such as firewall), coming back from the service node, then service EPG to provider EPG. Because of this, if the pcTag of service EPG is updated, such traffic flow gets impacted while it's being re-programmed in the switch hardware.
+
+    Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
+
+
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -1977,4 +2255,5 @@ If found, the target version of your upgrade should be a version with a fix for 
 [28]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-aci-upgrade-downgrade-architecture.html#Cisco_Reference.dita_22480abb-4138-416b-8dd5-ecde23f707b4
 [29]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwb86706
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
-[31]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#SwitchConnectivity 
+[31]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease501
+[32]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh75475

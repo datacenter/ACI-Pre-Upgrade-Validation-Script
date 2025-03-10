@@ -1,0 +1,5613 @@
+[
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/nprof-L102/leaves-L102-typ-range/nodeblk-102",
+        "extMngdBy": "",
+        "from_": "102",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:22.837-07:00",
+        "name": "102",
+        "nameAlias": "",
+        "status": "",
+        "to_": "102",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/nprof-L103/leaves-L103-typ-range/nodeblk-103",
+        "extMngdBy": "",
+        "from_": "103",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:22.837-07:00",
+        "name": "103",
+        "nameAlias": "",
+        "status": "",
+        "to_": "103",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/nprof-L104/leaves-L104-typ-range/nodeblk-104",
+        "extMngdBy": "",
+        "from_": "104",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:22.837-07:00",
+        "name": "104",
+        "nameAlias": "",
+        "status": "",
+        "to_": "104",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/nprof-L101/leaves-L101-typ-range/nodeblk-101",
+        "extMngdBy": "",
+        "from_": "101",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:24.389-07:00",
+        "name": "101",
+        "nameAlias": "",
+        "status": "",
+        "to_": "101",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/nprof-L101-102/leaves-L101-102-typ-range/nodeblk-c5ac8715e3660abb",
+        "extMngdBy": "",
+        "from_": "101",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:16:47.031-07:00",
+        "name": "c5ac8715e3660abb",
+        "nameAlias": "",
+        "status": "",
+        "to_": "102",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/spprof-S1001/spines-S1001-typ-range/nodeblk-1001",
+        "extMngdBy": "",
+        "from_": "1001",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:22.819-07:00",
+        "name": "1001",
+        "nameAlias": "",
+        "status": "",
+        "to_": "1001",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/spprof-S1002/spines-S1002-typ-range/nodeblk-1002",
+        "extMngdBy": "",
+        "from_": "1002",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:22.688-07:00",
+        "name": "1002",
+        "nameAlias": "",
+        "status": "",
+        "to_": "1002",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L102/leaves-L102-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.937-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L102",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L103/leaves-L103-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:16.136-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L103",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L104/leaves-L104-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.812-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L104",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L101/leaves-L101-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.866-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L101",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraLeafS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L101-102/leaves-L101-102-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:16:47.031-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L101-102",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-23-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:53.952-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-23",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-12-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:56.723-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-12",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-13-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:56.369-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-13",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-11-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.231-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-11",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-2-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.370-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-22-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.881-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-22",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-24-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.095-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-24",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-3-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.349-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-10-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-01T19:41:52.177-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-10",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-test-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-01T22:48:09.707-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "test",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-1-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:51:05.890-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-14-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:51:34.216-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-14",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-30-1-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:52:09.425-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-30-1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-17-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T18:54:24.173-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-17",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-15-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T22:36:17.082-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-15",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-11-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:01.223-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-11",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-1-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.148-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-13-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.545-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-13",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-12-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.019-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-12",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-3-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.176-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-2-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.185-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-13-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:53.952-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-13",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-12-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:53.952-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-12",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-2-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.010-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-3-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.219-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-11-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.701-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-11",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-1-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.425-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-2-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:53.934-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-1-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:56.804-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-11-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:56.898-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-11",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-3-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.556-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-13-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.691-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-13",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-12-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:57.870-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-12",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101-102/hports-ETH1-40-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:56.804-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-40",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101-102/hports-ETH1-41-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:25.190-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-41",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103-104/hports-ETH1-40-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:55.755-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-40",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEXP/hports-ETH1-9-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:50:49.746-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-9",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPortS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEX110/hports-ETH1-10-typ-range",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:20.186-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "ETH1-10",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "type": "range",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-23-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.855-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-UCS_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-12-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-07-25T11:33:08.300-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-13-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-07-24T11:26:51.793-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-11-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T12:22:10.326-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-2-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T13:32:45.705-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2-2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-22-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.855-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-UCS_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-24-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.855-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-UCS_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-3-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-10-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:52:41.270-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraFexBndlGrp",
+        "tDn": "uni/infra/fexprof-FEXP/fexbundle-FEXP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-test-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-01T22:48:09.707-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "unformed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBaseGrp",
+        "tDn": "",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-1-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:51:05.890-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-14-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:51:34.216-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraBrkoutPortGrp",
+        "tDn": "uni/infra/funcprof/brkoutportgrp-system-breakout-25g-4x",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-30-1-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:52:09.425-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-17-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "102",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T18:54:24.173-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraFexBndlGrp",
+        "tDn": "uni/infra/fexprof-FEXP/fexbundle-FEXP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-15-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T22:36:17.082-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-PC_101_1_15",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-11-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-1-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-13-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.920-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-N9K_VPC_3-4_13",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-12-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-3-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-2-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-13-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-12-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-2-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-3-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-11-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-1-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-2-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-1-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-11-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-3-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-13-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.920-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-N9K_VPC_3-4_13",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-12-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101-102/hports-ETH1-40-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:56.804-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-VPC_40",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L101-102/hports-ETH1-41-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "110",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:25.190-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraFexBndlGrp",
+        "tDn": "uni/infra/fexprof-FEX110/fexbundle-FEX110",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/accportprof-L103-104/hports-ETH1-40-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:55.755-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-VPC_103-104_40",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/fexprof-FEXP/hports-ETH1-9-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:50:49.746-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/fexprof-FEX110/hports-ETH1-10-typ-range/rsaccBaseGrp",
+        "extMngdBy": "",
+        "fexId": "101",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:20.186-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-FEX_VPC1",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-23-typ-range/portblk-1-23",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "23",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.197-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-23",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "23",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-12-typ-range/portblk-1-12",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "12",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:13.406-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-12",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "12",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-13-typ-range/portblk-1-13",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "13",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.941-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-13",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "13",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-11-typ-range/portblk-1-11",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "11",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.547-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-11",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "11",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-2-typ-range/portblk-1-2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "2",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.139-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "2",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-22-typ-range/portblk-1-22",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "22",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.520-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-22",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "22",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-24-typ-range/portblk-1-24",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "24",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:11.650-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-24",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "24",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-3-typ-range/portblk-1-3",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "3",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:11.019-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-3",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "3",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-10-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "10",
+        "lcOwn": "local",
+        "modTs": "2024-08-01T19:41:52.177-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "10",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-test-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "2",
+        "fromPort": "10",
+        "lcOwn": "local",
+        "modTs": "2024-08-01T22:48:09.707-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "2",
+        "toPort": "12",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-1-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:51:05.890-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-14-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "14",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:51:34.216-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "14",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-17-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "17",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T18:54:24.173-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "17",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-15-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "15",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T22:36:17.082-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "15",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-11-typ-range/portblk-1-11",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "11",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:13.930-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-11",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "11",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-1-typ-range/portblk-1-1",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:12.956-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-1",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-13-typ-range/portblk-1-13",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "13",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.925-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-13",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "13",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-12-typ-range/portblk-1-12",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "12",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:08.427-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-12",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "12",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-3-typ-range/portblk-1-3",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "3",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.821-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-3",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "3",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103/hports-ETH1-2-typ-range/portblk-1-2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "2",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:12.274-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "2",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-13-typ-range/portblk-1-13",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "13",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.941-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-13",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "13",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-12-typ-range/portblk-1-12",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "12",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:13.674-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-12",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "12",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-2-typ-range/portblk-1-2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "2",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:16.848-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "2",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-3-typ-range/portblk-1-3",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "3",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.941-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-3",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "3",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-11-typ-range/portblk-1-11",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "11",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.821-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-11",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "11",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102/hports-ETH1-1-typ-range/portblk-1-1",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:11.019-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-1",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-2-typ-range/portblk-1-2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "2",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.821-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "2",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-1-typ-range/portblk-1-1",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.801-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-1",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-11-typ-range/portblk-1-11",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "11",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:11.638-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-11",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "11",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-3-typ-range/portblk-1-3",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "3",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:14.685-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-3",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "3",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-13-typ-range/portblk-1-13",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "13",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:15.723-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-13",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "13",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104/hports-ETH1-12-typ-range/portblk-1-12",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "12",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:13.230-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-12",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "12",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101-102/hports-ETH1-40-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "40",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:56.804-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "40",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101-102/hports-ETH1-41-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "41",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:25.190-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "41",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103-104/hports-ETH1-40-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "40",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:55.755-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "40",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEXP/hports-ETH1-9-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "9",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:50:49.746-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "9",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEX110/hports-ETH1-10-typ-range/portblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "10",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:20.186-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "10",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/spaccportprof-S1001/shports-ETH1-2-typ-range/portblk-1-2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "2",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:19.854-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "2",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/spaccportprof-S1001/shports-ETH1-1-typ-range/portblk-1-1",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:21.413-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-1",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/spaccportprof-S1002/shports-ETH1-2-typ-range/portblk-1-2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "2",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.952-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "2",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraPortBlk": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/spaccportprof-S1002/shports-ETH1-1-typ-range/portblk-1-1",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:21.434-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "1-1",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L102",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:11.356-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L102",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L103",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:11.377-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L103",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L104",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:11.377-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L104",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L101",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:11.377-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L101",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraNodeP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/nprof-L101-102",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:16:47.031-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L101-102",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L102/rsaccPortP-[uni/infra/accportprof-L102]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.625-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L102",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L103/rsaccPortP-[uni/infra/accportprof-L103]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.823-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L103",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L103/rsaccPortP-[uni/infra/accportprof-L103-104]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:18:04.917-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L103-104",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L104/rsaccPortP-[uni/infra/accportprof-L104]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:41:18.610-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L104",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L104/rsaccPortP-[uni/infra/accportprof-L103-104]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:18:13.167-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L103-104",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L101/rsaccPortP-[uni/infra/accportprof-L101]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-01T19:41:52.177-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L101",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAccPortP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/nprof-L101-102/rsaccPortP-[uni/infra/accportprof-L101-102]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:16:47.031-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortP",
+        "tDn": "uni/infra/accportprof-L101-102",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:40:44.768-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L101",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:40:44.768-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L103",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L102",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:40:44.768-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L102",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L104",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:40:44.768-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L104",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101-102",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:56.804-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L101-102",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L103-104",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:55.755-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "L103-104",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraFexP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEXP",
+        "extMngdBy": "",
+        "fexId": "unspecified",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:50:49.746-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "FEXP",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraFexP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEX110",
+        "extMngdBy": "",
+        "fexId": "unspecified",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:20.186-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "FEX110",
+        "nameAlias": "",
+        "nodeId": "0",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraFexBndlGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEXP/fexbundle-FEXP",
+        "extMngdBy": "",
+        "lagT": "link",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:50:49.746-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "FEXP",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraFexBndlGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/fexprof-FEX110/fexbundle-FEX110",
+        "extMngdBy": "",
+        "lagT": "link",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:20.186-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "FEX110",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundle-N9K_VPC_3-4_13/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.728-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundle-PC_101_1_15/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:43:29.631-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundle-VPC_40/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:53.581-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundle-VPC_103-104_40/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:52.277-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundle-FEX_VPC1/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:15.256-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundlepolgrp-PC_override/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:08:43.077-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accbundlepolgrp-VPC_override/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:08.675-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-UCS_ACCESS/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.802-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-UCS_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-INB_APIC/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.770-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-INB_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.770-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:56.629-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-FEC/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-07-06T18:12:40.002-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS3/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:57.184-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP3",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2-2/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T13:32:40.506-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-N9K_AEP2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsAttEntP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/funcprof/spaccportgrp-IPN/rsattEntP",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "isUsingConnSel": "no",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:45.241-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAttEntityP",
+        "tDn": "uni/infra/attentp-IPN_AEP",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "VPC from leaf3 and 4 on eth1/13 towards N9K",
+        "dn": "uni/infra/funcprof/accbundle-N9K_VPC_3-4_13",
+        "extMngdBy": "",
+        "lagT": "node",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.770-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_VPC_3-4_13",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accbundle-PC_101_1_15",
+        "extMngdBy": "",
+        "lagT": "link",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:43:29.631-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "PC_101_1_15",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accbundle-VPC_40",
+        "extMngdBy": "",
+        "lagT": "node",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:53.581-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "VPC_40",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accbundle-VPC_103-104_40",
+        "extMngdBy": "",
+        "lagT": "node",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:52.277-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "VPC_103-104_40",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accbundle-FEX_VPC1",
+        "extMngdBy": "",
+        "lagT": "node",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:15.256-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "FEX_VPC1",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-UCS_ACCESS",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.770-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "UCS_ACCESS",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-INB_APIC",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.747-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "INB_APIC",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:46.770-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_ACCESS",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-22T18:41:28.128-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_ACCESS2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-FEC",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-06T18:12:40.002-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "FEC",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS3",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:57.184-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_ACCESS3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccPortGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2-2",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T13:32:40.506-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_ACCESS2-2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-default",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:32:30.401-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "default",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "0",
+        "userdom": ":"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-UCS_AEP",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:30.846-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "UCS_AEP",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-IPN_AEP",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:30.834-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "IPN_AEP",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-N9K_AEP",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:30.453-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_AEP",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-INB_AEP",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:30.400-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "INB_AEP",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-N9K_AEP2",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:39.851-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_AEP2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAttEntityP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/attentp-N9K_AEP3",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:50.532-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "N9K_AEP3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-UCS_AEP/rsdomP-[uni/phys-SPAN_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:38.529-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-SPAN_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-UCS_AEP/rsdomP-[uni/phys-INB_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:38.519-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-INB_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-UCS_AEP/rsdomP-[uni/phys-TK_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:38.996-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-UCS_AEP/rsdomP-[uni/vmmp-VMware/dom-F2_DVS]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:39.098-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "vmmDomP",
+        "tDn": "uni/vmmp-VMware/dom-F2_DVS",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-IPN_AEP/rsdomP-[uni/phys-IPN_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:38.519-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "missing-target",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraADomP",
+        "tDn": "uni/phys-IPN_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-N9K_AEP/rsdomP-[uni/l3dom-TK_L3DOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:35.641-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "l3extDomP",
+        "tDn": "uni/l3dom-TK_L3DOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-N9K_AEP/rsdomP-[uni/phys-TK_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:38.908-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-N9K_AEP/rsdomP-[uni/phys-INB_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:39.118-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-INB_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "dn": "uni/infra/attentp-INB_AEP/rsdomP-[uni/phys-INB_PHYDOM]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:36.450-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-INB_PHYDOM",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/attentp-N9K_AEP2/rsdomP-[uni/phys-TK_PHYDOM2]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:39.873-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/attentp-N9K_AEP2/rsdomP-[uni/vmmp-VMware/dom-F2_DVS2]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-07-22T18:31:42.543-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "vmmDomP",
+        "tDn": "uni/vmmp-VMware/dom-F2_DVS2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsDomP": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/attentp-N9K_AEP3/rsdomP-[uni/phys-TK_PHYDOM3]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:50.554-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM3",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[TK_L3_VLAN]-static/rtinfraVlanNs-[uni/l3dom-TK_L3DOM]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:23.011-07:00",
+        "status": "",
+        "tCl": "l3extDomP",
+        "tDn": "uni/l3dom-TK_L3DOM"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[SPAN_VLAN]-static/rtinfraVlanNs-[uni/phys-SPAN_PHYDOM]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:22.963-07:00",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-SPAN_PHYDOM"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[INB_VLAN]-static/rtinfraVlanNs-[uni/phys-INB_PHYDOM]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:22.971-07:00",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-INB_PHYDOM"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[IPN_VLAN]-static/rtinfraVlanNs-[uni/l3dom-IPN_L3DOM]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:22.992-07:00",
+        "status": "",
+        "tCl": "l3extDomP",
+        "tDn": "uni/l3dom-IPN_L3DOM"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[TK_DVS_VLAN]-dynamic/rtinfraVlanNs-[uni/vmmp-VMware/dom-F2_DVS]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:58.910-07:00",
+        "status": "",
+        "tCl": "vmmDomP",
+        "tDn": "uni/vmmp-VMware/dom-F2_DVS"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN]-static/rtinfraVlanNs-[uni/phys-TK_PHYDOM]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:22.954-07:00",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN2]-dynamic/rtinfraVlanNs-[uni/phys-TK_PHYDOM2]",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:31.670-07:00",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM2"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[DVS_POOL_2]-dynamic/rtinfraVlanNs-[uni/vmmp-VMware/dom-F2_DVS2]",
+        "lcOwn": "local",
+        "modTs": "2024-07-22T18:05:02.597-07:00",
+        "status": "",
+        "tCl": "vmmDomP",
+        "tDn": "uni/vmmp-VMware/dom-F2_DVS2"
+      }
+    }
+  },
+  {
+    "fvnsRtVlanNs": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN3]-static/rtinfraVlanNs-[uni/phys-TK_PHYDOM3]",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:44.367-07:00",
+        "status": "",
+        "tCl": "physDomP",
+        "tDn": "uni/phys-TK_PHYDOM3"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_L3_VLAN]-static/from-[vlan-2050]-to-[vlan-2099]",
+        "extMngdBy": "",
+        "from": "vlan-2050",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:04.856-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-2099",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[SPAN_VLAN]-static/from-[vlan-800]-to-[vlan-800]",
+        "extMngdBy": "",
+        "from": "vlan-800",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.393-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-800",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[SPAN_VLAN]-static/from-[vlan-801]-to-[vlan-801]",
+        "extMngdBy": "",
+        "from": "vlan-801",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T22:57:53.487-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-801",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[INB_VLAN]-static/from-[vlan-20]-to-[vlan-25]",
+        "extMngdBy": "",
+        "from": "vlan-20",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.405-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-25",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[IPN_VLAN]-static/from-[vlan-4]-to-[vlan-4]",
+        "extMngdBy": "",
+        "from": "vlan-4",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:05.006-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-4",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_DVS_VLAN]-dynamic/from-[vlan-2250]-to-[vlan-2299]",
+        "extMngdBy": "",
+        "from": "vlan-2250",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.734-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-2299",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN]-static/from-[vlan-2000]-to-[vlan-2049]",
+        "extMngdBy": "",
+        "from": "vlan-2000",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.722-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-2049",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "dynamic",
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN2]-dynamic/from-[vlan-2000]-to-[vlan-2049]",
+        "extMngdBy": "",
+        "from": "vlan-2000",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:29.466-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-2049",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[DVS_POOL_2]-dynamic/from-[vlan-2289]-to-[vlan-2289]",
+        "extMngdBy": "",
+        "from": "vlan-2289",
+        "lcOwn": "local",
+        "modTs": "2024-07-22T18:47:43.183-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-2289",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "inherit",
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN3]-static/from-[vlan-2000]-to-[vlan-2049]",
+        "extMngdBy": "",
+        "from": "vlan-2000",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:41.673-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "",
+        "nameAlias": "",
+        "role": "external",
+        "status": "",
+        "to": "vlan-2049",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_L3_VLAN]-static",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:04.856-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "TK_L3_VLAN",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[SPAN_VLAN]-static",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.393-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "SPAN_VLAN",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[INB_VLAN]-static",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.405-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "INB_VLAN",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[IPN_VLAN]-static",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:05.006-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "IPN_VLAN",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "dynamic",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_DVS_VLAN]-dynamic",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.734-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "TK_DVS_VLAN",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:terraform",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN]-static",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:42:59.722-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "TK_PHY_VLAN",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "dynamic",
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN2]-dynamic",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:29.466-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "TK_PHY_VLAN2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "dynamic",
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[DVS_POOL_2]-dynamic",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-22T18:47:43.183-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "DVS_POOL_2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "fvnsVlanInstP": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "",
+        "childAction": "",
+        "configIssues": "",
+        "descr": "",
+        "dn": "uni/infra/vlanns-[TK_PHY_VLAN3]-static",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:41.673-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "TK_PHY_VLAN3",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlPolGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accbundlepolgrp-PC_override",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:08:43.077-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "PC_override",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraAccBndlPolGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/funcprof/accbundlepolgrp-VPC_override",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:08.675-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "VPC_override",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPathS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/hpaths-default",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:31:58.122-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "default",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "0",
+        "userdom": ":"
+      }
+    }
+  },
+  {
+    "infraHPathS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/hpaths-VPC",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:08:48.319-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "VPC",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPathS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/hpaths-PC",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:24.418-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "PC",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraHPathS": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "creator": "USER",
+        "descr": "",
+        "dn": "uni/infra/hpaths-102_1_2",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T22:35:44.880-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "102_1_2",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsHPathAtt": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/hpaths-VPC/rsHPathAtt-[topology/pod-2/protpaths-103-104/pathep-[N9K_VPC_3-4_13]]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:08:48.319-07:00",
+        "rType": "mo",
+        "state": "unformed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "fabricPathEp",
+        "tDn": "topology/pod-2/protpaths-103-104/pathep-[N9K_VPC_3-4_13]",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsHPathAtt": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/hpaths-PC/rsHPathAtt-[topology/pod-1/paths-101/pathep-[PC_101_1_15]]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:24.418-07:00",
+        "rType": "mo",
+        "state": "unformed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "fabricPathEp",
+        "tDn": "topology/pod-1/paths-101/pathep-[PC_101_1_15]",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsHPathAtt": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/hpaths-102_1_2/rsHPathAtt-[topology/pod-1/paths-102/pathep-[eth1/3]]",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T22:35:44.880-07:00",
+        "rType": "mo",
+        "state": "unformed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "fabricPathEp",
+        "tDn": "topology/pod-1/paths-102/pathep-[eth1/3]",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsPathToAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/hpaths-VPC/rspathToAccBaseGrp",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:32.226-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlPolGrp",
+        "tDn": "uni/infra/funcprof/accbundlepolgrp-VPC_override",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsPathToAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/hpaths-PC/rspathToAccBaseGrp",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:24.418-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccBndlPolGrp",
+        "tDn": "uni/infra/funcprof/accbundlepolgrp-PC_override",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "infraRsPathToAccBaseGrp": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "dn": "uni/infra/hpaths-102_1_2/rspathToAccBaseGrp",
+        "extMngdBy": "",
+        "forceResolve": "yes",
+        "lcOwn": "local",
+        "modTs": "2024-08-07T22:35:44.880-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "rType": "mo",
+        "state": "formed",
+        "stateQual": "none",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2",
+        "tType": "mo",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  },
+  {
+    "l2IfPol": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/l2IfP-default",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:32:30.401-07:00",
+        "name": "default",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "qinq": "disabled",
+        "status": "",
+        "uid": "0",
+        "userdom": ":",
+        "vepa": "disabled",
+        "vlanScope": "global"
+      }
+    }
+  },
+  {
+    "l2IfPol": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/l2IfP-VLAN_SCOPE_LOCAL",
+        "extMngdBy": "",
+        "lcOwn": "local",
+        "modTs": "2024-06-27T18:31:55.234-07:00",
+        "name": "VLAN_SCOPE_LOCAL",
+        "nameAlias": "",
+        "ownerKey": "",
+        "ownerTag": "",
+        "qinq": "disabled",
+        "status": "",
+        "uid": "15374",
+        "userdom": ":all:",
+        "vepa": "disabled",
+        "vlanScope": "portlocal"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-UCS_ACCESS]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.855-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-UCS_ACCESS"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundle-N9K_VPC_3-4_13]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.920-07:00",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-N9K_VPC_3-4_13"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-INB_APIC]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:41.920-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-INB_APIC"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-N9K_ACCESS]",
+        "lcOwn": "local",
+        "modTs": "2024-06-25T21:43:42.167-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-FEC]",
+        "lcOwn": "local",
+        "modTs": "2024-07-06T18:12:40.002-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-FEC"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-N9K_ACCESS2-2]",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T13:32:40.506-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2-2"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundlepolgrp-PC_override]",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:08:43.077-07:00",
+        "status": "",
+        "tCl": "infraAccBndlPolGrp",
+        "tDn": "uni/infra/funcprof/accbundlepolgrp-PC_override"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundle-PC_101_1_15]",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:43:29.631-07:00",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-PC_101_1_15"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundlepolgrp-VPC_override]",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T16:44:08.675-07:00",
+        "status": "",
+        "tCl": "infraAccBndlPolGrp",
+        "tDn": "uni/infra/funcprof/accbundlepolgrp-VPC_override"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundle-VPC_40]",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:15:53.581-07:00",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-VPC_40"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundle-VPC_103-104_40]",
+        "lcOwn": "local",
+        "modTs": "2024-08-03T00:17:52.277-07:00",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-VPC_103-104_40"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-default/rtinfraL2IfPol-[uni/infra/funcprof/accbundle-FEX_VPC1]",
+        "lcOwn": "local",
+        "modTs": "2024-08-04T22:13:15.256-07:00",
+        "status": "",
+        "tCl": "infraAccBndlGrp",
+        "tDn": "uni/infra/funcprof/accbundle-FEX_VPC1"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-VLAN_SCOPE_LOCAL/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-N9K_ACCESS3]",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:45:57.184-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS3"
+      }
+    }
+  },
+  {
+    "l2RtL2IfPol": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/infra/l2IfP-VLAN_SCOPE_LOCAL/rtinfraL2IfPol-[uni/infra/funcprof/accportgrp-N9K_ACCESS2]",
+        "lcOwn": "local",
+        "modTs": "2024-07-26T12:46:17.802-07:00",
+        "status": "",
+        "tCl": "infraAccPortGrp",
+        "tDn": "uni/infra/funcprof/accportgrp-N9K_ACCESS2"
+      }
+    }
+  },
+  {
+    "infraSubPortBlk": {
+      "attributes": {
+        "annotation": "",
+        "childAction": "",
+        "descr": "",
+        "dn": "uni/infra/accportprof-L101/hports-ETH1-30-1-typ-range/subportblk-block2",
+        "extMngdBy": "",
+        "fromCard": "1",
+        "fromPort": "30",
+        "fromSubPort": "1",
+        "lcOwn": "local",
+        "modTs": "2024-08-02T00:52:09.425-07:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "block2",
+        "nameAlias": "",
+        "status": "",
+        "toCard": "1",
+        "toPort": "30",
+        "toSubPort": "1",
+        "uid": "15374",
+        "userdom": ":all:"
+      }
+    }
+  }
+]

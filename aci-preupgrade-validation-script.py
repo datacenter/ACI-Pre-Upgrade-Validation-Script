@@ -32,7 +32,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v2.2.0"
+SCRIPT_VERSION = "v2.4.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
@@ -42,7 +42,13 @@ MANUAL = 'MANUAL CHECK REQUIRED'
 POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
-ver_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
+path_regex = (
+    r"topology/pod-(?P<pod>\d+)/"
+    r"(?:prot)?paths-(?P<nodes>\d+|\d+-\d+)/"  # direct or PC/vPC
+    r"(?:ext(?:prot)?paths-(?P<fex>\d+|\d+-\d+)/)?"  # FEX (optional)
+    r"pathep-\[(?P<port>.+)\]"  # ethX/Y or PC/vPC IFPG name
+)
+dom_regex = r"uni/(?:vmmp-[^/]+/)?(?P<type>phys|l2dom|l3dom|dom)-(?P<dom>[^/]+)"
 
 tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
@@ -74,7 +80,6 @@ class Connection(object):
 
         username         (opt) username credential (default 'admin')
         password         (opt) password credential (default 'cisco')
-        enable_password  (opt) enable password credential (IOS only) (default 'cisco')
         protocol         (opt) telnet/ssh option (default 'ssh')
         port             (opt) port to connect on (if different from telnet/ssh default)
         timeout          (opt) wait in seconds between each command (default 30)
@@ -112,11 +117,10 @@ class Connection(object):
         self.log = None
         self.username = 'admin'
         self.password = 'cisco'
-        self.enable_password = 'cisco'
         self.protocol = "ssh"
         self.port = None
         self.timeout = 30
-        self.prompt = "[^#]#[ ]*(\x1b[\x5b-\x5f][\x40-\x7e])*[ ]*$"
+        self.prompt = "#\s.*$" #"[^#]#[ ]*(.*)*[ ]*$"
         self.verify = False
         self.searchwindowsize = 256
         self.force_wait = 0
@@ -245,14 +249,13 @@ class Connection(object):
         # successfully logged in at a different time
         if not self.__connected(): self.connect()
         # check for user provided 'prompt' which indicates successful login
-        # else provide approriate username/password/enable_password
+        # else provide approriate username/password
         matches = {
             "console": "(?i)press return to get started",
             "refuse": "(?i)connection refused",
             "yes/no": "(?i)yes/no",
             "username": "(?i)(user(name)*|login)[ as]*[ \t]*:[ \t]*$",
             "password": "(?i)password[ \t]*:[ \t]*$",
-            "enable": ">[ \t]*$",
             "prompt": self.prompt
         }
 
@@ -275,18 +278,10 @@ class Connection(object):
             elif match == "password":
                 # don't log passwords to the logfile
                 self.stop_log()
-                if last_match == "enable":
-                    # if last match was enable prompt, then send enable password
-                    logging.debug("matched password prompt, send enable password")
-                    self.child.sendline(self.enable_password)
-                else:
-                    logging.debug("matched password prompt, send password")
-                    self.child.sendline(self.password)
+                logging.debug("matched password prompt, send password")
+                self.child.sendline(self.password)
                 # restart logging
                 self.start_log()
-            elif match == "enable":
-                logging.debug("matched enable prompt, send enable")
-                self.child.sendline("enable")
             elif match == "prompt":
                 logging.debug("successful login")
                 self._login = True
@@ -469,6 +464,411 @@ class AciVersion():
         return self.version == ver
 
 
+class AciObjectCrawler(object):
+    """
+    Args:
+        mos (list of dict): MOs in the form of output from the function `icurl()` with
+                            the filter `query-target` that returns a flat list.
+    """
+
+    def __init__(self, mos):
+        self.mos = mos
+        self.mos_per_class = defaultdict(list)
+
+        self.init_mos_per_class()
+
+    def init_mos_per_class(self):
+        """
+        Create `self.mos_per_class` (dict) which stores lists of MOs per class.
+        """
+        for mo in self.mos:
+            classname = list(mo.keys())[0]
+            _mo = {"classname": classname}
+            _mo.update(mo[classname]["attributes"])
+            self.mos_per_class[classname].append(_mo)
+
+    def get_mos(self, classname):
+        return self.mos_per_class.get(classname, [])
+
+    def get_children(self, parent_dn, children_class):
+        """
+        Args:
+            parent_dn (str): DN of the parent MO.
+            children_class (str): Class name of the (grand) children under parent_dn.
+        Returns:
+            list of dict: The MOs of children_class under parent_dn.
+        """
+        mos = self.get_mos(children_class)
+        return [mo for mo in mos if mo["dn"].startswith(parent_dn + "/")]
+
+    def get_parent(self, child_dn, parent_class):
+        """
+        Args:
+            child_dn (str): DN of the child MO.
+            parent_class (str): Class name of the (grand) parent of child_dn.
+        Returns:
+            dict: The parent MO of child_dn.
+        """
+        mos = self.get_mos(parent_class)
+        for mo in mos:
+            if child_dn.startswith(mo["dn"] + "/"):
+                return mo
+        return {}
+
+    def get_rel_targets(self, src_dn, rel_class):
+        """
+        Args:
+            src_dn (str): DN of the source object.
+            rel_class (str): Relation class with tDn/tCl. Children of src_dn
+        Returns:
+            list of dict: MOs that are pointed by tDn from src_dn
+        """
+        targets = []
+        rel_mos = self.get_children(src_dn, rel_class)
+        for rel_mo in rel_mos:
+            mos = self.get_mos(rel_mo["tCl"])
+            for mo in mos:
+                if mo["dn"] == rel_mo["tDn"]:
+                    targets.append(mo)
+                    break
+            else:
+                # The target objects may not be in our self.mos_per_class.
+                # In that case, just return the DN and class.
+                targets.append({"dn": rel_mo["tDn"], "classname": rel_mo["tCl"]})
+        return targets
+
+    def get_src_from_tDn(self, tDn, rs_class, src_class):
+        """
+        Args:
+            tDn (str): Target DN. Get all MOs with this DN as the target via rs_class.
+            rs_class (str): Relation class.
+            src_class (str): Class name of source MOs that may have tDn as the target
+                             via rs_class.
+        Returns:
+            list of dict: MOs that point to tDn via rs_class.
+        """
+        src_mos = []
+        rs_mos = self.get_mos(rs_class)
+        for rs_mo in rs_mos:
+            if rs_mo["tDn"] == tDn:
+                src_mo = self.get_parent(rs_mo["dn"], src_class)
+                if src_mo:
+                    src_mos.append(src_mo)
+        return src_mos
+
+
+class AciAccessPolicyParser(AciObjectCrawler):
+    """
+    port_data:
+        key: port_path in the format shown below:
+            `<node_id>/eth<card_id>/<port_id>`
+            `<node_id>/<fex_id>/eth<card_id>/<port_id>`
+            `<node_id>/<IFPG name>`
+            `<node_id>/<fex_id>/<IFPG name>`
+        value: {
+            "ifpg": Name of IFPG
+            "override_ifpg": Name of override IFPG. Skipped if not override
+            "pc_type": none|pc|vpc. From the IFPG
+            "aep": Name of AEP
+            "domain_dns": List of domain DNs associated to the AEP
+            "vlan_scope": global or portlocal. From the IFPG
+            "node": Node ID
+            "fex": Fex ID or 0
+            "port": ethX/Y, ethX/Y/Z, IFPG name
+        }
+    vpool_per_dom:
+        key: domain DN
+        value: {
+            "name": Name of VLAN Pool
+            "vlan_ids": List of VLAN IDs. ex) [1,2,3,100,101]
+            "dom_name": Name of domain
+            "dom_type": Type of domain (phys, l3dom, vmm)
+        }
+    """
+    # VLAN Pool
+    VLANPool = "fvnsVlanInstP"
+    VLANBlk = "fvnsEncapBlk"
+    # AEP
+    AEP = "infraAttEntityP"
+    # Leaf Interface Profile etc.
+    IFP = "infraAccPortP"
+    IFSel = "infraHPortS"
+    PortBlk = "infraPortBlk"
+    SubPortBlk = "infraSubPortBlk"  # breakout
+    IFPath = "infraHPathS"  # override
+    # Leaf Switch Profile etc.
+    SWP = "infraNodeP"
+    SWSel = "infraLeafS"
+    NodeBlk = "infraNodeBlk"
+    # FEX
+    FEXP = "infraFexP"
+    FEXPG = "infraFexBndlGrp"
+
+    # Leaf Interface Policy Group etc.
+    IFPG = "infraAccPortGrp"
+    IFPG_PC = "infraAccBndlGrp"
+    IFPG_PC_O = "infraAccBndlPolGrp"  # override (PC/VPC PG)
+
+    # Leaf Interface Policy
+    IFPol_L2 = "l2IfPol"
+
+    # Relation objects (<src>_to_<tDn>)
+    VLAN_to_Dom = "fvnsRtVlanNs"
+    AEP_to_Dom = "infraRsDomP"
+    IFPG_to_AEP = "infraRsAttEntP"
+    IFSel_to_IFPG = "infraRsAccBaseGrp"
+    IFPath_to_IFPG = "infraRsPathToAccBaseGrp"  # override
+    IFPath_to_Path = "infraRsHPathAtt"  # override
+    SWP_to_IFP = "infraRsAccPortP"
+    IFPol_L2_to_IFPG = "l2RtL2IfPol"
+
+    def __init__(self, mos):
+        super(AciAccessPolicyParser, self).__init__(mos)
+        self.nodes_per_ifp = defaultdict(list)
+        self.port_data = defaultdict(dict)
+        self.vpool_per_dom = defaultdict(dict)
+
+        self.create_port_data()
+        self.create_vlanpool_per_domain()
+
+    @classmethod
+    def get_classes(cls):
+        """Get all ACI object classes used in this class"""
+        classes = []
+        for key, val in iteritems(AciAccessPolicyParser.__dict__):
+            if key.startswith("__") or not isinstance(val, str):
+                continue
+            classes.append(val)
+        return classes
+
+    def get_node_ids_from_ifp(self, ifp_dn):
+        if ifp_dn in self.nodes_per_ifp:
+            return self.nodes_per_ifp[ifp_dn]
+        node_ids = []
+        swps = self.get_src_from_tDn(ifp_dn, self.SWP_to_IFP, self.SWP)
+        for swp in swps:
+            swsels = self.get_children(swp["dn"], self.SWSel)
+            for swsel in swsels:
+                node_blks = self.get_children(swsel["dn"], self.NodeBlk)
+                for node_blk in node_blks:
+                    _from = int(node_blk["from_"])
+                    _to = int(node_blk["to_"])
+                    node_ids += range(_from, _to + 1)
+        self.nodes_per_ifp[ifp_dn] = node_ids
+        return node_ids
+
+    def get_node_ids_from_ifsel(self, ifsel_dn):
+        ifp = self.get_parent(ifsel_dn, self.IFP)
+        if not ifp:
+            logging.warning("No I/F Profile for Selector (%s)", ifsel_dn)
+            return []
+        node_ids = self.get_node_ids_from_ifp(ifp["dn"])
+        return node_ids
+
+    def get_fex_id_from_ifsel(self, ifsel_dn):
+        """Get FEX ID if ifsel is FEX NIF"""
+        fex_id = 0
+        rs_ifpgs = self.get_children(ifsel_dn, self.IFSel_to_IFPG)
+        if rs_ifpgs and rs_ifpgs[0]["tCl"] == "infraFexBndlGrp":
+            fex_id = int(rs_ifpgs[0]["fexId"])
+        return fex_id
+
+    def get_fexnif_ifsels_from_fexhif(self, hif_ifsel_dn):
+        """
+        Get FEX NIF I/F selectors from a FEX HIF I/F Selector
+        """
+        # 1. Get FEXPG from FEX HIF IFSel via the parent (FEXP).
+        #     FEXP -+- IFSel (FEX HIF)
+        #           +- FEXPG
+        fexp = self.get_parent(hif_ifsel_dn, self.FEXP)
+        if not fexp:
+            return []
+        fexpgs = self.get_children(fexp["dn"], self.FEXPG)
+        if not fexpgs:
+            return []
+        # There should be only one FEXPG for each FEXP
+        fexpg = fexpgs[0]
+        # 2. Get FEX NIF IFSels from FEXPG via the relation.
+        #     IFSel (FEX NIF) <--[IFSel_to_IFPG]-- FEXPG
+        fexnif_ifsels = self.get_src_from_tDn(
+            fexpg["dn"], self.IFSel_to_IFPG, self.IFSel
+        )
+        return fexnif_ifsels
+
+    def get_ports_from_ifsel(self, ifsel_dn):
+        ports = []
+        port_blks = self.get_children(ifsel_dn, self.PortBlk)
+        subport_blks = self.get_children(ifsel_dn, self.SubPortBlk)
+        for port_blk in port_blks + subport_blks:
+            from_card = int(port_blk["fromCard"])
+            from_port = int(port_blk["fromPort"])
+            from_subport = int(port_blk["fromSubPort"]) if port_blk["classname"] == self.SubPortBlk else 0
+            to_card = int(port_blk["toCard"])
+            to_port = int(port_blk["toPort"])
+            to_subport = int(port_blk["toSubPort"]) if port_blk["classname"] == self.SubPortBlk else 0
+            for card in range(from_card, to_card + 1):
+                for port in range(from_port, to_port + 1):
+                    for subport in range(from_subport, to_subport + 1):
+                        if subport:
+                            ports.append("eth{}/{}/{}".format(card, port, subport))
+                        else:
+                            ports.append("eth{}/{}".format(card, port))
+        return ports
+
+    def create_port_data(self):
+        ifsels = self.get_mos(self.IFSel)
+        for ifsel in ifsels:
+            # GET Node IDs and FEX IDs
+            node2fexid = {}
+            if ifsel["dn"].startswith("uni/infra/fexprof-"):
+                # When ifsel is of FEX HIF, get node IDs and FEX IDs from FEX NIFs.
+                # ACI supports only single-homed FEXes with or without vPC.
+                # One FEX HIF can be tied to 2 nodes, one FEX for each, at maximum.
+                nifs = self.get_fexnif_ifsels_from_fexhif(ifsel["dn"])
+                for nif in nifs:
+                    _node_ids = self.get_node_ids_from_ifsel(nif["dn"])
+                    fex_id = self.get_fex_id_from_ifsel(nif["dn"])
+                    for _node_id in _node_ids:
+                        node2fexid[_node_id] = fex_id
+                node_ids = node2fexid.keys()
+                if len(node_ids) > 2:
+                    logging.error(
+                        "FEX HIF handling failed as it shows more than 2 nodes."
+                    )
+                    break
+            else:
+                node_ids = self.get_node_ids_from_ifsel(ifsel["dn"])
+            if not node_ids:
+                continue
+
+            # Get IFPG
+            ifpgs = self.get_rel_targets(ifsel["dn"], self.IFSel_to_IFPG)
+            if not ifpgs:
+                continue
+            ifpg = ifpgs[0]
+
+            # Get ports or use IFPG Name for PC/VPC
+            if ifpg.get("classname") == self.IFPG_PC and ifpg.get("name"):
+                ports = [ifpg["name"]]
+            else:
+                ports = self.get_ports_from_ifsel(ifsel["dn"])
+            if not ports:
+                continue
+
+            # Get settings from IFPG
+            pc_type = self.get_pc_type(ifpg)
+
+            l2if = self.get_ifpol_l2if_from_ifpg(ifpg["dn"])
+            vlan_scope = l2if.get("vlanScope", "unknown")
+
+            # Get AEP from IFPG
+            aeps = self.get_rel_targets(ifpg.get("dn", ""), self.IFPG_to_AEP)
+            aep = aeps[0] if aeps else {}
+            # Get Domains from AEP
+            doms = self.get_rel_targets(aep.get("dn", ""), self.AEP_to_Dom)
+
+            for node_id in node_ids:
+                fex_id = node2fexid.get(node_id, 0)
+                for port in ports:
+                    if fex_id:
+                        path = "/".join([str(node_id), str(fex_id), port])
+                    else:
+                        path = "/".join([str(node_id), port])
+                    self.port_data[path] = {
+                        "node": str(node_id),
+                        "fex": str(fex_id),
+                        "port": port,
+                        "ifpg_name": ifpg.get("name", ""),
+                        "pc_type": pc_type,
+                        "vlan_scope": vlan_scope,
+                        "aep_name": aep.get("name", ""),
+                        "domain_dns": [dom["dn"] for dom in doms],
+                    }
+
+        # Override
+        ifpaths = self.get_mos(self.IFPath)
+        for ifpath in ifpaths:
+            # Get Node/FEX/Port ID
+            override_paths = self.get_children(ifpath["dn"], self.IFPath_to_Path)
+            if not override_paths:
+                continue
+            override_path = override_paths[0]
+            p = re.search(path_regex, override_path["tDn"])
+            nodes = p.group("nodes").split("-")
+            fexes = p.group("fex").split("-") if p.group("fex") else []
+            port = p.group("port")
+
+            # Get IFPG
+            ifpgs = self.get_rel_targets(ifpath["dn"], self.IFPath_to_IFPG)
+            if not ifpgs:
+                continue
+            ifpg = ifpgs[0]
+
+            # Get settings from IFPG
+            l2if = self.get_ifpol_l2if_from_ifpg(ifpg["dn"])
+            vlan_scope = l2if.get("vlanScope", "unknown")
+
+            # Get AEP from IFPG
+            aeps = self.get_rel_targets(ifpg.get("dn", ""), self.IFPG_to_AEP)
+            aep = aeps[0] if aeps else {}
+            # Get Domains from AEP
+            doms = self.get_rel_targets(aep.get("dn", ""), self.AEP_to_Dom)
+
+            for idx, node in enumerate(nodes):
+                fex = "0"
+                if fexes:
+                    fex = fexes[0] if len(fexes) == 1 else fexes[idx]
+                    path = "/".join([node, fex, port])
+                else:
+                    path = "/".join([node, port])
+                self.port_data[path].update({
+                    "node": node,
+                    "fex": fex,
+                    "port": port,
+                    "override_ifpg_name": ifpg.get("name", ""),
+                    "vlan_scope": vlan_scope,
+                    "aep_name": aep.get("name", ""),
+                    "domain_dns": [dom["dn"] for dom in doms],
+                })
+
+    def create_vlanpool_per_domain(self):
+        vlan_pools = self.get_mos(self.VLANPool)
+        for vlan_pool in vlan_pools:
+            vlan_ids = []
+            vlan_blks = self.get_children(vlan_pool["dn"], self.VLANBlk)
+            for vlan_blk in vlan_blks:
+                vlan_ids += range(
+                    int(vlan_blk["from"].split("-")[1]),
+                    int(vlan_blk["to"].split("-")[1]) + 1,
+                )
+            rs_domains = self.get_children(vlan_pool["dn"], self.VLAN_to_Dom)
+            for rs_domain in rs_domains:
+                dom_match = re.search(dom_regex, rs_domain["tDn"])
+                dom_name = "..." if not dom_match else dom_match.group("dom")
+                dom_type = "..." if not dom_match else dom_match.group("type")
+                # No need to worry about overwrite because there can be
+                # only one VLAN pool per domain.
+                self.vpool_per_dom[rs_domain["tDn"]] = {
+                    "name": vlan_pool["name"],
+                    "vlan_ids": vlan_ids,
+                    "dom_name": dom_name,
+                    "dom_type": "vmm" if dom_type == "dom" else dom_type,
+                }
+        return self.vpool_per_dom
+
+    def get_pc_type(self, ifpg):
+        pc_type = "none"
+        if ifpg.get("lagT") == "node":
+            pc_type = "vpc"
+        elif ifpg.get("lagT") in ["link", "fc-link"]:
+            pc_type = "pc"
+        return pc_type
+
+    def get_ifpol_l2if_from_ifpg(self, ifpg_dn):
+        ifpol_l2s = self.get_src_from_tDn(ifpg_dn, self.IFPol_L2_to_IFPG, self.IFPol_L2)
+        return ifpol_l2s[0] if ifpol_l2s else {}
+
+
 def is_firstver_gt_secondver(first_ver, second_ver):
     """ Used for CIMC version comparison """
     result = False
@@ -644,16 +1044,7 @@ def print_result(title, result, msg='',
     prints(output)
 
 
-def icurl(apitype, query):
-    if apitype not in ['class', 'mo']:
-        print('invalid API type - %s' % apitype)
-        return []
-    uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
-    cmd = ['icurl', '-gs', uri]
-    logging.info('cmd = ' + ' '.join(cmd))
-    response = subprocess.check_output(cmd)
-    logging.debug('response: ' + str(response))
-    imdata = json.loads(response)['imdata']
+def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('cversion does not have requested property')
@@ -663,8 +1054,36 @@ def icurl(apitype, query):
             raise OldVerClassNotFound('cversion does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
-    else:
-        return imdata
+
+
+def _icurl(apitype, query, page=0, page_size=100000):
+    if apitype not in ['class', 'mo']:
+        print('invalid API type - %s' % apitype)
+        return []
+    pre = '&' if '?' in query else '?'
+    query += '{}page={}&page-size={}'.format(pre, page, page_size)
+    uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
+    cmd = ['icurl', '-gs', uri]
+    logging.info('cmd = ' + ' '.join(cmd))
+    response = subprocess.check_output(cmd)
+    logging.debug('response: ' + str(response))
+    data = json.loads(response)
+    _icurl_error_handler(data['imdata'])
+    return data
+
+
+def icurl(apitype, query, page_size=100000):
+    total_imdata = []
+    total_cnt = 999999
+    page = 0
+    while total_cnt > len(total_imdata):
+        data = _icurl(apitype, query, page, page_size)
+        if not data['imdata']:
+            break
+        total_imdata += data['imdata']
+        total_cnt = int(data['totalCount'])
+        page += 1
+    return total_imdata
 
 
 def get_credentials():
@@ -1571,128 +1990,187 @@ def port_configured_for_apic_check(index, total_checks, **kwargs):
 
 def overlapping_vlan_pools_check(index, total_checks, **kwargs):
     title = 'Overlapping VLAN Pools'
-    result = FAIL_O
+    result = PASS
     msg = ''
-    headers = ["Tenant", "AP", "EPG", "VLAN Pool (Domain) 1", "VLAN Pool (Domain) 2", "Recommended Action"]
+    headers = ['Tenant', 'AP', 'EPG', 'Node', 'Port', 'VLAN Scope', 'VLAN ID', 'VLAN Pools (Domains)', 'Impact']
     data = []
-    recommended_action = 'Resolve overlapping VLANs between these two VLAN pools'
-    doc_url = '"Overlapping VLAN Pool" from from Pre-Upgrade Check Lists'
+    recommended_action = """
+    Each node must have only one VLAN pool per VLAN ID across all the ports or across the ports with VLAN scope `portlocal` in the same EPG.'
+    When `Impact` shows `Outage`, you must resolve the overlapping VLAN pools.
+    When `Impact` shows `Flood Scope`, you should check whether it is ok that STP BPDUs, or any BUM traffic when using Flood-in-Encap, may not be flooded within the same VLAN ID across all the nodes/ports.
+    Note that only the nodes causing the overlap are shown above."""
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#overlapping-vlan-pool'
     print_title(title, index, total_checks)
 
     infraSetPols = icurl('mo', 'uni/infra/settings.json')
-    if infraSetPols[0]['infraSetPol']['attributes'].get('validateOverlappingVlans') == 'true':
-        result = PASS
+    if infraSetPols[0]['infraSetPol']['attributes'].get('validateOverlappingVlans') in ['true', 'yes']:
         msg = '`Enforce EPG VLAN Validation` is enabled. No need to check overlapping VLANs'
         print_result(title, result, msg)
         return result
 
-    fvAEPgs_with_fvRsDomAtt = icurl('class',
-                                    'fvAEPg.json?rsp-subtree=children&rsp-subtree-class=fvRsDomAtt&rsp-subtree-include=required')
-    fvnsVlanInstPs = icurl('class',
-                           'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
-    # get VLAN pools per domain
-    vpools = {}
-    for vlanInstP in fvnsVlanInstPs:
-        vpool = {'name': vlanInstP['fvnsVlanInstP']['attributes']['name'], 'encap': []}
-        dom_dns = []
-        for vlan_child in vlanInstP['fvnsVlanInstP']['children']:
-            if vlan_child.get('fvnsRtVlanNs'):
-                dom_dns.append(vlan_child['fvnsRtVlanNs']['attributes']['tDn'])
-            elif vlan_child.get('fvnsEncapBlk'):
-                encap_blk = range(int(vlan_child['fvnsEncapBlk']['attributes']['from'].split('-')[1]),
-                                  int(vlan_child['fvnsEncapBlk']['attributes']['to'].split('-')[1]) + 1)
-                vpool['encap'] += encap_blk
-        for dom_dn in dom_dns:
-            dom_regex = r'uni/(vmmp-[^/]+/)?(phys|l2dom|l3dom|dom)-(?P<dom>[^/]+)'
-            dom_match = re.search(dom_regex, dom_dn)
-            dom_name = '...' if not dom_match else dom_match.group('dom')
-            vpools[dom_dn] = dict(vpool, **{'dom_name': dom_name})
+    # Get VLAN pools and ports from access policy
+    mo_classes = AciAccessPolicyParser.get_classes()
+    filter = '?query-target=subtree&target-subtree-class=' + ','.join(mo_classes)
+    infra_mos = icurl('class', 'infraInfra.json' + filter)
+    mos = AciAccessPolicyParser(infra_mos)
 
-    # check VLAN pools if an EPG has multiple domains attached
-    for fvAEPg in fvAEPgs_with_fvRsDomAtt:
-        overlap_vpools = []
+    # Get EPG port deployments
+    epg_regex = r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)'
+    conn_regex = (
+        r"uni/epp/fv-\[" + epg_regex + r"]/"
+        r"node-(?P<node>\d+)/"
+        r"(?:"
+        r"(?:ext)?stpathatt-\[(?P<stport>[^\]]+)\](:?-extchid-(?P<stfex>\d+))?|"  # static port binding
+        r"dyatt-\[.+(?:ext(?:prot)?paths-(?P<dyfex>\d+)/)?pathep-\[(?P<dyport>[^\]]+)\]\]|"  # dynamic port binding
+        r"attEntitypathatt-\[(?P<aep>.+)\]"  # AEP binding
+        r")/"
+        r".*\[vlan-(?P<vlan>\d+)"
+    )
+    # uni/epp/fv-[{epgPKey}]/node-{id}/stpathatt-[{pathName}]/conndef/conn-[{encap}]-[{addr}]
+    # uni/epp/fv-[{epgPKey}]/node-{id}/extstpathatt-[{pathName}]-extchid-{extChId}/conndef/conn-[{encap}]-[{addr}]
+    # uni/epp/fv-[{epgPKey}]/node-{id}/dyatt-[{targetDn}]/conndef/conn-[{encap}]-[{addr}]
+    # uni/epp/fv-[{epgPKey}]/node-{id}/attEntitypathatt-[{pathName}]/conndef/conn-[{encap}]-[{addr}]
+    ports_per_epg = defaultdict(list)
+    fvIfConns = icurl('class', 'fvIfConn.json')
+    for fvIfConn in fvIfConns:
+        dn = re.search(conn_regex, fvIfConn['fvIfConn']['attributes']['dn'])
+        if not dn:
+            continue
+        epg_key = ':'.join([dn.group('tenant'), dn.group('ap'), dn.group('epg')])
+        port_keys = []
+        if not dn.group('aep'):
+            fex = dn.group('stfex') if dn.group('stfex') else dn.group('dyfex')
+            port = dn.group('stport') if dn.group('stport') else dn.group('dyport')
+            if fex:
+                port_keys.append('/'.join([dn.group('node'), fex, port]))
+            else:
+                port_keys.append('/'.join([dn.group('node'), port]))
+        else:
+            for port_key, port_data in iteritems(mos.port_data):
+                if port_data.get('aep_name') == dn.group('aep') and port_data.get('node') == dn.group('node'):
+                    port_keys.append(port_key)
+        for port_key in port_keys:
+            port_data = mos.port_data.get(port_key)
+            if not port_data:
+                continue
+            ports_per_epg[epg_key].append({
+                'tenant': str(dn.group('tenant')),
+                'ap': str(dn.group('ap')),
+                'epg': str(dn.group('epg')),
+                'node': str(port_data.get('node', '')),
+                'fex': str(port_data.get('fex', '')),
+                'port': str(port_data.get('port', '')),
+                'vlan': str(dn.group('vlan')),
+                'aep': str(port_data.get('aep_name', '')),
+                'domain_dns': port_data.get('domain_dns', []),
+                'pc_type': str(port_data.get('pc_type', '')),
+                'vlan_scope': str(port_data.get('vlan_scope', '')),
+            })
+
+    # Check overlapping VLAN pools per EPG
+    epg_filter = '?rsp-subtree-include=required&rsp-subtree=children&rsp-subtree-class=fvRsDomAtt'
+    fvAEPgs_with_domains = icurl('class', 'fvAEPg.json' + epg_filter)
+    for fvAEPg in fvAEPgs_with_domains:
+        # `rsp-subtree-include=required` ensures that fvRsDomAtt are the only children
         rsDoms = fvAEPg['fvAEPg']['children']
+        rsDom_dns = [rsDom['fvRsDomAtt']['attributes']['tDn'] for rsDom in rsDoms]
+
+        overlap_vlan_ids = set()
         for i in range(len(rsDoms)):
             for j in range(i + 1, len(rsDoms)):
                 i_dn = rsDoms[i]['fvRsDomAtt']['attributes']['tDn']
                 j_dn = rsDoms[j]['fvRsDomAtt']['attributes']['tDn']
+                i_vpool = mos.vpool_per_dom.get(i_dn)
+                j_vpool = mos.vpool_per_dom.get(j_dn)
                 # domains that do not have VLAN pools attached
-                if not vpools.get(i_dn) or not vpools.get(j_dn):
+                if not i_vpool or not j_vpool:
                     continue
-                if vpools[i_dn]['name'] != vpools[j_dn]['name'] \
-                        and set(vpools[i_dn]['encap']).intersection(vpools[j_dn]['encap']):
-                    overlap_vpools.append([vpools[i_dn], vpools[j_dn]])
+                if i_vpool['name'] != j_vpool['name']:
+                    overlap_vlan_ids.update(
+                        set(i_vpool['vlan_ids']).intersection(j_vpool['vlan_ids'])
+                    )
 
-        for overlap in overlap_vpools:
-            epg_regex = r'uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)'
-            dn = re.search(epg_regex, fvAEPg['fvAEPg']['attributes']['dn'])
-            data.append([dn.group('tenant'), dn.group('ap'), dn.group('epg'),
-                         '{} ({})'.format(overlap[0]['name'], overlap[0]['dom_name']),
-                         '{} ({})'.format(overlap[1]['name'], overlap[1]['dom_name']),
-                         recommended_action])
-    if not data:
-        result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
-    return result
+        if not overlap_vlan_ids:
+            continue
 
+        ports_per_node = defaultdict(dict)
+        epg_dn = re.search(epg_regex, fvAEPg['fvAEPg']['attributes']['dn'])
+        epg_key = ':'.join([epg_dn.group('tenant'), epg_dn.group('ap'), epg_dn.group('epg')])
+        epg_ports = ports_per_epg.get(epg_key, [])
+        for port in epg_ports:
+            vlan_id = int(port['vlan'])
+            if vlan_id not in overlap_vlan_ids:
+                continue
 
-def vnid_mismatch_check(index, total_checks, **kwargs):
-    title = 'VNID Mismatch'
-    result = FAIL_O
-    msg = ''
-    headers = ["EPG", "Access Encap", "Node ID", "Fabric Encap"]
-    data = []
-    mismatch_hits = []
-    recommended_action = 'Remove any domains with overlapping VLAN Pools from above EPGs, then redeploy VLAN'
-    doc_url = '"Overlapping VLAN Pool" from Pre-Upgrade Check Lists'
-    print_title(title, index, total_checks)
+            # Get domains that are attached to the port and the EPG
+            common_domain_dns = set(port['domain_dns']).intersection(rsDom_dns)
+            # Get VLAN pools for the VLAN ID of the port
+            # Also store domains for each VLAN pool for the final output
+            inuse_vpools = defaultdict(list)
+            for dom_dn in common_domain_dns:
+                vpool = mos.vpool_per_dom.get(dom_dn, {})
+                if vlan_id not in vpool.get('vlan_ids', []):
+                    continue
+                inuse_vpools[vpool['name']].append(vpool['dom_name'])
+            if not inuse_vpools:
+                continue
 
-    vlanCktEps = icurl('class', 'vlanCktEp.json?query-target-filter=ne(vlanCktEp.name,"")')
-    if not vlanCktEps:
-        result = ERROR
-        msg = 'Deployed VLANs (vlanCktEp) not found'
+            # len(inuse_vpools) == 1 at this point means that there is no
+            # overlapping VLAN pool issue with this port alone.
+            # But do not skip such a port yet because there may be another port
+            # on the same node with the same VLAN ID with a different VLAN pool.
+            port['inuse_vpools'] = inuse_vpools
+            vlan_scope = port.get('vlan_scope', 'global')
+            # handle all non-portlocal scope as global
+            if vlan_scope not in ['global', 'portlocal']:
+                vlan_scope = 'global'
+            if vlan_id not in ports_per_node[port['node']]:
+                ports_per_node[port['node']][vlan_id] = {}
+            if vlan_scope not in ports_per_node[port['node']][vlan_id]:
+                ports_per_node[port['node']][vlan_id][vlan_scope] = []
+            ports_per_node[port['node']][vlan_id][vlan_scope].append(port)
 
-    epg_encap_dict = {}
-    for vlanCktEp in vlanCktEps:
-        dn = re.search(node_regex, vlanCktEp['vlanCktEp']['attributes']['dn'])
-        node = dn.group("node")
-        access_encap = vlanCktEp['vlanCktEp']['attributes']['encap']
-        epg_dn = vlanCktEp['vlanCktEp']['attributes']['epgDn']
-        fab_encap = vlanCktEp['vlanCktEp']['attributes']['fabEncap']
+        for ports_per_vlanid in ports_per_node.values():
+            for ports_per_scope in ports_per_vlanid.values():
+                for ports in ports_per_scope.values():
+                    inuse_vpools_across_ports = set()
+                    has_vpc = False
+                    for port in ports:
+                        inuse_vpools_across_ports.update(
+                            port.get('inuse_vpools', {}).keys()
+                        )
+                        if port.get('pc_type') == 'vpc':
+                            has_vpc = True
 
-        if epg_dn not in epg_encap_dict:
-            epg_encap_dict[epg_dn] = {}
+                    # All ports on the node with the same VLAN ID use the same VLAN pool
+                    if len(inuse_vpools_across_ports) < 2:
+                        continue
 
-        if access_encap not in epg_encap_dict[epg_dn]:
-            epg_encap_dict[epg_dn][access_encap] = []
-
-        epg_encap_dict[epg_dn][access_encap].append({'node': node, 'fabEncap': fab_encap})
-
-    # Iterate through, check for overlaps, and print
-    for key, epg in iteritems(epg_encap_dict):
-        for vlanKey, vlan in iteritems(epg):
-            fab_encap_to_check = ""
-            for deployment in vlan:
-                if fab_encap_to_check == "" or deployment["fabEncap"] == fab_encap_to_check:
-                    fab_encap_to_check = deployment["fabEncap"]
-                else:  # something is wrong
-                    tmp_hit = {}
-                    tmp_hit["epgDn"] = key
-                    tmp_hit["epgDeployment"] = epg
-                    if tmp_hit not in mismatch_hits:  # some epg has more than one access encap.
-                        mismatch_hits.append(tmp_hit)
-                    break
-
-    if not mismatch_hits:
-        result = PASS
-
-    mismatch_hits.sort(key=lambda d: d.get("epgDn", ""))
-    for epg in mismatch_hits:
-        for access_encap, nodeFabEncaps in iteritems(epg["epgDeployment"]):
-            for nodeFabEncap in nodeFabEncaps:
-                node_id = nodeFabEncap['node']
-                fabric_encap = nodeFabEncap['fabEncap']
-                data.append([epg["epgDn"], access_encap, node_id, fabric_encap])
+                    if has_vpc:
+                        result = FAIL_O
+                    elif result == PASS:
+                        result = MANUAL
+                    impact = 'Outage' if has_vpc else 'Flood Scope'
+                    for port in ports:
+                        node = port['node']
+                        if port.get('fex') != "0":
+                            node += '(FEX {})'.format(port['fex'])
+                        vpool_domains = []
+                        for v_name, d_names in iteritems(port.get('inuse_vpools', {})):
+                            vpool_domains.append(
+                                '{}({})'.format(v_name, ','.join(sorted(d_names)))
+                            )
+                        data.append([
+                            port['tenant'],
+                            port['ap'],
+                            port['epg'],
+                            node,
+                            port['port'],
+                            port['vlan_scope'],
+                            port['vlan'],
+                            ', '.join(vpool_domains),
+                            impact,
+                        ])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -2907,6 +3385,10 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
     print_title(title, index, total_checks)
 
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
     if cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)") and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)")):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
@@ -3605,37 +4087,39 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
     print_title(title, index, total_checks)
     iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
-    # bd_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rsctx'
     bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
-        
-    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)") ):
+
+    if not tversion:
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        return MANUAL
+
+    if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)")):
         slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
         staticRoutes = icurl('class', slash32filter)
         if staticRoutes:
             staticroute_vrf = icurl('class', 'l3extRsEctx.json')
-            staticR_to_vrf = {}	
+            staticR_to_vrf = {}
             for staticRoute in staticRoutes:
                 staticroute_array = re.search(iproute_regex, staticRoute['ipRouteP']['attributes']['dn'])
-                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out")+ '/rsectx'
-                
+                l3out_dn = 'uni/tn-' + staticroute_array.group("tenant") + '/out-' + staticroute_array.group("l3out") + '/rsectx'
+
                 for l3outCtx in staticroute_vrf:
                     l3outCtx_Vrf = {}
                     if l3outCtx['l3extRsEctx']['attributes']['dn'] == l3out_dn:
-                        l3outCtx_Vrf['vrf'] =  l3outCtx['l3extRsEctx']['attributes']['tDn']
+                        l3outCtx_Vrf['vrf'] = l3outCtx['l3extRsEctx']['attributes']['tDn']
                         l3outCtx_Vrf['l3out'] = l3outCtx['l3extRsEctx']['attributes']['dn'].replace('/rsectx', '')
                         staticR_to_vrf[staticroute_array.group("addr")] = l3outCtx_Vrf
-                                
 
             bds_in_vrf = icurl('class', 'fvRsCtx.json')
             vrf_to_bd = {}
             for bd_ref in bds_in_vrf:
                 vrf_name = bd_ref['fvRsCtx']['attributes']['tDn']
                 bd_list = vrf_to_bd.get(vrf_name, [])
-                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx','')
+                bd_name = bd_ref['fvRsCtx']['attributes']['dn'].replace('/rsctx', '')
                 bd_list.append(bd_name)
                 vrf_to_bd[vrf_name] = bd_list
 
-            subnets_in_bd = icurl('class', 'fvSubnet.json')		
+            subnets_in_bd = icurl('class', 'fvSubnet.json')
             bd_to_subnet = {}
             for subnet in subnets_in_bd:
                 bd_subnet_re = re.search(bd_subnet_regex, subnet['fvSubnet']['attributes']['dn'])
@@ -3653,9 +4137,81 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
 
         if data:
             result = FAIL_O
-			
-        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result	
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "vzAny-to-vzAny Service Graph when crossing 5.0 release"
+    result = PASS
+    msg = ""
+    headers = ["VRF (Tn:VRF)", "Contract (Tn:Contract)", "Service Graph (Tn:SG)"]
+    data = []
+    recommended_action = "Be aware of transient traffic disruption for vzAny-to-vzAny Service Graph during APIC upgrade."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-to-vzany-service-graph-when-crossing-50-release"
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if not (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)")):
+        print_result(title, NA)
+        return NA
+
+    tn_regex = r"uni/tn-(?P<tn>[^/]+)"
+    vrf_regex = tn_regex + r"/ctx-(?P<vrf>[^/]+)"
+    brc_regex = tn_regex + r"/brc-(?P<brc>[^/]+)"
+    sg_regex = tn_regex + r"/AbsGraph-(?P<sg>[^/]+)"
+
+    # check if a SG is attached to a contract
+    vzRsSubjGraphAtts = icurl("class", "vzRsSubjGraphAtt.json")
+    for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
+        graphAtt_rns = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["dn"].split("/")
+        if len(graphAtt_rns) < 3:
+            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.")
+            return ERROR
+
+        # Get vzAny(VRF) relations of the contract. There can be multiple VRFs per contract.
+        vrfs = defaultdict(set)  # key: VRF, value: vzRtAnyToCons, vzRtAnyToProv
+        vzBrCP_dn = "/".join(graphAtt_rns[:3])  # Contract DN (uni/tn-xx/brc.xxx)
+        vzBrCP_api = vzBrCP_dn + ".json"
+        vzBrCP_api += "?query-target=children&target-subtree-class=vzRtAnyToCons,vzRtAnyToProv"
+        vzRtAnys = icurl("mo", vzBrCP_api)
+        for vzRtAny in vzRtAnys:
+            if "vzRtAnyToCons" in vzRtAny:
+                rel_class = "vzRtAnyToCons"
+            elif "vzRtAnyToProv" in vzRtAny:
+                rel_class = "vzRtAnyToProv"
+            else:
+                logging.warning("Unexpected class - %s", vzRtAny.keys())
+                continue
+            vrf_tdn = vzRtAny[rel_class]["attributes"]["tDn"]
+            vrf_match = re.search(vrf_regex, vrf_tdn)
+            if vrf_match:
+                vrf = vrf_match.group("tn") + ":" + vrf_match.group("vrf")
+            else:
+                vrf = vrf_tdn
+            vrfs[vrf].add(rel_class)
+        for vrf, relations in vrfs.items():
+            if len(relations) == 2:  # both cons and prov mean vzAny-to-vzAny
+                brc_match = re.search(brc_regex, vzBrCP_dn)
+                if brc_match:
+                    contract = brc_match.group("tn") + ":" + brc_match.group("brc")
+                else:
+                    contract = vzBrCP_dn
+                sg_dn = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["tDn"]
+                sg_match = re.search(sg_regex, sg_dn)
+                if sg_match:
+                    sg = sg_match.group("tn") + ":" + sg_match.group("sg")
+                else:
+                    sg = sg_dn
+                data.append([vrf, contract, sg])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
@@ -3812,7 +4368,6 @@ if __name__ == "__main__":
         # Configurations
         vpc_paired_switches_check,
         overlapping_vlan_pools_check,
-        vnid_mismatch_check,
         l3out_mtu_check,
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
@@ -3845,7 +4400,8 @@ if __name__ == "__main__":
         invalid_fex_rs_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
-        static_route_overlap_check
+        static_route_overlap_check,
+        vzany_vzany_service_epg_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
