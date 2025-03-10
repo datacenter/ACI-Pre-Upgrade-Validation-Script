@@ -34,7 +34,7 @@ Items                                                        | This Script      
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-
+[Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -52,6 +52,7 @@ Items                                                        | This Script      
 [g14]: #mini-aci-upgrade-to-602-or-later
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
+[g17]: #leaf-to-spine-redundancy-validation
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -427,6 +428,13 @@ This validation checks whether the number of objects for the existing and newly 
 When targeting any version that is 6.0(2) or greater, download both the 32-bit and 64-bit Cisco ACI-mode switch images to the Cisco APIC. Downloading only one of the images may result in errors during the upgrade process.
 
 For additional information, see the [Guidelines and Limitations for Upgrading or Downgrading][28] section of the Cisco APIC Installation and ACI Upgrade and Downgrade Guide.
+
+
+### Leaf to Spine Redundancy Validation
+
+When upgrading the Switches, traffic traversing any Leaf Switch that is connected to only a single spine will exhibit a Data Path Outage during the spine upgrade as there will be no alternate dataplane paths available.
+
+To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches. This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch.
 
 
 ## Fault Check Details

@@ -4253,6 +4253,51 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
+    title = 'Leaf to Spine Redundancy check'
+    result = PASS
+    msg = ''
+    headers = ["Leaf Switch Name", "Spine Adjacencies", "Message" ]
+    data = []
+    problem = 'The Leaf Switch has one or less spine adjacencies'
+    recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
+    doc_url = ''
+    print_title(title, index, total_checks)
+
+    fabric_nodes_api = 'fabricNode.json'
+    fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
+
+    lldp_adj_api = 'lldpAdjEp.json'
+    lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
+
+    fabricNodes= icurl('class', fabric_nodes_api)
+    all_spine_names = [node['fabricNode']['attributes']['name'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
+    
+    lldp_adj = icurl('class', lldp_adj_api)
+    for node in fabricNodes:
+        neighbors = set()
+        if node['fabricNode']['attributes']['role'] == 'leaf':
+            leaf_dn = node['fabricNode']['attributes']['dn']
+            leaf_name = node['fabricNode']['attributes']['name']
+            for lldp_neighbor in lldp_adj:
+                spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
+                lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
+                if leaf_dn in lldp_dn and spine_name in all_spine_names:
+                        neighbors.add(spine_name)
+                if len(neighbors) > 1:
+                    # Leaf has more than 1 Spine neighbor check passed
+                    break
+
+            if len(neighbors) <= 1:
+                data.append([leaf_name, "".join(neighbors), problem])
+            print(neighbors)
+    if data:
+        result = FAIL_O
+    
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4278,7 +4323,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        # General Checks
+        #General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
@@ -4293,6 +4338,7 @@ if __name__ == "__main__":
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
+        leaf_to_spine_redundancy_check,
 
         # Faults
         apic_disk_space_faults_check,
