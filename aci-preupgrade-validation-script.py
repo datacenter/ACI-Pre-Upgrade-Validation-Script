@@ -4252,6 +4252,57 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def clock_signal_component_failure(index, total_checks, **kwargs):
+    title = 'Check for CSCvg26013 / FN64251'
+    result = MANUAL
+    msg = ''
+    unformatted_headers = ['DN', 'Description', 'Model', 'Serial Number']
+    unformatted_data = []
+    affected_models = ["N9K-C9504-FM-E", "N9K-C9508-FM-E", "N9K-X9732C-EX"]
+    data = []
+    formatted_data = []
+    recommended_action = (
+        'If affected by this FN, the devices/modules might not come up after Reload.\n'
+        '  Check if the above SNs are affected by the FN using the URL https://snvui.cisco.com/snv/FN64251.\n'
+        '  If affected, replace the part prior to upgrade.'
+    )
+    doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html'
+
+    print_title(title, index, total_checks)
+
+    eqptFC = icurl('class', 'eqptFC.json')
+    eqptLC = icurl('class', 'eqptLC.json')
+
+    def check_affected_models(card_data, affected_models):
+        matching_rows = []
+        for card in card_data:
+            for card_key in ['eqptLC', 'eqptFC']:
+                attributes = card.get(card_key, {}).get('attributes', {})
+                descr = attributes.get('descr', '')
+                dn = attributes.get('dn', '')
+                model = attributes.get('model', '')
+                ser = attributes.get('ser', '')
+
+                for affected_model in affected_models:
+                    if affected_model in model:
+                        matching_rows.append({'dn': dn, 'descr': descr, 'model': model, 'ser': ser})
+        return matching_rows
+
+    existing_in_lc = check_affected_models(eqptLC, affected_models)
+    existing_in_fc = check_affected_models(eqptFC, affected_models)
+    data = existing_in_lc + existing_in_fc
+
+    if data:
+        data = [[row['dn'], row['descr'], row['model'], row['ser']] for row in data]
+        data.sort(key=lambda x: x[0])
+        unformatted_data = data
+    else:
+        result = PASS
+
+    print_result(title, result, msg, unformatted_headers, data, unformatted_headers, unformatted_data,
+                 recommended_action=recommended_action, doc_url=doc_url)
+
+    return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -4352,6 +4403,7 @@ if __name__ == "__main__":
         rtmap_comm_match_defect_check,
         static_route_overlap_check,
         vzany_vzany_service_epg_check,
+        clock_signal_component_failure
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
