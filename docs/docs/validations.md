@@ -2213,8 +2213,20 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
     Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
 
+### N9K-C9504-FM-E/N9K-C9508-FM-E/N9K-X9732C-EX Might Fail 
 
+A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months.
+Below are the affected moduled. This information is documented in https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
+https://snvui.cisco.com/snv/FN64251 can be used to validate if a Serial Number is affected. 
+This is also documented in https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013 
 
+Fabric Modules
+* N9K-C9504-FM-E=
+* N9K-C9508-FM-E=
+
+Line Card
+* N9K-X9732C-EX=
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2249,3 +2261,6 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 [30]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf44222
 [31]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease501
 [32]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh75475
+[33]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
+[34]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
+[35]: https://snvui.cisco.com/snv/FN64251
