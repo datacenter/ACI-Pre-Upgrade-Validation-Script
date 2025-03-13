@@ -159,7 +159,7 @@ Items                                           | Defect       | This Script    
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[N9K-C9504-FM-E/N9K-C9508-FM-E/N9K-X9732C-EX Might Fail ] [d19] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Nexus 950X FM or LC Might Fail to boot after reload] [d19] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -180,7 +180,7 @@ Items                                           | Defect       | This Script    
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
-[d19]: #n9k-c9504-fm-e/n9k-c9508-fm-e/n9k-x9732c-ex-might-fail 
+[d19]: #modular-spine-module-might-fail 
 
 
 ## General Check Details
@@ -2215,7 +2215,7 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
     Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
 
-### N9K-C9504-FM-E/N9K-C9508-FM-E/N9K-X9732C-EX Might Fail 
+### Nexus 950X FM or LC Might Fail to boot after reload 
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
 Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months.
