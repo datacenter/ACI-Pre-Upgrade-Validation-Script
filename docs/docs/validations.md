@@ -159,6 +159,7 @@ Items                                           | Defect       | This Script    
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C9504-FM-E/N9K-C9508-FM-E/N9K-X9732C-EX Might Fail] [d19] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -179,6 +180,7 @@ Items                                           | Defect       | This Script    
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
+[d19]: #n9k-c9504-fm-e/n9k-c9508-fm-e/n9k-x9732c-ex-might-fail 
 
 
 ## General Check Details
@@ -2217,7 +2219,7 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
 Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months.
-Below are the affected moduled. 
+Below are the affected moduled. This is documented in [FN64251][33] , [CSCvg26013][34]. 
 
 Fabric Modules
 * N9K-C9504-FM-E=
@@ -2226,9 +2228,7 @@ Fabric Modules
 Line Card
 * N9K-X9732C-EX=
 
-[FN64251][33]
-[Serial Number Validation][35]
-[CSCvg26013][34]
+[Check if your Serial Number is affected.][35]
 
 
 
