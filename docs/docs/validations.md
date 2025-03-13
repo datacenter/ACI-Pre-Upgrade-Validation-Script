@@ -159,7 +159,7 @@ Items                                           | Defect       | This Script    
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[N9K-C9504-FM-E/N9K-C9508-FM-E/N9K-X9732C-EX Might Fail] [d19] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C9504-FM-E/N9K-C9508-FM-E/N9K-X9732C-EX Might Fail ] [d19] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
