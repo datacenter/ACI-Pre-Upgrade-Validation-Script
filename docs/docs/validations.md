@@ -2217,9 +2217,7 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
 Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months.
-Below are the affected moduled. This information is documented in https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
-https://snvui.cisco.com/snv/FN64251 can be used to validate if a Serial Number is affected. 
-This is also documented in https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013 
+Below are the affected moduled. 
 
 Fabric Modules
 * N9K-C9504-FM-E=
@@ -2227,6 +2225,10 @@ Fabric Modules
 
 Line Card
 * N9K-X9732C-EX=
+
+This information is documented in https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html.
+Serial Number can be validated with https://snvui.cisco.com/snv/FN64251. 
+This is also documented in https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013. 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
