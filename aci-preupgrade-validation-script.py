@@ -4325,32 +4325,29 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
 
 def out_of_service_ports_check(index, total_checks, **kwargs):
     title = 'Out-of-Service Ports Check'
-    result = NA
+    result = PASS
     msg = ''
-    headers = [ "Pod ID", "Node ID", "Port ID", "State from Switch" ]
+    headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage" ]
     data = []
-    recommended_action = 'Review the list of Disabled Ports by GUI but enabled by CLI, to make sure these do not get disabled upon upgrade'
+    recommended_action = 'Remove Out-of-service Policy on identified "Up" ports or they will remain "Down" after switch Upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out_of_service_ports_check'
     print_title(title, index, total_checks)
-    oospath_regex = r'uni/fabric/outofsvc/rsoosPath-\[topology/pod-(?P<pod>[^/]+)/paths-(?P<node>\d{3,4})/pathep-\[eth(?P<int>.+)\]\]'
-    ##Validate fabricRsOosPath.dn against ethpmPhysIf.dn and ethpmPhysIf.operSt 
-    oospath_api = 'fabricRsOosPath.json'
-    oospath = icurl('class', oospath_api)
-    oosports = []
-    for oosint in oospath:
-        oosint_array = re.search(oospath_regex, oosint['fabricRsOosPath']['attributes']['dn'])
-        oosports.append([oosint_array.group("pod"), oosint_array.group("node"), oosint_array.group("int")])
-    if oosports:
-        result = PASS
-        ethpmphysif_api = 'ethpmPhysIf.json'
-        ethpmphysif = icurl('class', ethpmphysif_api)
-        for pod, node, interface in oosports:
-            port_dn = 'topology/pod-'+ pod +'/node-'+ node+'/sys/phys-[eth'+interface+']/phys'
-            for ethpmport in ethpmphysif:
-                if ethpmport['ethpmPhysIf']['attributes']['dn'] == port_dn and ethpmport['ethpmPhysIf']['attributes']['operSt'] == 'up':
-                    data.append([pod, node, interface, ethpmport['ethpmPhysIf']['attributes']['operSt']])
-                else:
-                    continue
+    # node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
+    ethpm_re = node_regex + r'/pathep-\[eth(?P<int>.+)\]'
+
+    ethpmPhysIf_api = 'ethpmPhysIf.json'
+    ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
+
+    ethpmPhysIf = icurl('class', ethpmPhysIf_api)
+
+    if ethpmPhysIf:
+        for ethpmport in ethpmPhysIf:
+            port_tdn = ethpmport['ethpmPhysIf']['attributes']['tDn']
+            oper_st = ethpmport['ethpmPhysIf']['attributes']['operSt']
+            usage = ethpmport['ethpmPhysIf']['attributes']['usage']
+            node_data = re.search(ethpm_re, port_tdn)
+            data.append([node_data.group("pod"), node_data.group("node"), node_data.group("int"), oper_st, usage])
+
     if data:
        result = FAIL_O 
 
