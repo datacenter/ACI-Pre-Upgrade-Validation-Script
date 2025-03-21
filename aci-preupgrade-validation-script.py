@@ -42,6 +42,7 @@ MANUAL = 'MANUAL CHECK REQUIRED'
 POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
+port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
 path_regex = (
     r"topology/pod-(?P<pod>\d+)/"
     r"(?:prot)?paths-(?P<nodes>\d+|\d+-\d+)/"  # direct or PC/vPC
@@ -4332,8 +4333,6 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     recommended_action = 'Remove Out-of-service Policy on identified "Up" ports or they will remain "Down" after switch Upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out_of_service_ports_check'
     print_title(title, index, total_checks)
-    # node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
-    ethpm_re = node_regex + r'/pathep-\[eth(?P<int>.+)\]'
 
     ethpmPhysIf_api = 'ethpmPhysIf.json'
     ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
@@ -4341,12 +4340,12 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     ethpmPhysIf = icurl('class', ethpmPhysIf_api)
 
     if ethpmPhysIf:
-        for ethpmport in ethpmPhysIf:
-            port_tdn = ethpmport['ethpmPhysIf']['attributes']['tDn']
-            oper_st = ethpmport['ethpmPhysIf']['attributes']['operSt']
-            usage = ethpmport['ethpmPhysIf']['attributes']['usage']
-            node_data = re.search(ethpm_re, port_tdn)
-            data.append([node_data.group("pod"), node_data.group("node"), node_data.group("int"), oper_st, usage])
+        for port in ethpmPhysIf:
+            port_dn = port['ethpmPhysIf']['attributes']['dn']
+            oper_st = port['ethpmPhysIf']['attributes']['operSt']
+            usage = port['ethpmPhysIf']['attributes']['usage']
+            node_data = re.search(port_regex, port_dn)
+            data.append([node_data.group("pod"), node_data.group("node"), node_data.group("port"), oper_st, usage])
 
     if data:
        result = FAIL_O 
