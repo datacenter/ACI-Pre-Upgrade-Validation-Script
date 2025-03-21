@@ -4361,7 +4361,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
     headers = ["FC/FCOE Node ID", "Model"]
     data = []
     recommended_action = 'Select a different target version. Refer to the doc for additional details.'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm92166'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fcfcoe-support-for-ex-switches'
     print_title(title, index, total_checks)
 
     fcEntity_api = "fcEntity.json"
