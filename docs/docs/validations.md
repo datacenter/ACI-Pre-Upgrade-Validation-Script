@@ -1964,13 +1964,11 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 ### Out-of-Service Ports Check
 
-Any Port that has been disabled via policy creates a `fabricRsOosPath` object. These objects can be found within the "Disabled Interfaces and Decommissioned Switches" UI view.
+Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. The `fabricRsOosPath` objects can be found within the "Disabled Interfaces and Decommissioned Switches" UI view.
 
-While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this will remain undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
+While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this fact generally remains undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
 
-A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the fabricRsOosPath policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
-
-This check will warn the user to all found out-of-service policies. It is up to the user to determine which out-of-service policies should remain, and which should be removed, to ensure that expected data paths return after switch node upgrades.
+A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
 
 
 ## Defect Check Details
