@@ -4330,7 +4330,7 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     msg = ''
     headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage" ]
     data = []
-    recommended_action = 'Remove Out-of-service Policy on identified "Up" ports or they will remain "Down" after switch Upgrade'
+    recommended_action = 'Remove Out-of-service Policy on identified "up" ports or they will remain "down" after switch Upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out_of_service_ports_check'
     print_title(title, index, total_checks)
 
