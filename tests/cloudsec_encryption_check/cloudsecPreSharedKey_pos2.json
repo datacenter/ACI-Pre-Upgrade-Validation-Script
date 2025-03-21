@@ -1,0 +1,18 @@
+[
+    {
+      "cloudsecPreSharedKey": {
+        "attributes": {
+          "dn": "uni/tn-infra/cloudsecifp-default/psk-1",
+          "index": "1"
+        }
+      }
+    },
+    {
+        "cloudsecPreSharedKey": {
+          "attributes": {
+            "dn": "uni/tn-infra/cloudsecifp-default/psk-2",
+            "index": "2"
+          }
+        }
+      }
+  ]

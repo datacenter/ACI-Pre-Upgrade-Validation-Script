@@ -32,7 +32,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v2.2.1"
+SCRIPT_VERSION = "v2.4.0"
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
@@ -42,6 +42,7 @@ MANUAL = 'MANUAL CHECK REQUIRED'
 POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
+port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
 path_regex = (
     r"topology/pod-(?P<pod>\d+)/"
     r"(?:prot)?paths-(?P<nodes>\d+|\d+-\d+)/"  # direct or PC/vPC
@@ -2176,68 +2177,6 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
     return result
 
 
-def vnid_mismatch_check(index, total_checks, **kwargs):
-    title = 'VNID Mismatch'
-    result = FAIL_O
-    msg = ''
-    headers = ["EPG", "Access Encap", "Node ID", "Fabric Encap"]
-    data = []
-    mismatch_hits = []
-    recommended_action = 'Remove any domains with overlapping VLAN Pools from above EPGs, then redeploy VLAN'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnid-mismatch'
-    print_title(title, index, total_checks)
-
-    vlanCktEps = icurl('class', 'vlanCktEp.json?query-target-filter=ne(vlanCktEp.name,"")')
-    if not vlanCktEps:
-        result = ERROR
-        msg = 'Deployed VLANs (vlanCktEp) not found'
-
-    epg_encap_dict = {}
-    for vlanCktEp in vlanCktEps:
-        dn = re.search(node_regex, vlanCktEp['vlanCktEp']['attributes']['dn'])
-        node = dn.group("node")
-        access_encap = vlanCktEp['vlanCktEp']['attributes']['encap']
-        epg_dn = vlanCktEp['vlanCktEp']['attributes']['epgDn']
-        fab_encap = vlanCktEp['vlanCktEp']['attributes']['fabEncap']
-
-        if epg_dn not in epg_encap_dict:
-            epg_encap_dict[epg_dn] = {}
-
-        if access_encap not in epg_encap_dict[epg_dn]:
-            epg_encap_dict[epg_dn][access_encap] = []
-
-        epg_encap_dict[epg_dn][access_encap].append({'node': node, 'fabEncap': fab_encap})
-
-    # Iterate through, check for overlaps, and print
-    for key, epg in iteritems(epg_encap_dict):
-        for vlanKey, vlan in iteritems(epg):
-            fab_encap_to_check = ""
-            for deployment in vlan:
-                if fab_encap_to_check == "" or deployment["fabEncap"] == fab_encap_to_check:
-                    fab_encap_to_check = deployment["fabEncap"]
-                else:  # something is wrong
-                    tmp_hit = {}
-                    tmp_hit["epgDn"] = key
-                    tmp_hit["epgDeployment"] = epg
-                    if tmp_hit not in mismatch_hits:  # some epg has more than one access encap.
-                        mismatch_hits.append(tmp_hit)
-                    break
-
-    if not mismatch_hits:
-        result = PASS
-
-    mismatch_hits.sort(key=lambda d: d.get("epgDn", ""))
-    for epg in mismatch_hits:
-        for access_encap, nodeFabEncaps in iteritems(epg["epgDeployment"]):
-            for nodeFabEncap in nodeFabEncaps:
-                node_id = nodeFabEncap['node']
-                fabric_encap = nodeFabEncap['fabEncap']
-                data.append([epg["epgDn"], access_encap, node_id, fabric_encap])
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
-
-
 def scalability_faults_check(index, total_checks, **kwargs):
     title = 'Scalability (faults related to Capacity Dashboard)'
     result = FAIL_O
@@ -4204,6 +4143,78 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     return result
 
 
+def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "vzAny-to-vzAny Service Graph when crossing 5.0 release"
+    result = PASS
+    msg = ""
+    headers = ["VRF (Tn:VRF)", "Contract (Tn:Contract)", "Service Graph (Tn:SG)"]
+    data = []
+    recommended_action = "Be aware of transient traffic disruption for vzAny-to-vzAny Service Graph during APIC upgrade."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-to-vzany-service-graph-when-crossing-50-release"
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if not (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)")):
+        print_result(title, NA)
+        return NA
+
+    tn_regex = r"uni/tn-(?P<tn>[^/]+)"
+    vrf_regex = tn_regex + r"/ctx-(?P<vrf>[^/]+)"
+    brc_regex = tn_regex + r"/brc-(?P<brc>[^/]+)"
+    sg_regex = tn_regex + r"/AbsGraph-(?P<sg>[^/]+)"
+
+    # check if a SG is attached to a contract
+    vzRsSubjGraphAtts = icurl("class", "vzRsSubjGraphAtt.json")
+    for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
+        graphAtt_rns = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["dn"].split("/")
+        if len(graphAtt_rns) < 3:
+            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.")
+            return ERROR
+
+        # Get vzAny(VRF) relations of the contract. There can be multiple VRFs per contract.
+        vrfs = defaultdict(set)  # key: VRF, value: vzRtAnyToCons, vzRtAnyToProv
+        vzBrCP_dn = "/".join(graphAtt_rns[:3])  # Contract DN (uni/tn-xx/brc.xxx)
+        vzBrCP_api = vzBrCP_dn + ".json"
+        vzBrCP_api += "?query-target=children&target-subtree-class=vzRtAnyToCons,vzRtAnyToProv"
+        vzRtAnys = icurl("mo", vzBrCP_api)
+        for vzRtAny in vzRtAnys:
+            if "vzRtAnyToCons" in vzRtAny:
+                rel_class = "vzRtAnyToCons"
+            elif "vzRtAnyToProv" in vzRtAny:
+                rel_class = "vzRtAnyToProv"
+            else:
+                logging.warning("Unexpected class - %s", vzRtAny.keys())
+                continue
+            vrf_tdn = vzRtAny[rel_class]["attributes"]["tDn"]
+            vrf_match = re.search(vrf_regex, vrf_tdn)
+            if vrf_match:
+                vrf = vrf_match.group("tn") + ":" + vrf_match.group("vrf")
+            else:
+                vrf = vrf_tdn
+            vrfs[vrf].add(rel_class)
+        for vrf, relations in vrfs.items():
+            if len(relations) == 2:  # both cons and prov mean vzAny-to-vzAny
+                brc_match = re.search(brc_regex, vzBrCP_dn)
+                if brc_match:
+                    contract = brc_match.group("tn") + ":" + brc_match.group("brc")
+                else:
+                    contract = vzBrCP_dn
+                sg_dn = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["tDn"]
+                sg_match = re.search(sg_regex, sg_dn)
+                if sg_match:
+                    sg = sg_match.group("tn") + ":" + sg_match.group("sg")
+                else:
+                    sg = sg_dn
+                data.append([vrf, contract, sg])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     title = '32 and 64-Bit Firmware Image for Switches'
     result = PASS
@@ -4238,6 +4249,106 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     else:
         result = NA
         msg = 'Target version below 6.0(2)'
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
+    title = 'Leaf to Spine Redundancy check'
+    result = PASS
+    msg = ''
+    headers = ["Leaf Switch Name", "Spine Adjacencies", "Message" ]
+    data = []
+    problem = 'The Leaf Switch has one or less spine adjacencies'
+    recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
+    doc_url = ''
+    print_title(title, index, total_checks)
+
+    fabric_nodes_api = 'fabricNode.json'
+    fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
+
+    lldp_adj_api = 'lldpAdjEp.json'
+    lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
+
+    fabricNodes= icurl('class', fabric_nodes_api)
+    all_spine_names = [node['fabricNode']['attributes']['name'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
+    
+    lldp_adj = icurl('class', lldp_adj_api)
+    for node in fabricNodes:
+        neighbors = set()
+        if node['fabricNode']['attributes']['role'] == 'leaf':
+            leaf_dn = node['fabricNode']['attributes']['dn']
+            leaf_name = node['fabricNode']['attributes']['name']
+            for lldp_neighbor in lldp_adj:
+                spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
+                lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
+                if leaf_dn in lldp_dn and spine_name in all_spine_names:
+                        neighbors.add(spine_name)
+                if len(neighbors) > 1:
+                    # Leaf has more than 1 Spine neighbor check passed
+                    break
+
+            if len(neighbors) <= 1:
+                data.append([leaf_name, "".join(neighbors), problem])
+    if data:
+        result = FAIL_O
+    
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
+    title = 'CloudSec Encrpytion Deprecated Check'
+    result = NA
+    msg = ''
+    headers = ["Findings"]
+    data = []
+    recommended_action = 'Validate if CloudSec Encryption is enabled within Nexus Dashboard Orchestrator'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec-encryption-check'
+    print_title(title, index, total_checks)
+
+    cloudsec_api =  'cloudsecPreSharedKey.json'
+    cloudsecPreSharedKey = icurl('class', cloudsec_api)
+
+    if tversion.newer_than("6.0(6a)"):
+        if len(cloudsecPreSharedKey) > 1:
+            data.append(['Multiple CloudSec Encryption Keys found'])
+            result = MANUAL
+        elif len(cloudsecPreSharedKey) == 1:
+            data.append(['Single CloudSec Encryption Key found'])
+            result = MANUAL
+        else:
+            result = PASS
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def out_of_service_ports_check(index, total_checks, **kwargs):
+    title = 'Out-of-Service Ports Check'
+    result = PASS
+    msg = ''
+    headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage" ]
+    data = []
+    recommended_action = 'Remove Out-of-service Policy on identified "up" ports or they will remain "down" after switch Upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out_of_service_ports_check'
+    print_title(title, index, total_checks)
+
+    ethpmPhysIf_api = 'ethpmPhysIf.json'
+    ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
+
+    ethpmPhysIf = icurl('class', ethpmPhysIf_api)
+
+    if ethpmPhysIf:
+        for port in ethpmPhysIf:
+            port_dn = port['ethpmPhysIf']['attributes']['dn']
+            oper_st = port['ethpmPhysIf']['attributes']['operSt']
+            usage = port['ethpmPhysIf']['attributes']['usage']
+            node_data = re.search(port_regex, port_dn)
+            data.append([node_data.group("pod"), node_data.group("node"), node_data.group("port"), oper_st, usage])
+
+    if data:
+       result = FAIL_O 
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -4308,7 +4419,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        # General Checks
+        #General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
@@ -4323,6 +4434,7 @@ if __name__ == "__main__":
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
+        leaf_to_spine_redundancy_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -4348,7 +4460,6 @@ if __name__ == "__main__":
         # Configurations
         vpc_paired_switches_check,
         overlapping_vlan_pools_check,
-        vnid_mismatch_check,
         l3out_mtu_check,
         bgp_peer_loopback_check,
         l3out_route_map_direction_check,
@@ -4363,6 +4474,8 @@ if __name__ == "__main__":
         eecdh_cipher_check,
         subnet_scope_check,
         unsupported_fec_configuration_ex_check,
+        cloudsec_encryption_depr_check,
+        out_of_service_ports_check,
 
         # Bugs
         ep_announce_check,
@@ -4382,8 +4495,8 @@ if __name__ == "__main__":
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
         static_route_overlap_check,
-        fc_ex_model_check
-
+        fc_ex_model_check,
+        vzany_vzany_service_epg_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
