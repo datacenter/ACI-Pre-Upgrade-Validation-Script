@@ -1,39 +1,18 @@
-{
-    "totalCount": "2",
-    "imdata": [
-        {
-            "fcEntity": {
-                "attributes": {
-                    "adminSt": "enabled",
-                    "childAction": "",
-                    "dn": "topology/pod-1/node-102/sys/fc",
-                    "lcOwn": "local",
-                    "modTs": "2024-07-31T08:05:17.632+00:00",
-                    "monPolDn": "uni/fabric/monfab-default",
-                    "name": "",
-                    "operErr": "",
-                    "operSt": "enabled",
-                    "rn": "fc",
-                    "status": ""
-                }
-            }
-        },
-        {
-            "fcEntity": {
-                "attributes": {
-                    "adminSt": "enabled",
-                    "childAction": "",
-                    "dn": "topology/pod-1/node-101/sys/fc",
-                    "lcOwn": "local",
-                    "modTs": "2024-07-31T08:06:14.752+00:00",
-                    "monPolDn": "uni/fabric/monfab-default",
-                    "name": "",
-                    "operErr": "",
-                    "operSt": "enabled",
-                    "rn": "fc",
-                    "status": ""
-                }
+[
+    {
+        "fcEntity": {
+            "attributes": {
+                "adminSt": "enabled",
+                "dn": "topology/pod-1/node-102/sys/fc"
             }
         }
-    ]
-}
+    },
+    {
+        "fcEntity": {
+            "attributes": {
+                "adminSt": "enabled",
+                "dn": "topology/pod-1/node-101/sys/fc"
+            }
+        }
+    }
+]

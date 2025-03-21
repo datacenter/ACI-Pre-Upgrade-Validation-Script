@@ -12,45 +12,49 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 # icurl queries
 
-fcEntitys = 'fcEntity.json'
-fabricNodes = 'fabricNode.json'
+fcEntity_api = 'fcEntity.json'
+fabricNode_api = 'fabricNode.json'
+fabricNode_api += '&query-target-filter=wcard(fabricNode.model,".*EX")'
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result",
     [
+        ## FABRIC HAS EX NODES and FC/FCOE CONFIG
         (
-            {fcEntitys: read_data(dir, "fcEntity_POS.json"),
-            fabricNodes: read_data(dir, "fabricNode_POS.json")},
+            {fcEntity_api: read_data(dir, "fcEntity_POS.json"),
+            fabricNode_api: read_data(dir, "fabricNode_POS.json")},
             "6.1(1f)",
             script.FAIL_O,
         ),
         (
-            {fcEntitys: read_data(dir, "fcEntity_POS.json"),
-            fabricNodes: read_data(dir, "fabricNode_POS.json")},
+            {fcEntity_api: read_data(dir, "fcEntity_POS.json"),
+            fabricNode_api: read_data(dir, "fabricNode_POS.json")},
             "6.0(7e)",
             script.FAIL_O,
         ),
+        # TVERSION NOT AFFECTED
         (
-            {fcEntitys: read_data(dir, "fcEntity_POS.json"),
-            fabricNodes: read_data(dir, "fabricNode_POS.json")},
+            {fcEntity_api: read_data(dir, "fcEntity_POS.json"),
+            fabricNode_api: read_data(dir, "fabricNode_POS.json")},
             "6.0(1f)",
-            script.NA,
+            script.PASS,
         ),
+        ## FABRIC DOES NOT HAVE EX NODES
         (
-            {fcEntitys: read_data(dir, "fcEntity_NEG.json"),
-            fabricNodes: read_data(dir, "fabricNode_NEG.json")},
+            {fcEntity_api: read_data(dir, "fcEntity_NEG.json"),
+            fabricNode_api: read_data(dir, "fabricNode_NEG.json")},
             "6.1(1f)",
-            script.NA,
+            script.PASS,
         ),
         (
-            {fcEntitys: read_data(dir, "fcEntity_NEG.json"),
-            fabricNodes: read_data(dir, "fabricNode_NEG.json")},
+            {fcEntity_api: read_data(dir, "fcEntity_NEG.json"),
+            fabricNode_api: read_data(dir, "fabricNode_NEG.json")},
             "6.0(7e)",
-            script.NA,
+            script.PASS,
         ),
         (
-            {fcEntitys: read_data(dir, "fcEntity_POS.json"),
-            fabricNodes: read_data(dir, "fabricNode_NEG.json")},
+            {fcEntity_api: read_data(dir, "fcEntity_POS.json"),
+            fabricNode_api: read_data(dir, "fabricNode_NEG.json")},
             "6.0(7e)",
             script.PASS,
         ),
