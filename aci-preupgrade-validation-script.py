@@ -42,6 +42,7 @@ MANUAL = 'MANUAL CHECK REQUIRED'
 POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
+port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
 path_regex = (
     r"topology/pod-(?P<pod>\d+)/"
     r"(?:prot)?paths-(?P<nodes>\d+|\d+-\d+)/"  # direct or PC/vPC
@@ -4323,6 +4324,36 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def out_of_service_ports_check(index, total_checks, **kwargs):
+    title = 'Out-of-Service Ports Check'
+    result = PASS
+    msg = ''
+    headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage" ]
+    data = []
+    recommended_action = 'Remove Out-of-service Policy on identified "up" ports or they will remain "down" after switch Upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out_of_service_ports_check'
+    print_title(title, index, total_checks)
+
+    ethpmPhysIf_api = 'ethpmPhysIf.json'
+    ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
+
+    ethpmPhysIf = icurl('class', ethpmPhysIf_api)
+
+    if ethpmPhysIf:
+        for port in ethpmPhysIf:
+            port_dn = port['ethpmPhysIf']['attributes']['dn']
+            oper_st = port['ethpmPhysIf']['attributes']['operSt']
+            usage = port['ethpmPhysIf']['attributes']['usage']
+            node_data = re.search(port_regex, port_dn)
+            data.append([node_data.group("pod"), node_data.group("node"), node_data.group("port"), oper_st, usage])
+
+    if data:
+       result = FAIL_O 
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4404,6 +4435,7 @@ if __name__ == "__main__":
         subnet_scope_check,
         unsupported_fec_configuration_ex_check,
         cloudsec_encryption_depr_check,
+        out_of_service_ports_check,
 
         # Bugs
         ep_announce_check,
@@ -4424,7 +4456,6 @@ if __name__ == "__main__":
         rtmap_comm_match_defect_check,
         static_route_overlap_check,
         vzany_vzany_service_epg_check,
-
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):

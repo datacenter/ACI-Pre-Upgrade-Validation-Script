@@ -120,6 +120,8 @@ Items                                         | Faults         | This Script    
 [BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [CloudSec Encryption Check][c17]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Out-of-Service Ports check][c18]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
+
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -138,6 +140,8 @@ Items                                         | Faults         | This Script    
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 [c17]: #cloudsec-encryption-check
+[c18]: #out-of-service-ports-check
+
 
 
 ### Defect Condition Checks
@@ -1947,6 +1951,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fecMode                        : ieee-rs-fec   <<<
     ```
 
+
 ### CloudSec Encryption Check
 
 Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated. This is documented within the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][33]
@@ -1955,6 +1960,15 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 1. Due to [CSCwe67926][34], if even a single PSK was configured for CloudSec Encryption at any point, even if never used, the object will remain and this check will alert you to this finding.
 2. The only way to truly validate whether or not CloudSec Encryption is in use on your ACI fabric is to validate if CloudSec Encryption is enabled from within the [Nexus Dashboard Orchstrator Configuration][35]
+
+
+### Out-of-Service Ports Check
+
+Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
+
+While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this fact generally remains undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
+
+A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
 
 
 ## Defect Check Details
