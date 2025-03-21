@@ -4354,6 +4354,46 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     return result
 
 
+def fc_ex_model_check(index, total_checks, tversion, **kwargs):
+    title = 'FC/FCOE support removed for -EX platforms'
+    result = PASS
+    msg = ''
+    headers = ["FC/FCOE Node ID", "Model"]
+    data = []
+    recommended_action = 'Select a different target version. Refer to the doc for additional details.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fcfcoe-support-for-ex-switches'
+    print_title(title, index, total_checks)
+
+    fcEntity_api = "fcEntity.json"
+    fabricNode_api = 'fabricNode.json'
+    fabricNode_api += '&query-target-filter=wcard(fabricNode.model,".*EX")'
+    
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if (tversion.newer_than("6.0(7a)") and tversion.older_than("6.0(9c)")) or tversion.same_as("6.1(1f)"):
+        fcEntitys =  icurl('class', fcEntity_api)
+        fc_nodes = []
+        if fcEntitys:
+            for fcEntity in fcEntitys:
+                fc_nodes.append(fcEntity['fcEntity']['attributes']['dn'].split('/sys')[0])
+            
+        if fc_nodes:
+            fabricNodes = icurl('class', fabricNode_api)
+            for node in fabricNodes:
+                 node_dn = node['fabricNode']['attributes']['dn']
+                 if node_dn in fc_nodes:
+                      model = node['fabricNode']['attributes']['model']
+                      if model in ["N9K-C93180YC-EX", "N9K-C93108TC-EX", "N9K-C93108LC-EX"]:
+                            data.append([node_dn, model])
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4455,6 +4495,7 @@ if __name__ == "__main__":
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
         static_route_overlap_check,
+        fc_ex_model_check,
         vzany_vzany_service_epg_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
