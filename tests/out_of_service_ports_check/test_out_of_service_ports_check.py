@@ -9,8 +9,8 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-
-# icurl queries
+# operst: '1' = 'up'
+# usage: '32' = 'blacklist', '2' = 'epg'. '34'= 'blacklist,epg'
 ethpmPhysIf_api = 'ethpmPhysIf.json'
 ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
 
@@ -19,12 +19,12 @@ ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpm
     "icurl_outputs, expected_result",
     [
         (
-            ## TWO DISABLED PORTS , ETHPMPHYSIF PORTS with one UP, one DOWN, RESULT = UPGRADE FAILS
+            ## Two 'up' ports flagged with 'blacklist,epg'
             {ethpmPhysIf_api: read_data(dir, "ethpmPhysIf-pos.json")},
             script.FAIL_O,
         ),
         (
-            ## TWO DISABLED PORTS , ETHPMPHYSIF PORTS all ports DOWN, RESULT = PASS
+            ## 0 ports returned
             {ethpmPhysIf_api: read_data(dir, "ethpmPhysIf-neg.json")},
             script.PASS,
         )
