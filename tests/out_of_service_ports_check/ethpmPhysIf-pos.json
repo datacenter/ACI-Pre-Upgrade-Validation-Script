@@ -12,7 +12,7 @@
         "ethpmPhysIf": {
             "attributes": {
                 "dn": "topology/pod-1/node-105/sys/phys-[eth1/27]/phys",
-                "operSt": "down",
+                "operSt": "up",
                 "usage": "blacklist,epg"
             }
         }
