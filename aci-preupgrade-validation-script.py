@@ -4355,7 +4355,7 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
 
 
 def fc_ex_model_check(index, total_checks, tversion, **kwargs):
-    title = 'FC/FCOE support for -EX platforms'
+    title = 'FC/FCOE support removed for -EX platforms'
     result = PASS
     msg = ''
     headers = ["FC/FCOE Node ID", "Model"]

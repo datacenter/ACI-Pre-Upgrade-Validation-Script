@@ -21,7 +21,7 @@ Items                                                        | This Script      
 [Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:        | :no_entry_sign:
-[Compatibility (Switch Hardware - gen1)][g4]                 | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767 | :white_check_mark:
 [APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)| :no_entry_sign:
 [APIC Cluster is Fully-Fit][g7]                              | :white_check_mark: | :white_check_mark: 4.2(6) | :white_check_mark:
@@ -33,13 +33,13 @@ Items                                                        | This Script      
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[6.0(2)+ requires 32 and 64 bit switch images][g16]      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
-[g4]: #compatibility-switch-hardware---gen1
+[g4]: #compatibility-switch-hardware-gen1
 [g5]: #compatibility-remote-leaf-switch
 [g6]: #apic-target-version-image-and-md5-hash
 [g7]: #apic-cluster-is-fully-fit
@@ -150,12 +150,12 @@ Items                                           | Defect       | This Script    
 ------------------------------------------------|--------------|--------------------|---------------------------|---------------------------
 [EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Contract Port 22 Defect Check][d3]             | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
+[Contract Port 22 Defect][d3]             | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [telemetryStatsServerP Object Check][d4]        | CSCvt47850   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Link Level Flow Control Check][d5]             | CSCvo27498   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Internal VLAN Pool Check][d6]                  | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FabricDomain Name][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
@@ -166,18 +166,18 @@ Items                                           | Defect       | This Script    
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FC/FCOE support for -EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
-[d3]: #contract-port-22
+[d3]: #contract-port-22-defect
 [d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
 [d6]: #internal-vlan-pool
 [d7]: #apic-ca-cert-validation
-[d8]: #fabric-domain-name
+[d8]: #fabricdomain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
 [d11]: #vmm-uplink-container-with-empty-actives
@@ -188,7 +188,7 @@ Items                                           | Defect       | This Script    
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
-[d19]: #fcfcoe-support-for--ex-switches
+[d19]: #fcfcoe-support-for-ex-switches
 
 
 ## General Check Details
@@ -2250,16 +2250,13 @@ Depending on the timing and how fast the re-programming finishes, you may not se
     Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
 
 
-
 ### FC/FCOE support for -EX switches
 
-Due to defect [CSCwm92166][36], ACI switches with model numbers ending in -EX no longer support FC/FCOE configurations after upgrading to releases 6.0(7e) or 6.1(1f). The FC/FCOE interface will remain down, and fault F4511 will be raised.
+Due to defect [CSCwm92166][36], ACI switches with models ending in '-EX' will not support FC/FCOE configurations if upgraded to an affected release. If upgraded, the FC/FCOE interface will remain down and fault F4511 will be raised.
 
-For a complete list of devices supported for FC/FCOE, refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)][37].
+Refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)][37] for a complete list of for FC/FCOE supported hardware.
 
-The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives. If the defect is found, avoid upgrading to the affected release or ensure your upgrade includes a version that addresses the CSCwm92166 fix.
-
-
+The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
