@@ -4393,32 +4393,33 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
     return result
 
+
 def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
     title = 'TEP-to-TEP Atomic Counter scalability'
     result = NA
     msg = ''
-    headers = ["Number of TEP-to-TEP Atomic Counter", "Supported number"]
+    headers = ["dbgAcPath Count", "Supported Maximum"]
     data = []
-    recommended_action = 'Delete any TEP-to-TEP Atomic Counter(dbgAcPath) beyond the Supported number'
+    recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counter-scalibility-check'
     print_title(title, index, total_checks)
+
+    ac_limit = 1600
     atomic_counter_api = 'dbgAcPath.json'
-    atomic_counter_api += '?&rsp-subtree-include=count'  
+    atomic_counter_api += '&rsp-subtree-include=count'
+
     atomic_counter_number = icurl('class', atomic_counter_api)
     atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
-    #IF  the number of dbgAcPath exceed the supported limit
-    if atomic_counter_number >= 1600:
-        result = FAIL_UF
-        data.append([atomic_counter_number, 'Unsupported'])
-        print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    #IF the number of dbgAcPath is supported
-    elif atomic_counter_number > 0 and atomic_counter_number < 1600 :
+
+    if atomic_counter_number >= ac_limit:
+        data.append([atomic_counter_number, str(ac_limit)])
+    elif atomic_counter_number > 0 and atomic_counter_number < ac_limit:
         result = PASS
-        data.append([atomic_counter_number, 'Supported'])
-        print_result(title, result)
-    #ELSE is 0, then it doesn't apply
-    if result == NA:
-        print_result(title, result)
+
+    if data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
     return result
 
 

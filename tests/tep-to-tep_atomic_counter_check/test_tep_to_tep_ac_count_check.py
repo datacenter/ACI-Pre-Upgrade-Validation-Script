@@ -11,7 +11,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 # icurl queries
 atomic_counter_api = 'dbgAcPath.json'
-atomic_counter_api += '?&rsp-subtree-include=count'
+atomic_counter_api += '&rsp-subtree-include=count'
 
 
 @pytest.mark.parametrize(
