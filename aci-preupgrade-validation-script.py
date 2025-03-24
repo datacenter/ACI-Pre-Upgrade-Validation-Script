@@ -4366,7 +4366,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
 
     fcEntity_api = "fcEntity.json"
     fabricNode_api = 'fabricNode.json'
-    fabricNode_api += '&query-target-filter=wcard(fabricNode.model,".*EX")'
+    fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
     
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
@@ -4389,6 +4389,35 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
                             data.append([node_dn, model])
     if data:
         result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    return result
+
+
+def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
+    title = 'TEP-to-TEP Atomic Counter scalability'
+    result = NA
+    msg = ''
+    headers = ["dbgAcPath Count", "Supported Maximum"]
+    data = []
+    recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counters-scalability-check'
+    print_title(title, index, total_checks)
+
+    ac_limit = 1600
+    atomic_counter_api = 'dbgAcPath.json'
+    atomic_counter_api += '?rsp-subtree-include=count'
+
+    atomic_counter_number = icurl('class', atomic_counter_api)
+    atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
+
+    if atomic_counter_number >= ac_limit:
+        data.append([atomic_counter_number, str(ac_limit)])
+    elif atomic_counter_number > 0 and atomic_counter_number < ac_limit:
+        result = PASS
+
+    if data:
+        result = FAIL_UF
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
     return result
@@ -4476,6 +4505,7 @@ if __name__ == "__main__":
         unsupported_fec_configuration_ex_check,
         cloudsec_encryption_depr_check,
         out_of_service_ports_check,
+        validate_tep_to_tep_ac_counter_check,
 
         # Bugs
         ep_announce_check,

@@ -121,7 +121,7 @@ Items                                         | Faults         | This Script    
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [CloudSec Encryption Check][c17]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Out-of-Service Ports check][c18]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
-
+[TEP-to-TEP atomic counters Scalability Check][c19]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -141,8 +141,7 @@ Items                                         | Faults         | This Script    
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 [c17]: #cloudsec-encryption-check
 [c18]: #out-of-service-ports-check
-
-
+[c19]: #tep-to-tep-atomic-counters-scalability-check
 
 ### Defect Condition Checks
 
@@ -165,7 +164,7 @@ Items                                           | Defect       | This Script    
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
@@ -1974,6 +1973,14 @@ While generally not recommended, there are policy bypass methods to bring up por
 A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
 
 
+### TEP-to-TEP atomic counters Scalability Check
+
+As documented in the [Verified Scalability Guide for Cisco APIC][38], ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policy `dbgAcPath`.
+Exceeding any scalability number documented in this guide can cause unexpected issues. In this specific scenario, exceeding the atomic counter limit has been seen to create issues with collecting techsupports and configuration exports.
+
+The script validates the count of `dbgAcPath` is less than the documented supported number. 
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2297,3 +2304,4 @@ The script checks if your upgrade is susceptible to this defect from both versio
 [35]: https://www.cisco.com/c/en/us/td/docs/dcn/ndo/3x/configuration/cisco-nexus-dashboard-orchestrator-configuration-guide-aci-371/ndo-configuration-aci-infra-cloudsec-37x.html#id_76319
 [36]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm92166
 [37]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/l2-configuration/cisco-apic-layer-2-networking-configuration-guide-61x/fcoe-connections-61x.html
+[38]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/verified-scalability/cisco-aci-verified-scalability-guide-612.html

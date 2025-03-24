@@ -14,7 +14,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 fcEntity_api = 'fcEntity.json'
 fabricNode_api = 'fabricNode.json'
-fabricNode_api += '&query-target-filter=wcard(fabricNode.model,".*EX")'
+fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result",
