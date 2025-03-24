@@ -166,7 +166,7 @@ Items                                           | Defect       | This Script    
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-
+[Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -188,6 +188,7 @@ Items                                           | Defect       | This Script    
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
 [d19]: #fcfcoe-support-for-ex-switches
+[d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
 
 
 ## General Check Details
@@ -2266,6 +2267,27 @@ Refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)]
 The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives.
 
 
+### Nexus 950X FM or LC Might Fail to boot after reload
+
+A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
+
+The matching defect is [CSCvg26013][40].
+
+This check alerts you to potentially affected modules:
+
+Fabric Modules
+
+ - N9K-C9504-FM-E
+ - N9K-C9508-FM-E
+
+Line Card
+
+ - N9K-X9732C-EX
+
+If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2305,3 +2327,6 @@ The script checks if your upgrade is susceptible to this defect from both versio
 [36]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm92166
 [37]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/l2-configuration/cisco-apic-layer-2-networking-configuration-guide-61x/fcoe-connections-61x.html
 [38]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/verified-scalability/cisco-aci-verified-scalability-guide-612.html
+[39]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
+[40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
+[41]: https://snvui.cisco.com/snv/FN64251

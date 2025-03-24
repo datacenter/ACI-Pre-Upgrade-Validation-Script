@@ -4423,6 +4423,51 @@ def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
     return result
 
 
+def clock_signal_component_failure_check(index, total_checks, **kwargs):
+    title = 'Check FN64251 Susceptibility'
+    result = PASS
+    msg = ''
+    headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
+    data = []
+    recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251. SN String:'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
+    print_title(title, index, total_checks)
+
+    eqptFC_api = 'eqptFC.json'
+    eqptFC_api += '?query-target-filter=or(eq(eqptFC.model,"N9K-C9504-FM-E"),eq(eqptFC.model,"N9K-C9508-FM-E"))'
+
+    eqptLC_api = 'eqptLC.json'
+    eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
+
+    eqptFC = icurl('class', eqptFC_api)
+    eqptLC = icurl('class', eqptLC_api)
+
+    sn_string = "\n\n"
+    if eqptFC or eqptLC:
+        full = eqptFC + eqptLC
+        for card in full:
+            dn = card.get('eqptLC', {}).get('attributes', {}).get('dn', '') or card.get('eqptFC', {}).get('attributes', {}).get('dn', '')
+            slot_regex = node_regex + r"/sys/ch/(?P<slot>.+)/"
+            match = re.search(slot_regex, dn)
+            if match:
+                pod = match.group("pod")
+                node = match.group("node")
+                slot = match.group("slot")
+
+            model = card.get('eqptLC', {}).get('attributes', {}).get('model', '') or card.get('eqptFC', {}).get('attributes', {}).get('model', '')
+            sn = card.get('eqptLC', {}).get('attributes', {}).get('ser', '') or card.get('eqptFC', {}).get('attributes', {}).get('ser', '')
+            data.append([pod, node, slot, model, sn])
+            sn_string += "{},".format(sn)
+
+    if data:
+        result = MANUAL
+        recommended_action += sn_string[:-1] + "\n"
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4527,6 +4572,7 @@ if __name__ == "__main__":
         static_route_overlap_check,
         fc_ex_model_check,
         vzany_vzany_service_epg_check,
+        clock_signal_component_failure_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
