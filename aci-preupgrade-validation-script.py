@@ -4573,8 +4573,6 @@ if __name__ == "__main__":
         fc_ex_model_check,
         vzany_vzany_service_epg_check,
         clock_signal_component_failure,
-
-
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
