@@ -4366,7 +4366,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
 
     fcEntity_api = "fcEntity.json"
     fabricNode_api = 'fabricNode.json'
-    fabricNode_api += '&query-target-filter=wcard(fabricNode.model,".*EX")'
+    fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
     
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
@@ -4406,7 +4406,7 @@ def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
 
     ac_limit = 1600
     atomic_counter_api = 'dbgAcPath.json'
-    atomic_counter_api += '&rsp-subtree-include=count'
+    atomic_counter_api += '?rsp-subtree-include=count'
 
     atomic_counter_number = icurl('class', atomic_counter_api)
     atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
