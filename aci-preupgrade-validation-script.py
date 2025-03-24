@@ -4615,7 +4615,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
+def validate_tep_to_tep_ac_counter_check(index, total_checks, **kwargs):
     title = 'TEP-to-TEP Atomic Counter scalability'
     result = NA
     msg = ''
@@ -4640,60 +4640,52 @@ def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
+
 
 def clock_signal_component_failure(index, total_checks, **kwargs):
     title = 'Check for CSCvg26013 / FN64251'
-    result = MANUAL
+    result = PASS
     msg = ''
-    unformatted_headers = ['DN', 'Description', 'Model', 'Serial Number']
-    unformatted_data = []
-    affected_models = ["N9K-C9504-FM-E", "N9K-C9508-FM-E", "N9K-X9732C-EX"]
+    headers = ['Pod', "Node", "Model", "Serial Number"]
     data = []
-    formatted_data = []
-    recommended_action = (
-        'If affected by this FN, the devices/modules might not come up after Reload.\n'
-        '  Check if the above SNs are affected by the FN using the URL https://snvui.cisco.com/snv/FN64251.\n'
-        '  If affected, replace the part prior to upgrade.'
-    )
-    doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html'
-
+    recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251. SN String:'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
     print_title(title, index, total_checks)
 
-    eqptFC = icurl('class', 'eqptFC.json')
-    eqptLC = icurl('class', 'eqptLC.json')
+    eqptFC_api = 'eqptFC.json'
+    eqptFC_api += '?query-target-filter=or(eq(eqptFC.model,"N9K-C9504-FM-E"),eq(eqptFC.model,"N9K-C9508-FM-E"))'
 
-    def check_affected_models(card_data, affected_models):
-        matching_rows = []
-        for card in card_data:
-            for card_key in ['eqptLC', 'eqptFC']:
-                attributes = card.get(card_key, {}).get('attributes', {})
-                descr = attributes.get('descr', '')
-                dn = attributes.get('dn', '')
-                model = attributes.get('model', '')
-                ser = attributes.get('ser', '')
+    eqptLC_api = 'eqptLC.json'
+    eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 
-                for affected_model in affected_models:
-                    if affected_model in model:
-                        matching_rows.append({'dn': dn, 'descr': descr, 'model': model, 'ser': ser})
-        return matching_rows
+    eqptFC = icurl('class', eqptFC_api)
+    eqptLC = icurl('class', eqptLC_api)
 
-    existing_in_lc = check_affected_models(eqptLC, affected_models)
-    existing_in_fc = check_affected_models(eqptFC, affected_models)
-    data = existing_in_lc + existing_in_fc
+    sn_string = "\n\n"
+    if eqptFC or eqptLC:
+        full = eqptFC + eqptLC
+        for card in full:
+            dn = card.get('eqptLC', {}).get('attributes', {}).get('dn', '') or card.get('eqptFC', {}).get('attributes', {}).get('dn', '')
+            match = re.search(node_regex, dn)
+            if match:
+                pod = match.group("pod")
+                node = match.group("node")
+
+            model = card.get('eqptLC', {}).get('attributes', {}).get('model', '') or card.get('eqptFC', {}).get('attributes', {}).get('model', '')
+            sn = card.get('eqptLC', {}).get('attributes', {}).get('ser', '') or card.get('eqptFC', {}).get('attributes', {}).get('ser', '')
+            data.append([pod, node, model, sn])
+            sn_string += "{},".format(sn)
 
     if data:
-        data = [[row['dn'], row['descr'], row['model'], row['ser']] for row in data]
-        data.sort(key=lambda x: x[0])
-        unformatted_data = data
-    else:
-        result = PASS
+        result = MANUAL
+        recommended_action += sn_string[:-1] + "\n"
 
-    print_result(title, result, msg, unformatted_headers, data, unformatted_headers, unformatted_data,
-                 recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
 
     return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))

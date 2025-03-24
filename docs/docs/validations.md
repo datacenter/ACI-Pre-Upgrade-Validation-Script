@@ -2278,14 +2278,14 @@ This check alerts you to potentially affected modules:
 
 Fabric Modules
 
- - N9K-C9504-FM-E=
- - N9K-C9508-FM-E=
+ - N9K-C9504-FM-E
+ - N9K-C9508-FM-E
 
 Line Card
 
- - N9K-X9732C-EX=
+ - N9K-X9732C-EX
 
-If alerted, [check if your Serial Number is affected][41].
+If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
