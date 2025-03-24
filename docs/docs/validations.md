@@ -188,7 +188,7 @@ Items                                           | Defect       | This Script    
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
 [d19]: #fcfcoe-support-for-ex-switches
-[d20]: #modular-spine-module-might-fail 
+[d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
 
 
 ## General Check Details
@@ -2267,20 +2267,25 @@ Refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)]
 The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives.
 
 
-### Nexus 950X FM or LC Might Fail to boot after reload 
+### Nexus 950X FM or LC Might Fail to boot after reload
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
-Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months.
-Below are the affected moduled. This is documented in [FN64251][39] , [CSCvg26013][40]. 
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
+
+The matching defect is [CSCvg26013][40].
+
+This check alerts you to potentially affected modules:
 
 Fabric Modules
-* N9K-C9504-FM-E=
-* N9K-C9508-FM-E=
+
+ - N9K-C9504-FM-E=
+ - N9K-C9508-FM-E=
 
 Line Card
-* N9K-X9732C-EX=
 
-[Check if your Serial Number is affected.][41]
+ - N9K-X9732C-EX=
+
+If alerted, [check if your Serial Number is affected][41].
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
