@@ -4648,7 +4648,7 @@ def clock_signal_component_failure(index, total_checks, **kwargs):
     title = 'Check for CSCvg26013 / FN64251'
     result = PASS
     msg = ''
-    headers = ['Pod', "Node", "Model", "Serial Number"]
+    headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
     recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251. SN String:'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
@@ -4668,14 +4668,16 @@ def clock_signal_component_failure(index, total_checks, **kwargs):
         full = eqptFC + eqptLC
         for card in full:
             dn = card.get('eqptLC', {}).get('attributes', {}).get('dn', '') or card.get('eqptFC', {}).get('attributes', {}).get('dn', '')
-            match = re.search(node_regex, dn)
+            slot_regex = node_regex + r"/sys/ch/(?P<slot>.+)/"
+            match = re.search(slot_regex, dn)
             if match:
                 pod = match.group("pod")
                 node = match.group("node")
+                slot = match.group("slot")
 
             model = card.get('eqptLC', {}).get('attributes', {}).get('model', '') or card.get('eqptFC', {}).get('attributes', {}).get('model', '')
             sn = card.get('eqptLC', {}).get('attributes', {}).get('ser', '') or card.get('eqptFC', {}).get('attributes', {}).get('ser', '')
-            data.append([pod, node, model, sn])
+            data.append([pod, node, slot, model, sn])
             sn_string += "{},".format(sn)
 
     if data:
