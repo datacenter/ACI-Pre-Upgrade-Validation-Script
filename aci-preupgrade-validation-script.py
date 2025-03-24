@@ -4423,8 +4423,8 @@ def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
     return result
 
 
-def clock_signal_component_failure(index, total_checks, **kwargs):
-    title = 'Check for CSCvg26013 / FN64251'
+def clock_signal_component_failure_check(index, total_checks, **kwargs):
+    title = 'Check FN64251 Susceptibility'
     result = PASS
     msg = ''
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
@@ -4572,7 +4572,7 @@ if __name__ == "__main__":
         static_route_overlap_check,
         fc_ex_model_check,
         vzany_vzany_service_epg_check,
-        clock_signal_component_failure,
+        clock_signal_component_failure_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
