@@ -4401,7 +4401,7 @@ def validate_tep_to_tep_ac_counter_check (index, total_checks, **kwargs):
     headers = ["dbgAcPath Count", "Supported Maximum"]
     data = []
     recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counter-scalibility-check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counters-scalability-check'
     print_title(title, index, total_checks)
 
     ac_limit = 1600
