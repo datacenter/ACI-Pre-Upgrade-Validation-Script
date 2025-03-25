@@ -1007,14 +1007,14 @@ def get_row(widths, values, spad="  ", lpad=""):
 
 def prints(objects, sep=' ', end='\n', result="Summary"):
     with open(RESULT_FILE, 'a') as f:
-        if result in [FAIL_O, FAIL_UF, MANUAL, POST, "Summary"]:
+        if result in [FAIL_O, FAIL_UF, MANUAL, POST, DONE, ERROR, "Summary"]:
             print(objects, sep=sep, end=end, file=sys.stdout)
             sys.stdout.flush()
         print(objects, sep=sep, end=end, file=f)
         f.flush()
 
 
-def print_title(title, index=None, total=None, result=None):
+def print_title(title, index=None, total=None, result="Summary"):
     if index and total:
         prints('[Check{:3}/{}] {}... '.format(index, total, title), end='', result=result)
     else:
@@ -1881,6 +1881,7 @@ def switch_ssd_check(index, total_checks, **kwargs):
 
 
 def apic_ssd_check(index, total_checks, cversion, **kwargs):
+    # CONNECTION CHECK
     title = 'APIC SSD Health'
     result = FAIL_UF
     msg = ''
@@ -1889,7 +1890,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
     unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
-    print_title(title, index, total_checks, result="Summary")
+    print_title(title, index, total_checks)
 
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
@@ -1957,7 +1958,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                 unformatted_data.append(
                     ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
-        result = PASS
+        result = DONE
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title)
     return result
 
@@ -2523,14 +2524,14 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
 
 
 def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
-    # TODO: figure out nicer way to handle these connection checks to only print on errors
+    # CONNECTION CHECK
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
     msg = ''
     headers = ['APIC', 'Firmware', 'md5sum', 'Failure', 'Recommended Action']
     data = []
     recommended_action = 'Delete the firmware from APIC and re-download'
-    print_title(title, index, total_checks, result="Summary")
+    print_title(title, index, total_checks)
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
@@ -2602,12 +2603,13 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         for name, md5 in zip(md5_names, md5s):
             data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])
     if not data:
-        result = PASS
+        result = DONE
     print_result(title, result, msg, headers, data, adjust_title=True)
     return result
 
 
 def standby_apic_disk_space_check(index, total_checks, **kwargs):
+    # CONNECTION CHECK
     title = 'Standby APIC Disk Space Usage'
     result = FAIL_UF
     msg = ''
@@ -2615,7 +2617,7 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     data = []
     recommended_action = 'Contact Cisco TAC'
     threshold = 75  # usage (%)
-    print_title(title, index, total_checks, result)
+    print_title(title, index, total_checks)
 
     checked_stby = []
     infraSnNodes = icurl('class', 'infraSnNode.json?query-target-filter=eq(infraSnNode.cntrlSbstState,"approved")')
@@ -2649,10 +2651,10 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
                     if int(usage) >= threshold:
                         data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage, recommended_action])
     if not infraSnNodes:
-        result = NA
+        result = DONE
         msg = 'No standby APIC found'
     elif not data:
-        result = PASS
+        result = DONE
         msg = 'all below {}%'.format(threshold)
     print_result(title, result, msg, headers, data)
     return result
@@ -4050,7 +4052,7 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
         result = MANUAL
         print_title(title, index, total_checks, result)
         print_result(title, result, "Target version not supplied. Skipping.")
-        return resulty
+        return result
 
     if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
         custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
@@ -4343,6 +4345,12 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     recommended_action = 'Validate if CloudSec Encryption is enabled within Nexus Dashboard Orchestrator'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec-encryption-check'
 
+    if not tversion:
+        result = MANUAL
+        print_title(title, index, total_checks, result)
+        print_result(title, result, "Target version not supplied. Skipping.")
+        return result
+
     cloudsec_api =  'cloudsecPreSharedKey.json'
     cloudsecPreSharedKey = icurl('class', cloudsec_api)
 
@@ -4610,7 +4618,7 @@ if __name__ == "__main__":
         vzany_vzany_service_epg_check,
         clock_signal_component_failure_check,
     ]
-    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
+    summary = {PASS: 0, DONE:0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
             r = check(idx + 1, len(checks), **inputs)
@@ -4622,7 +4630,7 @@ if __name__ == "__main__":
         except Exception as e:
             prints('')
             err = 'Error: %s' % e
-            print_title(err)
+            print_title(err, result=ERROR)
             print_result(err, ERROR)
             summary[ERROR] += 1
             logging.exception(e)
@@ -4633,7 +4641,7 @@ if __name__ == "__main__":
         f.write(jsonString)
 
     subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
+    summary_headers = [PASS, NA, DONE, FAIL_O, FAIL_UF, MANUAL, ERROR, POST, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:
@@ -4642,10 +4650,10 @@ if __name__ == "__main__":
     bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
 
     prints("""
-    Pre-Upgrade Check Complete.
+    Pre-Upgrade Check Complete. Actionable check results are printed above.
     Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
 
-    Result output and debug info saved to below bundle for later reference.
+    The full Result output and debug info saved to below bundle for later reference.
     Attach this bundle to Cisco TAC SRs opened to address the flagged checks.
 
       Result Bundle: {bundle}
