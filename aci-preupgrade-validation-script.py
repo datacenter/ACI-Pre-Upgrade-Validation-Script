@@ -1005,7 +1005,7 @@ def get_row(widths, values, spad="  ", lpad=""):
     return ('\n'.join(output).rstrip())
 
 
-def prints(objects, sep=' ', end='\n', result=None):
+def prints(objects, sep=' ', end='\n', result="Summary"):
     with open(RESULT_FILE, 'a') as f:
         if result in [FAIL_O, FAIL_UF, MANUAL, POST, "Summary"]:
             print(objects, sep=sep, end=end, file=sys.stdout)
@@ -1889,7 +1889,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
     unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
-    print_title(title, index, total_checks)
+    print_title(title, index, total_checks, result="Summary")
 
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
@@ -4515,11 +4515,11 @@ if __name__ == "__main__":
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
-        prints('', result=ERROR)
+        prints('')
         err = 'Error: %s' % e
-        print_title(err, result=ERROR)
+        print_title(err)
         print_result(err, ERROR)
-        print_title("Initial query failed. Ensure APICs are healthy. Ending script run.", result=ERROR)
+        print_title("Initial query failed. Ensure APICs are healthy. Ending script run.")
         logging.exception(e)
         sys.exit()
     inputs = {'username': username, 'password': password,
@@ -4617,16 +4617,16 @@ if __name__ == "__main__":
             summary[r] += 1
             json_log["check_details"].append({"check_number": idx + 1, "name": check.__name__, "results": r})
         except KeyboardInterrupt:
-            prints('\n\n!!! KeyboardInterrupt !!!\n', result=ERROR)
+            prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
         except Exception as e:
-            prints('', result=ERROR)
+            prints('')
             err = 'Error: %s' % e
-            print_title(err, result=ERROR)
+            print_title(err)
             print_result(err, ERROR)
             summary[ERROR] += 1
             logging.exception(e)
-    prints('\n=== Summary Result ===\n', result="Summary")
+    prints('\n=== Summary Result ===\n')
 
     jsonString = json.dumps(json_log)
     with open(JSON_FILE, 'w') as f:
@@ -4637,7 +4637,7 @@ if __name__ == "__main__":
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:
-        prints('{:{}} : {:2}'.format(key, max_header_len, summary[key]), result="Summary")
+        prints('{:{}} : {:2}'.format(key, max_header_len, summary[key]))
 
     bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
 
@@ -4649,7 +4649,7 @@ if __name__ == "__main__":
     Attach this bundle to Cisco TAC SRs opened to address the flagged checks.
 
       Result Bundle: {bundle}
-    """.format(bundle=bundle_loc), result="Summary")
-    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION), result="Summary")
+    """.format(bundle=bundle_loc))
+    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
     subprocess.check_output(['rm', '-rf', DIR])
