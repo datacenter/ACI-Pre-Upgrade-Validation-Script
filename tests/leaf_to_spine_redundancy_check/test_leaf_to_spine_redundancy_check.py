@@ -13,7 +13,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 
 fabric_nodes_api = 'fabricNode.json'
-fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
+fabric_nodes_api += '?query-target-filter=and(or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine")),eq(fabricNode.fabricSt,"active"))'
 
 # icurl queries
 lldp_adj_api =	'lldpAdjEp.json'
@@ -39,7 +39,6 @@ lldp_adj_api +=	'?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
             },
             script.PASS,
         ),
-
     ],
 )
 def test_logic(mock_icurl , expected_result):

@@ -4266,14 +4266,14 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
     print_title(title, index, total_checks)
 
     fabric_nodes_api = 'fabricNode.json'
-    fabric_nodes_api += '?query-target-filter=or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine"))'
+    fabric_nodes_api += '?query-target-filter=and(or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine")),eq(fabricNode.fabricSt,"active"))'
 
     lldp_adj_api = 'lldpAdjEp.json'
     lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
     fabricNodes= icurl('class', fabric_nodes_api)
-    all_spine_names = [node['fabricNode']['attributes']['name'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
-    
+    all_spine_dns = [node['fabricNode']['attributes']['dn'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
+
     lldp_adj = icurl('class', lldp_adj_api)
     for node in fabricNodes:
         neighbors = set()
@@ -4283,10 +4283,10 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
             for lldp_neighbor in lldp_adj:
                 spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
                 lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
-                if leaf_dn in lldp_dn and spine_name in all_spine_names:
+                neighbor_dn = lldp_neighbor['lldpAdjEp']['attributes']['sysDesc'].replace("\\", "")
+                if leaf_dn in lldp_dn and neighbor_dn in all_spine_dns:
                         neighbors.add(spine_name)
                 if len(neighbors) > 1:
-                    # Leaf has more than 1 Spine neighbor check passed
                     break
 
             if len(neighbors) <= 1:
