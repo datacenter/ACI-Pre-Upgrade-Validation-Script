@@ -1889,18 +1889,18 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
     unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
+    print_title(title, index, total_checks)
 
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
     adjust_title = False
     if len(faultInsts) == 0 and (cversion.older_than("4.2(7f)") or cversion.older_than("5.2(1g)")):
-        print('', result="SUMMARY")
+        print('')
         adjust_title = True
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         report_other = False
         if not controller:
             result = ERROR
-            print_title(title, index, total_checks, result)
             print_result(title, result, 'topSystem response empty. Is the cluster healthy?')
             return result
         else:
@@ -1912,7 +1912,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                 pod_id = attr['podId']
                 node_id = attr['id']
                 node_title = 'Checking %s...' % attr['name']
-
+                print_title(node_title)
                 try:
                     c = Connection(attr['address'])
                     c.username = username
@@ -1921,7 +1921,6 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     c.connect()
                 except Exception as e:
                     data.append([attr['id'], attr['name'], '-', '-', '-', e])
-                    print_title(node_title, result=ERROR)
                     print_result(node_title, ERROR)
                     continue
                 try:
@@ -1929,7 +1928,6 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                         'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
                 except Exception as e:
                     data.append([attr['id'], attr['name'], '-', '-', '-', e])
-                    print_title(node_title, result=ERROR)
                     print_result(node_title, ERROR)
                     continue
 
@@ -1940,13 +1938,11 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                         data.append([pod_id, node_id, "Solid State Disk",
                                      wearout, recommended_action])
                         report_other = True
-                        print_title(node_title, result=DONE)
                         print_result(node_title, DONE)
                         continue
                     if report_other:
                         data.append([pod_id, node_id, "Solid State Disk",
                                      wearout, "No Action Required"])
-                print_title(node_title, result=DONE)
                 print_result(node_title, DONE)
     else:
         headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
@@ -1962,7 +1958,6 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_title(title, index, total_checks, result)
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title)
     return result
 
