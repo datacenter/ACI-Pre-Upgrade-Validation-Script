@@ -4640,7 +4640,6 @@ if __name__ == "__main__":
     with open(JSON_FILE, 'w') as f:
         f.write(jsonString)
 
-    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
     summary_headers = [PASS, NA, DONE, FAIL_O, FAIL_UF, MANUAL, ERROR, POST, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
@@ -4660,4 +4659,5 @@ if __name__ == "__main__":
     """.format(bundle=bundle_loc))
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
+    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
     subprocess.check_output(['rm', '-rf', DIR])
