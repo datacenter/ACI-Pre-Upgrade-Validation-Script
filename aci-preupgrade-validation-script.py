@@ -3711,7 +3711,7 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
 
     print_title(title, index, total_checks)
     
-    if cversion.newer_than("4.2(1a)"):
+    if cversion.newer_than("5.2(1a)"):
         commCipher = icurl('class', 'commCipher.json')
         if not commCipher:
             print_result(title, ERROR, 'commCipher response empty. Is the cluster healthy?')
