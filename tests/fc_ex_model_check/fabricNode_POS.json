@@ -1,0 +1,26 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101",
+                "model": "N9K-C93180YC-EX"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-102",
+                "model": "N9K-C93108TC-EX"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-103",
+                "model": "N9K-C93108LC-EX"
+            }
+        }
+    }
+]

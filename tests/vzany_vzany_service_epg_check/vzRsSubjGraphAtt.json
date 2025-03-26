@@ -1,0 +1,15 @@
+[
+  {
+    "vzRsSubjGraphAtt": {
+      "attributes": {
+        "dn": "uni/tn-T1/brc-contract1/subj-S1/rsSubjGraphAtt",
+        "tCl": "vnsAbsGraph",
+        "tContextDn": "",
+        "tDn": "uni/tn-T1/AbsGraph-FW_PBR",
+        "tRn": "AbsGraph-FW_PBR",
+        "tType": "name",
+        "tnVnsAbsGraphName": "FW_PBR"
+      }
+    }
+  }
+]

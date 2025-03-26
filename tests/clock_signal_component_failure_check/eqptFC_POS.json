@@ -1,0 +1,48 @@
+[
+    {
+      "eqptFC": {
+        "attributes": {
+
+          "dn": "topology/pod-1/node-201/sys/ch/fcslot-5/fc",
+          "model": "N9K-C9504-FM-E",
+          "ser": "FOC235053QS"
+        }
+      }
+    },
+    {
+      "eqptFC": {
+        "attributes": {
+          "dn": "topology/pod-1/node-201/sys/ch/fcslot-4/fc",
+          "model": "N9K-C9508-FM-E",
+          "ser": "FOC23506V60"
+        }
+      }
+    },
+    {
+      "eqptFC": {
+        "attributes": {
+          "dn": "topology/pod-1/node-201/sys/ch/fcslot-2/fc",
+          "model": "N9K-C9504-FM-E",
+          "ser": "FOC23506V3J"
+        }
+      }
+    },
+    {
+      "eqptFC": {
+        "attributes": {
+          "dn": "topology/pod-1/node-201/sys/ch/fcslot-6/fc",
+          "model": "N9K-C9504-FM-E",
+          "ser": "FOC235053QU"
+        }
+      }
+    },
+    {
+      "eqptFC": {
+        "attributes": {
+          "dn": "topology/pod-1/node-201/sys/ch/fcslot-3/fc",
+          "model": "N9K-C9508-FM-E",
+          "ser": "FOC235053MR"
+        }
+      }
+    }
+]
