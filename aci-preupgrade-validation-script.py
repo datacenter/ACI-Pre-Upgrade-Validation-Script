@@ -4468,6 +4468,43 @@ def clock_signal_component_failure_check(index, total_checks, **kwargs):
     return result
 
 
+def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
+    title = 'Stale decomissioned Spine Check'
+    result = PASS
+    msg = ''
+    headers = ["Susceptible Spine Node Id", "Spine Name", "Current Node State"]
+    data = []
+    recommended_action = 'Remove fabricRsDecommissionNode objects pointing to above Spine Nodes before APIC upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-decommissioned-spine-check'
+    print_title(title, index, total_checks)
+
+    decomissioned_api ='fabricRsDecommissionNode.json'
+
+    active_spine_api = 'topSystem.json'
+    active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if tversion.newer_than("5.2(3d)") and tversion.older_than("6.0(3d)"):
+        decomissioned_switches = icurl('class', decomissioned_api)
+        if decomissioned_switches:
+            decommissioned_node_ids = [node['fabricRsDecommissionNode']['attributes']['targetId'] for node in decomissioned_switches]
+
+            active_spine_mo = icurl('class', active_spine_api)
+            for spine in active_spine_mo:
+                node_id = spine['topSystem']['attributes']['id']
+                name = spine['topSystem']['attributes']['name']
+                state = spine['topSystem']['attributes']['state']
+                if node_id in decommissioned_node_ids:
+                    data.append([node_id, name, state])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4573,6 +4610,8 @@ if __name__ == "__main__":
         fc_ex_model_check,
         vzany_vzany_service_epg_check,
         clock_signal_component_failure_check,
+        stale_decomissioned_spine_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):

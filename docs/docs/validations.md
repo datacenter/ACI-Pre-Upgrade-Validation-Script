@@ -167,6 +167,7 @@ Items                                           | Defect       | This Script    
 [vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Stale Decommissioned Spine Check][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -189,6 +190,7 @@ Items                                           | Defect       | This Script    
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
 [d19]: #fcfcoe-support-for-ex-switches
 [d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
+[d21]: #stale-decommissioned-spine-check
 
 
 ## General Check Details
@@ -2288,6 +2290,11 @@ Line Card
 If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
 
 
+### Stale Decommissioned Spine Check
+
+Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDecommissionNode` objects pointing to Spine Node IDs, regardless of pod location defined in the `fabricRsDecommissionNode` object, will result in those Spine Nodes being removed from Leaf Node COOP Adjacency lists. This results in Leaf Nodes no longer publishing endpoint updates to affected Spine Nodes, resulting in packet drops for any spine proxy traffic hashed to an affected Spine Node.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2330,3 +2337,4 @@ If alerted, check if identified Serial Numbers are affected using the [Serial Nu
 [39]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
 [40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
 [41]: https://snvui.cisco.com/snv/FN64251
+[42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763

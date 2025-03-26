@@ -1,0 +1,22 @@
+[
+    {
+      "fabricRsDecommissionNode": {
+        "attributes": {
+          "dn": "uni/fabric/outofsvc/rsdecommissionNode-[topology/pod-1/node-106]",
+          "tDn": "topology/pod-1/node-106", 
+          "targetId": "106", 
+          "rn": "rsdecommissionNode-[topology/pod-1/node-106]"
+        }
+      }
+    },
+    {
+      "fabricRsDecommissionNode": {
+        "attributes": {
+          "dn": "uni/fabric/outofsvc/rsdecommissionNode-[topology/pod-1/node-107]",
+          "tDn": "topology/pod-1/node-107", 
+          "targetId": "107", 
+          "rn": "rsdecommissionNode-[topology/pod-1/node-107]"
+        }
+      }
+    }
+]
