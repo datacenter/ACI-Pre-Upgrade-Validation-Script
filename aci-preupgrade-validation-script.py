@@ -3711,7 +3711,7 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
 
     print_title(title, index, total_checks)
     
-    if cversion.newer_than("4.2(1a)"):
+    if cversion.newer_than("5.2(1a)"):
         commCipher = icurl('class', 'commCipher.json')
         if not commCipher:
             print_result(title, ERROR, 'commCipher response empty. Is the cluster healthy?')
@@ -4215,7 +4215,7 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
     return result
 
 
-def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
+def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kwargs):
     title = '32 and 64-Bit Firmware Image for Switches'
     result = PASS
     msg = ''
@@ -4228,8 +4228,12 @@ def validate_32_64_bit_image_check(index, total_checks, tversion, **kwargs):
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
-    
-    if tversion.newer_than("6.0(2a)"):
+
+    if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
+        print_result(title, POST, 'Re-run after APICs are upgraded to 6.0(2) or later')
+        return POST
+
+    if cversion.newer_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
         found32 = found64 = False
         target_sw_ver = 'n9000-1' + tversion.version
         firmware_api =	'firmwareFirmware.json'
@@ -4309,7 +4313,18 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     cloudsec_api =  'cloudsecPreSharedKey.json'
-    cloudsecPreSharedKey = icurl('class', cloudsec_api)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    try:
+        cloudsecPreSharedKey = icurl('class', cloudsec_api)
+    except OldVerClassNotFound:
+        msg = 'cversion does not have class cloudsecPreSharedKey'
+        result = NA
+        print_result(title, result, msg)
+        return result
 
     if tversion.newer_than("6.0(6a)"):
         if len(cloudsecPreSharedKey) > 1:
