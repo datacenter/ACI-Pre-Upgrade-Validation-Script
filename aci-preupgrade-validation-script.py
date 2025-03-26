@@ -4313,11 +4313,18 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     cloudsec_api =  'cloudsecPreSharedKey.json'
-    cloudsecPreSharedKey = icurl('class', cloudsec_api)
 
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
+
+    try:
+        cloudsecPreSharedKey = icurl('class', cloudsec_api)
+    except OldVerClassNotFound:
+        msg = 'cversion does not have class cloudsecPreSharedKey'
+        result = NA
+        print_result(title, result, msg)
+        return result
 
     if tversion.newer_than("6.0(6a)"):
         if len(cloudsecPreSharedKey) > 1:
