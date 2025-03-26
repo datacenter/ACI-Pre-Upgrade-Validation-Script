@@ -4467,42 +4467,42 @@ def clock_signal_component_failure_check(index, total_checks, **kwargs):
 
     return result
 
-def decomissioned_spine_check(index, total_checks, tversion, **kwargs):
-    title = 'Decomissioned Spine Switches Check'
+
+def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
+    title = 'Stale decomissioned Spine Check'
     result = PASS
     msg = ''
-    headers = ["Target Switch Version", "Switch Node Id"]
+    headers = ["Susceptible Spine Node Id", "Spine Name", "Current Node State"]
     data = []
-    recommended_action = 'Remove Stale fabricRsDecommissionNode Mo before APIC upgrade'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#decommissioned-switch-check'
+    recommended_action = 'Remove fabricRsDecommissionNode objects pointing to above Spine Nodes before APIC upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-decommissioned-spine-check'
     print_title(title, index, total_checks)
+
+    decomissioned_api ='fabricRsDecommissionNode.json'
+
+    active_spine_api = 'topSystem.json'
+    active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
 
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
     
     if tversion.newer_than("5.2(3d)") and tversion.older_than("6.0(3d)"):
-        decomissioned_api ='fabricRsDecommissionNode.json'
-        decomissioned_switch_mo = icurl('class', decomissioned_api)
-        if len(decomissioned_switch_mo)>=1:
-            decommissioned_switch_list = []
-            for switch in decomissioned_switch_mo:
-                node_id = switch['fabricRsDecommissionNode']['attributes']['targetId']
-                decommissioned_switch_list.append(node_id)
+        decomissioned_switches = icurl('class', decomissioned_api)
+        if decomissioned_switches:
+            decommissioned_node_ids = [node['fabricRsDecommissionNode']['attributes']['targetId'] for node in decomissioned_switches]
 
-            active_spine_api = 'topSystem.json'
-            active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
             active_spine_mo = icurl('class', active_spine_api)
-
             for spine in active_spine_mo:
                 node_id = spine['topSystem']['attributes']['id']
-                if node_id in decommissioned_switch_list:
-                    data.append([tversion,node_id])
+                name = spine['topSystem']['attributes']['name']
+                state = spine['topSystem']['attributes']['state']
+                if node_id in decommissioned_node_ids:
+                    data.append([node_id, name, state])
     if data:
         result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
-
 
 
 if __name__ == "__main__":
@@ -4610,7 +4610,7 @@ if __name__ == "__main__":
         fc_ex_model_check,
         vzany_vzany_service_epg_check,
         clock_signal_component_failure_check,
-        decomissioned_spine_check,
+        stale_decomissioned_spine_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
