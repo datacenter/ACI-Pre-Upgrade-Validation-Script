@@ -2290,61 +2290,6 @@ Line Card
 If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
 
 
-### vzAny-to-vzAny Service Graph when crossing 5.0 release
-
-When your APIC upgrade is crossing 5.0 release, for instance upgrading from 4.2(7w) to 5.2(8i), traffic hitting a vzAny-to-vzAny contract with Service Graph may experience disruption for a short amount of time.
-
-!!! note
-    A vzAny-to-vzAny contract refers to a contract that is provided and consumed by the same VRF (vzAny) so that the contract is applied to all traffic in the said VRF.
-
-    The potential transient traffic disruption occurs during an APIC upgrade instead of a switch upgrade.
-
-The script checks the two points:
-
-1. The combination of your source and target version is susceptible
-2. You have any vzAny-to-vzAny contract with Service Graph
-
-When both conditions are met, the script results in `FAIL - OUTAGE WARNING!!` to inform you of potential disruption to your traffic going through such Service Graph. In such a case, make sure to upgrade your APICs during a maintenance window that can tolerate some traffic impact.
-
-This transient disruption is because the pcTag of the service EPG for a vzAny-vzAny Service Graph is updated from APIC and re-programmed on switches due to an internal architecture update in [APIC Release 5.0][31] (See also [CSCwh75475][32]).
-Depending on the timing and how fast the re-programming finishes, you may not see any traffic disruption. Unfortunately, it is difficult to estimate the amount of time the re-programming takes but it generally depends on the number of VRFs, service graphs, contract rules etc.
-
-!!! tip
-    With L4-L7 Service Graph, ACI deploys an internal/hidden EPG representing the service node to be inserted via the Service Graph. Such a hidden EPG is called Service EPG. When a Service Graph is applied to a contract, internally a service EPG is inserted between the provider and consumer EPGs so that the traffic flow will be consumer EPG to service EPG (i.e. service node such as firewall), coming back from the service node, then service EPG to provider EPG. Because of this, if the pcTag of service EPG is updated, such traffic flow gets impacted while it's being re-programmed in the switch hardware.
-
-    Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
-
-
-### FC/FCOE support for -EX switches
-
-Due to defect [CSCwm92166][36], ACI switches with models ending in '-EX' will not support FC/FCOE configurations if upgraded to an affected release. If upgraded, the FC/FCOE interface will remain down and fault F4511 will be raised.
-
-Refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)][37] for a complete list of for FC/FCOE supported hardware.
-
-The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives.
-
-
-### Nexus 950X FM or LC Might Fail to boot after reload
-
-A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
-Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
-
-The matching defect is [CSCvg26013][40].
-
-This check alerts you to potentially affected modules:
-
-Fabric Modules
-
- - N9K-C9504-FM-E
- - N9K-C9508-FM-E
-
-Line Card
-
- - N9K-X9732C-EX
-
-If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
-
-
 ### Stale Decommissioned Spine Check
 
 Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDecommissionNode` objects pointing to Spine Node IDs, regardless of pod location defined in the `fabricRsDecommissionNode` object, will result in those Spine Nodes being removed from Leaf Node COOP Adjacency lists. This results in Leaf Nodes no longer publishing endpoint updates to affected Spine Nodes, resulting in packet drops for any spine proxy traffic hashed to an affected Spine Node.
