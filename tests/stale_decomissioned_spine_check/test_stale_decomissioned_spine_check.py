@@ -19,6 +19,7 @@ active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result",
     [
+        # TVERSION not supplied
         (
             {
                 active_spine_api: read_data(dir, "topSystem.json"),
@@ -27,6 +28,7 @@ active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
             None,
             script.MANUAL,
         ),
+        # No decom objects
         (
             {
                 active_spine_api: read_data(dir, "topSystem.json"),
@@ -35,6 +37,7 @@ active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
             "5.2(5e)",
             script.PASS,
         ),
+        # Spine has stale decom object, and going to affected version
         (
             {
                 active_spine_api: read_data(dir, "topSystem.json"),
@@ -42,6 +45,15 @@ active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
             },
             "5.2(6a)",
             script.FAIL_O,
+        ),
+        # Fixed Target Version
+        (
+            {
+                active_spine_api: read_data(dir, "topSystem.json"),
+                decomissioned_api: read_data(dir,"fabricRsDecommissionNode_POS.json")
+            },
+            "6.0(4a)",
+            script.PASS,
         ),
     ],
 )
