@@ -2085,6 +2085,8 @@ The script checks if the version and the SUP modules are susceptible to the defe
 
 If this check is flagged, Known Fixed Releases documented in [CSCwf44222][30] should be assessed as a target image to avoid the defect condition.
 
+Additional Details can be found within the associated Field Notice [FN74050][43].
+
 ### CoS 3 with Dynamic Packet Prioritization
 
 Due to the defect CSCwf05073, ACI unexpectedly assigning a COS3 value to traffic egressing front ports. 
@@ -2338,3 +2340,4 @@ Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDe
 [40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
 [41]: https://snvui.cisco.com/snv/FN64251
 [42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
+[43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html

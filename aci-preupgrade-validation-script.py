@@ -3399,7 +3399,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
         for sup in sups:
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
-            if prtNum in ['73-18562-02', '73-18570-02', '73-18570-03']:
+            if prtNum in ['73-18562-02', '73-18562-03', '73-18570-02', '73-18570-03']:
                 dn = re.search(node_regex+sup_re, sup['eqptSpCmnBlk']['attributes']['dn'])
                 pod_id = dn.group("pod")
                 node_id = dn.group("node")
