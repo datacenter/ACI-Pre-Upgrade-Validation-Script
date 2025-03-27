@@ -3400,7 +3400,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
             and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))
        ):
         fpga_concern = True
-        recommended_action += "\n    For FPGA Concern: Consider a target verision with fix for CSCwb86706"
+        recommended_action += "\n    For FPGA Concern: Consider a target version with fix for CSCwb86706"
     
     if vrm_concern or fpga_concern:
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
