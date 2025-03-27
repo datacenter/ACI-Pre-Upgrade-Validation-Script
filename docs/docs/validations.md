@@ -2079,13 +2079,14 @@ The script checks if the target version is 6.0(2) and if the fabric name contain
 
 ### Spine SUP HW Revision
 
-Due to the defect [CSCwb86706][29], ACI modular spine switches may not be able to boot after an upgrade depending on the hardware revision (part number) of the SUP modules.
+Field Notice [FN74050][43] outlines 2 issue scenarios that can be hit for a subset of Spine Sup-A+ and SUP-B+ Part Numbers.
 
-The script checks if the version and the SUP modules are susceptible to the defect.
+There is a VRM Issue outlined by [CSCwd65255][44] which can occur for affected SUP parts after performing an EPLD upgrade, forcing the user to perofrm an additional power cyclel beforeo they will boot up. If 'VRM Concern' is flagged, review the FN details which includes a link to a script which can be run by TAC to proactively address this specific issue.
 
-If this check is flagged, Known Fixed Releases documented in [CSCwf44222][30] should be assessed as a target image to avoid the defect condition.
+There is also an FPGA Downgrade Issue which is due to a combination of [CSCwb86706][29] and [CSCwf44222][30]. This specific scenario is more severe in that ACI modular spine switches will not be able to boot after an upgrade if hit and a replacement is required. However, the FPGA Downgrade Issue can be avoided entirely by targeting a fixed version of [CSCwf44222][30].
 
-Additional Details can be found within the associated Field Notice [FN74050][43].
+The script checks if the version and the SUP Part Numbers are susceptible to either FN issue scenario.
+
 
 ### CoS 3 with Dynamic Packet Prioritization
 
@@ -2341,3 +2342,4 @@ Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDe
 [41]: https://snvui.cisco.com/snv/FN64251
 [42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
 [43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
+[44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
