@@ -4532,6 +4532,36 @@ def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def gx2a_model_check(index, total_checks, tversion, **kwargs):
+    title = 'GX2A Platform Model Check'
+    result = PASS
+    msg = ''
+    headers = ["Node ID", "Model"]
+    data = []
+    recommended_action = 'Identified GX2A must be decommissioned then recomissioned after upgrade to 6.1(3)'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#gx2a-model-check'
+    print_title(title, index, total_checks)
+
+    eqptCh_api = 'eqptCh.json'
+    eqptCh_api += '?query-target-filter=eq(eqptCh.model,"N9K-C9400-SW-GX2A")'
+    
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    
+    if tversion.newer_than("6.1(3a)"):
+        eqptCh = icurl('class', eqptCh_api)
+        for node in eqptCh:
+            node_dn = node['eqptCh']['attributes']['dn']
+            model = node['eqptCh']['attributes']['model']
+            data.append([node_dn, model])
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
