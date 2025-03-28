@@ -168,6 +168,7 @@ Items                                           | Defect       | This Script    
 [FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Stale Decommissioned Spine Check][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[GX2A Platform Model Check][d22]               | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -191,7 +192,7 @@ Items                                           | Defect       | This Script    
 [d19]: #fcfcoe-support-for-ex-switches
 [d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
 [d21]: #stale-decommissioned-spine-check
-
+[d22]: #gx2a-platform-model-check
 
 ## General Check Details
 
@@ -2297,6 +2298,12 @@ If alerted, check if identified Serial Numbers are affected using the [Serial Nu
 
 Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDecommissionNode` objects pointing to Spine Node IDs, regardless of pod location defined in the `fabricRsDecommissionNode` object, will result in those Spine Nodes being removed from Leaf Node COOP Adjacency lists. This results in Leaf Nodes no longer publishing endpoint updates to affected Spine Nodes, resulting in packet drops for any spine proxy traffic hashed to an affected Spine Node.
 
+### GX2A Platform Model Check
+
+[CSCwk77800][45] fixed a behavior where `N9K-C9400-SW-GX2A` are expected to report their chassis as `N9K-C9408`.
+
+When an identified node is upgraded to a fixed 6.1(3)+ version, the old model's entry will show up as inactive and must be decomissioned and the new model's entry must be registered. The result is that the node will not completely join the fabric post-upgrade until these additional steps are performed on each identified GX2A node.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2343,3 +2350,4 @@ Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDe
 [42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
 [43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
+[45]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwk77800
