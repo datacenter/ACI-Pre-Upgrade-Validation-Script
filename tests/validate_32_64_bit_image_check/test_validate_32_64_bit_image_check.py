@@ -44,6 +44,30 @@ firmware_52_api +=	'?query-target-filter=eq(firmwareFirmware.fullVersion,"n9000-
             "6.0(3e)",
             script.FAIL_UF,
         ),
+        ## FAILING = AFFECTED VERSION + Images were uploaded before upgrade
+        (
+            {firmware_60_api: read_data(dir, "firmwareFirmware_pos2.json"), 
+            },
+            "6.0(3e)",
+            "6.0(3e)",
+            script.FAIL_UF,
+        ),
+        ## FAILING = AFFECTED VERSION + 32-bit image shows NA
+        (
+            {firmware_60_api: read_data(dir, "firmwareFirmware_pos3.json"), 
+            },
+            "6.0(3e)",
+            "6.0(3e)",
+            script.FAIL_UF,
+        ),
+        ## FAILING = AFFECTED VERSION + 64-bit image shows NA
+        (
+            {firmware_60_api: read_data(dir, "firmwareFirmware_pos4.json"), 
+            },
+            "6.0(3e)",
+            "6.0(3e)",
+            script.FAIL_UF,
+        ),
         ## FAILING = AFFECTED VERSION + AFFECTED MO NON EXISTING
         (
             {firmware_60_api: read_data(dir, "firmwareFirmware_empty.json"),

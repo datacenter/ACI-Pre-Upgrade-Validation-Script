@@ -4231,7 +4231,7 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
     title = '32 and 64-Bit Firmware Image for Switches'
     result = PASS
     msg = ''
-    headers = ["Target Switch Version", "32-Bit Image Found", "64-Bit Image Found"]
+    headers = ["Target Switch Version", "32-Bit Image Found", "64-Bit Image Found", "NA Image(s) Found"]
     data = []
     recommended_action = 'Upload the missing 32 or 64 bit Switch Image to the Firmware repository'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#602-requires-32-and-64-bit-switch-images'
@@ -4246,7 +4246,7 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
         return POST
 
     if cversion.newer_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
-        found32 = found64 = False
+        found32 = found64 = na_image = False
         target_sw_ver = 'n9000-1' + tversion.version
         firmware_api =	'firmwareFirmware.json'
         firmware_api +=	'?query-target-filter=eq(firmwareFirmware.fullVersion,"%s")' % (target_sw_ver)  
@@ -4257,10 +4257,13 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
                 found32 = True
             elif firmware['firmwareFirmware']['attributes']['bitInfo'] == '64':
                 found64 = True
+            elif firmware['firmwareFirmware']['attributes']['bitInfo'] == 'NA':
+                na_image = True
+                recommended_action += '\n     NA bitinfo on switch image found, remove and reupload to APIC fwrepo'
 
         if not found32 or not found64:
             result = FAIL_UF
-            data.append([target_sw_ver, found32, found64])
+            data.append([target_sw_ver, found32, found64, na_image])
 
     else:
         result = NA
