@@ -169,6 +169,7 @@ Items                                           | Defect       | This Script    
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Stale Decommissioned Spine Check][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [GX2A Platform Model Check][d22]               | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[PBR High Scale Check][d23]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -193,6 +194,7 @@ Items                                           | Defect       | This Script    
 [d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
 [d21]: #stale-decommissioned-spine-check
 [d22]: #gx2a-platform-model-check
+[d23]: #pbr-high-scale-check
 
 ## General Check Details
 
@@ -2304,6 +2306,12 @@ Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDe
 
 When an identified node is upgraded to a fixed 6.1(3)+ version, the old model's entry will show up as inactive and must be decomissioned and the new model's entry must be registered. The result is that the node will not completely join the fabric post-upgrade until these additional steps are performed on each identified GX2A node.
 
+### PBR High Scale Check
+
+Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (`vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
+
+This check will count the number of issue relevant PBR policies across the entire ACI fabric and alert if targeting an affected version with relevant PBR config objects greater than 100k. If alerted, the recommended action is to target a version that has the fix for [CSCwi66348][46].
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2351,3 +2359,4 @@ When an identified node is upgraded to a fixed 6.1(3)+ version, the old model's 
 [43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
 [45]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwk77800
+[46]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi66348

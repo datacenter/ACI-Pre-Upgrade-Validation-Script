@@ -4562,6 +4562,44 @@ def gx2a_model_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
+    title = 'PBR High Scale Check'
+    result = PASS
+    msg = ''
+    headers = ["Fabric-Wide PBR Object Count"]
+    data = []
+    recommended_action = 'High PBR scale detected, target a fixed version for CSCwi66348'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#pbr-high-scale-check'
+    print_title(title, index, total_checks)
+
+    vnsAdjacencyDefCont_api = 'vnsAdjacencyDefCont.json'
+    vnsSvcRedirEcmpBucketCons_api = 'vnsSvcRedirEcmpBucketCons.json'
+    fvAdjDefCons_api = 'fvAdjDefCons.json'
+    count_filter = '?rsp-subtree-include=count'
+    
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.older_than("5.3(2c)"):
+        vnsAdj = icurl('class', vnsAdjacencyDefCont_api+count_filter)
+        vnsSvc = icurl('class', vnsSvcRedirEcmpBucketCons_api+count_filter)
+        fvAdj = icurl('class', fvAdjDefCons_api+count_filter)
+        
+        vnsAdj_count = int(vnsAdj[0]['moCount']['attributes']['count'])
+        vnsSvc_count = int(vnsSvc[0]['moCount']['attributes']['count'])
+        fvAdj_count = int(fvAdj[0]['moCount']['attributes']['count'])
+        total = vnsAdj_count + vnsSvc_count + fvAdj_count
+        if total > 100000:
+            data.append([total])
+
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4669,6 +4707,7 @@ if __name__ == "__main__":
         clock_signal_component_failure_check,
         stale_decomissioned_spine_check,
         gx2a_model_check,
+        pbr_high_scale_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
