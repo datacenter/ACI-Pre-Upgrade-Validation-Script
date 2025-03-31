@@ -4574,7 +4574,6 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
 
     vnsAdjacencyDefCont_api = 'vnsAdjacencyDefCont.json'
     vnsSvcRedirEcmpBucketCons_api = 'vnsSvcRedirEcmpBucketCons.json'
-    fvAdjDefCons_api = 'fvAdjDefCons.json'
     count_filter = '?rsp-subtree-include=count'
     
     if not tversion:
@@ -4584,12 +4583,10 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     if tversion.older_than("5.3(2c)"):
         vnsAdj = icurl('class', vnsAdjacencyDefCont_api+count_filter)
         vnsSvc = icurl('class', vnsSvcRedirEcmpBucketCons_api+count_filter)
-        fvAdj = icurl('class', fvAdjDefCons_api+count_filter)
         
         vnsAdj_count = int(vnsAdj[0]['moCount']['attributes']['count'])
         vnsSvc_count = int(vnsSvc[0]['moCount']['attributes']['count'])
-        fvAdj_count = int(fvAdj[0]['moCount']['attributes']['count'])
-        total = vnsAdj_count + vnsSvc_count + fvAdj_count
+        total = vnsAdj_count + vnsSvc_count
         if total > 100000:
             data.append([total])
 

@@ -2308,9 +2308,9 @@ When an identified node is upgraded to a fixed 6.1(3)+ version, the old model's 
 
 ### PBR High Scale Check
 
-Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (`vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
+Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
 
-This check will count the number of issue relevant PBR policies across the entire ACI fabric and alert if targeting an affected version with relevant PBR config objects greater than 100k. If alerted, the recommended action is to target a version that has the fix for [CSCwi66348][46].
+This check will count the number of relevant PBR policies across the entire ACI fabric from an APIC perspective (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons`) and alert if targeting an affected version with relevant PBR config objects greater than 100k. If alerted, the recommended action is to target a version that has the fix for [CSCwi66348][46].
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

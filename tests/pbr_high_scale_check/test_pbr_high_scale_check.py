@@ -13,7 +13,6 @@ dir = os.path.dirname(os.path.abspath(__file__))
 # icurl queries
 vnsAdjacencyDefCont_api = 'vnsAdjacencyDefCont.json'
 vnsSvcRedirEcmpBucketCons_api = 'vnsSvcRedirEcmpBucketCons.json'
-fvAdjDefCons_api = 'fvAdjDefCons.json'
 count_filter = '?rsp-subtree-include=count'
 
 @pytest.mark.parametrize(
@@ -24,7 +23,6 @@ count_filter = '?rsp-subtree-include=count'
             {
                 vnsAdjacencyDefCont_api+count_filter: read_data(dir, "vnsAdjacencyDefCont_HIGH.json"),
                 vnsSvcRedirEcmpBucketCons_api+count_filter: read_data(dir, "vnsSvcRedirEcmpBucketCons_HIGH.json"),
-                fvAdjDefCons_api+count_filter: read_data(dir, "fvAdjDefCons_HIGH.json"),
             },
             "5.2(8h)",
             script.FAIL_O,
@@ -34,7 +32,6 @@ count_filter = '?rsp-subtree-include=count'
             {
                 vnsAdjacencyDefCont_api+count_filter: read_data(dir, "vnsAdjacencyDefCont_HIGH.json"),
                 vnsSvcRedirEcmpBucketCons_api+count_filter: read_data(dir, "vnsSvcRedirEcmpBucketCons_HIGH.json"),
-                fvAdjDefCons_api+count_filter: read_data(dir, "fvAdjDefCons_HIGH.json"),
             },
             "5.3(2c)",
             script.PASS,
@@ -44,7 +41,6 @@ count_filter = '?rsp-subtree-include=count'
             {
                 vnsAdjacencyDefCont_api+count_filter: read_data(dir, "vnsAdjacencyDefCont_LOW.json"),
                 vnsSvcRedirEcmpBucketCons_api+count_filter: read_data(dir, "vnsSvcRedirEcmpBucketCons_LOW.json"),
-                fvAdjDefCons_api+count_filter: read_data(dir, "fvAdjDefCons_LOW.json"),
             },
             "5.2(8h)",
             script.PASS,
@@ -54,7 +50,6 @@ count_filter = '?rsp-subtree-include=count'
             {
                 vnsAdjacencyDefCont_api+count_filter: read_data(dir, "vnsAdjacencyDefCont_LOW.json"),
                 vnsSvcRedirEcmpBucketCons_api+count_filter: read_data(dir, "vnsSvcRedirEcmpBucketCons_LOW.json"),
-                fvAdjDefCons_api+count_filter: read_data(dir, "fvAdjDefCons_LOW.json"),
             },
             "5.3(2c)",
             script.PASS,
@@ -64,7 +59,6 @@ count_filter = '?rsp-subtree-include=count'
             {
                 vnsAdjacencyDefCont_api+count_filter: read_data(dir, "vnsAdjacencyDefCont_LOW.json"),
                 vnsSvcRedirEcmpBucketCons_api+count_filter: read_data(dir, "vnsSvcRedirEcmpBucketCons_LOW.json"),
-                fvAdjDefCons_api+count_filter: read_data(dir, "fvAdjDefCons_LOW.json"),
             },
             None,
             script.MANUAL,
