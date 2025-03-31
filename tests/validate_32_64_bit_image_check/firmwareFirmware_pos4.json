@@ -1,0 +1,78 @@
+[
+    {
+      "firmwareFirmware": {
+        "attributes": {
+          "annotation": "",
+          "autoloadCatalog": "no",
+          "bitInfo": "NA",
+          "checksum": "26e61c295b00703002d69eda76526e3d",
+          "childAction": "",
+          "deleteIt": "no",
+          "description": "",
+          "dn": "fwrepo/fw-aci-n9000-system.16.0.3e-cs_64.bin",
+          "dnldStatus": "downloaded",
+          "downloadDate": "2024-04-09T11:18:11.054-04:00",
+          "extMngdBy": "",
+          "fullVersion": "n9000-16.0(3e)",
+          "iUrl": "/var/run/mgmt/fwrepos/fwrepo/aci-n9000-dk9.16.0.3e-cs_64.bin",
+          "isoname": "aci-n9000-dk9.16.0.3e-cs_64.bin",
+          "latest": "no",
+          "lcOwn": "local",
+          "minorVersion": "(3e)",
+          "modTs": "2024-04-11T15:53:39.984-04:00",
+          "name": "aci-n9000-system.16.0.3e-cs_64.bin",
+          "origFileName": "",
+          "releaseDate": "2023-08-18T01:41:46.000-04:00",
+          "restartType": "NA",
+          "rn": "fw-aci-n9000-system.16.0.3e-cs_64.bin",
+          "size": "2593945834",
+          "size64": "2593945834",
+          "status": "",
+          "syncComplete": "111",
+          "type": "switch",
+          "uid": "0",
+          "url": "/fwrepo/aci-n9000-dk9.16.0.3e-cs_64.bin",
+          "userdom": "all",
+          "version": "16.0"
+        }
+      }
+    },
+    {
+      "firmwareFirmware": {
+        "attributes": {
+          "annotation": "",
+          "autoloadCatalog": "no",
+          "bitInfo": "32",
+          "checksum": "fe7d6492a4d05e57910742f8f0d0252c",
+          "childAction": "",
+          "deleteIt": "no",
+          "description": "",
+          "dn": "fwrepo/fw-aci-n9000-system.16.0.3e.bin",
+          "dnldStatus": "downloaded",
+          "downloadDate": "2024-04-09T11:14:28.846-04:00",
+          "extMngdBy": "",
+          "fullVersion": "n9000-16.0(3e)",
+          "iUrl": "/var/run/mgmt/fwrepos/fwrepo/aci-n9000-dk9.16.0.3e.bin",
+          "isoname": "aci-n9000-dk9.16.0.3e.bin",
+          "latest": "no",
+          "lcOwn": "local",
+          "minorVersion": "(3e)",
+          "modTs": "2024-04-11T15:53:39.984-04:00",
+          "name": "aci-n9000-system.16.0.3e.bin",
+          "origFileName": "",
+          "releaseDate": "2023-08-18T01:48:25.000-04:00",
+          "restartType": "NA",
+          "rn": "fw-aci-n9000-system.16.0.3e.bin",
+          "size": "2418748405",
+          "size64": "2418748405",
+          "status": "",
+          "syncComplete": "111",
+          "type": "switch",
+          "uid": "0",
+          "url": "/fwrepo/aci-n9000-dk9.16.0.3e.bin",
+          "userdom": "all",
+          "version": "16.0"
+        }
+      }
+    }
+  ]
