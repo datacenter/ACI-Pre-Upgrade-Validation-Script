@@ -2382,8 +2382,9 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
                                     loopback_ip = lb['l3extLoopBackIfP']['attributes']['addr']
                                     break
                         if loopback_ip:
+                            lo_addr = loopback_ip.split("/")[0]  # l3extLoopBackIfP.addr can be with or without /32, /128.
                             loopback_ips[node_id] = {
-                                'addr': loopback_ip,
+                                'addr': lo_addr,
                                 'config': ':'.join([tenant_name, l3out_name, nodep_name]),
                             }
                     # Get interface IPs for each node

@@ -27,8 +27,10 @@ api += '&rsp-subtree-class=l3extRsEctx,l3extRsNodeL3OutAtt,l3extLoopBackIfP,l3ex
         ({api: read_data(dir, "same_l3out_rtrId_non_vpc.json")}, script.FAIL_O),
         # Overlap within the same L3Out - Router ID as loopback (VPC)
         ({api: read_data(dir, "same_l3out_rtrId.json")}, script.FAIL_O),
-        # Overlap within the same L3Out - Explicit loopback (VPC)
+        # Overlap within the same L3Out - Explicit loopback (VPC) - IPv4/v6
         ({api: read_data(dir, "same_l3out_loopback.json")}, script.FAIL_O),
+        # Overlap within the same L3Out - Explicit loopback with subnet mask 32/128 (VPC) - IPv4/v6
+        ({api: read_data(dir, "same_l3out_loopback_with_subnet_mask.json")}, script.FAIL_O),
         # Overlap within the same L3Out - Explicit loopback and Router ID as loopback (VPC)
         ({api: read_data(dir, "same_l3out_loopback_and_rtrId.json")}, script.FAIL_O),
         # Overlap across different L3Outs - Router ID as loopback (VPC)
