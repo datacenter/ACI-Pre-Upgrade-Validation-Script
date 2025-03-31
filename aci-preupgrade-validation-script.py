@@ -4600,6 +4600,54 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "HTTPS Request Throttle Rate"
+    result = PASS
+    msg = ""
+    headers = ["Mgmt Access Policy", "HTTPS Throttle Rate"]
+    data = []
+    recommended_action = "Reduce the throttle rate to 40 (req/sec), 2400 (req/min) or lower."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#https-request-throttle-rate"
+
+    print_title(title, index, total_checks)
+
+    # Applicable only when crossing 6.1(2) as upgrade instead of downgrade.
+    if cversion.newer_than("6.1(2a)"):
+        print_result(title, NA)
+        return NA
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+    if tversion.older_than("6.1(2a)"):
+        print_result(title, NA)
+        return NA
+
+    commHttpses = icurl("class", "commHttps.json")
+    for commHttps in commHttpses:
+        if commHttps["commHttps"]["attributes"]["globalThrottleSt"] == "disabled":
+            continue
+        if ((
+            commHttps["commHttps"]["attributes"]["globalThrottleUnit"] == "r/s" and
+            int(commHttps["commHttps"]["attributes"]["globalThrottleRate"]) > 40
+        ) or (
+            commHttps["commHttps"]["attributes"]["globalThrottleUnit"] == "r/m" and
+            int(commHttps["commHttps"]["attributes"]["globalThrottleRate"]) > 2400
+        )):
+            # Get `default` of `uni/fabric/comm-default/https`
+            commPol_rn = commHttps["commHttps"]["attributes"]["dn"].split("/")[2]
+            commPol_name = commPol_rn.split("-")[1]
+            rate = "{} ({})".format(
+                commHttps["commHttps"]["attributes"]["globalThrottleRate"],
+                commHttps["commHttps"]["attributes"]["globalThrottleUnit"],
+            )
+            data.append([commPol_name, rate])
+
+    if data:
+        result = FAIL_UF
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4625,7 +4673,7 @@ if __name__ == "__main__":
                 "script_version": str(SCRIPT_VERSION), "check_details": [], 
                 'cversion': str(cversion), 'tversion': str(tversion)}
     checks = [
-        #General Checks
+        # General Checks
         apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
@@ -4683,6 +4731,7 @@ if __name__ == "__main__":
         cloudsec_encryption_depr_check,
         out_of_service_ports_check,
         validate_tep_to_tep_ac_counter_check,
+        https_throttle_rate_check,
 
         # Bugs
         ep_announce_check,

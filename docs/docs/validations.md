@@ -121,7 +121,8 @@ Items                                         | Faults         | This Script    
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [CloudSec Encryption Check][c17]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Out-of-Service Ports check][c18]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
-[TEP-to-TEP atomic counters Scalability Check][c19]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[TEP-to-TEP atomic counters Scalability Check][c19]   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -142,6 +143,7 @@ Items                                         | Faults         | This Script    
 [c17]: #cloudsec-encryption-check
 [c18]: #out-of-service-ports-check
 [c19]: #tep-to-tep-atomic-counters-scalability-check
+[c20]: #https-request-throttle-rate
 
 ### Defect Condition Checks
 
@@ -1987,6 +1989,24 @@ Exceeding any scalability number documented in this guide can cause unexpected i
 The script validates the count of `dbgAcPath` is less than the documented supported number. 
 
 
+### HTTPS Request Throttle Rate
+
+ACI supports **HTTPS Request Throttle** via NGINX rate limit to prevent external API clients from consuming too much resources on APICs. This feature, which is disabled by default, is located at `Fabric > Fabric Policies > Pod > Management Access > default (or name you configured)` in the APIC GUI.
+
+Starting from ACI version 6.1(2), the supported maximum rate for this feature was reduced to 40 requests per second (r/s) or 2400 requests per minute (r/m) from 10,000 r/m. Configuration with a value larger than these gets rejected starting from 6.1(2).
+This change is to ensure that users using this feature configure a meaningful rate. If the rate is larger than the new maximum, APIC may not be able to keep up with incoming requests despite the throttling in place, and the APIC GUI can get sluggish or unresponsive which defeats the purpose of the feature.
+
+This script checks the configuration in all Management Access Policies to alert users when the following conditions are met because APIC upgrade will fail in such a case.
+
+* The upgrade is from a version older than 6.1(2a) to a version newer than 6.1(2a). (ex. 5.2(8g) to 6.1(2h))
+* HTTPS Request Throttling is enabled and its rate is larger than 40 r/s or 2400 r/m
+
+!!! tip
+    Regardless of the APIC version, the best practice is to enable **HTTPS Request Throttle** with 30 requests per second. See [ACI Best Practices Quick Summary][47] for reference and details about the feature.
+
+    Also note that **HTTPS Request Throttle** in this check is referring to the global throttling as opposed to the new feature **Custom Throttle Group** that was introduced in 6.1(2).
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2360,3 +2380,4 @@ This check will count the number of relevant PBR policies across the entire ACI 
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
 [45]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwk77800
 [46]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi66348
+[47]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#HTTPSRequestThrottle
