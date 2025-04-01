@@ -412,6 +412,10 @@ class IPAddress:
 
     @classmethod
     def ip_in_subnet(cls, ip, subnet):
+        if "/" in ip:
+            raise ValueError(
+                "IP address {} should not have a subnet mask".format(ip)
+            )
         if "/" not in subnet:
             return False
         subnet_ip, subnet_pfxlen = subnet.split("/")
