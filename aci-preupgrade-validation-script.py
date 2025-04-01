@@ -4606,12 +4606,14 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Standby Sup Image Sync Check'
     result = PASS
     msg = ''
-    headers = ["Standby SUP DN"]
+    headers = ["Pod ID", "Node ID", "Standby SUP Slot"]
     data = []
     recommended_action = 'Target an interim image with fix for CSCwa44220 that is smaller than 2Gigs, such as 5.2(8i)'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-sup-image-sync-check'
     print_title(title, index, total_checks)
 
+    #node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
+    sup_regex = node_regex + r'/sys/ch/supslot-(?P<slot>\d)'
     eqptSupC_api = 'eqptSupC.json'
     eqptSupC_api += '?query-target-filter=eq(eqptSupC.rdSt,"standby")'
 
@@ -4624,7 +4626,12 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
         eqptSupC = icurl('class', eqptSupC_api)
         for node in eqptSupC:
             node_dn = node['eqptSupC']['attributes']['dn']
-            data.append([node_dn])
+            match = re.search(sup_regex, node_dn)
+            if match:
+                pod = match.group("pod")
+                node = match.group("node")
+                slot = match.group("slot")
+                data.append([pod, node, slot])
 
     if data:
         result = FAIL_UF
