@@ -465,102 +465,36 @@
         {
           "l3extLNodeP": {
             "attributes": {
-              "annotation": "orchestrator:terraform",
-              "childAction": "",
-              "configIssues": "",
-              "descr": "",
-              "extMngdBy": "",
-              "lcOwn": "local",
-              "modTs": "2024-04-12T09:55:55.488-07:00",
-              "monPolDn": "uni/tn-common/monepg-default",
-              "name": "IPv4",
-              "nameAlias": "",
-              "ownerKey": "",
-              "ownerTag": "",
-              "rn": "lnodep-IPv4",
-              "status": "",
-              "tag": "yellow-green",
-              "targetDscp": "unspecified",
-              "uid": "15374"
+              "name": "IPv4"
             },
             "children": [
               {
                 "l3extLIfP": {
                   "attributes": {
-                    "addr": "0.0.0.0",
-                    "annotation": "orchestrator:terraform",
-                    "childAction": "",
-                    "descr": "",
-                    "encap": "unknown",
-                    "extMngdBy": "",
-                    "lcOwn": "local",
-                    "modTs": "2024-04-12T09:56:01.299-07:00",
-                    "monPolDn": "uni/tn-common/monepg-default",
-                    "name": "IFP",
-                    "nameAlias": "",
-                    "ownerKey": "",
-                    "ownerTag": "",
-                    "prio": "unspecified",
-                    "rn": "lifp-IFP",
-                    "status": "",
-                    "tag": "yellow-green",
-                    "targetDscp": "unspecified",
-                    "uid": "15374"
+                    "name": "IFP"
                   },
                   "children": [
                     {
                       "l3extRsPathL3OutAtt": {
                         "attributes": {
                           "addr": "0.0.0.0",
-                          "annotation": "orchestrator:terraform",
-                          "autostate": "disabled",
-                          "childAction": "",
-                          "configIssues": "",
-                          "descr": "",
                           "encap": "vlan-1051",
                           "encapScope": "local",
-                          "extMngdBy": "",
-                          "forceResolve": "yes",
                           "ifInstT": "ext-svi",
                           "ipv6Dad": "enabled",
-                          "lcOwn": "local",
                           "llAddr": "::",
-                          "mac": "00:22:BD:F8:19:FF",
-                          "modTs": "2024-04-12T09:56:03.804-07:00",
                           "mode": "regular",
-                          "monPolDn": "uni/tn-common/monepg-default",
-                          "mtu": "9000",
-                          "rType": "mo",
-                          "rn": "rspathL3OutAtt-[topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]]",
-                          "state": "unformed",
-                          "stateQual": "none",
-                          "status": "",
                           "tCl": "fabricPathEp",
-                          "tDn": "topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]",
-                          "tType": "mo",
-                          "targetDscp": "unspecified",
-                          "uid": "15374"
+                          "tDn": "topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]"
                         },
                         "children": [
                           {
                             "l3extMember": {
                               "attributes": {
                                 "addr": "10.0.0.40/25",
-                                "annotation": "orchestrator:terraform",
-                                "childAction": "",
-                                "descr": "",
-                                "extMngdBy": "",
                                 "ipv6Dad": "enabled",
-                                "lcOwn": "local",
                                 "llAddr": "::",
-                                "modTs": "2024-05-08T13:12:40.876-07:00",
-                                "monPolDn": "uni/tn-common/monepg-default",
-                                "name": "",
-                                "nameAlias": "",
-                                "rn": "mem-B",
-                                "side": "B",
-                                "status": "",
-                                "uid": "15374"
+                                "side": "B"
                               }
                             }
                           },
@@ -568,21 +502,9 @@
                             "l3extMember": {
                               "attributes": {
                                 "addr": "10.0.0.30/25",
-                                "annotation": "orchestrator:terraform",
-                                "childAction": "",
-                                "descr": "",
-                                "extMngdBy": "",
                                 "ipv6Dad": "enabled",
-                                "lcOwn": "local",
                                 "llAddr": "::",
-                                "modTs": "2024-05-08T13:12:40.876-07:00",
-                                "monPolDn": "uni/tn-common/monepg-default",
-                                "name": "",
-                                "nameAlias": "",
-                                "rn": "mem-A",
-                                "side": "A",
-                                "status": "",
-                                "uid": "15374"
+                                "side": "A"
                               }
                             }
                           }
@@ -595,43 +517,16 @@
               {
                 "l3extRsNodeL3OutAtt": {
                   "attributes": {
-                    "annotation": "orchestrator:terraform",
-                    "childAction": "",
-                    "configIssues": "",
-                    "extMngdBy": "",
-                    "forceResolve": "yes",
-                    "lcOwn": "local",
-                    "modTs": "2024-05-08T16:44:55.748-07:00",
-                    "monPolDn": "uni/tn-common/monepg-default",
-                    "rType": "mo",
-                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-104]",
                     "rtrId": "10.0.0.4",
                     "rtrIdLoopBack": "no",
-                    "state": "unformed",
-                    "stateQual": "none",
-                    "status": "",
                     "tCl": "fabricNode",
-                    "tDn": "topology/pod-1/node-104",
-                    "tType": "mo",
-                    "uid": "15374"
+                    "tDn": "topology/pod-1/node-104"
                   },
                   "children": [
                     {
                       "l3extLoopBackIfP": {
                         "attributes": {
-                          "addr": "10.0.0.104",
-                          "annotation": "",
-                          "childAction": "",
-                          "descr": "",
-                          "extMngdBy": "",
-                          "lcOwn": "local",
-                          "modTs": "2024-05-08T16:44:52.670-07:00",
-                          "monPolDn": "uni/tn-common/monepg-default",
-                          "name": "",
-                          "nameAlias": "",
-                          "rn": "lbp-[10.0.0.104]",
-                          "status": "",
-                          "uid": "15374"
+                          "addr": "10.0.0.104/32"
                         }
                       }
                     }
@@ -641,43 +536,16 @@
               {
                 "l3extRsNodeL3OutAtt": {
                   "attributes": {
-                    "annotation": "orchestrator:terraform",
-                    "childAction": "",
-                    "configIssues": "",
-                    "extMngdBy": "",
-                    "forceResolve": "yes",
-                    "lcOwn": "local",
-                    "modTs": "2024-05-08T16:44:41.371-07:00",
-                    "monPolDn": "uni/tn-common/monepg-default",
-                    "rType": "mo",
-                    "rn": "rsnodeL3OutAtt-[topology/pod-1/node-103]",
                     "rtrId": "10.0.0.3",
                     "rtrIdLoopBack": "no",
-                    "state": "unformed",
-                    "stateQual": "none",
-                    "status": "",
                     "tCl": "fabricNode",
-                    "tDn": "topology/pod-1/node-103",
-                    "tType": "mo",
-                    "uid": "15374"
+                    "tDn": "topology/pod-1/node-103"
                   },
                   "children": [
                     {
                       "l3extLoopBackIfP": {
                         "attributes": {
-                          "addr": "10.0.0.103",
-                          "annotation": "",
-                          "childAction": "",
-                          "descr": "",
-                          "extMngdBy": "",
-                          "lcOwn": "local",
-                          "modTs": "2024-05-08T16:44:38.168-07:00",
-                          "monPolDn": "uni/tn-common/monepg-default",
-                          "name": "",
-                          "nameAlias": "",
-                          "rn": "lbp-[10.0.0.103]",
-                          "status": "",
-                          "uid": "15374"
+                          "addr": "10.0.0.103/32"
                         }
                       }
                     }
@@ -747,7 +615,7 @@
                     {
                       "l3extLoopBackIfP": {
                         "attributes": {
-                          "addr": "2001:1:2:3::104"
+                          "addr": "2001:1:2:3::104/128"
                         }
                       }
                     }
@@ -766,7 +634,7 @@
                     {
                       "l3extLoopBackIfP": {
                         "attributes": {
-                          "addr": "2001:1:2:3::103"
+                          "addr": "2001:1:2:3::103/128"
                         }
                       }
                     }

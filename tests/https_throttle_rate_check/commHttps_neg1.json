@@ -1,0 +1,23 @@
+[
+  {
+    "commHttps": {
+      "attributes": {
+        "dn": "uni/fabric/comm-default/https",
+        "globalThrottleRate": "40",
+        "globalThrottleSt": "enabled",
+        "globalThrottleUnit": "r/s"
+      }
+    }
+  },
+  {
+    "commHttps": {
+      "attributes": {
+        "dn": "uni/fabric/comm-mgmt1/https",
+        "globalThrottleRate": "2400",
+        "globalThrottleSt": "enabled",
+        "globalThrottleUnit": "r/m"
+      }
+    }
+  }
+]
+
