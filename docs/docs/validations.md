@@ -170,6 +170,7 @@ Items                                           | Defect       | This Script    
 [Stale Decommissioned Spine Check][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [GX2A Platform Model Check][d22]               | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [PBR High Scale Check][d23]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Standby Sup Image Sync Check][d24]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -195,6 +196,7 @@ Items                                           | Defect       | This Script    
 [d21]: #stale-decommissioned-spine-check
 [d22]: #gx2a-platform-model-check
 [d23]: #pbr-high-scale-check
+[d24]: #standby-sup-image-sync-check
 
 ## General Check Details
 
@@ -2313,6 +2315,13 @@ Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (classes `vnsA
 This check will count the number of relevant PBR policies across the entire ACI fabric from an APIC perspective (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons`) and alert if targeting an affected version with relevant PBR config objects greater than 100k. If alerted, the recommended action is to target a version that has the fix for [CSCwi66348][46].
 
 
+### Standby Sup Image Sync Check
+
+Due to [CSCwa44220][47], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
+
+If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2360,3 +2369,4 @@ This check will count the number of relevant PBR policies across the entire ACI 
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
 [45]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwk77800
 [46]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi66348
+[47]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwa44220

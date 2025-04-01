@@ -432,6 +432,8 @@ class AciVersion():
                             .format(**v.groupdict()) if v else None)
         self.simple_version = ("{major1}.{major2}({maint})"
                                .format(**v.groupdict()) if v else None)
+        self.major_version = ("{major1}.{major2}"
+                               .format(**v.groupdict()) if v else None)
         self.major1 = v.group('major1') if v else None
         self.major2 = v.group('major2') if v else None
         self.maint = v.group('maint') if v else None
@@ -4600,6 +4602,37 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Standby Sup Image Sync Check'
+    result = PASS
+    msg = ''
+    headers = ["Standby SUP DN"]
+    data = []
+    recommended_action = 'Target an interim image with fix for CSCwa44220 that is smaller than 2Gigs, such as 5.2(8i)'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-sup-image-sync-check'
+    print_title(title, index, total_checks)
+
+    eqptSupC_api = 'eqptSupC.json'
+    eqptSupC_api += '?query-target-filter=eq(eqptSupC.rdSt,"standby")'
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if  ((cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
+        and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))):
+        eqptSupC = icurl('class', eqptSupC_api)
+        for node in eqptSupC:
+            node_dn = node['eqptSupC']['attributes']['dn']
+            data.append([node_dn])
+
+    if data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4708,6 +4741,7 @@ if __name__ == "__main__":
         stale_decomissioned_spine_check,
         gx2a_model_check,
         pbr_high_scale_check,
+        standby_sup_sync_check,
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
