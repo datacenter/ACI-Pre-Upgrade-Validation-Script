@@ -412,6 +412,10 @@ class IPAddress:
 
     @classmethod
     def ip_in_subnet(cls, ip, subnet):
+        if "/" in ip:
+            raise ValueError(
+                "IP address {} should not have a subnet mask".format(ip)
+            )
         if "/" not in subnet:
             return False
         subnet_ip, subnet_pfxlen = subnet.split("/")
@@ -2346,7 +2350,7 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
     l3outs = icurl('class', api)
     for l3out in l3outs:
         vrf = ""
-        loopback_ips = defaultdict(dict)
+        loopback_ips = defaultdict(list)
         interface_ips = defaultdict(list)
         for child in l3out['l3extOut'].get('children', []):
             dn = re.search(tn_regex, l3out['l3extOut']['attributes']['dn'])
@@ -2372,20 +2376,24 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
                             continue
                         node_id = m.group('node')
 
-                        loopback_ip = ''
+                        config = ':'.join([tenant_name, l3out_name, nodep_name])
                         if node['attributes']['rtrIdLoopBack'] == 'yes':
-                            loopback_ip = node['attributes']['rtrId']
+                            loopback_ips[node_id].append({
+                                'addr': node['attributes']['rtrId'],
+                                'config': config,
+                            })
                         else:
                             for lb in node.get('children', []):
-                                # There should be only one l3extLoopBackIfP per node
-                                if lb.get('l3extLoopBackIfP'):
-                                    loopback_ip = lb['l3extLoopBackIfP']['attributes']['addr']
-                                    break
-                        if loopback_ip:
-                            loopback_ips[node_id] = {
-                                'addr': loopback_ip,
-                                'config': ':'.join([tenant_name, l3out_name, nodep_name]),
-                            }
+                                # One l3extLoopBackIfP per node for each IPv4/v6
+                                if not lb.get('l3extLoopBackIfP'):
+                                    continue
+                                loopback_ip = lb['l3extLoopBackIfP']['attributes']['addr']
+                                # Strip the subnet mask (/32, /128) if any
+                                lo_addr = loopback_ip.split("/")[0]
+                                loopback_ips[node_id].append({
+                                    'addr': lo_addr,
+                                    'config': config,
+                                })
                     # Get interface IPs for each node
                     elif np_child.get('l3extLIfP'):
                         ifp_name = np_child['l3extLIfP']['attributes']['name']
@@ -2421,7 +2429,7 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
         for node in loopback_ips:
             if not vrfs[vrf].get(node):
                 vrfs[vrf][node] = {}
-            vrfs[vrf][node]['loopback'] = loopback_ips[node]
+            vrfs[vrf][node]['loopbacks'] = vrfs[vrf][node].get('loopbacks', []) + loopback_ips[node]
         for node in interface_ips:
             if not vrfs[vrf].get(node):
                 vrfs[vrf][node] = {}
@@ -2430,18 +2438,19 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
     # Check overlaps
     for vrf in vrfs:
         for node in vrfs[vrf]:
-            loopback = vrfs[vrf][node].get('loopback')
+            loopbacks = vrfs[vrf][node].get('loopbacks')
             interfaces = vrfs[vrf][node].get('interfaces')
-            if not loopback or not interfaces:
+            if not loopbacks or not interfaces:
                 continue
             for interface in interfaces:
-                if IPAddress.ip_in_subnet(loopback['addr'], interface['addr']):
-                    data.append([
-                        vrf,
-                        node,
-                        '{} ({})'.format(loopback['addr'], loopback['config']),
-                        '{} ({})'.format(interface['addr'], interface['config']),
-                    ])
+                for loopback in loopbacks:
+                    if IPAddress.ip_in_subnet(loopback['addr'], interface['addr']):
+                        data.append([
+                            vrf,
+                            node,
+                            '{} ({})'.format(loopback['addr'], loopback['config']),
+                            '{} ({})'.format(interface['addr'], interface['config']),
+                        ])
     if not data:
         result = PASS
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
