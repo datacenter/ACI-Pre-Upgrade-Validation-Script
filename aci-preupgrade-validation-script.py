@@ -3787,8 +3787,8 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     title = 'Fabric Port is Down (F1394 ethpm-if-port-down-fabric)'
     result = FAIL_O
     msg = ''
-    headers = ["Pod", "Node", "Int", "Reason"]
-    unformatted_headers = ['dn', 'Fault Description']
+    headers = ["Pod", "Node", "Int", "Reason", "Lifecycle"]
+    unformatted_headers = ['dn', 'Fault Description', 'Lifecycle']
     unformatted_data = []
     data = []
     recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
@@ -3809,9 +3809,10 @@ def fabric_port_down_check(index, total_checks, **kwargs):
             nodeid = m.group('node')
             port = m.group('int')
             reason = faultInst['faultInst']['attributes']['descr'].split("reason:")[1]
-            data.append([podid, nodeid, port, reason])
+            lc = faultInst['faultInst']['attributes']['lc']
+            data.append([podid, nodeid, port, reason, lc])
         else:
-            unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
+            unformatted_data.append([faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr'], faultInst['faultInst']['attributes']['lc']])
 
     if not data and not unformatted_data:
         result = PASS
