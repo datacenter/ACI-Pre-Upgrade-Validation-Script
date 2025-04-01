@@ -1,0 +1,7 @@
+admin@apic:~> ls -l /data2/dbstats | awk '{ if ($5 > 10000000) print $5, $9}'
+19957760000 observer_1.db
+35786752000 observer_10.db
+5552230400 observer_13.db
+1934540800 observer_16.db
+1989734400 observer_19.db
+19345408000 observer_22.db

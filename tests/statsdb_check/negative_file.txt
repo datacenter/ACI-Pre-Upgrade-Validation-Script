@@ -1,0 +1,1 @@
+admin@apic:~> ls -l /data2/dbstats | awk '{ if ($5 > 10000000) print $5, $9}'
