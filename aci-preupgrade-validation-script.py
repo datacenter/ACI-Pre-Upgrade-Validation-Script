@@ -4706,10 +4706,10 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     recommended_action = 'Please contact TAC to resolve the issue'
     print_title(title, index, total_checks)
 
-    equipment_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d{3,4})/sys/eqptcapacity/fspartition-[^/]+/fault-(?P<fault>F182[01])'
+    equipment_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d{3,4})/sys/eqptcapacity/fspartition-[^/]+/fault-(?P<fault>F182[012])'
 
     # Fetch JSON response
-    equipment_json = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"))')
+    equipment_json = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))')
 
     if not equipment_json:
         result = PASS
