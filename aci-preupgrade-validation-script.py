@@ -4740,6 +4740,34 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
+def AESEncryption_Validation(index, total_checks, tversion, **kwargs):
+    title = 'AES Encryption Validation'
+    result = PASS
+    msg = ''
+    headers = ["Feature", "Status", "Recommended Action"]
+    data = []
+    recommended_action = 'Global AES Encryption must be enabled starting from APIC 6.1(2). Ensure this is done before upgrading to 6.1(2) or later.'
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.newer_than("6.1(2a)"):
+        # Fetch JSON response
+        feature_json = icurl('class', 'pkiExportEncryptionKey.json')
+
+        if feature_json:
+            for feature in feature_json:
+                status = feature['pkiExportEncryptionKey']['attributes']['strongEncryptionEnabled']
+                if status.lower() != "yes":
+                    data.append(["AES Encryption", status, recommended_action])
+                    result = FAIL_O
+
+    print_result(title, result, msg, headers, data)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4781,6 +4809,7 @@ if __name__ == "__main__":
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         leaf_to_spine_redundancy_check,
+        AESEncryption_Validation,
         
         # Faults
         apic_disk_space_faults_check,
