@@ -4694,6 +4694,51 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
     return result
 
+def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
+    #201
+    title = 'Equipment Disk Limits Exceeded'
+    result = FAIL_O
+    msg = ''
+    headers = ['Fault', 'Pod-ID', 'Node-ID', 'Path', 'Recommended Action']
+    data = []
+    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_data = []
+    recommended_action = 'Please contact TAC to resolve the issue'
+    print_title(title, index, total_checks)
+
+    equipment_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d{3,4})/sys/eqptcapacity/fspartition-[^/]+/fault-(?P<fault>F182[01])'
+
+    # Fetch JSON response
+    equipment_json = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"))')
+
+    if not equipment_json:
+        result = PASS
+
+    for faultInst in equipment_json:
+        try:
+            attributes = faultInst['faultInst']['attributes']  
+            fc = attributes['code']
+            dn_match = re.search(equipment_regex, attributes['dn'])
+
+            if dn_match:
+                data.append([
+                    fc,
+                    dn_match.group('pod'), 
+                    dn_match.group('node'),
+                    attributes['dn'],
+                    recommended_action
+                ])
+            else:
+                unformatted_data.append([fc, attributes['dn'], recommended_action])
+
+        except KeyError as e:
+            print(f"Error: Missing key in JSON response - {e}")
+    
+    if not data and not unformatted_data:
+        result = PASS
+
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    return result
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -4736,7 +4781,7 @@ if __name__ == "__main__":
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         leaf_to_spine_redundancy_check,
-
+        
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
@@ -4757,6 +4802,7 @@ if __name__ == "__main__":
         hw_program_fail_check,
         scalability_faults_check,
         fabric_port_down_check,
+        equipment_disk_limits_exceeded,
 
         # Configurations
         vpc_paired_switches_check,
