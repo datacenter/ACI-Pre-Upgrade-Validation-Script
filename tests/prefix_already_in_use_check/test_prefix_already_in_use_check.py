@@ -13,6 +13,8 @@ dir = os.path.dirname(os.path.abspath(__file__))
 # icurl queries
 faultInst = 'faultInst.json?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
 fvCtx = "fvCtx.json"
+l3extRsEctx = "l3extRsEctx.json"
+l3extSubnet = "l3extSubnet.json"
 
 
 @pytest.mark.parametrize(
@@ -25,6 +27,8 @@ fvCtx = "fvCtx.json"
                     dir, "faultInst_F0467_prefix-entry-already-in-use_old.json"
                 ),
                 fvCtx: read_data(dir, "fvCtx.json"),
+                l3extRsEctx: read_data(dir, "l3extRsEctx.json"),
+                l3extSubnet: read_data(dir, "l3extSubnet_overlap.json"),
             },
             script.FAIL_O,
         ),
@@ -35,6 +39,8 @@ fvCtx = "fvCtx.json"
                     dir, "faultInst_F0467_prefix-entry-already-in-use_new.json"
                 ),
                 fvCtx: read_data(dir, "fvCtx.json"),
+                l3extRsEctx: read_data(dir, "l3extRsEctx.json"),
+                l3extSubnet: read_data(dir, "l3extSubnet_overlap.json"),
             },
             script.FAIL_O,
         ),
@@ -42,6 +48,8 @@ fvCtx = "fvCtx.json"
             {
                 faultInst: [],
                 fvCtx: read_data(dir, "fvCtx.json"),
+                l3extRsEctx: read_data(dir, "l3extRsEctx.json"),
+                l3extSubnet: read_data(dir, "l3extSubnet_no_overlap.json"),
             },
             script.PASS,
         ),

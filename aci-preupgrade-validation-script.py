@@ -1636,46 +1636,107 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     title = 'L3Out Subnets (F0467 prefix-entry-already-in-use)'
     result = FAIL_O
     msg = ''
-    headers = ["Fault", "Failed L3Out EPG", "VRF VNID", "VRF Name", "Prefix already in use", 'Recommended Action']
+    headers = ["VRF Name", "Prefix", "L3Out EPGs without F0467", "L3Out EPGs with F0467"]
+    headers_old = ["Fault", "Failed L3Out EPG"]
     data = []
-    unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault Description', 'Fault DN']
     unformatted_data = []
-    recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping prefix'
+    recommended_action = 'Resolve the conflict by removing the overlapping prefix from the faulted L3Out EPG.'
     print_title(title, index, total_checks)
 
+    # Old versions (pre-CSCvq93592) do not show VRF VNID and prefix in use (2nd line)
     desc_regex = r'Configuration failed for (?P<failedEpg>.+) due to Prefix Entry Already Used in Another EPG'
     desc_regex += r'(.+Prefix entry sys/ctx-\[vxlan-(?P<vrfvnid>\d+)\]/pfx-\[(?P<prefixInUse>.+)\] is in use)?'
 
     filter = '?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
-    faultInsts = icurl('class', 'faultInst.json' + filter)
-    if faultInsts:
-        vrf_dict = {}
-        fv_ctx_response_json = icurl('class', 'fvCtx.json')
+    faultInsts = icurl("class", "faultInst.json" + filter)
+    if not faultInsts:
+        print_result(title, PASS)
+        return PASS
 
-        for fvCtx in fv_ctx_response_json:
-            vrf_name = fvCtx['fvCtx']['attributes']['name']
-            vnid = fvCtx['fvCtx']['attributes']['scope']
-            vrf_dict[vnid] = vrf_name
+    vnid2vrf = {}
+    fvCtxs = icurl("class", "fvCtx.json")
+    for fvCtx in fvCtxs:
+        vrf_vnid = fvCtx["fvCtx"]["attributes"]["scope"]
+        vrf_dn = fvCtx["fvCtx"]["attributes"]["dn"]
+        vnid2vrf[vrf_vnid] = vrf_dn
 
-        for faultInst in faultInsts:
-            fc = faultInst['faultInst']['attributes']['code']
-            desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-            if desc_array:
-                if desc_array.group("prefixInUse") is not None:
-                    vrf_vnid = desc_array.group("vrfvnid")
-                    vrf_name = vrf_dict.get(vrf_vnid, '??')
-                    prefix = desc_array.group("prefixInUse")
-                else:
-                    vrf_vnid = "--"
-                    vrf_name = "--"
-                    prefix = "Not described in the fault (version too old)"
-                data.append([fc, desc_array.group("failedEpg"), vrf_vnid, vrf_name, prefix, recommended_action])
-            else:
-                unformatted_data.append(
-                    [fc, faultInst['faultInst']['attributes']['descr'], recommended_action])
+    conflicts = defaultdict(dict)  # vrf -> prefix -> extepgs, faulted_extepgs
+    for faultInst in faultInsts:
+        code = faultInst["faultInst"]["attributes"]["code"]
+        desc = re.search(desc_regex, faultInst["faultInst"]["attributes"]["descr"])
+        if not desc:
+            unformatted_data.append([
+                code,
+                faultInst["faultInst"]["attributes"]["descr"],
+                faultInst["faultInst"]["attributes"]["dn"],
+            ])
+            continue
+
+        extepg_dn = desc.group("failedEpg")
+        vrf_vnid = desc.group("vrfvnid") if desc.group("vrfvnid") else "_"
+        vrf_dn = vnid2vrf.get(vrf_vnid, "_")
+        prefix = desc.group("prefixInUse") if desc.group("prefixInUse") else "_"
+
+        # When the L3Out is deployed on multiple switches, the same fault
+        # is raised more than once. Skip dup.
+        # Old ver: `vrf_dn`, `prefix` are always "_" -> keep one extepg, all in (_, _)
+        # New ver: `vrf_dn`, `prefix` are real values -> keep one extepg per (vrf, prefix)
+        if prefix not in conflicts[vrf_dn]:
+            # Should be only one extepg without a fault per prefix.
+            # But use `set()` just in case.
+            conflicts[vrf_dn][prefix] = {"extepgs": set(), "faulted_extepgs": set()}
+        conflicts[vrf_dn][prefix]["faulted_extepgs"].add(extepg_dn)
+
+    # Old ver: print only the L3Out EPGs with faults
+    if conflicts.get("_", {}).get("_", {}).get("faulted_extepgs"):
+        data = [["F0467", epg] for epg in conflicts["_"]["_"]["faulted_extepgs"]]
+        if not data and not unformatted_data:
+            result = PASS
+        print_result(title, result, msg, headers_old, data, unformatted_headers, unformatted_data, recommended_action)
+        return result
+
+    # Proceed further only for new versions with VRF/prefix data in faults
+    # Get L3Out DNs in the VRFs mentioned by the faults
+    l3out2vrf = {}
+    l3extRsEctxes = icurl("class", "l3extRsEctx.json")
+    for l3extRsEctx in l3extRsEctxes:
+        vrf_dn = l3extRsEctx["l3extRsEctx"]["attributes"]["tDn"]
+        if vrf_dn in conflicts:
+            # l3extRsEctx.dn is always L3Out DN + "/rsectx"
+            l3out_dn = l3extRsEctx["l3extRsEctx"]["attributes"]["dn"].split("/rsectx")[0]
+            l3out2vrf[l3out_dn] = vrf_dn
+
+    # Get conflicting l3extSubnets
+    l3extSubnets = icurl("class", "l3extSubnet.json")
+    for l3extSubnet in l3extSubnets:
+        l3extSubnet_attr = l3extSubnet["l3extSubnet"]["attributes"]
+        l3out_dn = l3extSubnet_attr["dn"].split("/instP-")[0]
+        vrf_dn = l3out2vrf.get(l3out_dn)
+        if not vrf_dn:
+            continue
+        # F0467 is only for import-security
+        if "import-security" not in l3extSubnet_attr["scope"]:
+            continue
+        prefix = l3extSubnet_attr["ip"]
+        if prefix not in conflicts[vrf_dn]:
+            continue
+        extepg_dn = l3extSubnet_attr["dn"].split("/extsubnet-")[0]
+        if extepg_dn not in conflicts[vrf_dn][prefix]["faulted_extepgs"]:
+            conflicts[vrf_dn][prefix]["extepgs"].add(extepg_dn)
+
+    for vrf_dn in conflicts:
+        for prefix in conflicts[vrf_dn]:
+            data.append([
+                vrf_dn,
+                prefix,
+                ",".join(sorted(conflicts[vrf_dn][prefix]["extepgs"])),
+                ",".join(sorted(conflicts[vrf_dn][prefix]["faulted_extepgs"])),
+            ])
+
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action)
     return result
 
 
