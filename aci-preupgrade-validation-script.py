@@ -121,7 +121,7 @@ class Connection(object):
         self.protocol = "ssh"
         self.port = None
         self.timeout = 30
-        self.prompt = "#\s.*$" #"[^#]#[ ]*(.*)*[ ]*$"
+        self.prompt = r"#\s.*$"
         self.verify = False
         self.searchwindowsize = 256
         self.force_wait = 0
