@@ -4756,6 +4756,44 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def aes_encryption_check(index, total_checks, tversion, **kwargs):
+    title = "Global AES Encryption"
+    result = FAIL_UF
+    msg = ""
+    headers = ["Target Version", "Global AES Encryption", "Impact"]
+    data = []
+    recommended_action = (
+        "\n\tEnable Global AES Encryption before upgrading your APIC (and take a configuration backup)."
+        "\n\tGlobal AES Encryption ensures that all configurations are included in the backup securely."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#global-aes-encryption"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.newer_than("6.1(2a)"):
+        impact = "Upgrade Failure"
+        result = FAIL_UF
+        recommended_action += "\n\tUpgrade to 6.1(2) or later will fail when it is not enabled."
+    else:
+        impact = "Your config backup may not contain all data"
+        result = MANUAL
+
+    cryptkeys = icurl("mo", "uni/exportcryptkey.json")
+    if not cryptkeys:
+        data = [[tversion, "Object Not Found", impact]]
+    elif cryptkeys[0]["pkiExportEncryptionKey"]["attributes"]["strongEncryptionEnabled"] != "yes":
+        data = [[tversion, "Disabled", impact]]
+    else:
+        result = PASS
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4840,6 +4878,7 @@ if __name__ == "__main__":
         out_of_service_ports_check,
         validate_tep_to_tep_ac_counter_check,
         https_throttle_rate_check,
+        aes_encryption_check,
 
         # Bugs
         ep_announce_check,

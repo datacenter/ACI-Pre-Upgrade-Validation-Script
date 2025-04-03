@@ -123,6 +123,7 @@ Items                                         | Faults         | This Script    
 [Out-of-Service Ports check][c18]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
 [TEP-to-TEP atomic counters Scalability Check][c19]   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -144,6 +145,7 @@ Items                                         | Faults         | This Script    
 [c18]: #out-of-service-ports-check
 [c19]: #tep-to-tep-atomic-counters-scalability-check
 [c20]: #https-request-throttle-rate
+[c21]: #global-aes-encryption
 
 ### Defect Condition Checks
 
@@ -2009,6 +2011,20 @@ This script checks the configuration in all Management Access Policies to alert 
     Also note that **HTTPS Request Throttle** in this check is referring to the global throttling as opposed to the new feature **Custom Throttle Group** that was introduced in 6.1(2).
 
 
+### Global AES Encryption
+
+**Global AES Encryption** enables Cisco APICs to encrypt passwords and include them in the configuration export (backup). See [ACI Best Practices Quick Summary][49] for details about the feature itself.
+
+In terms of upgrade, taking a configuration backup with **Global AES Encryption** enabled before your upgrade is highly recommended so that you or Cisco TAC can restore your fabric even if something unexpected may occur during your upgrade.
+
+Although enabling **Global AES Encryption** has been a best practice, it has become mandatory to upgrade to ACI version 6.1(2) or later. If you proceed with your APIC upgrade to 6.1(2) or newer version while **Global AES Encryption** is disabled, the upgrade will immediately fail.
+
+When **Global AES Encryption** is not enabled, this script alerts users in two different ways depending on the target version.
+
+* When it is not enabled and the target version is 6.1(2) or later, this check is flagged as `UPGRADE FAILURE`.
+* When it is not enabled and the target version is older than 6.1(2), this check is flagged as `MANUAL CHECK REQUIRED` to encourage users to follow the best practice to enable it (and take a configuration back again before the upgrade).
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2391,3 +2407,4 @@ If this alert is flagged then plan for an interim upgrade hop to a fixed version
 [46]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi66348
 [47]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#HTTPSRequestThrottle
 [48]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwa44220
+[49]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#GlobalAESEncryption

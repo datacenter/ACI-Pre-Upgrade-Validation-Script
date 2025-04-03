@@ -1,0 +1,16 @@
+[
+  {
+    "pkiExportEncryptionKey": {
+      "attributes": {
+        "clearEncryptionKey": "no",
+        "cryptedPassphrase": "$6$YDIPTUFFZQAU$kVcq9zRiaFzvYbNSi6y5UfLMfhb5kG5dGs1EcKOpJ1MgkbEpbSW5yWwe.tR.0Ma3WO2xJKrpc6a6zAICMk.Ot1",
+        "dn": "uni/exportcryptkey",
+        "issues": "",
+        "keyConfigured": "yes",
+        "passphraseKeyDerivationVersion": "v1",
+        "strongEncryptionEnabled": "yes",
+        "timeGenerated": "2025-03-19T11:36:00.433-07:00"
+      }
+    }
+  }
+]
