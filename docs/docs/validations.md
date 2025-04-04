@@ -76,6 +76,7 @@ Items                                         | Faults         | This Script    
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 [Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Equipment Disk Limits Exceeded][f20]         | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
 
 
 
@@ -98,6 +99,8 @@ Items                                         | Faults         | This Script    
 [f17]: #hw-programming-failure
 [f18]: #scalability-faults-related-to-capacity-dashboard
 [f19]: #fabric-port-is-down
+[f20]: #equipment-disk-limits-exceeded
+
 
 ### Configuration Checks
 
@@ -1374,6 +1377,65 @@ Failure to do so may lead to outages during switch upgrades due to leaf nodes no
     uid              : 
     userdom          : all
     --- omit ---
+    ```
+
+
+## Equipment Disk Limits Exceeded
+
+This fault occurs when the disk usage of a partiton increases beyond its threshold.
+
+This fault also occurs when the MTS buffer memory usage increases beyond its threshold. /proc/isan/sw/mts/mem/stats is checked when this scenario occurs.
+
+Recommended Action:
+
+1. Check `df -h` output on affected node to see the usage of the partition.
+    - If the fault is about MTS, check `cat /proc/isan/sw/mts/mem/stats` output on affected node to see the usage of the MTS memory. 
+    - Focus on "mem_in_use" and "mem_free" in /proc/isan/sw/mts/mem/stats. 
+    - The usage is calculated by "mem_in_use / (mem_in_use + mem_free)". 
+    - The same output as /proc/isan/sw/mts/mem/stats can be obtained by `show system internal mts memory` command on affected switch node.
+2. Check `ls -l` output of folders under affected partition to see which file is consuming the space.
+    - If the fault is about MTS, check `show system internal mts buffers details` to see what is consuming the MTS buffer space.
+
+To recover from this fault, try the following action
+
+1. Free up space from affected disk partition or MTS buffer.
+2. TAC may be required to analyze and cleanup certain directories due to filesystem permissions. Cleanup of `/` is one such example.
+
+!!! example "Fault Example (F1820: High Disk usage)"
+    ```
+    apic1# moquery -c eqptcapacityEntity -x 'rsp-subtree-include=faults,no-scoped'
+    Total Objects shown: 1
+     
+    # fault.Inst
+    code             : F1820
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : equipment-disk-limits-exceeded
+    changeSet        : avail (New: 1971936), path (New: /mnt/ifc/cfg), used (New: 8194392)
+    childAction      : 
+    created          : 2025-02-17T13:55:20.263-06:00
+    delegated        : no
+    descr            : Disk usage for /mnt/ifc/cfg is above normal
+    dn               : topology/pod-1/node-102/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1820
+    domain           : access
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2025-02-17T13:57:25.020-06:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F1820
+    rule             : eqptcapacity-fspartition-fs-partition-limits-exceeded-minor
+    severity         : minor
+    status           : 
+    subject          : high-disk-usage
+    title            : 
+    type             : operational
+    uid              : 
+    userdom          : all
     ```
 
 ## Configuration Check Details

@@ -1,0 +1,50 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "equipment-disk-limits-exceeded",
+                "changeSet": "avail (New: 187292), used (New: 11346836)",
+                "code": "F1820",
+                "descr": "Disk usage for /mnt/ifc/log is high on node 101 of fabric POD1 with a hostname leaf1",
+                "dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-ifc:log/fault-F1821",
+                "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-minor"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "equipment-disk-limits-exceeded",
+                "changeSet": "avail (New: 767540), used (New: 22446008)",
+                "code": "F1821",
+                "descr": "Disk usage for /mnt/ifc/cfg is high on node 102 of fabric POD1 with a hostname leaf2",
+                "dn": "topology/pod-1/node-102/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1821",
+                "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-major"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "equipment-disk-limits-exceeded",
+                "changeSet": "avail (New: 0), used (New: 2321T3548)",
+                "code": "F1822",
+                "descr": "Disk usage for /mnt/ifc/cfg is high on node 103 of fabric POD1 with a hostname leaf3",
+                "dn": "topology/pod-1/node-[103]/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1821",
+                "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-critical"
+            }
+        }
+    },
+    {
+        "faultInst": {
+          "attributes": {
+            "cause": "equipment-disk-limits-exceeded",
+            "changeSet": "avail (New: 0), used (New: 2560000)",
+            "code": "F1821",
+            "descr": "Disk usage for / is high on node 104 of fabric POD1 with a hostname LEAF-104",
+            "dn": "topology/pod-1/node-104/sys/eqptcapacity/fspartition-root/fault-F1821",
+            "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-major"
+          }
+        }
+      }
+]

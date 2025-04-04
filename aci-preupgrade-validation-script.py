@@ -4756,6 +4756,47 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
+    title = 'Equipment Disk Limits Exceeded'
+    result = PASS
+    msg = ''
+    headers = ['Pod', 'Node', 'Code', '%', 'Description',]
+    data = []
+    unformatted_headers = ['Fault DN', '%', 'Recommended Action']
+    unformatted_data = []
+    recommended_action = 'Review the reference document for commands to validate disk usage'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
+
+    print_title(title, index, total_checks)
+
+    usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
+    f182x_api = 'faultInst.json'
+    f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
+    faults = icurl('class', f182x_api)
+
+    for faultInst in faults:
+        percent = "NA"
+        attributes = faultInst['faultInst']['attributes']
+
+        usage_match = re.search(usage_regex, attributes['changeSet'])
+        if usage_match:
+            avail = int(usage_match.group('avail'))
+            used = int(usage_match.group('used'))
+            percent = round((used / (avail + used)) * 100)
+
+        dn_match = re.search(node_regex, attributes['dn'])
+        if dn_match:
+            data.append([dn_match.group('pod'), dn_match.group('node'), attributes['code'], percent, attributes['descr']])
+        else:
+            unformatted_data.append([attributes['dn'], percent, attributes['descr']])
+    
+    if  data or unformatted_data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
+    return result
+
+
 def aes_encryption_check(index, total_checks, tversion, **kwargs):
     title = "Global AES Encryption"
     result = FAIL_UF
@@ -4835,7 +4876,7 @@ if __name__ == "__main__":
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         leaf_to_spine_redundancy_check,
-
+        
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
@@ -4856,6 +4897,7 @@ if __name__ == "__main__":
         hw_program_fail_check,
         scalability_faults_check,
         fabric_port_down_check,
+        equipment_disk_limits_exceeded,
 
         # Configurations
         vpc_paired_switches_check,
