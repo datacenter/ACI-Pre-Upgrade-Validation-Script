@@ -4764,7 +4764,7 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     data = []
     unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
-    recommended_action = 'Review the Doc URL for commands to validate disk usage'
+    recommended_action = 'Review the reference document for commands to validate disk usage'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
 
     print_title(title, index, total_checks)
@@ -4793,7 +4793,7 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     if  data or unformatted_data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
     return result
 
 
