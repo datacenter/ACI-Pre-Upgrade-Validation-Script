@@ -9,18 +9,19 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-equipment_json = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"))'
+f182x_api = 'faultInst.json'
+f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
 
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result",
     [
         (
-            {equipment_json: read_data(dir, "equipment_disk_limits_exceeded_null.json"),
+            {f182x_api: read_data(dir, "faultInst_neg.json")},
             script.PASS,
         ),
         (
-            {partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-            script.PASS,
+            {f182x_api: read_data(dir, "faultInst_pos.json")},
+            script.FAIL_UF,
         )
     ],
 )

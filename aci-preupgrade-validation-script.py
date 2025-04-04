@@ -4755,51 +4755,47 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
     return result
 
+
 def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
-    #201
     title = 'Equipment Disk Limits Exceeded'
-    result = FAIL_O
+    result = PASS
     msg = ''
-    headers = ['Fault', 'Pod-ID', 'Node-ID', 'Path', 'Recommended Action']
+    headers = ['Pod', 'Node', 'Code', '%', 'Description',]
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
-    recommended_action = 'Please contact TAC to resolve the issue'
+    recommended_action = 'Review the Doc URL for commands to validate disk usage'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
+
     print_title(title, index, total_checks)
 
-    equipment_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d{3,4})/sys/eqptcapacity/fspartition-[^/]+/fault-(?P<fault>F182[012])'
+    usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
+    f182x_api = 'faultInst.json'
+    f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
+    faults = icurl('class', f182x_api)
 
-    # Fetch JSON response
-    equipment_json = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))')
+    for faultInst in faults:
+        percent = "NA"
+        attributes = faultInst['faultInst']['attributes']
 
-    if not equipment_json:
-        result = PASS
+        usage_match = re.search(usage_regex, attributes['changeSet'])
+        if usage_match:
+            avail = int(usage_match.group('avail'))
+            used = int(usage_match.group('used'))
+            percent = round((used / (avail + used)) * 100)
 
-    for faultInst in equipment_json:
-        try:
-            attributes = faultInst['faultInst']['attributes']  
-            fc = attributes['code']
-            dn_match = re.search(equipment_regex, attributes['dn'])
-
-            if dn_match:
-                data.append([
-                    fc,
-                    dn_match.group('pod'), 
-                    dn_match.group('node'),
-                    attributes['dn'],
-                    recommended_action
-                ])
-            else:
-                unformatted_data.append([fc, attributes['dn'], recommended_action])
-
-        except KeyError as e:
-            print(f"Error: Missing key in JSON response - {e}")
+        dn_match = re.search(node_regex, attributes['dn'])
+        if dn_match:
+            data.append([dn_match.group('pod'), dn_match.group('node'), attributes['code'], percent, attributes['descr']])
+        else:
+            unformatted_data.append([attributes['dn'], percent, attributes['descr']])
     
-    if not data and not unformatted_data:
-        result = PASS
+    if  data or unformatted_data:
+        result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action)
     return result
+
 
 def aes_encryption_check(index, total_checks, tversion, **kwargs):
     title = "Global AES Encryption"
