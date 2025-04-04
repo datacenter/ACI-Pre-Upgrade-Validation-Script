@@ -1,0 +1,60 @@
+[
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-disk-limits-exceeded",
+                    "changeSet": "avail (New: 187292), used (New: 11346836)",
+                    "childAction": "",
+                    "code": "F1821",
+                    "created": "2025-04-02T09:47:52.467+02:00",
+                    "delegated": "no",
+                    "descr": "Disk usage for /mnt/ifc/log is high on node 101 of fabric POD15 with a hostname bdsol-aci15-leaf1",
+                    "dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-ifc:log/fault-F1821",
+                    "domain": "access",
+                    "highestSeverity": "major",
+                    "lastTransition": "2025-04-02T09:48:02.780+02:00",
+                    "lc": "raised",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-major",
+                    "severity": "major",
+                    "status": "",
+                    "subject": "high-disk-usage",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        },
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-disk-limits-exceeded",
+                    "changeSet": "avail (New: 767540), used (New: 22446008)",
+                    "childAction": "",
+                    "code": "F1821",
+                    "created": "2025-04-02T08:57:43.701+02:00",
+                    "delegated": "no",
+                    "descr": "Disk usage for /mnt/ifc/cfg is high on node 101 of fabric POD15 with a hostname bdsol-aci15-leaf1",
+                    "dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1821",
+                    "domain": "access",
+                    "highestSeverity": "major",
+                    "lastTransition": "2025-04-02T08:58:02.362+02:00",
+                    "lc": "raised",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-major",
+                    "severity": "major",
+                    "status": "",
+                    "subject": "high-disk-usage",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        }
+]
