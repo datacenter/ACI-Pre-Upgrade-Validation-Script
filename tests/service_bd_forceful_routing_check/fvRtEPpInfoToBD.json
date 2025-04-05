@@ -1,0 +1,54 @@
+[
+  {
+    "fvRtEPpInfoToBD": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/tn-TK/BD-BD1/rtvnsEPpInfoToBD-[uni/tn-TK/LDevInst-[uni/tn-TK/lDevVip-N9K]-ctx-VRFA/G-N9KctxVRFA-N-BD1-C-one-arm]",
+        "lcOwn": "local",
+        "modTs": "2025-04-03T15:48:27.052-07:00",
+        "status": "",
+        "tCl": "vnsEPpInfo",
+        "tDn": "uni/tn-TK/LDevInst-[uni/tn-TK/lDevVip-N9K]-ctx-VRFA/G-N9KctxVRFA-N-BD1-C-one-arm"
+      }
+    }
+  },
+  {
+    "fvRtEPpInfoToBD": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/tn-TK/BD-BD_PBR/rtvnsEPpInfoToBD-[uni/tn-TK/LDevInst-[uni/tn-TK/lDevVip-ASAv]-ctx-VRFA/G-ASAvctxVRFA-N-BD_PBR-C-one-arm]",
+        "lcOwn": "local",
+        "modTs": "2025-04-04T23:12:34.647-07:00",
+        "status": "",
+        "tCl": "vnsEPpInfo",
+        "tDn": "uni/tn-TK/LDevInst-[uni/tn-TK/lDevVip-ASAv]-ctx-VRFA/G-ASAvctxVRFA-N-BD_PBR-C-one-arm"
+      }
+    }
+  },
+  {
+    "fvRtEPpInfoToBD": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/tn-TK/BD-BD_PBR/rtvnsEPpInfoToBD-[uni/tn-TK/LDevInst-[uni/tn-TK/lDevVip-LB]-ctx-VRFA/G-LBctxVRFA-N-BD_PBR-C-one-arm]",
+        "lcOwn": "local",
+        "modTs": "2025-04-04T23:26:16.948-07:00",
+        "status": "",
+        "tCl": "vnsEPpInfo",
+        "tDn": "uni/tn-TK/LDevInst-[uni/tn-TK/lDevVip-LB]-ctx-VRFA/G-LBctxVRFA-N-BD_PBR-C-one-arm"
+      }
+    }
+  },
+  {
+    "fvRtEPpInfoToBD": {
+      "attributes": {
+        "childAction": "",
+        "dn": "uni/tn-TK/BD-BD2/rtvnsEPpInfoToBD-[uni/tn-TK/LDevInst-[uni/tn-common/lDevVip-CMN_LB]-ctx-VRFA/G-CMN_LBctxVRFA-N-BD2-C-cluster-if1]",
+        "lcOwn": "local",
+        "modTs": "2025-04-05T00:08:15.075-07:00",
+        "status": "",
+        "tCl": "vnsEPpInfo",
+        "tDn": "uni/tn-TK/LDevInst-[uni/tn-common/lDevVip-CMN_LB]-ctx-VRFA/G-CMN_LBctxVRFA-N-BD2-C-cluster-if1"
+      }
+    }
+  }
+]

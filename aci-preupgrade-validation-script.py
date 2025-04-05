@@ -4870,6 +4870,51 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "Service Graph BD Forceful Routing"
+    result = PASS
+    msg = ""
+    headers = ["Bridge Domain (Tenant:BD)", "Service Graph Device (Tenant:Device)"]
+    data = []
+    unformatted_headers = ["DN of fvRtEPpInfoToBD"]
+    unformatted_data = []
+    recommended_action = (
+        "\n\tConfirm that within these BDs there is no bridging traffic with the destination IP that doesn't belong to them."
+        "\n\tPlease check the reference document for details."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-graph-bd-forceful-routing"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if not (cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)")):
+        print_result(title, NA)
+        return NA
+
+    dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)/"
+    dn_regex += r"rtvnsEPpInfoToBD-\[uni/tn-(?P<sg_tn>[^/])+/LDevInst-\[uni/tn-(?P<ldev_tn>[^/]+)/lDevVip-(?P<ldev>[^\]]+)\].*\]"
+
+    fvRtEPpInfoToBDs = icurl("class", "fvRtEPpInfoToBD.json")
+    for fvRtEPpInfoToBD in fvRtEPpInfoToBDs:
+        m = re.search(dn_regex, fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
+        if not m:
+            logging.error("Failed to match %s", fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
+            unformatted_data.append([fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"]])
+            continue
+        data.append([
+            "{}:{}".format(m.group("bd_tn"), m.group("bd")),
+            "{}:{}".format(m.group("ldev_tn"), m.group("ldev")),
+        ])
+
+    if data or unformatted_data:
+        result = MANUAL
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4911,7 +4956,7 @@ if __name__ == "__main__":
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         leaf_to_spine_redundancy_check,
-        
+
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
@@ -4956,6 +5001,7 @@ if __name__ == "__main__":
         validate_tep_to_tep_ac_counter_check,
         https_throttle_rate_check,
         aes_encryption_check,
+        service_bd_forceful_routing_check,
 
         # Bugs
         ep_announce_check,
