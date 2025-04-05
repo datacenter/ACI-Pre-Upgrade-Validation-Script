@@ -127,6 +127,7 @@ Items                                         | Faults         | This Script    
 [TEP-to-TEP atomic counters Scalability Check][c19]   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
+[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -149,6 +150,7 @@ Items                                         | Faults         | This Script    
 [c19]: #tep-to-tep-atomic-counters-scalability-check
 [c20]: #https-request-throttle-rate
 [c21]: #global-aes-encryption
+[c22]: #service-graph-bd-forceful-routing
 
 ### Defect Condition Checks
 
@@ -2087,6 +2089,54 @@ When **Global AES Encryption** is not enabled, this script alerts users in two d
 * When it is not enabled and the target version is older than 6.1(2), this check is flagged as `MANUAL CHECK REQUIRED` to encourage users to follow the best practice to enable it (and take a configuration back again before the upgrade).
 
 
+## Service Graph BD Forceful Routing
+
+Starting from ACI 6.0(2), a bridge domain containing an L4-L7 service graph device (a.k.a service BD) starts to forward packets based on their IP headers even for bridging traffic which used to be forwarded based on their MAC addresses in their ethernet headers and ignored their IP headers. This "forceful routing" is to support IP-based selectors in ESG or microsegement EPG (uSeg EPG) when service graph is configured between those ESGs/uSeg EPGs and they are in the same bridge domain as the service graph device.
+
+See the [changes in behavior doc][50] and "Optional Configurations > Service BD configuration option" in [ACI PBR Service Graph Whitepaper][51] for details of this change.
+
+Because of this change, bridging traffic within such bridge domains that used to work prior to the upgrade may stop working after upgrading to 6.0(2) or later.
+
+This script alerts users if at least one service bridge domain was found so that users can check if those bridge domains and connected devices have traffic that may get impacted by this change.
+
+See below for the workaround and examples of traffic that will stop working after the upgrade.
+
+!!! note "Workaround"
+    If your target version is 6.0(4) or later, there is an option to disable the forceful routing so that the service BD behaves in the same way as prior to 6.0(2). This option was introduced via CSCwh71581 and available only via API.
+
+    After you upgrade to 6.0(4) or later, change `serviceBdRoutingDisable` to `yes` as shown below to disable the forceful routing on your service BD if needed.
+
+    ```json
+    {
+      "fvBD": {
+        "attributes": {
+          "serviceBdRoutingDisable": "yes"
+        }
+      }
+    }
+    ```
+
+!!! example "Example 1: clustering/HA heartbeat between service devices"
+    If the following two conditions are met, the probes will stop working after upgrading to 6.0(2) or later.
+
+    * There are heartbeat probes that are bridged between your service graph devices through the same bridige domain as the data traffic (i.e. the BD pointed by the service graph)
+    * The destination IP addresses of the probes are unicast and don't belong to the subnet(s) of the said BD
+
+    Although this should not be common as it is typically a best practice to use a different path for those probes than the data traffic, if your design meets these condtions you can change the design to move the probe traffic to another bridge domain prior to the upgrade. Or you can change the setting of the service bridge domain to disable the forceful routing after your upgrade as shown above.
+
+    This example is also explained in the "Optional Configurations > Service BD configuration option" in [ACI PBR Service Graph Whitepaper][51].
+
+
+!!! example "Example 2: ACI CNI with SNAT"
+    ACI CNI with SNAT utilizes a virtual IP shared across multiple kubernetes nodes. ACI switches forward the traffic towards the virtual IP (i.e. one of the kubernetes nodes) via Service Graph PBR. However, there is a chance where the traffic sent to the kubernetes node that doesn't have the destination pod. This happens because the virtual IP is shared not just between multiple nodes but also between pods and it's mapped to each pod based on the L4 port. When the kubernetes node receives a packet to its virtual IP but its L4 port is not of its pod, the node will bounce the traffic to the other node by rewriting the MAC addresses in the ethernet header while the IP headers remain the same, which means it's a bridging traffic.
+
+    This will stop working after upgrading to 6.0(2) or later because the service bridge domain ignores the MAC addresses and forcefully use the IP address, which is the same virtual IP again, to forward the packet. As a result, the packet will not be able to reach the correct kubenetes node.
+
+    In this case, you need to prepare to change the setting of the service bridge domain to disable the forceful routing after your upgrade as shown above.
+
+    See [SNAT Traffic for Kubernetes with Cisco ACI CNI][52] for details about ACI CNI with SNAT.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2470,3 +2520,6 @@ If this alert is flagged then plan for an interim upgrade hop to a fixed version
 [47]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#HTTPSRequestThrottle
 [48]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwa44220
 [49]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#GlobalAESEncryption
+[50]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease602
+[51]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-739971.html
+[52]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-aci-plug-in-snat-on-egress.html
