@@ -35,6 +35,28 @@
     {
         "fabricNode": {
             "attributes": {
+                "dn": "topology/pod-1/node-111",
+                "id": "111",
+                "name": "T2_LF111",
+                "role": "leaf",
+                "nodeType": "tier-2-leaf"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-112",
+                "id": "112",
+                "name": "T2_LF112",
+                "role": "leaf",
+                "nodeType": "tier-2-leaf"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
                 "dn": "topology/pod-1/node-1001",
                 "id": "1001",
                 "name": "SP1001",

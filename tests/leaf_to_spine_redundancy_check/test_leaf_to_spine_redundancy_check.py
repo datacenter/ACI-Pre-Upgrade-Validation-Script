@@ -10,28 +10,43 @@ log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
 
-
-
 fabric_nodes_api = 'fabricNode.json'
 fabric_nodes_api += '?query-target-filter=and(or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine")),eq(fabricNode.fabricSt,"active"))'
 
 # icurl queries
-lldp_adj_api =	'lldpAdjEp.json'
-lldp_adj_api +=	'?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
+lldp_adj_api = 'lldpAdjEp.json'
+lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
 
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result",
     [
-        ##FAILING =  ONE LEAF SWITCH IS SINGLE-HOMED, OTHER IS MULTI-HOMED, TIER2 LEAF IN THE NODE LIST
+        # FAILING = T1 leaf101 single-homed, T1 leaf102 none, T1 leaf103 multi-homed
         (
             {
                 fabric_nodes_api: read_data(dir, "fabricNode.json"),
-                lldp_adj_api: read_data(dir, "lldpAdjEp_pos.json"),
+                lldp_adj_api: read_data(dir, "lldpAdjEp_pos_spine_only.json"),
             },
             script.FAIL_O,
         ),
-        ##PASSING = ALL LEAF SWITCHES ARE MULTI-HOMED , TIER2 LEAF IN THE NODE LIST
+        # FAILING = T1 leafs multi-homed, T2 leaf111 single-homed, T2 leaf112 multi-homed
+        (
+            {
+                fabric_nodes_api: read_data(dir, "fabricNode.json"),
+                lldp_adj_api: read_data(dir, "lldpAdjEp_pos_t1_only.json"),
+            },
+            script.FAIL_O,
+        ),
+        # FAILING = T1 leaf101 single-homed, T1 leaf102 none, T1 leaf103 multi-homed
+        #           T2 leaf111 single-homed, T2 leaf112 multi-homed
+        (
+            {
+                fabric_nodes_api: read_data(dir, "fabricNode.json"),
+                lldp_adj_api: read_data(dir, "lldpAdjEp_pos_spine_t1.json"),
+            },
+            script.FAIL_O,
+        ),
+        # PASSING = ALL LEAF SWITCHES ARE MULTI-HOMED
         (
             {
                 fabric_nodes_api: read_data(dir, "fabricNode.json"),
@@ -42,5 +57,5 @@ lldp_adj_api +=	'?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
     ],
 )
 def test_logic(mock_icurl , expected_result):
-    result = script.leaf_to_spine_redundancy_check(1, 1 )
+    result = script.leaf_to_spine_redundancy_check(1, 1)
     assert result == expected_result

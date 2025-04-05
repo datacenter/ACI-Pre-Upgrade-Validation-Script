@@ -22,16 +22,6 @@
   {
     "lldpAdjEp": {
       "attributes": {
-        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/51]/adj-1",
-        "portDesc": "topology/pod-1/paths-111/pathep-[eth1/49]",
-        "sysDesc": "topology/pod-1/node-111",
-        "sysName": "T2_LF111"
-      }
-    }
-  },
-  {
-    "lldpAdjEp": {
-      "attributes": {
         "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/52]/adj-1",
         "portDesc": "topology/pod-1/paths-112/pathep-[eth1/50]",
         "sysDesc": "topology/pod-1/node-112",
@@ -96,16 +86,6 @@
         "portDesc": "topology/pod-1/paths-1002/pathep-[eth1/3]",
         "sysDesc": "topology/pod-1/node-1002",
         "sysName": "SP1002"
-      }
-    }
-  },
-  {
-    "lldpAdjEp": {
-      "attributes": {
-        "dn": "topology/pod-1/node-111/sys/lldp/inst/if-[eth1/49]/adj-1",
-        "portDesc": "topology/pod-1/paths-101/pathep-[eth1/51]",
-        "sysDesc": "topology/pod-1/node-101",
-        "sysName": "LF101"
       }
     }
   },
