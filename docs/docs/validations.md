@@ -455,9 +455,9 @@ For additional information, see the [Guidelines and Limitations for Upgrading or
 
 ### Leaf to Spine Redundancy Validation
 
-When upgrading the Switches, traffic traversing any Leaf Switch that is connected to only a single spine will exhibit a Data Path Outage during the spine upgrade as there will be no alternate dataplane paths available.
+When upgrading the switches, traffic traversing a Leaf Switch that is connected to only a single spine (or a tier-2 Leaf Switch that is connected to only a single tier-1 Leaf Switch) will exhibit a Data Path Outage during the spine (or tier-1 leaf) upgrade as there will be no alternate dataplane paths available.
 
-To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches. This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch.
+To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches (or tier-1 Leaf Switches). This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch (or tier-1 Leaf Switch).
 
 
 ## Fault Check Details

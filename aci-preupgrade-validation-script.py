@@ -4347,11 +4347,12 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
     title = 'Leaf to Spine Redundancy check'
     result = PASS
     msg = ''
-    headers = ["Leaf Switch Name", "Spine Adjacencies", "Message" ]
+    headers = ["Leaf Name", "Fabric Link Adjacencies", "Problem"]
     data = []
-    problem = 'The Leaf Switch has one or less spine adjacencies'
-    recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
-    doc_url = ''
+    recommended_action = ""
+    sp_recommended_action = "Connect the leaf switch(es) to multiple spine switches for redundancy"
+    t1_recommended_action = "Connect the tier 2 leaf switch(es) to multiple tier1 leaf switches for redundancy"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#leaf-to-spine-redundancy-validation"
     print_title(title, index, total_checks)
 
     fabric_nodes_api = 'fabricNode.json'
@@ -4360,29 +4361,63 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
     lldp_adj_api = 'lldpAdjEp.json'
     lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
-    fabricNodes= icurl('class', fabric_nodes_api)
-    all_spine_dns = [node['fabricNode']['attributes']['dn'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
-
-    lldp_adj = icurl('class', lldp_adj_api)
+    fabricNodes = icurl("class", fabric_nodes_api)
+    spines = {}
+    leafs = {}
+    t2leafs = {}
     for node in fabricNodes:
-        neighbors = set()
-        if node['fabricNode']['attributes']['role'] == 'leaf':
-            leaf_dn = node['fabricNode']['attributes']['dn']
-            leaf_name = node['fabricNode']['attributes']['name']
-            for lldp_neighbor in lldp_adj:
-                spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
-                lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
-                neighbor_dn = lldp_neighbor['lldpAdjEp']['attributes']['sysDesc'].replace("\\", "")
-                if leaf_dn in lldp_dn and neighbor_dn in all_spine_dns:
-                        neighbors.add(spine_name)
-                if len(neighbors) > 1:
-                    break
+        dn = node["fabricNode"]["attributes"]["dn"]
+        name = node["fabricNode"]["attributes"]["name"]
+        if node["fabricNode"]["attributes"]["role"] == "spine":
+            spines[dn] = name
+        elif node["fabricNode"]["attributes"]["role"] == "leaf":
+            leafs[dn] = name
+            if node["fabricNode"]["attributes"]["nodeType"] == "tier-2-leaf":
+                t2leafs[dn] = name
 
-            if len(neighbors) <= 1:
-                data.append([leaf_name, "".join(neighbors), problem])
+    t1_missing = sp_missing = False
+    lldp_adjs = icurl("class", lldp_adj_api)
+    for leaf_dn, leaf_name in iteritems(leafs):
+        is_tier2 = True if leaf_dn in t2leafs else False
+        neighbors = set()
+        for lldp_adj in lldp_adjs:
+            lldp_dn = lldp_adj["lldpAdjEp"]["attributes"]["dn"]
+            if not lldp_dn.startswith(leaf_dn + "/"):
+                continue
+            adj_name = lldp_adj["lldpAdjEp"]["attributes"]["sysName"]
+            adj_dn = lldp_adj["lldpAdjEp"]["attributes"]["sysDesc"].replace("\\", "")
+            # t1leaf look for spines
+            if not is_tier2 and adj_dn in spines:
+                neighbors.add(adj_name)
+            # t2leaf look for t1leafs
+            elif is_tier2 and adj_dn in leafs and adj_dn not in t2leafs:
+                neighbors.add(adj_name)
+            if len(neighbors) > 1:
+                break
+
+        if len(neighbors) > 1:
+            continue
+
+        if is_tier2:
+            adj_type = "tier 1 leaf"
+            t1_missing = True
+        else:
+            adj_type = "spine"
+            sp_missing = True
+        if len(neighbors) == 1:
+            data.append([leaf_name, "".join(neighbors), "Only one {} adjacency".format(adj_type)])
+        elif not neighbors:
+            data.append([leaf_name, "", "No {} adjacency".format(adj_type)])
+
     if data:
         result = FAIL_O
-    
+    if sp_missing and t1_missing:
+        recommended_action = "\n\t" + sp_recommended_action + "\n\t" + t1_recommended_action
+    elif sp_missing and not t1_missing:
+        recommended_action = sp_recommended_action
+    elif not sp_missing and t1_missing:
+        recommended_action = t1_recommended_action
+
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
