@@ -2600,7 +2600,6 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    prints('')
 
     image_validaton = True
     mo = icurl('mo', 'fwrepo/fw-aci-apic-dk9.%s.json' % tversion.dot_version)
@@ -2613,57 +2612,72 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                              'Target image is corrupted', 'Delete and Upload Again'])
                 image_validaton = False
 
+    if not image_validaton:
+        print_result(title, result, msg, headers, data)
+        return result
+
     md5s = []
     md5_names = []
 
-    if image_validaton:
-        nodes_response_json = icurl('class', 'topSystem.json')
-        for node in nodes_response_json:
-            if node['topSystem']['attributes']['role'] != "controller":
-                continue
-            apic_name = node['topSystem']['attributes']['name']
-            node_title = 'Checking %s...' % apic_name
-            print_title(node_title)
-            try:
-                c = Connection(node['topSystem']['attributes']['address'])
-                c.username = username
-                c.password = password
-                c.log = LOG_FILE
-                c.connect()
-            except Exception as e:
-                data.append([apic_name, '-', '-', e, '-'])
-                print_result(node_title, ERROR)
-                continue
+    prints('')
+    nodes_response_json = icurl('class', 'topSystem.json')
+    for node in nodes_response_json:
+        if node['topSystem']['attributes']['role'] != "controller":
+            continue
+        apic_name = node['topSystem']['attributes']['name']
+        node_title = 'Checking %s...' % apic_name
+        print_title(node_title)
+        try:
+            c = Connection(node['topSystem']['attributes']['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([apic_name, '-', '-', e, '-'])
+            print_result(node_title, ERROR)
+            continue
 
-            try:
-                c.cmd("ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.%s.bin" %
-                      tversion.dot_version)
-            except Exception as e:
-                data.append([apic_name, '-', '-',
-                             'ls command via ssh failed due to:{}'.format(e), '-'])
-                print_result(node_title, ERROR)
-                continue
-            if "No such file or directory" in c.output:
-                data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
-                print_result(node_title, FAIL_UF)
-                continue
+        try:
+            c.cmd("ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.%s.bin" %
+                  tversion.dot_version)
+        except Exception as e:
+            data.append([apic_name, '-', '-',
+                         'ls command via ssh failed due to:{}'.format(e), '-'])
+            print_result(node_title, ERROR)
+            continue
+        if "No such file or directory" in c.output:
+            data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
+            print_result(node_title, FAIL_UF)
+            continue
 
-            try:
-                c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/aci-apic-dk9.%s.bin" %
-                      tversion.dot_version)
-            except Exception as e:
-                data.append([apic_name, str(tversion), '-',
-                             'failed to check md5sum via ssh due to:{}'.format(e), '-'])
-                print_result(node_title, ERROR)
-                continue
-            for line in c.output.split("\n"):
-                if "md5sum" not in line and "fwrepo" in line:
-                    md5_regex = r'([^\s]+)'
-                    md5 = re.search(md5_regex, line)
-                    if md5 is not None:
-                        md5s.append(md5.group(0))
-                        md5_names.append(c.hostname)
-            print_result(node_title, DONE)
+        try:
+            c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/aci-apic-dk9.%s.bin" %
+                  tversion.dot_version)
+        except Exception as e:
+            data.append([apic_name, str(tversion), '-',
+                         'failed to check md5sum via ssh due to:{}'.format(e), '-'])
+            print_result(node_title, ERROR)
+            continue
+        if "No such file or directory" in c.output:
+            data.append([apic_name, str(tversion), '-', 'md5sum file not found', recommended_action])
+            print_result(node_title, FAIL_UF)
+            continue
+        for line in c.output.split("\n"):
+            words = line.split()
+            if (
+                    len(words) == 2 and
+                    words[1].startswith("/var/run/mgmt/fwrepos/fwrepo/aci-apic")
+            ):
+                md5s.append(words[0])
+                md5_names.append(apic_name)
+                break
+        else:
+            data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file', recommended_action])
+            print_result(node_title, ERROR)
+            continue
+
+        print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])

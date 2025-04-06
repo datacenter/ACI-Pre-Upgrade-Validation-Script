@@ -1,0 +1,42 @@
+{
+  "totalCount": "1",
+  "imdata": [
+    {
+      "firmwareFirmware": {
+        "attributes": {
+          "annotation": "",
+          "autoloadCatalog": "no",
+          "bitInfo": "NA",
+          "checksum": "d5afca58fce2018495d068c000000000",
+          "childAction": "",
+          "deleteIt": "no",
+          "description": "This is release image - Image signing verification failed",
+          "dn": "fwrepo/fw-aci-apic-dk9.6.0.5h",
+          "dnldStatus": "downloaded",
+          "downloadDate": "2025-04-03T16:38:44.690-07:00",
+          "extMngdBy": "",
+          "fullVersion": "apic-6.0(5h)",
+          "iUrl": "/var/run/mgmt/fwrepos/fwrepo/aci-apic-dk9.6.0.5h.bin",
+          "isoname": "aci-apic-dk9.6.0.5h.bin",
+          "latest": "no",
+          "lcOwn": "local",
+          "minorVersion": "(5h)",
+          "modTs": "2025-04-03T16:41:00.787-07:00",
+          "name": "aci-apic-dk9.6.0.5h",
+          "origFileName": "",
+          "releaseDate": "2024-02-28T03:18:08.000-07:00",
+          "restartType": "NA",
+          "size": "2166296576",
+          "size64": "6461263872",
+          "status": "",
+          "syncComplete": "1",
+          "type": "controller",
+          "uid": "0",
+          "url": "/fwrepo/aci-apic-dk9.6.0.5h.bin",
+          "userdom": "all",
+          "version": "6.0"
+        }
+      }
+    }
+  ]
+}
