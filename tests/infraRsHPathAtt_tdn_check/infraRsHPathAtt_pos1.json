@@ -1,0 +1,20 @@
+[
+  {
+      "infraRsHPathAtt": {
+          "attributes": {
+              "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[uni/infra/funcprof/accbundle-legacy]",
+              "tCl": "fabricPathEp",
+              "tDn": "uni/infra/funcprof/accbundle-legacy"
+          }
+      }
+  },
+    {
+      "infraRsHPathAtt": {
+          "attributes": {
+              "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/paths-101/pathep-[eth1/1]]",
+              "tCl": "fabricPathEp",
+              "tDn": "topology/pod-1/paths-101/pathep-[eth1/1]"
+          }
+      }
+    }
+]

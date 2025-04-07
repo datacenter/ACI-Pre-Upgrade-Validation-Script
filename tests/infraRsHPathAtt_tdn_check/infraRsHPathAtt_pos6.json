@@ -1,0 +1,19 @@
+[
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-102/extpaths-102/pathep-[eth1/0]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-102/extpaths-102/pathep-[eth1/0]"
+            }
+        }
+    }, {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-1_eth1_0/rsHPathAtt-[topology/pod-1/paths-102/extpaths-100/pathep-[eth1/1]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-102/extpaths-100/pathep-[eth1/1]]"
+            }
+        }
+    }
+]
