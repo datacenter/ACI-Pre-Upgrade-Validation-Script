@@ -4093,10 +4093,10 @@ def infraRsHPathAtt_tdn_check(index, total_checks, **kwargs):
             # CHECK FEX ID(s) of extpath(s) is 101 or greater
             if fex_a:
                 if int(fex_a) < 101:
-                    data.append([dn, "FEX ID is invalid; less than 101"])
+                    data.append([dn, "FEX ID A {} is invalid (101+ expected)".format(fex_a)])
             if fex_b:
                 if int(fex_b) < 101:
-                    data.append([dn, "FEX ID is invalid; less than 101"])
+                    data.append([dn, "FEX ID B {} is invalid (101+ expected)".format(fex_b)])
 
             # There should always be path... so will assume we always have it
             if 'eth' in path.lower():
@@ -4111,21 +4111,21 @@ def infraRsHPathAtt_tdn_check(index, total_checks, **kwargs):
                     # CHECK eth looks like FEX (FIRST is 101 or greater)
                     if first:
                         if int(first) > 100:
-                            data.append([dn, "ETH looks like FEX ID"])
+                            data.append([dn, "eth module {} like FEX ID".format(first)])
                     # CHECK eth is non-zero
                     if second:
                         if int(second) == 0:
-                            data.append([dn, "ETH cannot be 0"])
+                            data.append([dn, "eth port cannot be 0"])
                     # CHECK eth is non-0 or not greater than 16 for breakout
                     if third:
                         if int(third) == 0:
-                            data.append([dn, "ETH cannot be 0 for breakout ports"])
+                            data.append([dn, "eth port cannot be 0 for breakout ports"])
                         elif int(third) > 16:
-                            data.append([dn, "ETH cannot be greater than 16 for breakout ports"])
+                            data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
                 else:
-                    data.append([dn, "PathEp eth syntax is invalid"])
+                    data.append([dn, "PathEp 'eth' syntax is invalid"])
         else:
-            data.append([dn, "target is not a valid fabricPathEp"])
+            data.append([dn, "target is not a valid fabricPathEp DN"])
 
     if data:
         result = FAIL_UF
