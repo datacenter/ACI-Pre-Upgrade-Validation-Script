@@ -14,13 +14,5 @@
         "tDn": "topology/pod-1/paths-101/pathep-[eth1/1]"
       }
     }
-  }, {
-    "infraRsHPathAtt": {
-      "attributes": {
-        "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-105/pathep-[eth100/1/7]]",
-        "tCl": "fabricPathEp",
-        "tDn": "topology/pod-1/paths-105/pathep-[100/1/7]"
-      }
-    }
   }
 ]
