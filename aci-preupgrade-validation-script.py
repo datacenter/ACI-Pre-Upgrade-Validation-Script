@@ -4323,61 +4323,58 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     return result
 
 def statsdb_check(index, total_checks, **kwargs):
-    title = 'StatsDB folder usage Check'
+    title = 'Stats Database (Observer) Size'
     result = PASS
     msg = ''
     headers = ["Node" , "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to get the workaround in place.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#statsdb-check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations##stats-database-observer-size'
     print_title(title, index, total_checks)
     os_command = r"ls -l /data2/dbstats | awk '{ if ($5 > 1000000000) print $5, $9}'"  # must be greater than 1,073,741,824 for 1G
-    controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-    if not controller:
+    controllers = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+    if not controllers:
         print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
         return ERROR
-    else:
-        checked_apics = {}
-        for apic in controller:
-            attr = apic['topSystem']['attributes']
-            if attr['address'] in checked_apics: continue
-            checked_apics[attr['address']] = 1
-            print('')
-            node_title = 'Checking %s...' % attr['name'] 
-            print_title(node_title)
-            try:
-                c = Connection(attr['address'])
-                c.username = username
-                c.password = password
-                c.log = LOG_FILE
-                c.connect()
-            except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', '-', e])
-                print_result(node_title, ERROR)
-                continue
-            try:
-                c.cmd(os_command)
-                statsdbusage = c.output.split("\n")
-                for line in statsdbusage:
-                    if "observer_" in line:
-                        file_regex = r"(?P<size>\d{10,}.)(?P<file>observer_\d{1,3}.db)" 
-                        fs = re.finditer(file_regex, line)
-                        if fs is not None:
-                            for match in fs:
-                                file_s = int(match.group("size"))/1073741824
-                                file_size = round(file_s,2)
-                                file_name= "/data2/dbstats/" + match.group("file")
-                                data.append([attr['id'],file_name, file_size])
-                print_result(node_title, DONE)
-             
-            except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', '-', e])
-                print_result(node_title, ERROR)
-                continue
+    checked_apics = {}
+    prints('')
+    for apic in controllers:
+        attr = apic['topSystem']['attributes']
+        if attr['address'] in checked_apics: continue
+        checked_apics[attr['address']] = 1
+        node_title = 'Checking %s...' % attr['name'] 
+        print_title(node_title)
+        try:
+            c = Connection(attr['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([attr['id'], attr['name'], e])
+            print_result(node_title, ERROR)
+            continue
+        try:
+            c.cmd(os_command)
+            statsdbusage = c.output.split("\n")
+            for line in statsdbusage:
+                if "observer_" in line:
+                    file_regex = r"(?P<size>\d{10,})\s(?P<file>observer_\d{1,3}.db)" 
+                    fs = re.finditer(file_regex, line)
+                    if fs is not None:
+                        for match in fs:
+                            file_s = int(match.group("size"))/1073741824
+                            file_size = round(file_s,2)
+                            file_name= "/data2/dbstats/" + match.group("file")
+                            data.append([attr['id'],file_name, file_size])
+            print_result(node_title, DONE)            
+        except Exception as e:
+            data.append([attr['id'], attr['name'], e])
+            print_result(node_title, ERROR)
+            continue
     if data:
-        result = FAIL_O
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+        result = FAIL_UF
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True )
     return result
 
 if __name__ == "__main__":

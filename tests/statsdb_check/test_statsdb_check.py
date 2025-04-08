@@ -16,7 +16,7 @@ topSystems = 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")
     [
         (
             {topSystems: read_data(dir, "topSystem_controller_pos.json")},
-            script.FAIL_O,
+            script.FAIL_UF,
         ),
         (
             {topSystems: read_data(dir, "topSystem_controller_na.json")},

@@ -162,7 +162,7 @@ Items                                           | Defect       | This Script    
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Stats Database (Observer) check][d19]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Stats Database (Observer) Size][d19]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -182,7 +182,7 @@ Items                                           | Defect       | This Script    
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
-[d19]: #statsdb-folder-usage
+[d19]: #stats-database-observer-size
 
 
 ## General Check Details
