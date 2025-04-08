@@ -5012,6 +5012,10 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
         try:
             cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
             c.cmd(cmd)
+            if "No such file or directory" in c.output:
+                data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions and retry as 'admin'"])
+                print_result(node_title, FAIL_UF)
+                continue
             dbstats = c.output.split("\n")
             for line in dbstats:
                 #file_regex = r"(?P<size>\d{10,})\s(?P<file>observer_\d{1,3}.db)"

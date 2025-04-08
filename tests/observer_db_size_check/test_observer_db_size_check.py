@@ -48,7 +48,7 @@ apic1#
             {topSystem_api: read_data(dir, "topSystem.json")},
             True,
             [],
-            script.ERROR,
+            script.FAIL_UF,
         ),
         # Simulatated exception at `ls` command
         (
