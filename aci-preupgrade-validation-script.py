@@ -4063,8 +4063,8 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def fabricPathEP_target_check(index, total_checks, **kwargs):
-    title = 'fabricPathEP target Check'
+def fabricPathEp_target_check(index, total_checks, **kwargs):
+    title = 'Invalid fabricPathEp Targets'
     result = PASS
     msg = ''
     headers = ["Invalid DN", "Reason"]
@@ -4984,7 +4984,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
-        fabricPathEP_target_check,
+        fabricPathEp_target_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
         static_route_overlap_check,

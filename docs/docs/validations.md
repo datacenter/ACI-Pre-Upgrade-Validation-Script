@@ -167,7 +167,7 @@ Items                                           | Defect       | This Script    
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Invalid infraRsHPathAtt fabricPathEp References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Invalid fabricPathEp Targets][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
@@ -193,7 +193,7 @@ Items                                           | Defect       | This Script    
 [d11]: #vmm-uplink-container-with-empty-actives
 [d12]: #cos-3-with-dynamic-packet-prioritization
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
-[d14]: #invalid-infrarshpathatt-fabricpathep-references
+[d14]: #invalid-fabricpathep-targets
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
@@ -2257,15 +2257,15 @@ The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Op
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
 
 
-### Invalid infraRsHPathAtt fabricPathEp References
+### Invalid fabricPathEp Targets
 
-Prior to [CSCwh68103][23], `fabricPathEp` objects could be created using DN formats that do not match the schema of the object and are technically invalid. The issue arises after upgrading to a version with validations included; any fixed version of [CSCwh68103][23]. While on a fixed version, if changes are made to objects that target `fabricPathEp` objects with invalid DNs, such as `infraRsHPathAtt` or `fabricRsOosPath`, an error resembling `Failed to decode IfIndex, id: 0x.......` will be seen and the desired configuration change will be prevented until the invalid DN syntax objects are cleaned up.
+Prior to [CSCwh68103][23], `fabricPathEp` objects could be created using DN formats that do not match a valid schema and are technically invalid. The issue arises after upgrading to a version with validations included; any fixed version of [CSCwh68103][23]. While on a fixed version, if changes are made to objects that target `fabricPathEp` objects with invalid DNs, such as `infraRsHPathAtt` or `fabricRsOosPath`, an error resembling `Failed to decode IfIndex, id: 0x.......` will be seen and the desired configuration change will be prevented until the invalid DN syntax objects are cleaned up.
 
 The details documented within [CSCwh68103][23] describe the various validations that were added to `fabricPathEp` DNs. 
 
 If invalid DNs are found, and depending on the scale of invalid DNs, work with TAC to plan a deletion of identified objects. 
 
-This check queries `infraRsHPathAtt` objects and then scans all the tDn parameters for known invalid references.
+This check queries `infraRsHPathAtt` and `fabricRsOosPath` objects and then scans all the `tDn` parameters for known invalid `fabricPathEp` references.
 
 
 ### LLDP Custom Interface Description

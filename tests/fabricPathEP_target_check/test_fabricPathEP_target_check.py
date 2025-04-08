@@ -63,5 +63,5 @@ oosPorts_api =  'fabricRsOosPath.json'
     ],
 )
 def test_logic(mock_icurl, expected_result):
-    result = script.fabricPathEP_target_check(1, 1)
+    result = script.fabricPathEp_target_check(1, 1)
     assert result == expected_result
