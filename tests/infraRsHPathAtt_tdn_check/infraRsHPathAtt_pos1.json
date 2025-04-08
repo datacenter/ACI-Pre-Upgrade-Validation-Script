@@ -1,20 +1,56 @@
 [
-  {
-      "infraRsHPathAtt": {
-          "attributes": {
-              "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[uni/infra/funcprof/accbundle-legacy]",
-              "tCl": "fabricPathEp",
-              "tDn": "uni/infra/funcprof/accbundle-legacy"
-          }
-      }
-  },
     {
-      "infraRsHPathAtt": {
-          "attributes": {
-              "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/paths-101/pathep-[eth1/1]]",
-              "tCl": "fabricPathEp",
-              "tDn": "topology/pod-1/paths-101/pathep-[eth1/1]"
-          }
-      }
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[uni/infra/funcprof/accbundle-legacy]",
+                "tCl": "fabricPathEp",
+                "tDn": "uni/infra/funcprof/accbundle-legacy"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/paths-101/pathep-[eth1/1]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-101/pathep-[eth1/1]"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/protpaths-181-182/extprotpaths-101-102/pathep-[173-FEX-VPC]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/protpaths-181-182/extprotpaths-101-102/pathep-[173-FEX-VPC]"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/paths-102/extpaths-102/pathep-[eth1/41]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-102/extpaths-102/pathep-[eth1/41]"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/protpaths-101-102/pathep-[vpc_n5k1]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/protpaths-101-102/pathep-[vpc_n5k1]"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-__ui_l101_eth1--1/rsHPathAtt-[topology/pod-1/paths-1005/pathep-[eth1/3]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-1005/pathep-[eth1/3]"
+            }
+        }
     }
 ]
