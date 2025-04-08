@@ -4077,27 +4077,75 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def invalid_fex_rs_check(index, total_checks, **kwargs):
-    title = 'Invalid FEX Relation Source'
+def fabricPathEp_target_check(index, total_checks, **kwargs):
+    title = 'Invalid fabricPathEp Targets'
     result = PASS
     msg = ''
-    headers = ["FEX ID", "Invalid DN"]
+    headers = ["Invalid DN", "Reason"]
     data = []
-    recommended_action = 'Identify if FEX ID in use, then contact TAC for cleanup'
+    recommended_action = 'Contact TAC for cleanup procedure'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-fabricpathep-dn-references'
     print_title(title, index, total_checks)
+    fabricPathEp_regex = r"topology/pod-\d+/(?:\w+)?paths-\d+(?:-\d+)?(?:/ext(?:\w+)?paths-(?P<fexA>\d+)(?:-(?P<fexB>\d+))?)?/pathep-\[(?P<path>.+)\]"
+    eth_regex = r'eth(?P<first>\d+)/(?P<second>\d+)(?:/(?P<third>\d+))?'
 
-
-    hpath_api =  'infraRsHPathAtt.json?query-target-filter=wcard(infraRsHPathAtt.dn,"eth")'
+    hpath_api =  'infraRsHPathAtt.json'
+    oosPorts_api =  'fabricRsOosPath.json'
     infraRsHPathAtt = icurl('class', hpath_api)
+    fabricRsOosPath = icurl('class', oosPorts_api)
 
-    for rs in infraRsHPathAtt:
-        dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
-        m = re.search(r'eth(?P<fex>\d{3})\/\d\/\d', dn)
-        if m:
-            fex_id = m.group('fex')
-            if int(fex_id) >= 101:
-                data.append([fex_id, dn])
+    if infraRsHPathAtt or fabricRsOosPath:
+        all_objects = infraRsHPathAtt + fabricRsOosPath
+        for obj in all_objects:
+            dn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('dn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('dn', '')
+            tDn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('tDn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('tDn', '')
+            #dn = obj["infraRsHPathAtt"]["attributes"]["dn"]
+            #tDn = obj["infraRsHPathAtt"]["attributes"]["tDn"]
+
+            # CHECK ensure tDn looks like a valid fabricPathEp
+            fabricPathep_match = re.search(fabricPathEp_regex, tDn)
+            if fabricPathep_match:
+                groups = fabricPathep_match.groupdict()
+                fex_a = groups.get("fexA")
+                fex_b = groups.get("fexB")
+                path = groups.get("path")
+
+                # CHECK FEX ID(s) of extpath(s) is 101 or greater
+                if fex_a:
+                    if int(fex_a) < 101:
+                        data.append([dn, "FEX ID A {} is invalid (101+ expected)".format(fex_a)])
+                if fex_b:
+                    if int(fex_b) < 101:
+                        data.append([dn, "FEX ID B {} is invalid (101+ expected)".format(fex_b)])
+
+                # There should always be path... so will assume we always have it
+                if 'eth' in path.lower():
+                    # CHECK path has proper ethx/y or ethx/y/z formatting
+                    eth_match = re.search(eth_regex, path)
+                    if eth_match:
+                        groups = eth_match.groupdict()
+                        first = groups.get("first")
+                        second = groups.get("second")
+                        third = groups.get("third")
+
+                        # CHECK eth looks like FEX (FIRST is 101 or greater)
+                        if first:
+                            if int(first) > 100:
+                                data.append([dn, "eth module {} like FEX ID".format(first)])
+                        # CHECK eth is non-zero
+                        if second:
+                            if int(second) == 0:
+                                data.append([dn, "eth port cannot be 0"])
+                        # CHECK eth is non-0 or not greater than 16 for breakout
+                        if third:
+                            if int(third) == 0:
+                                data.append([dn, "eth port cannot be 0 for breakout ports"])
+                            elif int(third) > 16:
+                                data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
+                    else:
+                        data.append([dn, "PathEp 'eth' syntax is invalid"])
+            else:
+                data.append([dn, "target is not a valid fabricPathEp DN"])
 
     if data:
         result = FAIL_UF
@@ -5031,7 +5079,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
-        invalid_fex_rs_check,
+        fabricPathEp_target_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
         static_route_overlap_check,

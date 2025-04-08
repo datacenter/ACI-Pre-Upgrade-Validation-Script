@@ -1,0 +1,20 @@
+[
+    {
+        "fabricRsOosPath": {
+            "attributes": {
+                "dn": "uni/fabric/outofsvc/rsoosPath-[topology/pod-1/paths-102/pathep-[eth1/44]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-102/pathep-[eth1/44]"
+            }
+        }
+    },
+    {
+        "fabricRsOosPath": {
+            "attributes": {
+                "dn": "uni/fabric/outofsvc/rsoosPath-[topology/pod-1/paths-103/pathep-[eth1/45]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-103/pathep-[eth1/45]"
+            }
+        }
+    }
+]
