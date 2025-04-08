@@ -162,7 +162,7 @@ Items                                           | Defect       | This Script    
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Stats Database (Observer) Size][d19]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Observer Database Size][d19]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -182,7 +182,7 @@ Items                                           | Defect       | This Script    
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
-[d19]: #stats-database-observer-size
+[d19]: #observer-database-size
 
 
 ## General Check Details
@@ -2233,21 +2233,16 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
     Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
 
-### Stats Database (Observer) Size
+### Observer Database Size
 
-The Stats Database folder, /data2/statsdb/ can get extremely large and lead to issues during Upgrade. ([CSCvw45531][36])
+Due to [CSCvw45531][36], the Observer DME database files can grow very large over time.
 
-!!! note
-    This folder is used by the Observer DME. This DME is responsible for keeping the cumulative and gauge counters, stats, etc.
+The Observer DME is responsible for keeping certain stats, counters, logs entries and more. Within the APIC, a non-root user can get a read-only view of the Observer DB counts and sizes by viewing the `/data2/dbstats/` directory.
 
-The script checks on each Apic:
-1.  for any oberver file with a size higher than 1GB in the /data2/statsdb folder.
-
-The script results in `FAIL - UPGRADE FAILURE!!` in case there are files that meet the criteria, these will be presented in the script output.
+This check logs in to each APIC, checks the contents of the `/data2/dbstats/` directory, and alerts on any DB file which has surpassed 1GB in size.
 
 !!! tip
-    This kind of issue is usually seen if log directive is enabled for contract subjects, especially with 'permit log'.    
-
+    Certain high churn logging configuration has been found to grow this DB exceptionally large while on a non-foxed version. One such configuraiton is contract permit logging.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

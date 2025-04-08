@@ -25,5 +25,5 @@ topSystems = 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")
     ],
 )
 def test_logic(mock_icurl, expected_result):
-    result = script.statsdb_check(1, 1)
+    result = script.observer_db_size_check(1, 1)
     assert result == expected_result

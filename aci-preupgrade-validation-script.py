@@ -4322,14 +4322,15 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
-def statsdb_check(index, total_checks, **kwargs):
-    title = 'Stats Database (Observer) Size'
+
+def observer_db_size_check(index, total_checks, **kwargs):
+    title = 'Observer Database Size'
     result = PASS
     msg = ''
     headers = ["Node" , "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to get the workaround in place.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations##stats-database-observer-size'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
     print_title(title, index, total_checks)
     os_command = r"ls -l /data2/dbstats | awk '{ if ($5 > 1000000000) print $5, $9}'"  # must be greater than 1,073,741,824 for 1G
     controllers = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
@@ -4373,6 +4374,7 @@ def statsdb_check(index, total_checks, **kwargs):
         result = FAIL_UF
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True )
     return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
