@@ -2233,7 +2233,7 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
     Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
 
-### Stats Database (Observer) check
+### Stats Database (Observer) Size
 
 The Stats Database folder, /data2/statsdb/ can get extremely large and lead to issues during Upgrade. ([CSCvw45531][36])
 
@@ -2241,9 +2241,9 @@ The Stats Database folder, /data2/statsdb/ can get extremely large and lead to i
     This folder is used by the Observer DME. This DME is responsible for keeping the cumulative and gauge counters, stats, etc.
 
 The script checks on each Apic:
-1.  for any oberver file with a size higher that 1GB in the /data2/statsdb folder.
+1.  for any oberver file with a size higher than 1GB in the /data2/statsdb folder.
 
-The script results in `FAIL - OUTAGE WARNING!!` in case there are files that meet the criteria, these will be presented in the script output.
+The script results in `FAIL - UPGRADE FAILURE!!` in case there are files that meet the criteria, these will be presented in the script output.
 
 !!! tip
     This kind of issue is usually seen if log directive is enabled for contract subjects, especially with 'permit log'.    
