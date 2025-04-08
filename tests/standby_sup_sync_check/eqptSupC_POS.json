@@ -1,0 +1,25 @@
+[{
+	"eqptSupC": {
+		"attributes": {
+			"descr": "Supervisor Module",
+			"dn": "topology/pod-1/node-1201/sys/ch/supslot-2/sup",
+			"model": "N9K-SUP-A",
+			"operSt": "online",
+			"pwrSt": "on",
+			"rdSt": "standby",
+			"type": "supervisor"
+		}
+	}
+}, {
+	"eqptSupC": {
+		"attributes": {
+			"descr": "Supervisor Module",
+			"dn": "topology/pod-1/node-1202/sys/ch/supslot-1/sup",
+			"model": "N9K-SUP-B+",
+			"operSt": "online",
+			"pwrSt": "on",
+			"rdSt": "standby",
+			"type": "supervisor"
+		}
+	}
+}]

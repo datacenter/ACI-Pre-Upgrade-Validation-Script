@@ -688,6 +688,95 @@
           }
         },
         {
+          "l3extLNodeP": {
+            "attributes": {
+              "name": "IPv6"
+            },
+            "children": [
+              {
+                "l3extLIfP": {
+                  "attributes": {
+                    "name": "IFP"
+                  },
+                  "children": [
+                    {
+                      "l3extRsPathL3OutAtt": {
+                        "attributes": {
+                          "addr": "0.0.0.0",
+                          "ipv6Dad": "enabled",
+                          "llAddr": "::",
+                          "tCl": "fabricPathEp",
+                          "tDn": "topology/pod-1/protpaths-103-104/pathep-[N9K_VPC_3-4_13]"
+                        },
+                        "children": [
+                          {
+                            "l3extMember": {
+                              "attributes": {
+                                "addr": "2001:1:2:3::40/64",
+                                "ipv6Dad": "enabled",
+                                "llAddr": "::",
+                                "side": "B"
+                              }
+                            }
+                          },
+                          {
+                            "l3extMember": {
+                              "attributes": {
+                                "addr": "2001:1:2:3::30/64",
+                                "ipv6Dad": "enabled",
+                                "llAddr": "::",
+                                "side": "A"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "rtrId": "10.0.0.4",
+                    "rtrIdLoopBack": "no",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-104"
+                  },
+                  "children": [
+                    {
+                      "l3extLoopBackIfP": {
+                        "attributes": {
+                          "addr": "2001:1:2:3::104"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "l3extRsNodeL3OutAtt": {
+                  "attributes": {
+                    "rtrId": "10.0.0.3",
+                    "rtrIdLoopBack": "no",
+                    "tCl": "fabricNode",
+                    "tDn": "topology/pod-1/node-103"
+                  },
+                  "children": [
+                    {
+                      "l3extLoopBackIfP": {
+                        "attributes": {
+                          "addr": "2001:1:2:3::103"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
           "l3extRsEctx": {
             "attributes": {
               "annotation": "orchestrator:terraform",

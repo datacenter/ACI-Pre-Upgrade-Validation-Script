@@ -1,0 +1,11 @@
+[
+    {
+      "eqptLC": {
+        "attributes": {
+          "dn": "topology/pod-1/node-102/sys/ch/lcslot-1/lc",
+          "model": "N9K-X9732C-EX",
+          "ser": "FDO23260QX5"
+        }
+      }
+    }
+  ]

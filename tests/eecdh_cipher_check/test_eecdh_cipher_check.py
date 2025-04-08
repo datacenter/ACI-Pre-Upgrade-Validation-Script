@@ -23,6 +23,11 @@ commCiphers = 'commCipher.json'
             script.PASS,
         ),
         (
+            {commCiphers: read_data(dir, "commCipher_neg2.json")},
+            "5.2(6d)",
+            script.PASS,
+        ),
+        (
             {commCiphers: read_data(dir, "commCipher_pos.json")},
             "5.2(6d)",
             script.FAIL_UF,

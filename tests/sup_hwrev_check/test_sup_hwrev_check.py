@@ -17,33 +17,33 @@ eqptSpCmnBlk = 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
-        # Affected Sups and on 5.2
+        # Affected Sups and on 5.2. VRM and FPGA Concern
         (
             {eqptSpCmnBlk: read_data(dir, "eqptSpCmnBlk_POS.json")},
             "5.2(1g)",
             "5.2(8e)",
             script.FAIL_O,
         ),
-        # Affected Sups, going to fixed version
+        # Affected Sups, going to FPGA fixed version. VRM CONCERN
         (
             {eqptSpCmnBlk: read_data(dir, "eqptSpCmnBlk_POS.json")},
             "5.2(1g)",
             "5.2(8f)",
-            script.PASS,
+            script.FAIL_O,
         ),
-        # Affected sups, going to fixed version
+        # Affected sups, on fixed version, going to fixed version
         (
             {eqptSpCmnBlk: read_data(dir, "eqptSpCmnBlk_POS.json")},
             "6.0(1a)",
             "6.0(3d)",
             script.PASS,
         ),
-        # affected sups, not yet on 5.2
+        # affected sups, not yet on 5.2. VRM CONCERN
         (
             {eqptSpCmnBlk: read_data(dir, "eqptSpCmnBlk_POS.json")},
             "4.2(3g)",
             "5.2(2h)",
-            script.PASS,
+            script.FAIL_O,
         ),
         # no affected sups
         (

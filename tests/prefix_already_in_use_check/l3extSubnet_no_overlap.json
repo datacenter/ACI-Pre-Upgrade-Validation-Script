@@ -1,0 +1,74 @@
+[
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-infra/fabricExtConnP-1/fabricExtRoutingP-IPN/extsubnet-[20.200.0.1/30]",
+        "ip": "20.200.0.1/30",
+        "scope": "import-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-BGP/instP-EPG1/extsubnet-[10.0.0.0/8]",
+        "ip": "10.0.0.0/8",
+        "scope": "import-security,shared-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-BGP/instP-EPG2/extsubnet-[11.0.0.0/8]",
+        "ip": "11.0.0.0/8",
+        "scope": "import-security,shared-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-OSPF/instP-EPG1/extsubnet-[12.0.0.0/8]",
+        "ip": "12.0.0.0/8",
+        "scope": "import-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-EIGRP/instP-EPG1/extsubnet-[13.0.0.0/8]",
+        "ip": "13.0.0.0/8",
+        "scope": "import-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-BGP2/instP-EPG1/extsubnet-[10.0.0.0/8]",
+        "ip": "10.0.0.0/8",
+        "scope": "import-security,shared-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-OSPF2/instP-EPG1/extsubnet-[20.0.0.0/8]",
+        "ip": "20.0.0.0/8",
+        "scope": "import-security"
+      }
+    }
+  },
+  {
+    "l3extSubnet": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-EIGRP2/instP-EPG1/extsubnet-[30.0.0.0/8]",
+        "ip": "30.0.0.0/8",
+        "scope": "import-security"
+      }
+    }
+  }
+]

@@ -21,7 +21,7 @@ Items                                                        | This Script      
 [Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:        | :no_entry_sign:
-[Compatibility (Switch Hardware - gen1)][g4]                 | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767 | :white_check_mark:
 [APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)| :no_entry_sign:
 [APIC Cluster is Fully-Fit][g7]                              | :white_check_mark: | :white_check_mark: 4.2(6) | :white_check_mark:
@@ -33,13 +33,13 @@ Items                                                        | This Script      
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[6.0(2)+ requires 32 and 64 bit switch images][g16]      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
-[g4]: #compatibility-switch-hardware---gen1
+[g4]: #compatibility-switch-hardware-gen1
 [g5]: #compatibility-remote-leaf-switch
 [g6]: #apic-target-version-image-and-md5-hash
 [g7]: #apic-cluster-is-fully-fit
@@ -76,6 +76,7 @@ Items                                         | Faults         | This Script    
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 [Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Equipment Disk Limits Exceeded][f20]         | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
 
 
 
@@ -98,6 +99,8 @@ Items                                         | Faults         | This Script    
 [f17]: #hw-programming-failure
 [f18]: #scalability-faults-related-to-capacity-dashboard
 [f19]: #fabric-port-is-down
+[f20]: #equipment-disk-limits-exceeded
+
 
 ### Configuration Checks
 
@@ -120,6 +123,11 @@ Items                                         | Faults         | This Script    
 [BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [CloudSec Encryption Check][c17]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Out-of-Service Ports check][c18]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
+[TEP-to-TEP atomic counters Scalability Check][c19]   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
+[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -138,7 +146,11 @@ Items                                         | Faults         | This Script    
 [c15]: #bd-and-epg-subnet-must-have-matching-scopes
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 [c17]: #cloudsec-encryption-check
-
+[c18]: #out-of-service-ports-check
+[c19]: #tep-to-tep-atomic-counters-scalability-check
+[c20]: #https-request-throttle-rate
+[c21]: #global-aes-encryption
+[c22]: #service-graph-bd-forceful-routing
 
 ### Defect Condition Checks
 
@@ -146,43 +158,55 @@ Items                                           | Defect       | This Script    
 ------------------------------------------------|--------------|--------------------|---------------------------|---------------------------
 [EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Contract Port 22 Defect Check][d3]             | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
+[Contract Port 22 Defect][d3]             | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [telemetryStatsServerP Object Check][d4]        | CSCvt47850   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Link Level Flow Control Check][d5]             | CSCvo27498   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Internal VLAN Pool Check][d6]                  | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FabricDomain Name Check][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FabricDomain Name][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Invalid FEX fabricPathEp DN References][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Invalid fabricPathEp Targets][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[vzAny-to-vzAny Service Graph when crossing 5.0 release] [d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Observer Database Size][d19]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Stale Decommissioned Spine Check][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[GX2A Platform Model Check][d22]               | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[PBR High Scale Check][d23]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Standby Sup Image Sync Check][d24]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Observer Database Size][d25]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
-[d3]: #contract-port-22
+[d3]: #contract-port-22-defect
 [d4]: #telemetrystatsserverp-object
 [d5]: #link-level-flow-control
 [d6]: #internal-vlan-pool
 [d7]: #apic-ca-cert-validation
-[d8]: #fabric-domain-name
+[d8]: #fabricdomain-name
 [d9]: #spine-sup-hw-revision
 [d10]: #sup-aa-high-memory-usage
 [d11]: #vmm-uplink-container-with-empty-actives
 [d12]: #cos-3-with-dynamic-packet-prioritization
 [d13]: #n9k-c93108tc-fx3pfx3h-interface-down
-[d14]: #invalid-fex-fabricpathep-dn-references
+[d14]: #invalid-fabricpathep-targets
 [d15]: #lldp-custom-interface-description
 [d16]: #route-map-community-match
 [d17]: #l3out-32-overlap-with-bd-subnet
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
-[d19]: #observer-database-size
+[d19]: #fcfcoe-support-for-ex-switches
+[d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
+[d21]: #stale-decommissioned-spine-check
+[d22]: #gx2a-platform-model-check
+[d23]: #pbr-high-scale-check
+[d24]: #standby-sup-image-sync-check
+[d25]: #observer-database-size
 
 
 ## General Check Details
@@ -435,9 +459,9 @@ For additional information, see the [Guidelines and Limitations for Upgrading or
 
 ### Leaf to Spine Redundancy Validation
 
-When upgrading the Switches, traffic traversing any Leaf Switch that is connected to only a single spine will exhibit a Data Path Outage during the spine upgrade as there will be no alternate dataplane paths available.
+When upgrading the switches, traffic traversing a Leaf Switch that is connected to only a single spine (or a tier-2 Leaf Switch that is connected to only a single tier-1 Leaf Switch) will exhibit a Data Path Outage during the spine (or tier-1 leaf) upgrade as there will be no alternate dataplane paths available.
 
-To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches. This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch.
+To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches (or tier-1 Leaf Switches). This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch (or tier-1 Leaf Switch).
 
 
 ## Fault Check Details
@@ -1359,6 +1383,65 @@ Failure to do so may lead to outages during switch upgrades due to leaf nodes no
     --- omit ---
     ```
 
+
+## Equipment Disk Limits Exceeded
+
+This fault occurs when the disk usage of a partiton increases beyond its threshold.
+
+This fault also occurs when the MTS buffer memory usage increases beyond its threshold. /proc/isan/sw/mts/mem/stats is checked when this scenario occurs.
+
+Recommended Action:
+
+1. Check `df -h` output on affected node to see the usage of the partition.
+    - If the fault is about MTS, check `cat /proc/isan/sw/mts/mem/stats` output on affected node to see the usage of the MTS memory. 
+    - Focus on "mem_in_use" and "mem_free" in /proc/isan/sw/mts/mem/stats. 
+    - The usage is calculated by "mem_in_use / (mem_in_use + mem_free)". 
+    - The same output as /proc/isan/sw/mts/mem/stats can be obtained by `show system internal mts memory` command on affected switch node.
+2. Check `ls -l` output of folders under affected partition to see which file is consuming the space.
+    - If the fault is about MTS, check `show system internal mts buffers details` to see what is consuming the MTS buffer space.
+
+To recover from this fault, try the following action
+
+1. Free up space from affected disk partition or MTS buffer.
+2. TAC may be required to analyze and cleanup certain directories due to filesystem permissions. Cleanup of `/` is one such example.
+
+!!! example "Fault Example (F1820: High Disk usage)"
+    ```
+    apic1# moquery -c eqptcapacityEntity -x 'rsp-subtree-include=faults,no-scoped'
+    Total Objects shown: 1
+     
+    # fault.Inst
+    code             : F1820
+    ack              : no
+    alert            : no
+    annotation       : 
+    cause            : equipment-disk-limits-exceeded
+    changeSet        : avail (New: 1971936), path (New: /mnt/ifc/cfg), used (New: 8194392)
+    childAction      : 
+    created          : 2025-02-17T13:55:20.263-06:00
+    delegated        : no
+    descr            : Disk usage for /mnt/ifc/cfg is above normal
+    dn               : topology/pod-1/node-102/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1820
+    domain           : access
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2025-02-17T13:57:25.020-06:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F1820
+    rule             : eqptcapacity-fspartition-fs-partition-limits-exceeded-minor
+    severity         : minor
+    status           : 
+    subject          : high-disk-usage
+    title            : 
+    type             : operational
+    uid              : 
+    userdom          : all
+    ```
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -1948,6 +2031,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     fecMode                        : ieee-rs-fec   <<<
     ```
 
+
 ### CloudSec Encryption Check
 
 Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated. This is documented within the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][33]
@@ -1956,6 +2040,103 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 1. Due to [CSCwe67926][34], if even a single PSK was configured for CloudSec Encryption at any point, even if never used, the object will remain and this check will alert you to this finding.
 2. The only way to truly validate whether or not CloudSec Encryption is in use on your ACI fabric is to validate if CloudSec Encryption is enabled from within the [Nexus Dashboard Orchstrator Configuration][35]
+
+
+### Out-of-Service Ports Check
+
+Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
+
+While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this fact generally remains undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
+
+A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
+
+
+### TEP-to-TEP atomic counters Scalability Check
+
+As documented in the [Verified Scalability Guide for Cisco APIC][38], ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policy `dbgAcPath`.
+Exceeding any scalability number documented in this guide can cause unexpected issues. In this specific scenario, exceeding the atomic counter limit has been seen to create issues with collecting techsupports and configuration exports.
+
+The script validates the count of `dbgAcPath` is less than the documented supported number. 
+
+
+### HTTPS Request Throttle Rate
+
+ACI supports **HTTPS Request Throttle** via NGINX rate limit to prevent external API clients from consuming too much resources on APICs. This feature, which is disabled by default, is located at `Fabric > Fabric Policies > Pod > Management Access > default (or name you configured)` in the APIC GUI.
+
+Starting from ACI version 6.1(2), the supported maximum rate for this feature was reduced to 40 requests per second (r/s) or 2400 requests per minute (r/m) from 10,000 r/m. Configuration with a value larger than these gets rejected starting from 6.1(2).
+This change is to ensure that users using this feature configure a meaningful rate. If the rate is larger than the new maximum, APIC may not be able to keep up with incoming requests despite the throttling in place, and the APIC GUI can get sluggish or unresponsive which defeats the purpose of the feature.
+
+This script checks the configuration in all Management Access Policies to alert users when the following conditions are met because APIC upgrade will fail in such a case.
+
+* The upgrade is from a version older than 6.1(2a) to a version newer than 6.1(2a). (ex. 5.2(8g) to 6.1(2h))
+* HTTPS Request Throttling is enabled and its rate is larger than 40 r/s or 2400 r/m
+
+!!! tip
+    Regardless of the APIC version, the best practice is to enable **HTTPS Request Throttle** with 30 requests per second. See [ACI Best Practices Quick Summary][47] for reference and details about the feature.
+
+    Also note that **HTTPS Request Throttle** in this check is referring to the global throttling as opposed to the new feature **Custom Throttle Group** that was introduced in 6.1(2).
+
+
+### Global AES Encryption
+
+**Global AES Encryption** enables Cisco APICs to encrypt passwords and include them in the configuration export (backup). See [ACI Best Practices Quick Summary][49] for details about the feature itself.
+
+In terms of upgrade, taking a configuration backup with **Global AES Encryption** enabled before your upgrade is highly recommended so that you or Cisco TAC can restore your fabric even if something unexpected may occur during your upgrade.
+
+Although enabling **Global AES Encryption** has been a best practice, it has become mandatory to upgrade to ACI version 6.1(2) or later. If you proceed with your APIC upgrade to 6.1(2) or newer version while **Global AES Encryption** is disabled, the upgrade will immediately fail.
+
+When **Global AES Encryption** is not enabled, this script alerts users in two different ways depending on the target version.
+
+* When it is not enabled and the target version is 6.1(2) or later, this check is flagged as `UPGRADE FAILURE`.
+* When it is not enabled and the target version is older than 6.1(2), this check is flagged as `MANUAL CHECK REQUIRED` to encourage users to follow the best practice to enable it (and take a configuration back again before the upgrade).
+
+
+## Service Graph BD Forceful Routing
+
+Starting from ACI 6.0(2), a bridge domain containing an L4-L7 service graph device (a.k.a service BD) starts to forward packets based on their IP headers even for bridging traffic which used to be forwarded based on their MAC addresses in their ethernet headers and ignored their IP headers. This "forceful routing" is to support IP-based selectors in ESG or microsegement EPG (uSeg EPG) when service graph is configured between those ESGs/uSeg EPGs and they are in the same bridge domain as the service graph device.
+
+See the [changes in behavior doc][50] and "Optional Configurations > Service BD configuration option" in [ACI PBR Service Graph Whitepaper][51] for details of this change.
+
+Because of this change, bridging traffic within such bridge domains that used to work prior to the upgrade may stop working after upgrading to 6.0(2) or later.
+
+This script alerts users if at least one service bridge domain was found so that users can check if those bridge domains and connected devices have traffic that may get impacted by this change.
+
+See below for the workaround and examples of traffic that will stop working after the upgrade.
+
+!!! note "Workaround"
+    If your target version is 6.0(4) or later, there is an option to disable the forceful routing so that the service BD behaves in the same way as prior to 6.0(2). This option was introduced via CSCwh71581 and available only via API.
+
+    After you upgrade to 6.0(4) or later, change `serviceBdRoutingDisable` to `yes` as shown below to disable the forceful routing on your service BD if needed.
+
+    ```json
+    {
+      "fvBD": {
+        "attributes": {
+          "serviceBdRoutingDisable": "yes"
+        }
+      }
+    }
+    ```
+
+!!! example "Example 1: clustering/HA heartbeat between service devices"
+    If the following two conditions are met, the probes will stop working after upgrading to 6.0(2) or later.
+
+    * There are heartbeat probes that are bridged between your service graph devices through the same bridige domain as the data traffic (i.e. the BD pointed by the service graph)
+    * The destination IP addresses of the probes are unicast and don't belong to the subnet(s) of the said BD
+
+    Although this should not be common as it is typically a best practice to use a different path for those probes than the data traffic, if your design meets these condtions you can change the design to move the probe traffic to another bridge domain prior to the upgrade. Or you can change the setting of the service bridge domain to disable the forceful routing after your upgrade as shown above.
+
+    This example is also explained in the "Optional Configurations > Service BD configuration option" in [ACI PBR Service Graph Whitepaper][51].
+
+
+!!! example "Example 2: ACI CNI with SNAT"
+    ACI CNI with SNAT utilizes a virtual IP shared across multiple kubernetes nodes. ACI switches forward the traffic towards the virtual IP (i.e. one of the kubernetes nodes) via Service Graph PBR. However, there is a chance where the traffic sent to the kubernetes node that doesn't have the destination pod. This happens because the virtual IP is shared not just between multiple nodes but also between pods and it's mapped to each pod based on the L4 port. When the kubernetes node receives a packet to its virtual IP but its L4 port is not of its pod, the node will bounce the traffic to the other node by rewriting the MAC addresses in the ethernet header while the IP headers remain the same, which means it's a bridging traffic.
+
+    This will stop working after upgrading to 6.0(2) or later because the service bridge domain ignores the MAC addresses and forcefully use the IP address, which is the same virtual IP again, to forward the packet. As a result, the packet will not be able to reach the correct kubenetes node.
+
+    In this case, you need to prepare to change the setting of the service bridge domain to disable the forceful routing after your upgrade as shown above.
+
+    See [SNAT Traffic for Kubernetes with Cisco ACI CNI][52] for details about ACI CNI with SNAT.
 
 
 ## Defect Check Details
@@ -2053,11 +2234,14 @@ The script checks if the target version is 6.0(2) and if the fabric name contain
 
 ### Spine SUP HW Revision
 
-Due to the defect [CSCwb86706][29], ACI modular spine switches may not be able to boot after an upgrade depending on the hardware revision (part number) of the SUP modules.
+Field Notice [FN74050][43] outlines 2 issue scenarios that can be hit for a subset of Spine Sup-A+ and SUP-B+ Part Numbers.
 
-The script checks if the version and the SUP modules are susceptible to the defect.
+There is a VRM Issue outlined by [CSCwd65255][44] which can occur for affected SUP parts after performing an EPLD upgrade, forcing the user to perofrm an additional power cyclel beforeo they will boot up. If 'VRM Concern' is flagged, review the FN details which includes a link to a script which can be run by TAC to proactively address this specific issue.
 
-If this check is flagged, Known Fixed Releases documented in [CSCwf44222][30] should be assessed as a target image to avoid the defect condition.
+There is also an FPGA Downgrade Issue which is due to a combination of [CSCwb86706][29] and [CSCwf44222][30]. This specific scenario is more severe in that ACI modular spine switches will not be able to boot after an upgrade if hit and a replacement is required. However, the FPGA Downgrade Issue can be avoided entirely by targeting a fixed version of [CSCwf44222][30].
+
+The script checks if the version and the SUP Part Numbers are susceptible to either FN issue scenario.
+
 
 ### CoS 3 with Dynamic Packet Prioritization
 
@@ -2125,16 +2309,15 @@ The problem is related only to the front-panel interfaces Ethernet 1/1- 1/48. Op
 Because of this, the target version of your upgrade must be a version with a fix of CSCwh81430 when your fabric includes those switches mentioned above. See the Field Notice [FN74085][20] for details.
 
 
-### Invalid FEX fabricPathEp DN References
+### Invalid fabricPathEp Targets
 
-If you have deployed a FEX on a version prior to having validations introduced in [CSCwh68103][23], it is possible that `fabricPathEp` objects were created with an incorrect DN format. As a result, the related `infraRsHPathAtt` objects pointing to those `fabricPathEp` will also contain the invalid DN in their DN formatting given how ACI builds out object relations.
+Prior to [CSCwh68103][23], `fabricPathEp` objects could be created using DN formats that do not match a valid schema and are technically invalid. The issue arises after upgrading to a version with validations included; any fixed version of [CSCwh68103][23]. While on a fixed version, if changes are made to objects that target `fabricPathEp` objects with invalid DNs, such as `infraRsHPathAtt` or `fabricRsOosPath`, an error resembling `Failed to decode IfIndex, id: 0x.......` will be seen and the desired configuration change will be prevented until the invalid DN syntax objects are cleaned up.
 
-Having these invalid DNs and then upgrading to a version that has the validations introduced in [CSCwh68103][23] will result in validation failures while trying to make changes to access policies, blocking new config from being accepted. The validation failure will present itself with the text `Failed to decode IfIndex, id: 0x.......`.
+The details documented within [CSCwh68103][23] describe the various validations that were added to `fabricPathEp` DNs. 
 
-If invalid DNs are found, first identify if the FEX IDs are still in use in case a window needs to be planned. If not in use, delete the `infraRsHPathAtt` objects having an invalid DN. 
+If invalid DNs are found, and depending on the scale of invalid DNs, work with TAC to plan a deletion of identified objects. 
 
-This check queries `infraRsHPathAtt` objects related to eths, then check if any have DNs which are incorrectly formatted.
-
+This check queries `infraRsHPathAtt` and `fabricRsOosPath` objects and then scans all the `tDn` parameters for known invalid `fabricPathEp` references.
 
 
 ### LLDP Custom Interface Description
@@ -2233,9 +2416,64 @@ Depending on the timing and how fast the re-programming finishes, you may not se
 
     Due to the update in [APIC Release 5.0][31], the pcTag of the service EPG for a vzAny-vzAny Service Graph will be updated to a Global pcTag from a Local pcTag. Global pcTags are in the range of 1 - 16384 while local pcTags are 16385 - 65535. You can check the pcTag of your service EPG from `Tenant > Services > L4-L7 > Deployed Graph Instances > Function Node > Policy > Function Connectors > Class ID` in the APIC GUI.
 
+
+### FC/FCOE support for -EX switches
+
+Due to defect [CSCwm92166][36], ACI switches with models ending in '-EX' will not support FC/FCOE configurations if upgraded to an affected release. If upgraded, the FC/FCOE interface will remain down and fault F4511 will be raised.
+
+Refer to the [Cisco APIC Layer 2 Networking Configuration Guide, Release 6.1(x)][37] for a complete list of for FC/FCOE supported hardware.
+
+The script checks if your upgrade is susceptible to this defect from both version and configuration perspectives.
+
+
+### Nexus 950X FM or LC Might Fail to boot after reload
+
+A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
+
+The matching defect is [CSCvg26013][40].
+
+This check alerts you to potentially affected modules:
+
+Fabric Modules
+
+ - N9K-C9504-FM-E
+ - N9K-C9508-FM-E
+
+Line Card
+
+ - N9K-X9732C-EX
+
+If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
+
+
+### Stale Decommissioned Spine Check
+
+Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDecommissionNode` objects pointing to Spine Node IDs, regardless of pod location defined in the `fabricRsDecommissionNode` object, will result in those Spine Nodes being removed from Leaf Node COOP Adjacency lists. This results in Leaf Nodes no longer publishing endpoint updates to affected Spine Nodes, resulting in packet drops for any spine proxy traffic hashed to an affected Spine Node.
+
+### GX2A Platform Model Check
+
+[CSCwk77800][45] fixed a behavior where `N9K-C9400-SW-GX2A` are expected to report their chassis as `N9K-C9408`.
+
+When an identified node is upgraded to a fixed 6.1(3)+ version, the old model's entry will show up as inactive and must be decomissioned and the new model's entry must be registered. The result is that the node will not completely join the fabric post-upgrade until these additional steps are performed on each identified GX2A node.
+
+### PBR High Scale Check
+
+Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
+
+This check will count the number of relevant PBR policies across the entire ACI fabric from an APIC perspective (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons`) and alert if targeting an affected version with relevant PBR config objects greater than 100k. If alerted, the recommended action is to target a version that has the fix for [CSCwi66348][46].
+
+
+### Standby Sup Image Sync Check
+
+Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
+
+If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
+
+
 ### Observer Database Size
 
-Due to [CSCvw45531][36], the Observer DME database files can grow very large over time.
+Due to [CSCvw45531][53], the Observer DME database files can grow very large over time.
 
 The Observer DME is responsible for keeping certain stats, counters, logs entries and more. Within the APIC, a non-root user can get a read-only view of the Observer DB counts and sizes by viewing the `/data2/dbstats/` directory.
 
@@ -2281,4 +2519,21 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [33]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-606.html
 [34]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe67926
 [35]: https://www.cisco.com/c/en/us/td/docs/dcn/ndo/3x/configuration/cisco-nexus-dashboard-orchestrator-configuration-guide-aci-371/ndo-configuration-aci-infra-cloudsec-37x.html#id_76319
-[36]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw45531
+[36]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm92166
+[37]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/l2-configuration/cisco-apic-layer-2-networking-configuration-guide-61x/fcoe-connections-61x.html
+[38]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/verified-scalability/cisco-aci-verified-scalability-guide-612.html
+[39]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
+[40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
+[41]: https://snvui.cisco.com/snv/FN64251
+[42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
+[43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
+[44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
+[45]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwk77800
+[46]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi66348
+[47]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#HTTPSRequestThrottle
+[48]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwa44220
+[49]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-best-practices-quick-summary.html#GlobalAESEncryption
+[50]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease602
+[51]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-739971.html
+[52]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-aci-plug-in-snat-on-egress.html
+[53]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw45531

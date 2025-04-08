@@ -1,0 +1,152 @@
+[
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/49]/adj-1",
+        "portDesc": "topology/pod-1/paths-1001/pathep-[eth1/1]",
+        "sysDesc": "topology/pod-1/node-1001",
+        "sysName": "SP1001"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/51]/adj-1",
+        "portDesc": "topology/pod-1/paths-111/pathep-[eth1/49]",
+        "sysDesc": "topology/pod-1/node-111",
+        "sysName": "T2_LF111"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/52]/adj-1",
+        "portDesc": "topology/pod-1/paths-112/pathep-[eth1/50]",
+        "sysDesc": "topology/pod-1/node-112",
+        "sysName": "T2_LF112"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-102/sys/lldp/inst/if-[eth1/51]/adj-1",
+        "portDesc": "topology/pod-1/paths-111/pathep-[eth1/50]",
+        "sysDesc": "topology/pod-1/node-111",
+        "sysName": "T2_LF111"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-102/sys/lldp/inst/if-[eth1/52]/adj-1",
+        "portDesc": "topology/pod-1/paths-112/pathep-[eth1/50]",
+        "sysDesc": "topology/pod-1/node-112",
+        "sysName": "T2_LF112"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-103/sys/lldp/inst/if-[eth1/49]/adj-1",
+        "portDesc": "topology/pod-1/paths-1001/pathep-[eth1/3]",
+        "sysDesc": "topology/pod-1/node-1001",
+        "sysName": "SP1001"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-103/sys/lldp/inst/if-[eth1/50]/adj-1",
+        "portDesc": "topology/pod-1/paths-1002/pathep-[eth1/3]",
+        "sysDesc": "topology/pod-1/node-1002",
+        "sysName": "SP1002"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-111/sys/lldp/inst/if-[eth1/49]/adj-1",
+        "portDesc": "topology/pod-1/paths-101/pathep-[eth1/51]",
+        "sysDesc": "topology/pod-1/node-101",
+        "sysName": "LF101"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-111/sys/lldp/inst/if-[eth1/50]/adj-1",
+        "portDesc": "topology/pod-1/paths-102/pathep-[eth1/51]",
+        "sysDesc": "topology/pod-1/node-102",
+        "sysName": "LF102"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-112/sys/lldp/inst/if-[eth1/49]/adj-1",
+        "portDesc": "topology/pod-1/paths-101/pathep-[eth1/52]",
+        "sysDesc": "topology/pod-1/node-101",
+        "sysName": "LF101"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-112/sys/lldp/inst/if-[eth1/50]/adj-1",
+        "portDesc": "topology/pod-1/paths-102/pathep-[eth1/52]",
+        "sysDesc": "topology/pod-1/node-102",
+        "sysName": "LF102"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001/sys/lldp/inst/if-[eth1/1]/adj-1",
+        "portDesc": "topology/pod-1/paths-101/pathep-[eth1/49]",
+        "sysDesc": "topology/pod-1/node-101",
+        "sysName": "LF101"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001/sys/lldp/inst/if-[eth1/3]/adj-1",
+        "portDesc": "topology/pod-1/paths-103/pathep-[eth1/49]",
+        "sysDesc": "topology/pod-1/node-103",
+        "sysName": "LF103"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1002/sys/lldp/inst/if-[eth1/3]/adj-1",
+        "portDesc": "topology/pod-1/paths-103/pathep-[eth1/50]",
+        "sysDesc": "topology/pod-1/node-103",
+        "sysName": "LF103"
+      }
+    }
+  },
+  {
+    "lldpAdjEp": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/10]/adj-1",
+        "portDesc": "Ethernet1/33",
+        "sysDesc": "Cisco Nexus Operating System (NX-OS) Software 9.3(5)\nTAC support: http://www.cisco.com/tac\nCopyright (c) 2002-2020, Cisco Systems, Inc. All rights reserved.",
+        "sysName": "scale6_DB"
+      }
+    }
+  }
+]

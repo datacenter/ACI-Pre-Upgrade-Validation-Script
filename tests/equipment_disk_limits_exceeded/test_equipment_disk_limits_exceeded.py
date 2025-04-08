@@ -9,25 +9,22 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-
-# icurl queries
-hpath_api =  'infraRsHPathAtt.json?query-target-filter=wcard(infraRsHPathAtt.dn,"eth")'
-
+f182x_api = 'faultInst.json'
+f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
 
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result",
     [
         (
-            {hpath_api: read_data(dir, "infraRsHPathAtt_pos.json")},
-            script.FAIL_UF,
-        ),
-        (
-            {hpath_api: read_data(dir, "infraRsHPathAtt_neg.json")},
+            {f182x_api: read_data(dir, "faultInst_neg.json")},
             script.PASS,
         ),
-
+        (
+            {f182x_api: read_data(dir, "faultInst_pos.json")},
+            script.FAIL_UF,
+        )
     ],
 )
 def test_logic(mock_icurl, expected_result):
-    result = script.invalid_fex_rs_check(1, 1)
+    result = script.equipment_disk_limits_exceeded(1, 1)
     assert result == expected_result

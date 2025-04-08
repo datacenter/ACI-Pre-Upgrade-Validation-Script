@@ -1,0 +1,33 @@
+[
+  {
+    "commHttps": {
+      "attributes": {
+        "dn": "uni/fabric/comm-default/https",
+        "globalThrottleRate": "10000",
+        "globalThrottleSt": "enabled",
+        "globalThrottleUnit": "r/s"
+      }
+    }
+  },
+  {
+    "commHttps": {
+      "attributes": {
+        "dn": "uni/fabric/comm-mgmt1/https",
+        "globalThrottleRate": "2401",
+        "globalThrottleSt": "enabled",
+        "globalThrottleUnit": "r/m"
+      }
+    }
+  },
+  {
+    "commHttps": {
+      "attributes": {
+        "dn": "uni/fabric/comm-mgmt2/https",
+        "globalThrottleRate": "41",
+        "globalThrottleSt": "enabled",
+        "globalThrottleUnit": "r/s"
+      }
+    }
+  }
+]
+
