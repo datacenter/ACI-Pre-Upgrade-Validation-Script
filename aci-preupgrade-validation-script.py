@@ -4977,7 +4977,7 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     return result
 
 
-def observer_db_size_check(index, total_checks, **kwargs):
+def observer_db_size_check(index, total_checks, username, password, **kwargs):
     title = 'Observer Database Size'
     result = PASS
     msg = ''
@@ -4986,8 +4986,11 @@ def observer_db_size_check(index, total_checks, **kwargs):
     recommended_action = 'Contact TAC to get the workaround in place.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
     print_title(title, index, total_checks)
-    os_command = r"ls -l /data2/dbstats | awk '{ if ($5 > 1000000000) print $5, $9}'"  # must be greater than 1,073,741,824 for 1G
-    controllers = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+
+    topSystem_api = 'topSystem.json'
+    topSystem_api += '?query-target-filter=eq(topSystem.role,"controller")'
+
+    controllers = icurl('class', topSystem_api)
     if not controllers:
         print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
         return ERROR
@@ -5007,18 +5010,17 @@ def observer_db_size_check(index, total_checks, **kwargs):
             print_result(node_title, ERROR)
             continue
         try:
-            c.cmd(os_command)
-            statsdbusage = c.output.split("\n")
-            for line in statsdbusage:
-                if "observer_" in line:
-                    file_regex = r"(?P<size>\d{10,})\s(?P<file>observer_\d{1,3}.db)" 
-                    fs = re.finditer(file_regex, line)
-                    if fs is not None:
-                        for match in fs:
-                            file_s = int(match.group("size"))/1073741824
-                            file_size = round(file_s,2)
-                            file_name= "/data2/dbstats/" + match.group("file")
-                            data.append([attr['id'],file_name, file_size])
+            cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
+            c.cmd(cmd)
+            dbstats = c.output.split("\n")
+            for line in dbstats:
+                #file_regex = r"(?P<size>\d{10,})\s(?P<file>observer_\d{1,3}.db)"
+                observer_gig_regex = r"(?P<size>\d{1,3}\.\dG)\s(?P<file>observer_\d{1,3}.db)"
+                size_match = re.match(observer_gig_regex, line)
+                if size_match:
+                    file_size = size_match.group("size")
+                    file_name= "/data2/dbstats/" + size_match.group("file")
+                    data.append([attr['id'], file_name, file_size])
             print_result(node_title, DONE)            
         except Exception as e:
             data.append([attr['id'], attr['name'], e])
@@ -5026,7 +5028,7 @@ def observer_db_size_check(index, total_checks, **kwargs):
             continue
     if data:
         result = FAIL_UF
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True )
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
     return result
 
 

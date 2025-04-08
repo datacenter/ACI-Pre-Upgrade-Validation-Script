@@ -2473,14 +2473,14 @@ If this alert is flagged then plan for an interim upgrade hop to a fixed version
 
 ### Observer Database Size
 
-Due to [CSCvw45531][53], the Observer DME database files can grow very large over time.
+Due to [CSCvw45531][53], the Observer DME database files can grow very large over time. Exceptionally large DB files can cause the APIC Upgrade process to take an unexpectedly long tiem to complete dataconversion, and in some cases can lead to APIC upgrade failure.
 
 The Observer DME is responsible for keeping certain stats, counters, logs entries and more. Within the APIC, a non-root user can get a read-only view of the Observer DB counts and sizes by viewing the `/data2/dbstats/` directory.
 
 This check logs in to each APIC, checks the contents of the `/data2/dbstats/` directory, and alerts on any DB file which has surpassed 1GB in size.
 
 !!! tip
-    Certain high churn logging configuration has been found to grow this DB exceptionally large while on a non-foxed version. One such configuraiton is contract permit logging.
+    Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
