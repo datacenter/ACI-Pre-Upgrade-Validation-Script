@@ -4336,12 +4336,9 @@ def statsdb_check(index, total_checks, **kwargs):
     if not controllers:
         print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
         return ERROR
-    checked_apics = {}
     prints('')
     for apic in controllers:
         attr = apic['topSystem']['attributes']
-        if attr['address'] in checked_apics: continue
-        checked_apics[attr['address']] = 1
         node_title = 'Checking %s...' % attr['name'] 
         print_title(node_title)
         try:
