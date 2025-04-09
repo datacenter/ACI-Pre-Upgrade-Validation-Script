@@ -1,0 +1,35 @@
+{
+  "totalCount": "3",
+  "imdata": [
+    {
+      "topSystem": {
+        "attributes": {
+          "address": "10.0.0.1",
+          "dn": "topology/pod-1/node-1/sys",
+          "id": "1",
+          "name": "fab5-apic1"
+        }
+      }
+    },
+    {
+      "topSystem": {
+        "attributes": {
+          "address": "10.0.0.2",
+          "dn": "topology/pod-1/node-2/sys",
+          "id": "2",
+          "name": "fab5-apic2"
+        }
+      }
+    },
+    {
+      "topSystem": {
+        "attributes": {
+          "address": "10.0.0.3",
+          "dn": "topology/pod-1/node-3/sys",
+          "id": "3",
+          "name": "fab5-apic3"
+        }
+      }
+    }
+  ]
+}

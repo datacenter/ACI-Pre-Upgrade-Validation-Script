@@ -4977,6 +4977,64 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     return result
 
 
+def observer_db_size_check(index, total_checks, username, password, **kwargs):
+    title = 'Observer Database Size'
+    result = PASS
+    msg = ''
+    headers = ["Node" , "File Location", "Size (GB)"]
+    data = []
+    recommended_action = 'Contact TAC to analyze and truncate large DB files'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
+    print_title(title, index, total_checks)
+
+    topSystem_api = 'topSystem.json'
+    topSystem_api += '?query-target-filter=eq(topSystem.role,"controller")'
+
+    controllers = icurl('class', topSystem_api)
+    if not controllers:
+        print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+        return ERROR
+    prints('')
+    for apic in controllers:
+        attr = apic['topSystem']['attributes']
+        node_title = 'Checking %s...' % attr['name'] 
+        print_title(node_title)
+        try:
+            c = Connection(attr['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([attr['id'], attr['name'], e])
+            print_result(node_title, ERROR)
+            continue
+        try:
+            cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
+            c.cmd(cmd)
+            if "No such file or directory" in c.output:
+                data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
+                print_result(node_title, FAIL_UF)
+                continue
+            dbstats = c.output.split("\n")
+            for line in dbstats:
+                observer_gig_regex = r"(?P<size>\d{1,3}\.\dG)\s(?P<file>observer_\d{1,3}.db)"
+                size_match = re.match(observer_gig_regex, line)
+                if size_match:
+                    file_size = size_match.group("size")
+                    file_name = "/data2/dbstats/" + size_match.group("file")
+                    data.append([attr['id'], file_name, file_size])
+            print_result(node_title, DONE)            
+        except Exception as e:
+            data.append([attr['id'], attr['name'], e])
+            print_result(node_title, ERROR)
+            continue
+    if data:
+        result = FAIL_UF
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -5090,6 +5148,8 @@ if __name__ == "__main__":
         gx2a_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
+        observer_db_size_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):

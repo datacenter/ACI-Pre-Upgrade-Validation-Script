@@ -180,7 +180,7 @@ Items                                           | Defect       | This Script    
 [GX2A Platform Model Check][d22]               | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [PBR High Scale Check][d23]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync Check][d24]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-
+[Observer Database Size][d25]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -206,6 +206,8 @@ Items                                           | Defect       | This Script    
 [d22]: #gx2a-platform-model-check
 [d23]: #pbr-high-scale-check
 [d24]: #standby-sup-image-sync-check
+[d25]: #observer-database-size
+
 
 ## General Check Details
 
@@ -2469,6 +2471,18 @@ Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis wi
 If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
 
 
+### Observer Database Size
+
+Due to [CSCvw45531][53], the Observer DME database files can grow very large over time. Exceptionally large DB files can cause the APIC Upgrade process to take an unexpectedly long tiem to complete dataconversion, and in some cases can lead to APIC upgrade failure.
+
+The Observer DME is responsible for keeping certain stats, counters, logs entries and more. Within the APIC, a non-root user can get a read-only view of the Observer DB counts and sizes by viewing the `/data2/dbstats/` directory.
+
+This check logs in to each APIC, checks the contents of the `/data2/dbstats/` directory, and alerts on any DB file which has surpassed 1GB in size.
+
+!!! tip
+    Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2522,3 +2536,4 @@ If this alert is flagged then plan for an interim upgrade hop to a fixed version
 [50]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease602
 [51]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-739971.html
 [52]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-aci-plug-in-snat-on-egress.html
+[53]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw45531
