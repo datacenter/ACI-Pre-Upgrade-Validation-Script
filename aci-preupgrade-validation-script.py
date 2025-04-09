@@ -4983,7 +4983,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     msg = ''
     headers = ["Node" , "File Location", "Size (GB)"]
     data = []
-    recommended_action = 'Contact TAC to get the workaround in place.'
+    recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
     print_title(title, index, total_checks)
 
@@ -5013,17 +5013,16 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
             c.cmd(cmd)
             if "No such file or directory" in c.output:
-                data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions and retry as 'admin'"])
+                data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
                 print_result(node_title, FAIL_UF)
                 continue
             dbstats = c.output.split("\n")
             for line in dbstats:
-                #file_regex = r"(?P<size>\d{10,})\s(?P<file>observer_\d{1,3}.db)"
                 observer_gig_regex = r"(?P<size>\d{1,3}\.\dG)\s(?P<file>observer_\d{1,3}.db)"
                 size_match = re.match(observer_gig_regex, line)
                 if size_match:
                     file_size = size_match.group("size")
-                    file_name= "/data2/dbstats/" + size_match.group("file")
+                    file_name = "/data2/dbstats/" + size_match.group("file")
                     data.append([attr['id'], file_name, file_size])
             print_result(node_title, DONE)            
         except Exception as e:
