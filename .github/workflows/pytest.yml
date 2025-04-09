@@ -13,13 +13,13 @@ permissions:
 jobs:
   test-py38:
     runs-on: ubuntu-latest
+    container: python:3.8.10-slim
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.8.10
       - name: Install dependencies
         run: |
           pip install --upgrade pip
