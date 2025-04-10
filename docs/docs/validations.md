@@ -35,6 +35,7 @@ Items                                                        | This Script      
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Large APIC Database Check][g18]                             | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -53,6 +54,7 @@ Items                                                        | This Script      
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #leaf-to-spine-redundancy-validation
+[g18]: #large-apic-database-check
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -453,6 +455,14 @@ For additional information, see the [Guidelines and Limitations for Upgrading or
 When upgrading the Switches, traffic traversing any Leaf Switch that is connected to only a single spine will exhibit a Data Path Outage during the spine upgrade as there will be no alternate dataplane paths available.
 
 To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches. This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch.
+
+### Large APIC Database Check
+
+When upgrading APICs, the large APIC Database file can lead APIC upgrade failure due to database conversion takes too long time.
+
+To prevent this scenario, The script lists the APIC and DME when any class's MO amount is above 1000*1000 for current version earlier than 6.1(3f). If the current version is 6.1(3f) or above, the script raise an alert if the top 
+
+large DB files has exceeded 1G.  The check result is upgrade failure, TAC need be contacted for further investigation of trigger and mitigate this issue before upgrade.
 
 
 ## Fault Check Details

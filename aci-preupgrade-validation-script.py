@@ -4695,6 +4695,69 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def large_apic_database_check(index, total_checks, tversion, **kwargs):
+    title = 'Large APIC Database Check'
+    result = PASS
+    msg = ''
+    headers = ["APIC Id", "DME", "Class", "Counters"]
+    
+    data = []
+    recommended_action = 'Contact Cisco TAC to investigate the large than usual DB size'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database-check'
+    print_title(title, index, total_checks)
+    
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    dme_svc_list = ['vmmmgr','policymgr','eventmgr','policydist']
+    apic_svr_dict = {}
+    apic_node_mo = icurl('class', 'infraWiNode.json')
+    for apic in apic_node_mo:
+        if apic['infraWiNode']['attributes']['operSt'] == 'available':
+            apic_id = apic['infraWiNode']['attributes']['id']
+            apic_name = apic['infraWiNode']['attributes']['nodeName']
+            if apic_id not in apic_svr_dict:
+                apic_svr_dict[apic_id] = apic_name
+    
+    if cversion.older_than("6.1(3a)"):
+        for dme in dme_svc_list:
+            for id in apic_svr_dict:
+                if len(apic_svr_dict)==3 and id!=2:
+                    continue
+                apic_hostname = apic_svr_dict[id]
+                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
+                collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                top_class_stats = collect_shard_stats.communicate()[0].strip().decode("utf-8")
+                for svc_stats in top_class_stats.splitlines():
+                    logging.debug(str(svc_stats))
+                    if ":" in svc_stats:
+                        class_name = svc_stats.split(":")[0].strip()
+                        mo_count = svc_stats.split(":")[1].strip()
+                        if int(mo_count)> 1000*1000:
+                            data.append([id,dme,class_name,mo_count])
+    else:
+        headers = ["APIC Id", "DME", "Shard ", "Size"]
+        for id in apic_svr_dict:
+            if len(apic_svr_dict)==3 and int(id)!=2:
+                continue
+            collect_stats_cmd = "acidiag dbsize --topshard --apic "+ id + " -f json"
+            logging.debug(collect_stats_cmd)
+            collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+            top_db_stats = json.loads(collect_shard_stats.communicate()[0].strip())
+            for db_stats in top_db_stats['dbs']:
+                logging.debug(db_stats)
+                if int(db_stats['size_b'])>=1073741824:   #10737418(10M for test) #1073741824(1G for production)
+                    apic_id = db_stats['apic']
+                    dme = db_stats['dme']
+                    shard = db_stats['shard_replica']
+                    size = db_stats['size_h']
+                    data.append([id,dme,shard,size])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -4736,6 +4799,7 @@ if __name__ == "__main__":
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         leaf_to_spine_redundancy_check,
+        large_apic_database_check,
 
         # Faults
         apic_disk_space_faults_check,
