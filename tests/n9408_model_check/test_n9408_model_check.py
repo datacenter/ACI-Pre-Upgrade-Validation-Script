@@ -39,5 +39,5 @@ eqptCh_api += '?query-target-filter=eq(eqptCh.model,"N9K-C9400-SW-GX2A")'
     ],
 )
 def test_logic(mock_icurl, tversion, expected_result):
-    result = script.gx2a_model_check(1, 1, script.AciVersion(tversion))
+    result = script.n9408_model_check(1, 1, script.AciVersion(tversion))
     assert result == expected_result
