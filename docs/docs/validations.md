@@ -34,7 +34,7 @@ Items                                                        | This Script      
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -52,7 +52,7 @@ Items                                                        | This Script      
 [g14]: #mini-aci-upgrade-to-602-or-later
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
-[g17]: #leaf-to-spine-redundancy-validation
+[g17]: #fabric-link-redundancy
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -120,11 +120,11 @@ Items                                         | Faults         | This Script    
 [Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[BD and EPG Subnet must have matching scopes][c15]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[CloudSec Encryption Check][c17]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Out-of-Service Ports check][c18]                     | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
-[TEP-to-TEP atomic counters Scalability Check][c19]   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
+[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
@@ -143,11 +143,11 @@ Items                                         | Faults         | This Script    
 [c12]: #fabric-uplink-scale-cannot-exceed-56-uplinks-per-leaf
 [c13]: #oob-mgmt-security
 [c14]: #eecdh-ssl-cipher
-[c15]: #bd-and-epg-subnet-must-have-matching-scopes
+[c15]: #bd-and-epg-subnet-scope-consistency
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
-[c17]: #cloudsec-encryption-check
-[c18]: #out-of-service-ports-check
-[c19]: #tep-to-tep-atomic-counters-scalability-check
+[c17]: #cloudsec-encryption-deprecated
+[c18]: #out-of-service-ports
+[c19]: #tep-to-tep-atomic-counters-scalability
 [c20]: #https-request-throttle-rate
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
@@ -158,29 +158,29 @@ Items                                           | Defect       | This Script    
 ------------------------------------------------|--------------|--------------------|---------------------------|---------------------------
 [EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Contract Port 22 Defect][d3]             | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[telemetryStatsServerP Object Check][d4]        | CSCvt47850   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Link Level Flow Control Check][d5]             | CSCvo27498   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Internal VLAN Pool Check][d6]                  | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
+[Contract Port 22 Defect][d3]                   | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
+[telemetryStatsServerP Object][d4]              | CSCvt47850   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
+[Link Level Flow Control][d5]                   | CSCvo27498   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
+[Internal VLAN Pool][d6]                        | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
 [APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FabricDomain Name][d8]                   | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FabricDomain Name][d8]                         | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Invalid fabricPathEp Targets][d14]   | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Invalid fabricPathEp Targets][d14]             | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FC/FCOE support for EX switches][d19]         | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[FC/FCOE support for EX switches][d19]          | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Stale Decommissioned Spine Check][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[GX2A Platform Model Check][d22]               | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[PBR High Scale Check][d23]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Standby Sup Image Sync Check][d24]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Observer Database Size][d25]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Stale Decommissioned Spine][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C9408 Platform Model][d22]                 | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -202,10 +202,10 @@ Items                                           | Defect       | This Script    
 [d18]: #vzany-to-vzany-service-graph-when-crossing-50-release
 [d19]: #fcfcoe-support-for-ex-switches
 [d20]: #nexus-950x-fm-or-lc-might-fail-to-boot-after-reload
-[d21]: #stale-decommissioned-spine-check
-[d22]: #gx2a-platform-model-check
-[d23]: #pbr-high-scale-check
-[d24]: #standby-sup-image-sync-check
+[d21]: #stale-decommissioned-spine
+[d22]: #n9k-c9408-platform-model
+[d23]: #pbr-high-scale
+[d24]: #standby-sup-image-sync
 [d25]: #observer-database-size
 
 
@@ -457,7 +457,7 @@ When targeting any version that is 6.0(2) or greater, download both the 32-bit a
 For additional information, see the [Guidelines and Limitations for Upgrading or Downgrading][28] section of the Cisco APIC Installation and ACI Upgrade and Downgrade Guide.
 
 
-### Leaf to Spine Redundancy Validation
+### Fabric Link Redundancy
 
 When upgrading the switches, traffic traversing a Leaf Switch that is connected to only a single spine (or a tier-2 Leaf Switch that is connected to only a single tier-1 Leaf Switch) will exhibit a Data Path Outage during the spine (or tier-1 leaf) upgrade as there will be no alternate dataplane paths available.
 
@@ -1985,7 +1985,7 @@ When disabled, the nginx.conf configuration file may fail to validate and NGINX 
     ```
 
 
-### BD and EPG Subnet must have matching scopes
+### BD and EPG Subnet Scope Consistency
 
 Bridge Domains and EPGs can both have subnets defined. Depending on the features in use, there are 3 scope options that can be applied on these BD and EPG subnets to enable specific functionality:
 
@@ -2032,7 +2032,7 @@ It is important to remove any unsupported configuration prior to ugprade to avoi
     ```
 
 
-### CloudSec Encryption Check
+### CloudSec Encryption Deprecated
 
 Starting in Cisco ACI 6.0(6) the CloudSec Encryption feature is deprecated. This is documented within the [Cisco Application Policy Infrastructure Controller Release Notes, Release 6.0(6)][33]
 
@@ -2042,7 +2042,7 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 2. The only way to truly validate whether or not CloudSec Encryption is in use on your ACI fabric is to validate if CloudSec Encryption is enabled from within the [Nexus Dashboard Orchstrator Configuration][35]
 
 
-### Out-of-Service Ports Check
+### Out-of-Service Ports
 
 Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
 
@@ -2051,7 +2051,7 @@ While generally not recommended, there are policy bypass methods to bring up por
 A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
 
 
-### TEP-to-TEP atomic counters Scalability Check
+### TEP-to-TEP atomic counters Scalability
 
 As documented in the [Verified Scalability Guide for Cisco APIC][38], ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policy `dbgAcPath`.
 Exceeding any scalability number documented in this guide can cause unexpected issues. In this specific scenario, exceeding the atomic counter limit has been seen to create issues with collecting techsupports and configuration exports.
@@ -2167,11 +2167,11 @@ Due to the defect CSCvz65560, a contract using TCP port 22 is either disabled or
 The script checks whether the your upgrade is susceptible to the defect from the version point of view.
 
 
-### `telemetryStatsServerP` Object
+### telemetryStatsServerP Object
 
 Beginning with the Cisco APIC 5.2(3) release, the `telemetryStatsServerP` managed object with `collectorLocation` of type `apic` is no longer supported and removed post Cisco APIC upgrade.
 
-Due to the defect CSCvt47850, if the switches are still on an older version than the 4.2(4) release the managed object is deleted before the switches are upgraded and this may cause the switches to become inactive or crash.
+Due to the defect [CSCvt47850][54], if the switches are still on an older version than the 4.2(4) release the managed object is deleted before the switches are upgraded and this may cause the switches to become inactive or crash.
 
 To avoid this issue, change the `collectorLocation` type to `none` through the API to prevent the object from being automatically deleted post upgrade.
 
@@ -2236,7 +2236,7 @@ The script checks if the target version is 6.0(2) and if the fabric name contain
 
 Field Notice [FN74050][43] outlines 2 issue scenarios that can be hit for a subset of Spine Sup-A+ and SUP-B+ Part Numbers.
 
-There is a VRM Issue outlined by [CSCwd65255][44] which can occur for affected SUP parts after performing an EPLD upgrade, forcing the user to perofrm an additional power cyclel beforeo they will boot up. If 'VRM Concern' is flagged, review the FN details which includes a link to a script which can be run by TAC to proactively address this specific issue.
+There is a VRM Issue outlined by [CSCwd65255][44] which can occur for affected SUP parts after performing an EPLD upgrade, forcing the user to perform an additional power cycle before they will boot up. If 'VRM Concern' is flagged, review the FN details which includes a link to a script which can be run by TAC to proactively address this specific issue.
 
 There is also an FPGA Downgrade Issue which is due to a combination of [CSCwb86706][29] and [CSCwf44222][30]. This specific scenario is more severe in that ACI modular spine switches will not be able to boot after an upgrade if hit and a replacement is required. However, the FPGA Downgrade Issue can be avoided entirely by targeting a fixed version of [CSCwf44222][30].
 
@@ -2447,24 +2447,24 @@ Line Card
 If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
 
 
-### Stale Decommissioned Spine Check
+### Stale Decommissioned Spine
 
 Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDecommissionNode` objects pointing to Spine Node IDs, regardless of pod location defined in the `fabricRsDecommissionNode` object, will result in those Spine Nodes being removed from Leaf Node COOP Adjacency lists. This results in Leaf Nodes no longer publishing endpoint updates to affected Spine Nodes, resulting in packet drops for any spine proxy traffic hashed to an affected Spine Node.
 
-### GX2A Platform Model Check
+### N9K-C9408 Platform Model
 
-[CSCwk77800][45] fixed a behavior where `N9K-C9400-SW-GX2A` are expected to report their chassis as `N9K-C9408`.
+[CSCwk77800][45] fixed a behavior where `N9K-C9408` are reporting their chassis as the SUP PID `N9K-C9400-SW-GX2A`.
 
-When an identified node is upgraded to a fixed 6.1(3)+ version, the old model's entry will show up as inactive and must be decomissioned and the new model's entry must be registered. The result is that the node will not completely join the fabric post-upgrade until these additional steps are performed on each identified GX2A node.
+When an identified switch node is upgraded to a fixed 6.1(3)+ version, the `N9K-C9400-SW-GX2A` fabric membership entry will show up as inactive and must be decomissioned and the new `N9K-C9408` fabric membership entry must be registered. The result is that the node IDs in question will not completely join the fabric post-upgrade until these additional steps are performed on each identified `N9K-C9408` node.
 
-### PBR High Scale Check
+### PBR High Scale
 
 Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
 
 This check will count the number of relevant PBR policies across the entire ACI fabric from an APIC perspective (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons`) and alert if targeting an affected version with relevant PBR config objects greater than 100k. If alerted, the recommended action is to target a version that has the fix for [CSCwi66348][46].
 
 
-### Standby Sup Image Sync Check
+### Standby Sup Image Sync
 
 Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
 
@@ -2537,3 +2537,4 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [51]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-739971.html
 [52]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-aci-plug-in-snat-on-egress.html
 [53]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw45531
+[54]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850

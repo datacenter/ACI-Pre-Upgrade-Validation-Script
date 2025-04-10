@@ -43,7 +43,7 @@ commHttps = "commHttps.json"
             {commHttps: read_data(dir, "commHttps_neg1.json")},
             "4.2(7f)",
             "5.2(8g)",
-            script.NA,
+            script.PASS,
         ),
         # Throttle rates are lower than the threshold
         (
@@ -65,6 +65,13 @@ commHttps = "commHttps.json"
             "4.2(7f)",
             "6.1(2g)",
             script.FAIL_UF,
+        ),
+        # Throttle rates are higher than the threshold but throttling is enabled.
+        (
+            {commHttps: read_data(dir, "commHttps_pos.json")},
+            "4.2(7f)",
+            "6.0(2a)",
+            script.MANUAL,
         ),
     ],
 )

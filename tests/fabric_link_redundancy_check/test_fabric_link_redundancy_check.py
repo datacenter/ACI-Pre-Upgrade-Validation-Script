@@ -57,5 +57,5 @@ lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
     ],
 )
 def test_logic(mock_icurl , expected_result):
-    result = script.leaf_to_spine_redundancy_check(1, 1)
+    result = script.fabric_link_redundancy_check(1, 1)
     assert result == expected_result
