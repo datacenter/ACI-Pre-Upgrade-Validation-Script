@@ -4706,10 +4706,6 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database-check'
     print_title(title, index, total_checks)
     
-    if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
-        return MANUAL
-
     dme_svc_list = ['vmmmgr','policymgr','eventmgr','policydist']
     apic_svr_dict = {}
     apic_node_mo = icurl('class', 'infraWiNode.json')
