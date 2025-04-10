@@ -4817,7 +4817,7 @@ def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs)
     if data:
         if tversion.older_than("6.1(2a)"):
             result = MANUAL
-            recommended_action = "As a Best Practice; Reduce the throttle rate to 40 (req/sec), 2400 (req/min) or lower."
+            recommended_action = "6.1(2)+ will reject this config. " + recommended_action
         else:
             result = FAIL_UF
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
