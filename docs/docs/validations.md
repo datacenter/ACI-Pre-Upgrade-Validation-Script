@@ -462,7 +462,7 @@ When upgrading APICs, the large APIC Database file can lead APIC upgrade failure
 
 To prevent this scenario, The script lists the APIC and DME when any class's MO amount is above 1000*1000 for current version earlier than 6.1(3f). If the current version is 6.1(3f) or above, the script raise an alert if the top 
 
-large DB files has exceeded 1G.  The check result is upgrade failure, TAC need be contacted for further investigation of trigger and mitigate this issue before upgrade.
+large DB files has exceeded 3G.  The check result is upgrade failure, TAC need be contacted for further investigation of trigger and mitigate this issue before upgrade.
 
 
 ## Fault Check Details

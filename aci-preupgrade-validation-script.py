@@ -4743,7 +4743,7 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
             top_db_stats = json.loads(collect_shard_stats.communicate()[0].strip())
             for db_stats in top_db_stats['dbs']:
                 logging.debug(db_stats)
-                if int(db_stats['size_b'])>=1073741824:   #10737418(10M for test) #1073741824(1G for production)
+                if int(db_stats['size_b'])>=1073741824 * 3:   #10737418(10M for test) #1073741824(1G for production)
                     apic_id = db_stats['apic']
                     dme = db_stats['dme']
                     shard = db_stats['shard_replica']
