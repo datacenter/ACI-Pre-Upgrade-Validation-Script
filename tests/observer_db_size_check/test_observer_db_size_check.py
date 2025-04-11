@@ -30,7 +30,7 @@ apic1#
 ls_output_pos = """\
 
 1.0G observer_8.db
-12.2G observer_9.db
+12G observer_9.db
 999M observer_10.db
 11M observer_template.db
 apic1#

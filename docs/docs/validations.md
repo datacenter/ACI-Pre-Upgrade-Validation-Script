@@ -2063,13 +2063,10 @@ The script validates the count of `dbgAcPath` is less than the documented suppor
 
 ACI supports **HTTPS Request Throttle** via NGINX rate limit to prevent external API clients from consuming too much resources on APICs. This feature, which is disabled by default, is located at `Fabric > Fabric Policies > Pod > Management Access > default (or name you configured)` in the APIC GUI.
 
-Starting from ACI version 6.1(2), the supported maximum rate for this feature was reduced to 40 requests per second (r/s) or 2400 requests per minute (r/m) from 10,000 r/m. Configuration with a value larger than these gets rejected starting from 6.1(2).
+Starting from ACI version 6.1(2), the supported maximum rate for this feature was reduced to 40 requests per second (r/s) or 2400 requests per minute (r/m) from 10,000 r/m. Configuration with a value larger than these gets rejected starting from 6.1(2). If an invalid value is configured when an upgrade to 6.1(2)+ is triggered, the upgrade will explicitly fail. If targeting a version  below 6.1(2)+ but above the defined thresholds, this check will still wanr you to the upcoming limitations to allow you to prepare for an eventual upgrade to 6.1(2)+.
 This change is to ensure that users using this feature configure a meaningful rate. If the rate is larger than the new maximum, APIC may not be able to keep up with incoming requests despite the throttling in place, and the APIC GUI can get sluggish or unresponsive which defeats the purpose of the feature.
 
-This script checks the configuration in all Management Access Policies to alert users when the following conditions are met because APIC upgrade will fail in such a case.
-
-* The upgrade is from a version older than 6.1(2a) to a version newer than 6.1(2a). (ex. 5.2(8g) to 6.1(2h))
-* HTTPS Request Throttling is enabled and its rate is larger than 40 r/s or 2400 r/m
+This script checks the configuration in all Management Access Policies to alert users when HTTPS Request Throttling is enabled and its rate is larger than 40 r/s or 2400 r/m.
 
 !!! tip
     Regardless of the APIC version, the best practice is to enable **HTTPS Request Throttle** with 30 requests per second. See [ACI Best Practices Quick Summary][47] for reference and details about the feature.
@@ -2105,8 +2102,10 @@ See below for the workaround and examples of traffic that will stop working afte
 
 !!! note "Workaround"
     If your target version is 6.0(4) or later, there is an option to disable the forceful routing so that the service BD behaves in the same way as prior to 6.0(2). This option was introduced via CSCwh71581 and available only via API.
+    
+    After you upgrade to 6.0(4) or later, change `serviceBdRoutingDisable` to `yes` as shown below to disable the forceful routing on your service BD if needed. If, after upgrading to 6.0(4)+, you exhibit broken bridging traffic in any identified BD, you MUST change this parameter to have your BD perform in the same manner as before the upgrade.
 
-    After you upgrade to 6.0(4) or later, change `serviceBdRoutingDisable` to `yes` as shown below to disable the forceful routing on your service BD if needed.
+    If you are targeting 6.0(2) or 6.0(3) and suspect you will be affected by this due to having bridged traffic like the examples shown below, it is strongly recommended to INSTEAD target 6.0(4)+ to have the knob required to revert the BD behavior.
 
     ```json
     {
@@ -2473,7 +2472,7 @@ If this alert is flagged then plan for an interim upgrade hop to a fixed version
 
 ### Observer Database Size
 
-Due to [CSCvw45531][53], the Observer DME database files can grow very large over time. Exceptionally large DB files can cause the APIC Upgrade process to take an unexpectedly long tiem to complete dataconversion, and in some cases can lead to APIC upgrade failure.
+Due to [CSCvw45531][53], the Observer DME database files can grow very large over time. Exceptionally large DB files can cause the APIC Upgrade process to take an unexpectedly long time to complete dataconversion, and in some cases can lead to APIC upgrade failure.
 
 The Observer DME is responsible for keeping certain stats, counters, logs entries and more. Within the APIC, a non-root user can get a read-only view of the Observer DB counts and sizes by viewing the `/data2/dbstats/` directory.
 

@@ -437,7 +437,7 @@ class AciVersion():
         self.simple_version = ("{major1}.{major2}({maint})"
                                .format(**v.groupdict()) if v else None)
         self.major_version = ("{major1}.{major2}"
-                               .format(**v.groupdict()) if v else None)
+                              .format(**v.groupdict()) if v else None)
         self.major1 = v.group('major1') if v else None
         self.major2 = v.group('major2') if v else None
         self.maint = v.group('maint') if v else None
@@ -1487,11 +1487,11 @@ def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
     data = []
     print_title(title, index, total_checks)
 
-    partitions_api =  'eqptcapacityFSPartition.json'
+    partitions_api = 'eqptcapacityFSPartition.json'
     partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
 
-    download_sts_api =  'maintUpgJob.json'
-    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")' 
+    download_sts_api = 'maintUpgJob.json'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")'
     download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion)
 
     partitions = icurl('class', partitions_api)
@@ -1727,12 +1727,13 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
 
     for vrf_dn in conflicts:
         for prefix in conflicts[vrf_dn]:
-            data.append([
-                vrf_dn,
-                prefix,
-                ",".join(sorted(conflicts[vrf_dn][prefix]["extepgs"])),
-                ",".join(sorted(conflicts[vrf_dn][prefix]["faulted_extepgs"])),
-            ])
+            for faulted_epg in sorted(conflicts[vrf_dn][prefix]["faulted_extepgs"]):
+                data.append([
+                    vrf_dn,
+                    prefix,
+                    ",".join(sorted(conflicts[vrf_dn][prefix]["extepgs"])),
+                    faulted_epg,
+                ])
 
     if not data and not unformatted_data:
         result = PASS
@@ -3106,9 +3107,9 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#eventmgr-db-size-defect-susceptibility'
     print_title(title, index, total_checks)
 
-    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')): 
+    if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')):
         data.append(['CSCvn20175', 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvn20175'])
-    if cversion.older_than('4.2(4i)') or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):  
+    if cversion.older_than('4.2(4i)') or (cversion.major1 == '5' and cversion.older_than('5.0(1k)')):
         data.append(['CSCvt07565', 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt07565'])
 
     if data:
@@ -3481,14 +3482,14 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     if cversion.older_than("5.2(8f)"):
         vrm_concern = True
         recommended_action += "\n\tFor VRM Concern: Consider vrm_update script within FN74050"
-    
+
     if (
-            cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)") 
+            cversion.newer_than("5.2(1a)") and cversion.older_than("6.0(1a)")
             and tversion.older_than("5.2(8f)") or (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))
        ):
         fpga_concern = True
         recommended_action += "\n\tFor FPGA Concern: Consider a target version with fix for CSCwb86706"
-    
+
     if vrm_concern or fpga_concern:
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
@@ -3618,7 +3619,7 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Mini ACI Upgrade to 6.0(2)+'
     result = FAIL_UF
     msg = ''
-    headers = ["Pod ID","Node ID", "APIC Type", "Failure Reason"]
+    headers = ["Pod ID", "Node ID", "APIC Type", "Failure Reason"]
     data = []
     recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+."
     doc_url = 'Upgrading Mini ACI - http://cs.co/9009bBTQB'
@@ -3683,17 +3684,17 @@ def access_untagged_check(index, total_checks, **kwargs):
     title = 'Access (Untagged) Port Config (F0467 native-or-untagged-encap-failure)'
     result = FAIL_O
     msg = ''
-    headers = ["Fault", "POD ID","Node ID","Port","Tenant", "Application Profile", "Application EPG", "Recommended Action"]
+    headers = ["Fault", "POD ID", "Node ID", "Port", "Tenant", "Application Profile", "Application EPG", "Recommended Action"]
     unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
     unformatted_data = []
     data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port in Access(untagged) or native mode.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
     print_title(title, index, total_checks)
-    
-    faultInsts = icurl('class','faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
-    fault_dn_regex=r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
-    
+
+    faultInsts = icurl('class', 'faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
+    fault_dn_regex = r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
+
     if faultInsts:
         fc = faultInsts[0]['faultInst']['attributes']['code']
         for faultInst in faultInsts:
@@ -3705,9 +3706,9 @@ def access_untagged_check(index, total_checks, **kwargs):
                 tenant = m.group('tenant')
                 app_profile = m.group('app_profile')
                 epg_name = m.group('epg_name')
-                data.append([fc,podid, nodeid, port, tenant, app_profile, epg_name, recommended_action])
+                data.append([fc, podid, nodeid, port, tenant, app_profile, epg_name, recommended_action])
             else:
-                unformatted_data.append(fc,faultInst['faultInst']['attributes']['descr'],recommended_action)
+                unformatted_data.append(fc, faultInst['faultInst']['attributes']['descr'], recommended_action)
 
     if not data and not unformatted_data:
         result = PASS
@@ -3753,7 +3754,7 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         },
         "infraRsToInterfacePolProfileOpt": {
             "CreatedBy": "infraRsToInterfacePolProfile",
-            "SinceVersion": ["5.2(8d)","6.0(3d)"],
+            "SinceVersion": ["5.2(8d)", "6.0(3d)"],
             "Impact": "VLAN for missing Mo will not be deployed to leaf",
         },
         "compatSwitchHw": {
@@ -3767,13 +3768,13 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         return POST
 
     for new_mo in new_mo_dict:
-        skip_current_mo=False
+        skip_current_mo = False
         if cversion.older_than(new_mo_dict[new_mo]['SinceVersion'][0]):
             continue
         for version in new_mo_dict[new_mo]['SinceVersion']:
-            if version[0]==str(cversion)[0]:
+            if version[0] == str(cversion)[0]:
                 if AciVersion(version).newer_than(str(cversion)):
-                    skip_current_mo=True
+                    skip_current_mo = True
         if skip_current_mo:
             continue
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
@@ -3809,7 +3810,7 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#eecdh-ssl-cipher'
 
     print_title(title, index, total_checks)
-    
+
     if cversion.newer_than("4.2(1a)"):
         commCipher = icurl('class', 'commCipher.json')
         for cipher in commCipher:
@@ -3833,9 +3834,9 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#vmm-uplink-container-with-empty-actives'
     print_title(title, index, total_checks)
 
-    uplink_api =  'fvUplinkOrderCont.json' 
+    uplink_api = 'fvUplinkOrderCont.json'
     uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
-    vmm_epg_regex=r"uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)/rsdomAtt-\[uni/vmmp-.+/dom-(?P<dom>.+)\]"
+    vmm_epg_regex = r"uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>[^/]+)/rsdomAtt-\[uni/vmmp-.+/dom-(?P<dom>.+)\]"
 
     try:
         affected_uplinks = icurl('class', uplink_api)
@@ -4095,58 +4096,55 @@ def fabricPathEp_target_check(index, total_checks, **kwargs):
     infraRsHPathAtt = icurl('class', hpath_api)
     fabricRsOosPath = icurl('class', oosPorts_api)
 
-    if infraRsHPathAtt or fabricRsOosPath:
-        all_objects = infraRsHPathAtt + fabricRsOosPath
-        for obj in all_objects:
-            dn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('dn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('dn', '')
-            tDn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('tDn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('tDn', '')
-            #dn = obj["infraRsHPathAtt"]["attributes"]["dn"]
-            #tDn = obj["infraRsHPathAtt"]["attributes"]["tDn"]
+    all_objects = infraRsHPathAtt + fabricRsOosPath
+    for obj in all_objects:
+        dn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('dn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('dn', '')
+        tDn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('tDn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('tDn', '')
 
-            # CHECK ensure tDn looks like a valid fabricPathEp
-            fabricPathep_match = re.search(fabricPathEp_regex, tDn)
-            if fabricPathep_match:
-                groups = fabricPathep_match.groupdict()
-                fex_a = groups.get("fexA")
-                fex_b = groups.get("fexB")
-                path = groups.get("path")
+        # CHECK ensure tDn looks like a valid fabricPathEp
+        fabricPathep_match = re.search(fabricPathEp_regex, tDn)
+        if fabricPathep_match:
+            groups = fabricPathep_match.groupdict()
+            fex_a = groups.get("fexA")
+            fex_b = groups.get("fexB")
+            path = groups.get("path")
 
-                # CHECK FEX ID(s) of extpath(s) is 101 or greater
-                if fex_a:
-                    if int(fex_a) < 101:
-                        data.append([dn, "FEX ID A {} is invalid (101+ expected)".format(fex_a)])
-                if fex_b:
-                    if int(fex_b) < 101:
-                        data.append([dn, "FEX ID B {} is invalid (101+ expected)".format(fex_b)])
+            # CHECK FEX ID(s) of extpath(s) is 101 or greater
+            if fex_a:
+                if int(fex_a) < 101:
+                    data.append([dn, "FEX ID A {} is invalid (101+ expected)".format(fex_a)])
+            if fex_b:
+                if int(fex_b) < 101:
+                    data.append([dn, "FEX ID B {} is invalid (101+ expected)".format(fex_b)])
 
-                # There should always be path... so will assume we always have it
-                if 'eth' in path.lower():
-                    # CHECK path has proper ethx/y or ethx/y/z formatting
-                    eth_match = re.search(eth_regex, path)
-                    if eth_match:
-                        groups = eth_match.groupdict()
-                        first = groups.get("first")
-                        second = groups.get("second")
-                        third = groups.get("third")
+            # There should always be path... so will assume we always have it
+            if 'eth' in path.lower():
+                # CHECK path has proper ethx/y or ethx/y/z formatting
+                eth_match = re.search(eth_regex, path)
+                if eth_match:
+                    groups = eth_match.groupdict()
+                    first = groups.get("first")
+                    second = groups.get("second")
+                    third = groups.get("third")
 
-                        # CHECK eth looks like FEX (FIRST is 101 or greater)
-                        if first:
-                            if int(first) > 100:
-                                data.append([dn, "eth module {} like FEX ID".format(first)])
-                        # CHECK eth is non-zero
-                        if second:
-                            if int(second) == 0:
-                                data.append([dn, "eth port cannot be 0"])
-                        # CHECK eth is non-0 or not greater than 16 for breakout
-                        if third:
-                            if int(third) == 0:
-                                data.append([dn, "eth port cannot be 0 for breakout ports"])
-                            elif int(third) > 16:
-                                data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
-                    else:
-                        data.append([dn, "PathEp 'eth' syntax is invalid"])
-            else:
-                data.append([dn, "target is not a valid fabricPathEp DN"])
+                    # CHECK eth looks like FEX (FIRST is 101 or greater)
+                    if first:
+                        if int(first) > 100:
+                            data.append([dn, "eth module {} like FEX ID".format(first)])
+                    # CHECK eth is non-zero
+                    if second:
+                        if int(second) == 0:
+                            data.append([dn, "eth port cannot be 0"])
+                    # CHECK eth is non-0 or not greater than 16 for breakout
+                    if third:
+                        if int(third) == 0:
+                            data.append([dn, "eth port cannot be 0 for breakout ports"])
+                        elif int(third) > 16:
+                            data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
+                else:
+                    data.append([dn, "PathEp 'eth' syntax is invalid"])
+        else:
+            data.append([dn, "target is not a valid fabricPathEp DN"])
 
     if data:
         result = FAIL_UF
@@ -4834,7 +4832,6 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-sup-image-sync'
     print_title(title, index, total_checks)
 
-    #node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
     sup_regex = node_regex + r'/sys/ch/supslot-(?P<slot>\d)'
     eqptSupC_api = 'eqptSupC.json'
     eqptSupC_api += '?query-target-filter=eq(eqptSupC.rdSt,"standby")'
@@ -4896,7 +4893,7 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
         else:
             unformatted_data.append([attributes['dn'], percent, attributes['descr']])
     
-    if  data or unformatted_data:
+    if data or unformatted_data:
         result = FAIL_UF
 
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
@@ -5019,7 +5016,6 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             print_result(node_title, ERROR)
             continue
         try:
-            # TODO: fix regex for double digits
             cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
             c.cmd(cmd)
             if "No such file or directory" in c.output:
@@ -5028,7 +5024,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
                 continue
             dbstats = c.output.split("\n")
             for line in dbstats:
-                observer_gig_regex = r"(?P<size>\d{1,3}\.\dG)\s(?P<file>observer_\d{1,3}.db)"
+                observer_gig_regex = r"(?P<size>\d{1,3}(?:\.\d)?G)\s(?P<file>observer_\d{1,3}.db)"
                 size_match = re.match(observer_gig_regex, line)
                 if size_match:
                     file_size = size_match.group("size")
