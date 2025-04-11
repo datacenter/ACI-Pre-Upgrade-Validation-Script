@@ -4791,10 +4791,9 @@ def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs)
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
 
-
     commHttpses = icurl("class", "commHttps.json")
     for commHttps in commHttpses:
-        if commHttps["commHttps"]["attributes"]["globalThrottleSt"] == "disabled":
+        if commHttps["commHttps"]["attributes"].get("globalThrottleSt", "disabled") == "disabled":
             continue
         if ((
             commHttps["commHttps"]["attributes"]["globalThrottleUnit"] == "r/s" and
