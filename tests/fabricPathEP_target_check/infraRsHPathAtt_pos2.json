@@ -1,0 +1,29 @@
+[
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-105/extpaths-198/pathep-[Eth1/7]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-105/extpaths-198/pathep-[Eth1/7]"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-105/extpaths-198/pathep-[eth1//7]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-105/extpaths-198/pathep-[eth1//7]"
+            }
+        }
+    },
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-105/extpaths-198/pathep-[eth1/7]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-105/extpaths-198/pathep-[eth1/7]"
+            }
+        }
+    }
+]

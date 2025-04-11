@@ -121,7 +121,7 @@ class Connection(object):
         self.protocol = "ssh"
         self.port = None
         self.timeout = 30
-        self.prompt = "#\s.*$" #"[^#]#[ ]*(.*)*[ ]*$"
+        self.prompt = r"#\s.*$"
         self.verify = False
         self.searchwindowsize = 256
         self.force_wait = 0
@@ -1636,46 +1636,107 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     title = 'L3Out Subnets (F0467 prefix-entry-already-in-use)'
     result = FAIL_O
     msg = ''
-    headers = ["Fault", "Failed L3Out EPG", "VRF VNID", "VRF Name", "Prefix already in use", 'Recommended Action']
+    headers = ["VRF Name", "Prefix", "L3Out EPGs without F0467", "L3Out EPGs with F0467"]
+    headers_old = ["Fault", "Failed L3Out EPG"]
     data = []
-    unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault Description', 'Fault DN']
     unformatted_data = []
-    recommended_action = 'Resolve the conflict by removing the faulted configuration for the overlapping prefix'
+    recommended_action = 'Resolve the conflict by removing the overlapping prefix from the faulted L3Out EPG.'
     print_title(title, index, total_checks)
 
+    # Old versions (pre-CSCvq93592) do not show VRF VNID and prefix in use (2nd line)
     desc_regex = r'Configuration failed for (?P<failedEpg>.+) due to Prefix Entry Already Used in Another EPG'
     desc_regex += r'(.+Prefix entry sys/ctx-\[vxlan-(?P<vrfvnid>\d+)\]/pfx-\[(?P<prefixInUse>.+)\] is in use)?'
 
     filter = '?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
-    faultInsts = icurl('class', 'faultInst.json' + filter)
-    if faultInsts:
-        vrf_dict = {}
-        fv_ctx_response_json = icurl('class', 'fvCtx.json')
+    faultInsts = icurl("class", "faultInst.json" + filter)
+    if not faultInsts:
+        print_result(title, PASS)
+        return PASS
 
-        for fvCtx in fv_ctx_response_json:
-            vrf_name = fvCtx['fvCtx']['attributes']['name']
-            vnid = fvCtx['fvCtx']['attributes']['scope']
-            vrf_dict[vnid] = vrf_name
+    vnid2vrf = {}
+    fvCtxs = icurl("class", "fvCtx.json")
+    for fvCtx in fvCtxs:
+        vrf_vnid = fvCtx["fvCtx"]["attributes"]["scope"]
+        vrf_dn = fvCtx["fvCtx"]["attributes"]["dn"]
+        vnid2vrf[vrf_vnid] = vrf_dn
 
-        for faultInst in faultInsts:
-            fc = faultInst['faultInst']['attributes']['code']
-            desc_array = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-            if desc_array:
-                if desc_array.group("prefixInUse") is not None:
-                    vrf_vnid = desc_array.group("vrfvnid")
-                    vrf_name = vrf_dict.get(vrf_vnid, '??')
-                    prefix = desc_array.group("prefixInUse")
-                else:
-                    vrf_vnid = "--"
-                    vrf_name = "--"
-                    prefix = "Not described in the fault (version too old)"
-                data.append([fc, desc_array.group("failedEpg"), vrf_vnid, vrf_name, prefix, recommended_action])
-            else:
-                unformatted_data.append(
-                    [fc, faultInst['faultInst']['attributes']['descr'], recommended_action])
+    conflicts = defaultdict(dict)  # vrf -> prefix -> extepgs, faulted_extepgs
+    for faultInst in faultInsts:
+        code = faultInst["faultInst"]["attributes"]["code"]
+        desc = re.search(desc_regex, faultInst["faultInst"]["attributes"]["descr"])
+        if not desc:
+            unformatted_data.append([
+                code,
+                faultInst["faultInst"]["attributes"]["descr"],
+                faultInst["faultInst"]["attributes"]["dn"],
+            ])
+            continue
+
+        extepg_dn = desc.group("failedEpg")
+        vrf_vnid = desc.group("vrfvnid") if desc.group("vrfvnid") else "_"
+        vrf_dn = vnid2vrf.get(vrf_vnid, "_")
+        prefix = desc.group("prefixInUse") if desc.group("prefixInUse") else "_"
+
+        # When the L3Out is deployed on multiple switches, the same fault
+        # is raised more than once. Skip dup.
+        # Old ver: `vrf_dn`, `prefix` are always "_" -> keep one extepg, all in (_, _)
+        # New ver: `vrf_dn`, `prefix` are real values -> keep one extepg per (vrf, prefix)
+        if prefix not in conflicts[vrf_dn]:
+            # Should be only one extepg without a fault per prefix.
+            # But use `set()` just in case.
+            conflicts[vrf_dn][prefix] = {"extepgs": set(), "faulted_extepgs": set()}
+        conflicts[vrf_dn][prefix]["faulted_extepgs"].add(extepg_dn)
+
+    # Old ver: print only the L3Out EPGs with faults
+    if conflicts.get("_", {}).get("_", {}).get("faulted_extepgs"):
+        data = [["F0467", epg] for epg in conflicts["_"]["_"]["faulted_extepgs"]]
+        if not data and not unformatted_data:
+            result = PASS
+        print_result(title, result, msg, headers_old, data, unformatted_headers, unformatted_data, recommended_action)
+        return result
+
+    # Proceed further only for new versions with VRF/prefix data in faults
+    # Get L3Out DNs in the VRFs mentioned by the faults
+    l3out2vrf = {}
+    l3extRsEctxes = icurl("class", "l3extRsEctx.json")
+    for l3extRsEctx in l3extRsEctxes:
+        vrf_dn = l3extRsEctx["l3extRsEctx"]["attributes"]["tDn"]
+        if vrf_dn in conflicts:
+            # l3extRsEctx.dn is always L3Out DN + "/rsectx"
+            l3out_dn = l3extRsEctx["l3extRsEctx"]["attributes"]["dn"].split("/rsectx")[0]
+            l3out2vrf[l3out_dn] = vrf_dn
+
+    # Get conflicting l3extSubnets
+    l3extSubnets = icurl("class", "l3extSubnet.json")
+    for l3extSubnet in l3extSubnets:
+        l3extSubnet_attr = l3extSubnet["l3extSubnet"]["attributes"]
+        l3out_dn = l3extSubnet_attr["dn"].split("/instP-")[0]
+        vrf_dn = l3out2vrf.get(l3out_dn)
+        if not vrf_dn:
+            continue
+        # F0467 is only for import-security
+        if "import-security" not in l3extSubnet_attr["scope"]:
+            continue
+        prefix = l3extSubnet_attr["ip"]
+        if prefix not in conflicts[vrf_dn]:
+            continue
+        extepg_dn = l3extSubnet_attr["dn"].split("/extsubnet-")[0]
+        if extepg_dn not in conflicts[vrf_dn][prefix]["faulted_extepgs"]:
+            conflicts[vrf_dn][prefix]["extepgs"].add(extepg_dn)
+
+    for vrf_dn in conflicts:
+        for prefix in conflicts[vrf_dn]:
+            data.append([
+                vrf_dn,
+                prefix,
+                ",".join(sorted(conflicts[vrf_dn][prefix]["extepgs"])),
+                ",".join(sorted(conflicts[vrf_dn][prefix]["faulted_extepgs"])),
+            ])
+
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action)
     return result
 
 
@@ -2539,7 +2600,6 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     if not tversion:
         print_result(title, MANUAL, 'Target version not supplied. Skipping.')
         return MANUAL
-    prints('')
 
     image_validaton = True
     mo = icurl('mo', 'fwrepo/fw-aci-apic-dk9.%s.json' % tversion.dot_version)
@@ -2552,57 +2612,72 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                              'Target image is corrupted', 'Delete and Upload Again'])
                 image_validaton = False
 
+    if not image_validaton:
+        print_result(title, result, msg, headers, data)
+        return result
+
     md5s = []
     md5_names = []
 
-    if image_validaton:
-        nodes_response_json = icurl('class', 'topSystem.json')
-        for node in nodes_response_json:
-            if node['topSystem']['attributes']['role'] != "controller":
-                continue
-            apic_name = node['topSystem']['attributes']['name']
-            node_title = 'Checking %s...' % apic_name
-            print_title(node_title)
-            try:
-                c = Connection(node['topSystem']['attributes']['address'])
-                c.username = username
-                c.password = password
-                c.log = LOG_FILE
-                c.connect()
-            except Exception as e:
-                data.append([apic_name, '-', '-', e, '-'])
-                print_result(node_title, ERROR)
-                continue
+    prints('')
+    nodes_response_json = icurl('class', 'topSystem.json')
+    for node in nodes_response_json:
+        if node['topSystem']['attributes']['role'] != "controller":
+            continue
+        apic_name = node['topSystem']['attributes']['name']
+        node_title = 'Checking %s...' % apic_name
+        print_title(node_title)
+        try:
+            c = Connection(node['topSystem']['attributes']['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([apic_name, '-', '-', e, '-'])
+            print_result(node_title, ERROR)
+            continue
 
-            try:
-                c.cmd("ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.%s.bin" %
-                      tversion.dot_version)
-            except Exception as e:
-                data.append([apic_name, '-', '-',
-                             'ls command via ssh failed due to:{}'.format(e), '-'])
-                print_result(node_title, ERROR)
-                continue
-            if "No such file or directory" in c.output:
-                data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
-                print_result(node_title, FAIL_UF)
-                continue
+        try:
+            c.cmd("ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.%s.bin" %
+                  tversion.dot_version)
+        except Exception as e:
+            data.append([apic_name, '-', '-',
+                         'ls command via ssh failed due to:{}'.format(e), '-'])
+            print_result(node_title, ERROR)
+            continue
+        if "No such file or directory" in c.output:
+            data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
+            print_result(node_title, FAIL_UF)
+            continue
 
-            try:
-                c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/aci-apic-dk9.%s.bin" %
-                      tversion.dot_version)
-            except Exception as e:
-                data.append([apic_name, str(tversion), '-',
-                             'failed to check md5sum via ssh due to:{}'.format(e), '-'])
-                print_result(node_title, ERROR)
-                continue
-            for line in c.output.split("\n"):
-                if "md5sum" not in line and "fwrepo" in line:
-                    md5_regex = r'([^\s]+)'
-                    md5 = re.search(md5_regex, line)
-                    if md5 is not None:
-                        md5s.append(md5.group(0))
-                        md5_names.append(c.hostname)
-            print_result(node_title, DONE)
+        try:
+            c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/aci-apic-dk9.%s.bin" %
+                  tversion.dot_version)
+        except Exception as e:
+            data.append([apic_name, str(tversion), '-',
+                         'failed to check md5sum via ssh due to:{}'.format(e), '-'])
+            print_result(node_title, ERROR)
+            continue
+        if "No such file or directory" in c.output:
+            data.append([apic_name, str(tversion), '-', 'md5sum file not found', recommended_action])
+            print_result(node_title, FAIL_UF)
+            continue
+        for line in c.output.split("\n"):
+            words = line.split()
+            if (
+                    len(words) == 2 and
+                    words[1].startswith("/var/run/mgmt/fwrepos/fwrepo/aci-apic")
+            ):
+                md5s.append(words[0])
+                md5_names.append(apic_name)
+                break
+        else:
+            data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file', recommended_action])
+            print_result(node_title, ERROR)
+            continue
+
+        print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])
@@ -4002,27 +4077,75 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def invalid_fex_rs_check(index, total_checks, **kwargs):
-    title = 'Invalid FEX Relation Source'
+def fabricPathEp_target_check(index, total_checks, **kwargs):
+    title = 'Invalid fabricPathEp Targets'
     result = PASS
     msg = ''
-    headers = ["FEX ID", "Invalid DN"]
+    headers = ["Invalid DN", "Reason"]
     data = []
-    recommended_action = 'Identify if FEX ID in use, then contact TAC for cleanup'
+    recommended_action = 'Contact TAC for cleanup procedure'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-fabricpathep-dn-references'
     print_title(title, index, total_checks)
+    fabricPathEp_regex = r"topology/pod-\d+/(?:\w+)?paths-\d+(?:-\d+)?(?:/ext(?:\w+)?paths-(?P<fexA>\d+)(?:-(?P<fexB>\d+))?)?/pathep-\[(?P<path>.+)\]"
+    eth_regex = r'eth(?P<first>\d+)/(?P<second>\d+)(?:/(?P<third>\d+))?'
 
-
-    hpath_api =  'infraRsHPathAtt.json?query-target-filter=wcard(infraRsHPathAtt.dn,"eth")'
+    hpath_api =  'infraRsHPathAtt.json'
+    oosPorts_api =  'fabricRsOosPath.json'
     infraRsHPathAtt = icurl('class', hpath_api)
+    fabricRsOosPath = icurl('class', oosPorts_api)
 
-    for rs in infraRsHPathAtt:
-        dn = rs["infraRsHPathAtt"]["attributes"]["dn"]
-        m = re.search(r'eth(?P<fex>\d{3})\/\d\/\d', dn)
-        if m:
-            fex_id = m.group('fex')
-            if int(fex_id) >= 101:
-                data.append([fex_id, dn])
+    if infraRsHPathAtt or fabricRsOosPath:
+        all_objects = infraRsHPathAtt + fabricRsOosPath
+        for obj in all_objects:
+            dn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('dn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('dn', '')
+            tDn = obj.get('infraRsHPathAtt', {}).get('attributes', {}).get('tDn', '') or obj.get('fabricRsOosPath', {}).get('attributes', {}).get('tDn', '')
+            #dn = obj["infraRsHPathAtt"]["attributes"]["dn"]
+            #tDn = obj["infraRsHPathAtt"]["attributes"]["tDn"]
+
+            # CHECK ensure tDn looks like a valid fabricPathEp
+            fabricPathep_match = re.search(fabricPathEp_regex, tDn)
+            if fabricPathep_match:
+                groups = fabricPathep_match.groupdict()
+                fex_a = groups.get("fexA")
+                fex_b = groups.get("fexB")
+                path = groups.get("path")
+
+                # CHECK FEX ID(s) of extpath(s) is 101 or greater
+                if fex_a:
+                    if int(fex_a) < 101:
+                        data.append([dn, "FEX ID A {} is invalid (101+ expected)".format(fex_a)])
+                if fex_b:
+                    if int(fex_b) < 101:
+                        data.append([dn, "FEX ID B {} is invalid (101+ expected)".format(fex_b)])
+
+                # There should always be path... so will assume we always have it
+                if 'eth' in path.lower():
+                    # CHECK path has proper ethx/y or ethx/y/z formatting
+                    eth_match = re.search(eth_regex, path)
+                    if eth_match:
+                        groups = eth_match.groupdict()
+                        first = groups.get("first")
+                        second = groups.get("second")
+                        third = groups.get("third")
+
+                        # CHECK eth looks like FEX (FIRST is 101 or greater)
+                        if first:
+                            if int(first) > 100:
+                                data.append([dn, "eth module {} like FEX ID".format(first)])
+                        # CHECK eth is non-zero
+                        if second:
+                            if int(second) == 0:
+                                data.append([dn, "eth port cannot be 0"])
+                        # CHECK eth is non-0 or not greater than 16 for breakout
+                        if third:
+                            if int(third) == 0:
+                                data.append([dn, "eth port cannot be 0 for breakout ports"])
+                            elif int(third) > 16:
+                                data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
+                    else:
+                        data.append([dn, "PathEp 'eth' syntax is invalid"])
+            else:
+                data.append([dn, "target is not a valid fabricPathEp DN"])
 
     if data:
         result = FAIL_UF
@@ -4286,11 +4409,12 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
     title = 'Leaf to Spine Redundancy check'
     result = PASS
     msg = ''
-    headers = ["Leaf Switch Name", "Spine Adjacencies", "Message" ]
+    headers = ["Leaf Name", "Fabric Link Adjacencies", "Problem"]
     data = []
-    problem = 'The Leaf Switch has one or less spine adjacencies'
-    recommended_action = 'Connect the Leaf Switch(es) to multiple Spines for Redundancy'
-    doc_url = ''
+    recommended_action = ""
+    sp_recommended_action = "Connect the leaf switch(es) to multiple spine switches for redundancy"
+    t1_recommended_action = "Connect the tier 2 leaf switch(es) to multiple tier1 leaf switches for redundancy"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#leaf-to-spine-redundancy-validation"
     print_title(title, index, total_checks)
 
     fabric_nodes_api = 'fabricNode.json'
@@ -4299,29 +4423,63 @@ def leaf_to_spine_redundancy_check(index, total_checks, **kwargs):
     lldp_adj_api = 'lldpAdjEp.json'
     lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
-    fabricNodes= icurl('class', fabric_nodes_api)
-    all_spine_dns = [node['fabricNode']['attributes']['dn'] for node in fabricNodes if node['fabricNode']['attributes']['role'] == 'spine']
-
-    lldp_adj = icurl('class', lldp_adj_api)
+    fabricNodes = icurl("class", fabric_nodes_api)
+    spines = {}
+    leafs = {}
+    t2leafs = {}
     for node in fabricNodes:
-        neighbors = set()
-        if node['fabricNode']['attributes']['role'] == 'leaf':
-            leaf_dn = node['fabricNode']['attributes']['dn']
-            leaf_name = node['fabricNode']['attributes']['name']
-            for lldp_neighbor in lldp_adj:
-                spine_name = lldp_neighbor['lldpAdjEp']['attributes']['sysName']
-                lldp_dn = lldp_neighbor['lldpAdjEp']['attributes']['dn']
-                neighbor_dn = lldp_neighbor['lldpAdjEp']['attributes']['sysDesc'].replace("\\", "")
-                if leaf_dn in lldp_dn and neighbor_dn in all_spine_dns:
-                        neighbors.add(spine_name)
-                if len(neighbors) > 1:
-                    break
+        dn = node["fabricNode"]["attributes"]["dn"]
+        name = node["fabricNode"]["attributes"]["name"]
+        if node["fabricNode"]["attributes"]["role"] == "spine":
+            spines[dn] = name
+        elif node["fabricNode"]["attributes"]["role"] == "leaf":
+            leafs[dn] = name
+            if node["fabricNode"]["attributes"]["nodeType"] == "tier-2-leaf":
+                t2leafs[dn] = name
 
-            if len(neighbors) <= 1:
-                data.append([leaf_name, "".join(neighbors), problem])
+    t1_missing = sp_missing = False
+    lldp_adjs = icurl("class", lldp_adj_api)
+    for leaf_dn, leaf_name in iteritems(leafs):
+        is_tier2 = True if leaf_dn in t2leafs else False
+        neighbors = set()
+        for lldp_adj in lldp_adjs:
+            lldp_dn = lldp_adj["lldpAdjEp"]["attributes"]["dn"]
+            if not lldp_dn.startswith(leaf_dn + "/"):
+                continue
+            adj_name = lldp_adj["lldpAdjEp"]["attributes"]["sysName"]
+            adj_dn = lldp_adj["lldpAdjEp"]["attributes"]["sysDesc"].replace("\\", "")
+            # t1leaf look for spines
+            if not is_tier2 and adj_dn in spines:
+                neighbors.add(adj_name)
+            # t2leaf look for t1leafs
+            elif is_tier2 and adj_dn in leafs and adj_dn not in t2leafs:
+                neighbors.add(adj_name)
+            if len(neighbors) > 1:
+                break
+
+        if len(neighbors) > 1:
+            continue
+
+        if is_tier2:
+            adj_type = "tier 1 leaf"
+            t1_missing = True
+        else:
+            adj_type = "spine"
+            sp_missing = True
+        if len(neighbors) == 1:
+            data.append([leaf_name, "".join(neighbors), "Only one {} adjacency".format(adj_type)])
+        elif not neighbors:
+            data.append([leaf_name, "", "No {} adjacency".format(adj_type)])
+
     if data:
         result = FAIL_O
-    
+    if sp_missing and t1_missing:
+        recommended_action = "\n\t" + sp_recommended_action + "\n\t" + t1_recommended_action
+    elif sp_missing and not t1_missing:
+        recommended_action = sp_recommended_action
+    elif not sp_missing and t1_missing:
+        recommended_action = t1_recommended_action
+
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
@@ -4719,7 +4877,7 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
     if cversion.older_than("6.1(3a)"):
         for dme in dme_svc_list:
             for id in apic_svr_dict:
-                if len(apic_svr_dict)==3 and id!=2:
+                if len(apic_svr_dict)==3 and int(id)!=2:
                     continue
                 apic_hostname = apic_svr_dict[id]
                 collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
@@ -4753,6 +4911,190 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
         result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
+
+
+def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
+    title = 'Equipment Disk Limits Exceeded'
+    result = PASS
+    msg = ''
+    headers = ['Pod', 'Node', 'Code', '%', 'Description',]
+    data = []
+    unformatted_headers = ['Fault DN', '%', 'Recommended Action']
+    unformatted_data = []
+    recommended_action = 'Review the reference document for commands to validate disk usage'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
+
+    print_title(title, index, total_checks)
+
+    usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
+    f182x_api = 'faultInst.json'
+    f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
+    faults = icurl('class', f182x_api)
+
+    for faultInst in faults:
+        percent = "NA"
+        attributes = faultInst['faultInst']['attributes']
+
+        usage_match = re.search(usage_regex, attributes['changeSet'])
+        if usage_match:
+            avail = int(usage_match.group('avail'))
+            used = int(usage_match.group('used'))
+            percent = round((used / (avail + used)) * 100)
+
+        dn_match = re.search(node_regex, attributes['dn'])
+        if dn_match:
+            data.append([dn_match.group('pod'), dn_match.group('node'), attributes['code'], percent, attributes['descr']])
+        else:
+            unformatted_data.append([attributes['dn'], percent, attributes['descr']])
+    
+    if  data or unformatted_data:
+        result = FAIL_UF
+
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
+    return result
+
+
+def aes_encryption_check(index, total_checks, tversion, **kwargs):
+    title = "Global AES Encryption"
+    result = FAIL_UF
+    msg = ""
+    headers = ["Target Version", "Global AES Encryption", "Impact"]
+    data = []
+    recommended_action = (
+        "\n\tEnable Global AES Encryption before upgrading your APIC (and take a configuration backup)."
+        "\n\tGlobal AES Encryption ensures that all configurations are included in the backup securely."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#global-aes-encryption"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.newer_than("6.1(2a)"):
+        impact = "Upgrade Failure"
+        result = FAIL_UF
+        recommended_action += "\n\tUpgrade to 6.1(2) or later will fail when it is not enabled."
+    else:
+        impact = "Your config backup may not contain all data"
+        result = MANUAL
+
+    cryptkeys = icurl("mo", "uni/exportcryptkey.json")
+    if not cryptkeys:
+        data = [[tversion, "Object Not Found", impact]]
+    elif cryptkeys[0]["pkiExportEncryptionKey"]["attributes"]["strongEncryptionEnabled"] != "yes":
+        data = [[tversion, "Disabled", impact]]
+    else:
+        result = PASS
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
+def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, **kwargs):
+    title = "Service Graph BD Forceful Routing"
+    result = PASS
+    msg = ""
+    headers = ["Bridge Domain (Tenant:BD)", "Service Graph Device (Tenant:Device)"]
+    data = []
+    unformatted_headers = ["DN of fvRtEPpInfoToBD"]
+    unformatted_data = []
+    recommended_action = (
+        "\n\tConfirm that within these BDs there is no bridging traffic with the destination IP that doesn't belong to them."
+        "\n\tPlease check the reference document for details."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-graph-bd-forceful-routing"
+
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if not (cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)")):
+        print_result(title, NA)
+        return NA
+
+    dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)/"
+    dn_regex += r"rtvnsEPpInfoToBD-\[uni/tn-(?P<sg_tn>[^/])+/LDevInst-\[uni/tn-(?P<ldev_tn>[^/]+)/lDevVip-(?P<ldev>[^\]]+)\].*\]"
+
+    fvRtEPpInfoToBDs = icurl("class", "fvRtEPpInfoToBD.json")
+    for fvRtEPpInfoToBD in fvRtEPpInfoToBDs:
+        m = re.search(dn_regex, fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
+        if not m:
+            logging.error("Failed to match %s", fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
+            unformatted_data.append([fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"]])
+            continue
+        data.append([
+            "{}:{}".format(m.group("bd_tn"), m.group("bd")),
+            "{}:{}".format(m.group("ldev_tn"), m.group("ldev")),
+        ])
+
+    if data or unformatted_data:
+        result = MANUAL
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
+    return result
+
+
+def observer_db_size_check(index, total_checks, username, password, **kwargs):
+    title = 'Observer Database Size'
+    result = PASS
+    msg = ''
+    headers = ["Node" , "File Location", "Size (GB)"]
+    data = []
+    recommended_action = 'Contact TAC to analyze and truncate large DB files'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
+    print_title(title, index, total_checks)
+
+    topSystem_api = 'topSystem.json'
+    topSystem_api += '?query-target-filter=eq(topSystem.role,"controller")'
+
+    controllers = icurl('class', topSystem_api)
+    if not controllers:
+        print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+        return ERROR
+    prints('')
+    for apic in controllers:
+        attr = apic['topSystem']['attributes']
+        node_title = 'Checking %s...' % attr['name'] 
+        print_title(node_title)
+        try:
+            c = Connection(attr['address'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([attr['id'], attr['name'], e])
+            print_result(node_title, ERROR)
+            continue
+        try:
+            cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
+            c.cmd(cmd)
+            if "No such file or directory" in c.output:
+                data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
+                print_result(node_title, FAIL_UF)
+                continue
+            dbstats = c.output.split("\n")
+            for line in dbstats:
+                observer_gig_regex = r"(?P<size>\d{1,3}\.\dG)\s(?P<file>observer_\d{1,3}.db)"
+                size_match = re.match(observer_gig_regex, line)
+                if size_match:
+                    file_size = size_match.group("size")
+                    file_name = "/data2/dbstats/" + size_match.group("file")
+                    data.append([attr['id'], file_name, file_size])
+            print_result(node_title, DONE)            
+        except Exception as e:
+            data.append([attr['id'], attr['name'], e])
+            print_result(node_title, ERROR)
+            continue
+    if data:
+        result = FAIL_UF
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
+    return result
+
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -4817,6 +5159,7 @@ if __name__ == "__main__":
         hw_program_fail_check,
         scalability_faults_check,
         fabric_port_down_check,
+        equipment_disk_limits_exceeded,
 
         # Configurations
         vpc_paired_switches_check,
@@ -4839,6 +5182,8 @@ if __name__ == "__main__":
         out_of_service_ports_check,
         validate_tep_to_tep_ac_counter_check,
         https_throttle_rate_check,
+        aes_encryption_check,
+        service_bd_forceful_routing_check,
 
         # Bugs
         ep_announce_check,
@@ -4854,7 +5199,7 @@ if __name__ == "__main__":
         vmm_active_uplinks_check,
         fabric_dpp_check,
         n9k_c93108tc_fx3p_interface_down_check,
-        invalid_fex_rs_check,
+        fabricPathEp_target_check,
         lldp_custom_int_description_defect_check,
         rtmap_comm_match_defect_check,
         static_route_overlap_check,
@@ -4865,6 +5210,8 @@ if __name__ == "__main__":
         gx2a_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
+        observer_db_size_check,
+
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):

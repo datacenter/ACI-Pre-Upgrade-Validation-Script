@@ -1,0 +1,50 @@
+[
+  {
+    "l3extRsEctx": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-BGP/rsectx",
+        "tDn": "uni/tn-TK/ctx-VRFA"
+      }
+    }
+  },
+  {
+    "l3extRsEctx": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-OSPF/rsectx",
+        "tDn": "uni/tn-TK/ctx-VRFA"
+      }
+    }
+  },
+  {
+    "l3extRsEctx": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-EIGRP/rsectx",
+        "tDn": "uni/tn-TK/ctx-VRFA"
+      }
+    }
+  },
+  {
+    "l3extRsEctx": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-BGP2/rsectx",
+        "tDn": "uni/tn-TK/ctx-VRFB"
+      }
+    }
+  },
+  {
+    "l3extRsEctx": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-OSPF2/rsectx",
+        "tDn": "uni/tn-TK/ctx-VRFB"
+      }
+    }
+  },
+  {
+    "l3extRsEctx": {
+      "attributes": {
+        "dn": "uni/tn-TK/out-EIGRP2/rsectx",
+        "tDn": "uni/tn-TK/ctx-VRFB"
+      }
+    }
+  }
+]

@@ -1,0 +1,43 @@
+[
+    {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/paths-102/extpaths-102/pathep-[eth1/4]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-102/extpaths-102/pathep-[eth1/4]"
+            }
+        }
+    }, {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-1_eth1_0/rsHPathAtt-[topology/pod-1/paths-102/extpaths-100/pathep-[eth1/4]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-102/extpaths-100/pathep-[eth1/4]]"
+            }
+        }
+    }, {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/protpaths-181-182/extprotpaths-101-102/pathep-[173-FEX-VPC]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/protpaths-181-182/extprotpaths-101-102/pathep-[173-FEX-VPC]"
+            }
+        }
+    }, {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/protpaths-181-182/extprotpaths-100-102/pathep-[173-FEX-VPC]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/protpaths-181-182/extprotpaths-100-102/pathep-[173-FEX-VPC]"
+            }
+        }
+    }, {
+        "infraRsHPathAtt": {
+            "attributes": {
+                "dn": "uni/infra/hpaths-105_eth198_1_7/rsHPathAtt-[topology/pod-1/protpaths-181-182/extprotpaths-101-100/pathep-[173-FEX-VPC]]",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/protpaths-181-182/extprotpaths-101-100/pathep-[173-FEX-VPC]"
+            }
+        }
+    }
+]
