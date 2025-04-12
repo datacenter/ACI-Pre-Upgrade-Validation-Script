@@ -20,6 +20,12 @@ cloudsecPreSharedKey = 'cloudsecPreSharedKey.json'
     [
         (
             ## TARGET VERSION IS OLDER THAN 6.0(6), Single KEY PRESENT, VALIDATION RESULT : N/A
+            {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_err.json")},
+            "4.2(1a)",
+            script.NA,
+        ),
+        (
+            ## TARGET VERSION IS OLDER THAN 6.0(6), Single KEY PRESENT, VALIDATION RESULT : N/A
             {cloudsecPreSharedKey: read_data(dir, "cloudsecPreSharedKey_pos.json")},
             "5.2(6a)",
             script.NA,
