@@ -48,7 +48,7 @@ apic1#
             {topSystem_api: read_data(dir, "topSystem.json")},
             True,
             [],
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # Simulatated exception at `ls` command
         (
@@ -64,7 +64,7 @@ apic1#
                 ]
                 for apic_ip in apic_ips
             },
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # dbstats dir not found/not accessible
         (
@@ -80,7 +80,7 @@ apic1#
                 ]
                 for apic_ip in apic_ips
             },
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # dbstats dir found, all DBs under 1G
         (
