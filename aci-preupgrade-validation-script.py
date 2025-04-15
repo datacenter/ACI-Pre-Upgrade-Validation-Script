@@ -2596,7 +2596,6 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
 
 
 def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
-    # TODO: 'unexpected output when checking md5sum file' may be cuasing stdout print issue
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
     msg = ''
