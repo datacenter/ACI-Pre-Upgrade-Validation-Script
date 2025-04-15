@@ -360,7 +360,7 @@ class Connection(object):
             time.sleep(self.force_wait)
 
         result = self.__expect(matches, timeout)
-        self.output = "%s%s" % (self.child.before, self.child.after)
+        self.output = "%s%s" % (self.child.before.decode("utf-8"), self.child.after.decode("utf-8"))
         if result == "eof" or result == "timeout":
             logging.warning("unexpected %s occurred" % result)
         return result
