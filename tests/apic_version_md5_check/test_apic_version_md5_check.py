@@ -73,7 +73,7 @@ f2-apic1#
             True,
             [],
             "6.0(5h)",
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # Exception failure at the ls command
         (
@@ -93,7 +93,7 @@ f2-apic1#
                 for apic_ip in apic_ips
             },
             "6.0(5h)",
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # No such file output from the ls command
         (
@@ -138,7 +138,7 @@ f2-apic1#
                 for apic_ip in apic_ips
             },
             "6.0(5h)",
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # No such file output from the cat command
         (
@@ -188,7 +188,7 @@ f2-apic1#
                 for apic_ip in apic_ips
             },
             "6.0(5h)",
-            script.FAIL_UF,
+            script.ERROR,
         ),
         # Failure because md5sum on each APIC do not match
         (

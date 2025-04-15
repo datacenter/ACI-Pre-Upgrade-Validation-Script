@@ -1958,6 +1958,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
     recommended_action = "Contact TAC for replacement"
     print_title(title, index, total_checks)
 
+    has_error = False
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
     adjust_title = False
@@ -1988,6 +1989,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                 except Exception as e:
                     data.append([attr['id'], attr['name'], '-', '-', '-', e])
                     print_result(node_title, ERROR)
+                    has_error = True
                     continue
                 try:
                     c.cmd(
@@ -1995,6 +1997,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                 except Exception as e:
                     data.append([attr['id'], attr['name'], '-', '-', '-', e])
                     print_result(node_title, ERROR)
+                    has_error = True
                     continue
 
                 wearout_ind = re.search(r'SSD Wearout Indicator is (?P<wearout>[0-9]+)', c.output)
@@ -2023,7 +2026,9 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
             else:
                 unformatted_data.append(
                     ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
-    if not data and not unformatted_data:
+    if has_error:
+        result = ERROR
+    elif not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title)
     return result
@@ -2621,6 +2626,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     md5s = []
     md5_names = []
 
+    has_error = False
     prints('')
     nodes_response_json = icurl('class', 'topSystem.json')
     for node in nodes_response_json:
@@ -2638,6 +2644,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         except Exception as e:
             data.append([apic_name, '-', '-', e, '-'])
             print_result(node_title, ERROR)
+            has_error = True
             continue
 
         try:
@@ -2647,6 +2654,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             data.append([apic_name, '-', '-',
                          'ls command via ssh failed due to:{}'.format(e), '-'])
             print_result(node_title, ERROR)
+            has_error = True
             continue
         if "No such file or directory" in c.output:
             data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
@@ -2660,6 +2668,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             data.append([apic_name, str(tversion), '-',
                          'failed to check md5sum via ssh due to:{}'.format(e), '-'])
             print_result(node_title, ERROR)
+            has_error = True
             continue
         if "No such file or directory" in c.output:
             data.append([apic_name, str(tversion), '-', 'md5sum file not found', recommended_action])
@@ -2677,13 +2686,16 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         else:
             data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file', recommended_action])
             print_result(node_title, ERROR)
+            has_error = True
             continue
 
         print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])
-    if not data:
+    if has_error:
+        result = ERROR
+    elif not data:
         result = PASS
     print_result(title, result, msg, headers, data, adjust_title=True)
     return result
@@ -2699,6 +2711,7 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     threshold = 75  # usage (%)
     print_title(title, index, total_checks)
 
+    has_error = False
     checked_stby = []
     infraSnNodes = icurl('class', 'infraSnNode.json?query-target-filter=eq(infraSnNode.cntrlSbstState,"approved")')
     for stby_apic in infraSnNodes:
@@ -2713,12 +2726,14 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
             c.connect()
         except Exception as e:
             data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            has_error = True
             continue
 
         try:
             c.cmd("df -h")
         except Exception as e:
             data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            has_error = True
             continue
 
         for line in c.output.split("\n"):
@@ -2733,6 +2748,8 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     if not infraSnNodes:
         result = NA
         msg = 'No standby APIC found'
+    elif has_error:
+        result = ERROR
     elif not data:
         result = PASS
         msg = 'all below {}%'.format(threshold)
@@ -4999,6 +5016,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     if not controllers:
         print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
         return ERROR
+    has_error = False
     prints('')
     for apic in controllers:
         attr = apic['topSystem']['attributes']
@@ -5013,13 +5031,15 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
         except Exception as e:
             data.append([attr['id'], attr['name'], e])
             print_result(node_title, ERROR)
+            has_error = True
             continue
         try:
             cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
             c.cmd(cmd)
             if "No such file or directory" in c.output:
                 data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
-                print_result(node_title, FAIL_UF)
+                print_result(node_title, ERROR)
+                has_error = True
                 continue
             dbstats = c.output.split("\n")
             for line in dbstats:
@@ -5033,8 +5053,11 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
         except Exception as e:
             data.append([attr['id'], attr['name'], e])
             print_result(node_title, ERROR)
+            has_error = True
             continue
-    if data:
+    if has_error:
+        result = ERROR
+    elif data:
         result = FAIL_UF
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
     return result
