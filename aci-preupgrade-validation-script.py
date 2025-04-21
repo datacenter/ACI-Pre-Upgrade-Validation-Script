@@ -3282,7 +3282,7 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     print_title(title, index, total_checks)
 
     if not sw_cversion or not tversion:
-        print_result(title, MANUAL, 'Current and target Switch version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.')
         return MANUAL
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
@@ -4205,8 +4205,8 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
     print_title(title, index, total_checks)
 
-    if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+    if not sw_cversion or not tversion:
+        print_result(title, MANUAL, "Switch or Target switch version not supplied. Skipping.")
         return MANUAL
     
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
