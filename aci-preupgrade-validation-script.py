@@ -4206,7 +4206,7 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     print_title(title, index, total_checks)
 
     if not sw_cversion or not tversion:
-        print_result(title, MANUAL, "Switch or Target switch version not supplied. Skipping.")
+        print_result(title, MANUAL, "Current or Target switch version not supplied. Skipping.")
         return MANUAL
     
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
