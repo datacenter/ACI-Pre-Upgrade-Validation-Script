@@ -28,13 +28,13 @@ ave_api += '?query-target-filter=eq(vmmDomP.enableAVE,"true")'
         (
             {ave_api: read_data(dir, "vmmDomP_POS.json")},
             "5.2(7e)",
-            script.PASS,
+            script.NA,
         ),
         # NO AVE
         (
             {ave_api: []},
             "6.1(3b)",
-            script.PASS,
+            script.NA,
         ),
         # NO TVERSION
         (

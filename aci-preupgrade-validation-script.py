@@ -5064,7 +5064,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
 
 def ave_eol_check(index, total_checks, tversion, **kwargs):
     title = 'AVE End-of-Life'
-    result = PASS
+    result = NA
     msg = ''
     headers = ["AVE Domain Name"]
     data = []
