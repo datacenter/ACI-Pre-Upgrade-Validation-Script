@@ -49,13 +49,25 @@ topSystems += '&rsp-subtree-include=required'
             "5.2(5c)",
             script.PASS,
         ),
+        (
+            {topSystems: []},
+            None,
+            "5.2(5c)",
+            script.ERROR,
+        ),
+        (
+            {topSystems: []},
+            "4.2(7f)",
+            None,
+            script.MANUAL,
+        ),
     ],
 )
 def test_logic(mock_icurl, sw_cversion, tversion, expected_result):
     result = script.unsupported_fec_configuration_ex_check(
         1,
         1,
-        script.AciVersion(sw_cversion),
-        script.AciVersion(tversion),
+        script.AciVersion(sw_cversion) if sw_cversion else None,
+        script.AciVersion(tversion) if tversion else None,
     )
     assert result == expected_result

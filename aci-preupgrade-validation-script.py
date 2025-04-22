@@ -1171,7 +1171,6 @@ def get_switch_version(**kwargs):
     """ Returns lowest switch version as AciVersion instance """
     prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
     firmwares = icurl('class', 'firmwareRunning.json')
-    lowest_sw_ver = None
     versions = set()
 
     for firmware in firmwares:
@@ -1184,7 +1183,10 @@ def get_switch_version(**kwargs):
             if lowest_sw_ver.newer_than(str(version)):
                 lowest_sw_ver = version
         prints('%s\n' % lowest_sw_ver)
-    return lowest_sw_ver
+        return lowest_sw_ver
+    else:
+        prints("No Switches Detected! Join switches to the fabric then re-run this script.\n")
+        return None
 
 
 def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
@@ -3281,7 +3283,11 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#telemetrystatserverp-object'
     print_title(title, index, total_checks)
 
-    if not sw_cversion or not tversion:
+    if not sw_cversion:
+        print_result(title, ERROR, "Current switch version not found. Check switch health.")
+        return ERROR
+
+    if not tversion:
         print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.')
         return MANUAL
 
@@ -4205,10 +4211,14 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
     print_title(title, index, total_checks)
 
-    if not sw_cversion or not tversion:
-        print_result(title, MANUAL, "Current or Target switch version not supplied. Skipping.")
+    if not sw_cversion:
+        print_result(title, ERROR, "Current switch version not found. Check switch health")
+        return ERROR
+
+    if not tversion:
+        print_result(title, MANUAL, "Target switch version not supplied. Skipping.")
         return MANUAL
-    
+
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
         api = 'topSystem.json'
         api += '?rsp-subtree=children&rsp-subtree-class=l1PhysIf,eqptCh'
@@ -4224,12 +4234,12 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
                 elif child.get("l1PhysIf"):
                     interface = child['l1PhysIf']['attributes']['id']
                     fecMode = child['l1PhysIf']['attributes']['fecMode']
-                    l1PhysIfs.append({"interface":interface,"fecMode":fecMode})
+                    l1PhysIfs.append({"interface": interface, "fecMode": fecMode})
             if model and l1PhysIfs:
                 pod_id = topSystem['topSystem']['attributes']['podId']
                 node_id = topSystem['topSystem']['attributes']['id']
                 for l1PhysIf in l1PhysIfs:
-                    data.append([pod_id,node_id,model,l1PhysIf['interface'],l1PhysIf['fecMode']])
+                    data.append([pod_id, node_id, model, l1PhysIf['interface'], l1PhysIf['fecMode']])
         if data:
             result = FAIL_O
 
@@ -5111,10 +5121,10 @@ if __name__ == "__main__":
         sys.exit()
     inputs = {'username': username, 'password': password,
               'cversion': cversion, 'tversion': tversion,
-              'vpc_node_ids': vpc_nodes, 'sw_cversion':sw_cversion}
+              'vpc_node_ids': vpc_nodes, 'sw_cversion': sw_cversion}
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
-                "script_version": str(SCRIPT_VERSION), "check_details": [], 
-                'cversion': str(cversion), 'tversion': str(tversion)}
+                "script_version": str(SCRIPT_VERSION), "check_details": [],
+                'cversion': str(cversion), 'tversion': str(tversion), 'sw_cversion': sw_cversion}
     checks = [
         # General Checks
         apic_version_md5_check,
