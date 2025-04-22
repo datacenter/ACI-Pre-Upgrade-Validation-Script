@@ -1339,13 +1339,62 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
 
 ### Fabric Port is Down
 
-The script checks for fault code `F1394` with rule `ethpm-if-port-down-fabric`, which indicate that ACI has flagged configured Fabric ports for being in a down state.
+The script checks for fault code `F1394` with rule `ethpm-if-port-down-fabric`, which is raised against a fabric port that is admin up and used to be operaitonally up at some point in the past, but is now operationally down.
 
-It is important to understand whether or not these downed fabric prots are preventing your leaf nodes from having redundant paths. If unexpected, address these issues before performing the ACI Upgrade.
+It is important to understand whether or not these fabric ports are expected to be down, and especially whether or not it's preventing your ACI switches from having redundant paths to other ACI switches. If unexpected, address these issues before performing the ACI Upgrade.
 
-Failure to do so may lead to outages during switch upgrades due to leaf nodes not having redundant spine paths.
+Failure to do so may lead to outages during switch upgrades due to leaf nodes not having redundant spine paths (or tier-2 leaf nodes not having redundant tier-1 leaf paths), or due to less bandwidth available through a reduced number of fabric ports.
 
-!!! example "Fault Example (F0469: duplicate-subnets-within-ctx)"
+!!! tip
+    When the fault is expected, in other words when the fabric port is expected to be down even though it used to be up, you can administratively disable (i.e. admin down) the port from APIC to clear the fault.
+
+    A common reason of when the fault is expected is `sfpAbsent` (or `sfp-missing`). This can be expected when you explicitly removed the SFP as the port is no longer used. In such a case, you should admin-down the port to clear the fault. Note that `sfpAbsent` may not be expected when the SFP on the port got loosen unexpectedly and hence not recognized correctly. In such as case, make sure to re-insert the SFP.
+
+
+!!! example "Fault Example 1 (F1394: ethpm-if-port-down-fabric)"
+    The example below is when node-104 eth1/51 is down because of `Link Not Connected` which indicates that the SFP is inserted but the link signals from the connected device haven't been received.
+    The script shows the reason part in the fault description - "`Link Not Connected(Connected), used by:Fabric`".
+
+    * `Link Not Connected` - This is the operational status of the port that is down.
+    * `(Connected)` - This is supposed to be the error disabled reason. When the port is not error disabled, however, the output shows `Connected` which can be misleading and confusing. It does not mean it is actually connected. It simply means that the port was not error disabled.
+
+    ```
+    admin@f1-apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F1394"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F1394
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : interface-physical-down
+    changeSet        : operBitset (New: 4,35), operStQual (New: link-not-connected)
+    childAction      :
+    created          : 2025-04-17T12:06:09.049-07:00
+    delegated        : no
+    descr            : Port is down, reason:Link Not Connected(Connected), used by:Fabric
+    dn               : topology/pod-2/node-104/sys/phys-[eth1/51]/phys/fault-F1394
+    domain           : access
+    extMngdBy        : undefined
+    highestSeverity  : minor
+    lastTransition   : 2025-04-17T12:06:09.049-07:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : minor
+    prevSeverity     : minor
+    rn               : fault-F1394
+    rule             : ethpm-if-port-down-fabric
+    severity         : minor
+    status           :
+    subject          : port-down
+    title            :
+    type             : communications
+    uid              :
+    userdom          : all
+    ```
+
+!!! example "Fault Example 2 (F1394: ethpm-if-port-down-fabric)"
     ```
     admin@f1-apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F1394"'
     Total Objects shown: 4
