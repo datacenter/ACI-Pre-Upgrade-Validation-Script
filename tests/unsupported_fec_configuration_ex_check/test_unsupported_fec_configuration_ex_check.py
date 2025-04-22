@@ -53,7 +53,7 @@ topSystems += '&rsp-subtree-include=required'
             {topSystems: []},
             None,
             "5.2(5c)",
-            script.ERROR,
+            script.MANUAL,
         ),
         (
             {topSystems: []},

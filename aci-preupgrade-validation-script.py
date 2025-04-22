@@ -3284,8 +3284,8 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, ERROR, "Current switch version not found. Check switch health.")
-        return ERROR
+        print_result(title, MANUAL, "Current switch version not found. Check switch health.")
+        return MANUAL
 
     if not tversion:
         print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.')
@@ -4212,8 +4212,8 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, ERROR, "Current switch version not found. Check switch health.")
-        return ERROR
+        print_result(title, MANUAL, "Current switch version not found. Check switch health.")
+        return MANUAL
 
     if not tversion:
         print_result(title, MANUAL, "Target switch version not supplied. Skipping.")
