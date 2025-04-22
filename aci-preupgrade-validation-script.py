@@ -4212,7 +4212,7 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, ERROR, "Current switch version not found. Check switch health")
+        print_result(title, ERROR, "Current switch version not found. Check switch health.")
         return ERROR
 
     if not tversion:
