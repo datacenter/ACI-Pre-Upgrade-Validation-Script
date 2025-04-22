@@ -1,0 +1,9 @@
+[{
+    "vmmDomP": {
+        "attributes": {
+        "dn": "uni/vmmp-VMware/dom-my-ave",
+        "enableAVE": "yes",
+        "name": "my-ave"
+        }
+    }
+}]

@@ -128,6 +128,8 @@ Items                                         | Faults         | This Script    
 [HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -151,6 +153,7 @@ Items                                         | Faults         | This Script    
 [c20]: #https-request-throttle-rate
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
+[c23]: #ave-end-of-life
 
 ### Defect Condition Checks
 
@@ -1433,7 +1436,7 @@ Failure to do so may lead to outages during switch upgrades due to leaf nodes no
     ```
 
 
-## Equipment Disk Limits Exceeded
+### Equipment Disk Limits Exceeded
 
 This fault occurs when the disk usage of a partiton increases beyond its threshold.
 
@@ -2137,7 +2140,8 @@ When **Global AES Encryption** is not enabled, this script alerts users in two d
 * When it is not enabled and the target version is older than 6.1(2), this check is flagged as `MANUAL CHECK REQUIRED` to encourage users to follow the best practice to enable it (and take a configuration back again before the upgrade).
 
 
-## Service Graph BD Forceful Routing
+
+### Service Graph BD Forceful Routing
 
 Starting from ACI 6.0(2), a bridge domain containing an L4-L7 service graph device (a.k.a service BD) starts to forward packets based on their IP headers even for bridging traffic which used to be forwarded based on their MAC addresses in their ethernet headers and ignored their IP headers. This "forceful routing" is to support IP-based selectors in ESG or microsegement EPG (uSeg EPG) when service graph is configured between those ESGs/uSeg EPGs and they are in the same bridge domain as the service graph device.
 
@@ -2185,6 +2189,12 @@ See below for the workaround and examples of traffic that will stop working afte
     In this case, you need to prepare to change the setting of the service bridge domain to disable the forceful routing after your upgrade as shown above.
 
     See [SNAT Traffic for Kubernetes with Cisco ACI CNI][52] for details about ACI CNI with SNAT.
+
+
+### AVE End-of-life
+As outlined in the [End-of-Sale and End-of-Life Announcement for Cisco Application Centric Infrastructure Virtual Edge and Virtual Pod][55], the Cisco ACI Virtual Edge (AVE) Domain is end-of-life and end-of-support for ACI releases 6.0 and above.
+
+If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Guide][56] and complete a domain migration prior to performing the upgrade.
 
 
 ## Defect Check Details
@@ -2586,3 +2596,5 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [52]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-aci-plug-in-snat-on-egress.html
 [53]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw45531
 [54]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850
+[55]: https://www.cisco.com/c/en/us/products/collateral/cloud-systems-management/application-policy-infrastructure-controller-apic/eol-apic-virtual-edge-pod-pb.html
+[56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html

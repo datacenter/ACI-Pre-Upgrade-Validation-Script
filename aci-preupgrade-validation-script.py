@@ -3282,7 +3282,7 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     print_title(title, index, total_checks)
 
     if not sw_cversion or not tversion:
-        print_result(title, MANUAL, 'Current and target Switch version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.')
         return MANUAL
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
@@ -4205,8 +4205,8 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
     print_title(title, index, total_checks)
 
-    if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+    if not sw_cversion or not tversion:
+        print_result(title, MANUAL, "Current or Target switch version not supplied. Skipping.")
         return MANUAL
     
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
@@ -5062,6 +5062,35 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     return result
 
 
+def ave_eol_check(index, total_checks, tversion, **kwargs):
+    title = 'AVE End-of-Life'
+    result = NA
+    msg = ''
+    headers = ["AVE Domain Name"]
+    data = []
+    recommended_action = 'AVE domain(s) must be migrated to supported domain types prior to 6.0+ upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ave-end-of-life'
+    print_title(title, index, total_checks)
+
+    ave_api = 'vmmDomP.json'
+    ave_api += '?query-target-filter=eq(vmmDomP.enableAVE,"true")'
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.newer_than("6.0(1a)"):
+        ave = icurl('class', ave_api)
+        for domain in ave:
+            name = domain['vmmDomP']['attributes']['name']
+            data.append([name])
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -5149,6 +5178,7 @@ if __name__ == "__main__":
         https_throttle_rate_check,
         aes_encryption_check,
         service_bd_forceful_routing_check,
+        ave_eol_check,
 
         # Bugs
         ep_announce_check,
