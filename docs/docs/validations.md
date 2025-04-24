@@ -469,9 +469,8 @@ To prevent this scenario, ensure that every leaf is connected to at least two Sp
 
 When upgrading APICs, the large APIC Database file can lead APIC upgrade failure due to database conversion takes too long time.
 
-To prevent this scenario, The script lists the APIC and DME when any class's MO amount is above 1000*1000 for current version earlier than 6.1(3f). If the current version is 6.1(3f) or above, the script raise an alert if the top 
-
-large DB files has exceeded 3G.  The check result is upgrade failure, TAC need be contacted for further investigation of trigger and mitigate this issue before upgrade.
+To prevent this scenario, The script look into the scenario if any class's MO amount is above 150*1000*1000 if current version earlier than 6.1(3f). If the current version is 6.1(3f) or above, the script look for the scenario if the top large DB files has exceeded 5G.
+Either of the condition can lead upgrade failure, TAC need be contacted to investigate the trigger and reduce the DB size before upgrade.
 
 
 ## Fault Check Details

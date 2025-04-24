@@ -4853,7 +4853,7 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-def large_apic_database_check(index, total_checks, tversion, **kwargs):
+def large_apic_database_check(index, total_checks, cversion,**kwargs):
     title = 'Large APIC Database Check'
     result = PASS
     msg = ''
@@ -4863,10 +4863,14 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
     recommended_action = 'Contact Cisco TAC to investigate the large than usual DB size'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database-check'
     print_title(title, index, total_checks)
+
+    top_class_stats = kwargs.get("top_class_stats")
+    top_db_stats = kwargs.get("top_db_stats")
     
     dme_svc_list = ['vmmmgr','policymgr','eventmgr','policydist']
     apic_svr_dict = {}
-    apic_node_mo = icurl('class', 'infraWiNode.json')
+    apic_node_api = 'infraWiNode.json'
+    apic_node_mo = icurl('class',apic_node_api )
     for apic in apic_node_mo:
         if apic['infraWiNode']['attributes']['operSt'] == 'available':
             apic_id = apic['infraWiNode']['attributes']['id']
@@ -4880,15 +4884,19 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
                 if len(apic_svr_dict)==3 and int(id)!=2:
                     continue
                 apic_hostname = apic_svr_dict[id]
-                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
-                collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                top_class_stats = collect_shard_stats.communicate()[0].strip().decode("utf-8")
+              
+                if not top_class_stats:
+                    collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
+                    collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                    top_class_stats = collect_shard_stats.communicate()[0].strip().decode("utf-8")
+
                 for svc_stats in top_class_stats.splitlines():
-                    logging.debug(str(svc_stats))
+                    logging.debug("APIC Id: "+ id+ " + DME name: " +dme + " + MoCounter "+ str(svc_stats))
                     if ":" in svc_stats:
                         class_name = svc_stats.split(":")[0].strip()
                         mo_count = svc_stats.split(":")[1].strip()
-                        if int(mo_count)> 1000*1000:
+                        print(mo_count)
+                        if int(mo_count)> 1000*1000*1.5:
                             data.append([id,dme,class_name,mo_count])
     else:
         headers = ["APIC Id", "DME", "Shard ", "Size"]
@@ -4897,11 +4905,15 @@ def large_apic_database_check(index, total_checks, tversion, **kwargs):
                 continue
             collect_stats_cmd = "acidiag dbsize --topshard --apic "+ id + " -f json"
             logging.debug(collect_stats_cmd)
-            collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-            top_db_stats = json.loads(collect_shard_stats.communicate()[0].strip())
+
+            if not top_db_stats:
+                collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                collect_shard_stats_data = collect_shard_stats.communicate()[0].strip()
+                top_db_stats = json.loads(collect_shard_stats_data)
+
             for db_stats in top_db_stats['dbs']:
                 logging.debug(db_stats)
-                if int(db_stats['size_b'])>=1073741824 * 3:   #10737418(10M for test) #1073741824(1G for production)
+                if int(db_stats['size_b'])>=1073741824 * 5:   #10737418(10M for test) #1073741824*5(5G for production)
                     apic_id = db_stats['apic']
                     dme = db_stats['dme']
                     shard = db_stats['shard_replica']
