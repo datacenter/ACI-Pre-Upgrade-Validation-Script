@@ -2317,6 +2317,31 @@ def apic_disk_space_faults_check(index, total_checks, cversion, **kwargs):
     return result
 
 
+def apic_vmm_inventory_sync_faults_check(index, total_checks, **kwargs):
+    title = 'APIC VMM inventory sync fault (F0132)'
+    result = MANUAL
+    msg = ''
+    headers = ['Fault', 'DN', 'Recommended Action']
+    data = []
+    recommended_action = "Please look for Faults under VM and Host and fix them via VCenter, then manually re-trigger inventory sync on APIC"
+   
+    print_title(title, index, total_checks)
+
+    faultInsts = icurl('class',
+                       'faultInst.json?query-target-filter=eq(faultInst.code,"F0132")')
+    for faultInst in faultInsts:
+        fc = faultInst['faultInst']['attributes']['code']
+        dn = faultInst['faultInst']['attributes']['dn']
+        desc = faultInst['faultInst']['attributes']['descr']
+        if dn and desc:
+            data.append([fc, dn, recommended_action])
+
+    if not data:
+        result = PASS
+    print_result(title, result, msg, headers, data)
+    return result
+
+
 def l3out_route_map_direction_check(index, total_checks, **kwargs):
     """ Implementation change due to CSCvm75395 - 4.1(1) """
     title = 'L3Out Route Map import/export direction'
@@ -5164,6 +5189,7 @@ if __name__ == "__main__":
         scalability_faults_check,
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
+        apic_vmm_inventory_sync_faults_check,
 
         # Configurations
         vpc_paired_switches_check,
