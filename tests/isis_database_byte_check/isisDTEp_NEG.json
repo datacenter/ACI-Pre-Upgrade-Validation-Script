@@ -1,0 +1,422 @@
+[
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.65]",
+          "encapt": "unknown",
+          "id": "10.0.184.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.66]",
+          "encapt": "unknown",
+          "id": "10.0.184.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.64]",
+          "encapt": "unknown",
+          "id": "10.0.184.64",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.66]",
+          "encapt": "unknown",
+          "id": "10.0.128.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.65]",
+          "encapt": "unknown",
+          "id": "10.0.128.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.65]",
+          "encapt": "unknown",
+          "id": "10.0.184.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.66]",
+          "encapt": "unknown",
+          "id": "10.0.184.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.64]",
+          "encapt": "unknown",
+          "id": "10.0.184.64",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.66]",
+          "encapt": "unknown",
+          "id": "10.0.128.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.65]",
+          "encapt": "unknown",
+          "id": "10.0.128.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.65]",
+          "encapt": "unknown",
+          "id": "10.0.184.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.66]",
+          "encapt": "unknown",
+          "id": "10.0.184.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.64]",
+          "encapt": "unknown",
+          "id": "10.0.184.64",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.66]",
+          "encapt": "unknown",
+          "id": "10.0.128.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.65]",
+          "encapt": "unknown",
+          "id": "10.0.128.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.65]",
+          "encapt": "unknown",
+          "id": "10.0.184.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.66]",
+          "encapt": "unknown",
+          "id": "10.0.184.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.64]",
+          "encapt": "unknown",
+          "id": "10.0.184.64",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.66]",
+          "encapt": "unknown",
+          "id": "10.0.128.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.65]",
+          "encapt": "unknown",
+          "id": "10.0.128.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-202/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.65]",
+          "encapt": "unknown",
+          "id": "10.0.128.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-202/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.64]",
+          "encapt": "unknown",
+          "id": "10.0.184.64",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-202/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.66]",
+          "encapt": "unknown",
+          "id": "10.0.184.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-202/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.65]",
+          "encapt": "unknown",
+          "id": "10.0.184.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-201/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.66]",
+          "encapt": "unknown",
+          "id": "10.0.184.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-201/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.65]",
+          "encapt": "unknown",
+          "id": "10.0.184.65",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-201/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.128.66]",
+          "encapt": "unknown",
+          "id": "10.0.128.66",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-201/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[10.0.184.64]",
+          "encapt": "unknown",
+          "id": "10.0.184.64",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    }
+]
