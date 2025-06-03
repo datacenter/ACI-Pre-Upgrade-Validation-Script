@@ -1,0 +1,242 @@
+[
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.129]",
+          "encapt": "unknown",
+          "id": "100.100.100.129",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.194]",
+          "encapt": "unknown",
+          "id": "100.100.100.194",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.192]",
+          "encapt": "unknown",
+          "id": "100.100.100.192",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-101/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.193]",
+          "encapt": "unknown",
+          "id": "100.100.100.193",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.194]",
+          "encapt": "unknown",
+          "id": "100.100.100.194",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.129]",
+          "encapt": "unknown",
+          "id": "100.100.100.129",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.192]",
+          "encapt": "unknown",
+          "id": "100.100.100.192",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-102/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.193]",
+          "encapt": "unknown",
+          "id": "100.100.100.193",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.129]",
+          "encapt": "unknown",
+          "id": "100.100.100.129",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.194]",
+          "encapt": "unknown",
+          "id": "100.100.100.194",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.192]",
+          "encapt": "unknown",
+          "id": "100.100.100.192",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-104/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.193]",
+          "encapt": "unknown",
+          "id": "100.100.100.193",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.194]",
+          "encapt": "unknown",
+          "id": "100.100.100.194",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-mac"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.129]",
+          "encapt": "unknown",
+          "id": "100.100.100.129",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.192]",
+          "encapt": "unknown",
+          "id": "100.100.100.192",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v4"
+        }
+      }
+    },
+    {
+      "isisDTEp": {
+        "attributes": {
+          "childAction": "",
+          "dn": "topology/pod-1/node-103/sys/isis/inst-default/dom-overlay-1/lvl-l1/db-dtep/dtep-[100.100.100.193]",
+          "encapt": "unknown",
+          "id": "100.100.100.193",
+          "modTs": "never",
+          "name": "default",
+          "role": "spine",
+          "status": "",
+          "type": "physical,proxy-acast-v6"
+        }
+      }
+    }
+]

@@ -184,6 +184,8 @@ Items                                           | Defect       | This Script    
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[ISIS DTEPs Byte Check][d26]                    | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -210,6 +212,7 @@ Items                                           | Defect       | This Script    
 [d23]: #pbr-high-scale
 [d24]: #standby-sup-image-sync
 [d25]: #observer-database-size
+[d26]: #isis-dteps-byte-check
 
 
 ## General Check Details
@@ -2541,6 +2544,18 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
 
+### ISIS DTEPs Byte Check
+
+Due to [CSCwp15375][57], tech support generation will result in a switch crash under the following conditions:
+- The `isisDTEp` address for a given spine + PROXY-ACAST-MAC address + PROXY-ACAST-V4 address + PROXY-ACAST-V6 address equals 58 bytes or more
+- The ACI software version is 6.1(1f), 6.1(2f), 6.1(2g), or 6.1(3f)
+
+Do not upgrade to any affected ACI software release if this check fails.
+
+!!! note
+    NDI integration can cause tech support generation to happen automatically, resulting in switch crash without user intervention.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2598,3 +2613,4 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [54]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850
 [55]: https://www.cisco.com/c/en/us/products/collateral/cloud-systems-management/application-policy-infrastructure-controller-apic/eol-apic-virtual-edge-pod-pb.html
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
+[57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
