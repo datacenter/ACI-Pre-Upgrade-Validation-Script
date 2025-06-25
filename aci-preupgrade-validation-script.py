@@ -22,6 +22,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
+import inspect
 import warnings
 import time
 import pexpect
@@ -65,7 +66,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class syntheticMaintPValidate:
-    def __init__(self, name, description):
+    def __init__(self, func, name, description):
+        self.function_name = func
         self.name = name
         self.description = description
         self.reason = ""
@@ -118,7 +120,7 @@ class syntheticMaintPValidate:
         Write the results of the syntheticMaintPValidate object to a file.
         :return: None
         """
-        filename = self.name + '.json'
+        filename = self.function_name + '.json'
         path = "cx-preupgrade-validation-results"
         if not os.path.isdir(path):
             os.mkdir(path)
@@ -1094,8 +1096,9 @@ def print_result(title, result, msg='',
                  unformatted_headers=None, unformatted_data=None,
                  recommended_action='',
                  doc_url='',
-                 adjust_title=False):
-    synth = syntheticMaintPValidate(title, "")
+                 adjust_title=False,
+                 func="test"):
+    synth = syntheticMaintPValidate(func, title, "")
     if result in [FAIL_O, FAIL_UF, ERROR, MANUAL, POST]:
         # TODO: deal with unformatted data and headers
         synth.updateFailureDetails(
@@ -4687,7 +4690,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func=inspect.currentframe().f_code.co_name)
     return result
 
 
