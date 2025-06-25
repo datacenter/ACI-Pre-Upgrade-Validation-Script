@@ -4853,78 +4853,6 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
-def large_apic_database_check(index, total_checks, cversion,**kwargs):
-    title = 'Large APIC Database Check'
-    result = PASS
-    msg = ''
-    headers = ["APIC Id", "DME", "Class", "Counters"]
-    
-    data = []
-    recommended_action = 'Contact Cisco TAC to investigate the large than usual DB size'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database-check'
-    print_title(title, index, total_checks)
-
-    top_class_stats = kwargs.get("top_class_stats")
-    top_db_stats = kwargs.get("top_db_stats")
-    
-    dme_svc_list = ['vmmmgr','policymgr','eventmgr','policydist']
-    apic_svr_dict = {}
-    apic_node_api = 'infraWiNode.json'
-    apic_node_mo = icurl('class',apic_node_api )
-    for apic in apic_node_mo:
-        if apic['infraWiNode']['attributes']['operSt'] == 'available':
-            apic_id = apic['infraWiNode']['attributes']['id']
-            apic_name = apic['infraWiNode']['attributes']['nodeName']
-            if apic_id not in apic_svr_dict:
-                apic_svr_dict[apic_id] = apic_name
-    
-    if cversion.older_than("6.1(3a)"):
-        for dme in dme_svc_list:
-            for id in apic_svr_dict:
-                if len(apic_svr_dict)==3 and int(id)!=2:
-                    continue
-                apic_hostname = apic_svr_dict[id]
-              
-                if not top_class_stats:
-                    collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
-                    collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                    top_class_stats = collect_shard_stats.communicate()[0].strip().decode("utf-8")
-
-                for svc_stats in top_class_stats.splitlines():
-                    logging.debug("APIC Id: "+ id+ " + DME name: " +dme + " + MoCounter "+ str(svc_stats))
-                    if ":" in svc_stats:
-                        class_name = svc_stats.split(":")[0].strip()
-                        mo_count = svc_stats.split(":")[1].strip()
-                        print(mo_count)
-                        if int(mo_count)> 1000*1000*1.5:
-                            data.append([id,dme,class_name,mo_count])
-    else:
-        headers = ["APIC Id", "DME", "Shard ", "Size"]
-        for id in apic_svr_dict:
-            if len(apic_svr_dict)==3 and int(id)!=2:
-                continue
-            collect_stats_cmd = "acidiag dbsize --topshard --apic "+ id + " -f json"
-            logging.debug(collect_stats_cmd)
-
-            if not top_db_stats:
-                collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                collect_shard_stats_data = collect_shard_stats.communicate()[0].strip()
-                top_db_stats = json.loads(collect_shard_stats_data)
-
-            for db_stats in top_db_stats['dbs']:
-                logging.debug(db_stats)
-                if int(db_stats['size_b'])>=1073741824 * 5:   #10737418(10M for test) #1073741824*5(5G for production)
-                    apic_id = db_stats['apic']
-                    dme = db_stats['dme']
-                    shard = db_stats['shard_replica']
-                    size = db_stats['size_h']
-                    data.append([id,dme,shard,size])
-    if data:
-        result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
-
-
 def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     title = 'Equipment Disk Limits Exceeded'
     result = PASS
@@ -5106,6 +5034,77 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
     return result
 
+
+def large_apic_database_check(index, total_checks, cversion, **kwargs):
+    title = 'Large APIC Database'
+    result = PASS
+    msg = ''
+    headers = ["APIC Id", "DME", "Class", "Counters"]
+
+    data = []
+    recommended_action = 'Contact Cisco TAC to investigate the large than usual DB size'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database'
+    print_title(title, index, total_checks)
+
+    top_class_stats = kwargs.get("top_class_stats")
+    top_db_stats = kwargs.get("top_db_stats")
+
+    dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
+    apic_svr_dict = {}
+    apic_node_api = 'infraWiNode.json'
+    apic_node_mo = icurl('class', apic_node_api)
+    for apic in apic_node_mo:
+        if apic['infraWiNode']['attributes']['operSt'] == 'available':
+            apic_id = apic['infraWiNode']['attributes']['id']
+            apic_name = apic['infraWiNode']['attributes']['nodeName']
+            if apic_id not in apic_svr_dict:
+                apic_svr_dict[apic_id] = apic_name
+
+    if cversion.older_than("6.1(3a)"):
+        for dme in dme_svc_list:
+            for id in apic_svr_dict:
+                if len(apic_svr_dict) == 3 and int(id) != 2:
+                    continue
+                apic_hostname = apic_svr_dict[id]
+
+                if not top_class_stats:
+                    collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
+                    collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                    top_class_stats = collect_shard_stats.communicate()[0].strip().decode("utf-8")
+
+                for svc_stats in top_class_stats.splitlines():
+                    logging.debug("APIC Id: " + id + " + DME name: " + dme + " + MoCounter " + str(svc_stats))
+                    if ":" in svc_stats:
+                        class_name = svc_stats.split(":")[0].strip()
+                        mo_count = svc_stats.split(":")[1].strip()
+                        print(mo_count)
+                        if int(mo_count) > 1000*1000*1.5:
+                            data.append([id, dme, class_name, mo_count])
+    else:
+        headers = ["APIC Id", "DME", "Shard ", "Size"]
+        for id in apic_svr_dict:
+            if len(apic_svr_dict) == 3 and int(id) != 2:
+                continue
+            collect_stats_cmd = "acidiag dbsize --topshard --apic " + id + " -f json"
+            logging.debug(collect_stats_cmd)
+
+            if not top_db_stats:
+                collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+                collect_shard_stats_data = collect_shard_stats.communicate()[0].strip()
+                top_db_stats = json.loads(collect_shard_stats_data)
+
+            for db_stats in top_db_stats['dbs']:
+                logging.debug(db_stats)
+                if int(db_stats['size_b'])>=1073741824 * 5:
+                    apic_id = db_stats['apic']
+                    dme = db_stats['dme']
+                    shard = db_stats['shard_replica']
+                    size = db_stats['size_h']
+                    data.append([id, dme, shard, size])
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ Items                                                        | This Script      
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Leaf to Spine Redundancy Validation][g17]                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Large APIC Database Check][g18]                             | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Large APIC Database][g18]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -54,7 +54,7 @@ Items                                                        | This Script      
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #leaf-to-spine-redundancy-validation
-[g18]: #large-apic-database-check
+[g18]: #large-apic-database
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -465,13 +465,17 @@ When upgrading the switches, traffic traversing a Leaf Switch that is connected 
 
 To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches (or tier-1 Leaf Switches). This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch (or tier-1 Leaf Switch).
 
-### Large APIC Database Check
+### Large APIC Database
 
-When upgrading APICs, the large APIC Database file can lead APIC upgrade failure due to database conversion takes too long time.
+It is generally expected that individual APIC DB Shard sizes remain below 5G in steady state, even in high scale configurations. If a single shard goes above this size, it can lead to an elongated upgrade timing, or even an upgrade failure, and in most cases is indicative of an underlying condition.
 
-To prevent this scenario, The script look into the scenario if any class's MO amount is above 150*1000*1000 if current version earlier than 6.1(3f). If the current version is 6.1(3f) or above, the script look for the scenario if the top large DB files has exceeded 5G.
-Either of the condition can lead upgrade failure, TAC need be contacted to investigate the trigger and reduce the DB size before upgrade.
+The script performs 2 different checks depending on the version you are running.
 
+If current version is below 6.1(3), the script checks all APICs' class's object count. If the count is found to be above 150*1000*1000 then it will flag the DME for further investigation.
+
+If the current version is 6.1(3f) or above, the script will utilize the newly added `acidiag dbsize` command and check if any of the top large DB files have exceeded 5G.
+
+When alerted to this specific warning, Contact TAC to collect a database dump of the DME and shards that are in question for further analysis.
 
 ## Fault Check Details
 
