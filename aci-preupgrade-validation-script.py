@@ -116,17 +116,13 @@ class syntheticMaintPValidate:
         return result
 
     def writeResult(self):
-        """
-        Write the results of the syntheticMaintPValidate object to a file.
-        :return: None
-        """
-        filename = self.function_name + '.json'
+        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
+        filename = cleaned_name + '.json'
         path = "cx-preupgrade-validation-results"
         if not os.path.isdir(path):
             os.mkdir(path)
         with open(os.path.join(f'{path}', filename), "w") as f:
             json.dump(self.buildResult(), f, indent=4)
-            #f.write(self.buildResult())
 
 
 class OldVerClassNotFound(Exception):
@@ -1143,7 +1139,11 @@ def _icurl(apitype, query, page=0, page_size=100000):
     pre = '&' if '?' in query else '?'
     query += '{}page={}&page-size={}'.format(pre, page, page_size)
     uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
-    cmd = ['icurl', '-gs', uri]
+    if TOKEN:
+        cookie = "APIC-cookie={}".format(TOKEN)
+        cmd = ['curl', '-b', cookie, '-gs', uri]
+    else:
+        cmd = ['icurl', '-gs', uri]
     logging.info('cmd = ' + ' '.join(cmd))
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
@@ -2021,7 +2021,7 @@ def switch_ssd_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
-
+# Connection based check
 def apic_ssd_check(index, total_checks, cversion, **kwargs):
     title = 'APIC SSD Health'
     result = FAIL_UF
@@ -2669,7 +2669,7 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
-
+# Connection based check
 def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
@@ -2689,7 +2689,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             desc = fm_mo["firmwareFirmware"]['attributes']["description"]
             md5 = fm_mo["firmwareFirmware"]['attributes']["checksum"]
             if "Image signing verification failed" in desc:
-                data.append(["All", tversion, md5,
+                data.append(["All", str(tversion), md5,
                              'Target image is corrupted', 'Delete and Upload Again'])
                 image_validaton = False
 
@@ -2716,7 +2716,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', e, '-'])
+            data.append([apic_name, '-', '-', json.dumps(e.__dict__), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2726,7 +2726,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, '-', '-',
-                         'ls command via ssh failed due to:{}'.format(e), '-'])
+                         'ls command via ssh failed due to:{}'.format(json.dumps(e.__dict__)), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2740,7 +2740,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
-                         'failed to check md5sum via ssh due to:{}'.format(e), '-'])
+                         'failed to check md5sum via ssh due to:{}'.format(json.dumps(e.__dict__)), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2774,7 +2774,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     print_result(title, result, msg, headers, data, adjust_title=True)
     return result
 
-
+# Connection Based Check
 def standby_apic_disk_space_check(index, total_checks, **kwargs):
     title = 'Standby APIC Disk Space Usage'
     result = FAIL_UF
@@ -4689,8 +4689,8 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
                             data.append([node_dn, model])
     if data:
         result = FAIL_O
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func=inspect.currentframe().f_code.co_name)
+    #  func=inspect.currentframe().f_code.co_name
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -5026,9 +5026,9 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
 
     cryptkeys = icurl("mo", "uni/exportcryptkey.json")
     if not cryptkeys:
-        data = [[tversion, "Object Not Found", impact]]
+        data = [[str(tversion), "Object Not Found", impact]]
     elif cryptkeys[0]["pkiExportEncryptionKey"]["attributes"]["strongEncryptionEnabled"] != "yes":
-        data = [[tversion, "Disabled", impact]]
+        data = [[str(tversion), "Disabled", impact]]
     else:
         result = PASS
 
@@ -5080,12 +5080,12 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
     return result
 
-
+# Connection Base Check
 def observer_db_size_check(index, total_checks, username, password, **kwargs):
     title = 'Observer Database Size'
     result = PASS
     msg = ''
-    headers = ["Node" , "File Location", "Size (GB)"]
+    headers = ["Node", "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
@@ -5102,7 +5102,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     prints('')
     for apic in controllers:
         attr = apic['topSystem']['attributes']
-        node_title = 'Checking %s...' % attr['name'] 
+        node_title = 'Checking %s...' % attr['name']
         print_title(node_title)
         try:
             c = Connection(attr['address'])
@@ -5111,7 +5111,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([attr['id'], attr['name'], e])
+            data.append([attr['id'], attr['name'], json.dumps(e.__dict__)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -5131,9 +5131,9 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
                     file_size = size_match.group("size")
                     file_name = "/data2/dbstats/" + size_match.group("file")
                     data.append([attr['id'], file_name, file_size])
-            print_result(node_title, DONE)            
+            print_result(node_title, DONE)
         except Exception as e:
-            data.append([attr['id'], attr['name'], e])
+            data.append([attr['id'], attr['name'], json.dumps(e.__dict__)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -5178,6 +5178,8 @@ if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
     prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
+    global TOKEN
+    TOKEN = os.getenv('webtoken')
     username, password = get_credentials()
     try:
         cversion = get_current_version()
