@@ -64,6 +64,69 @@ logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt=
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
+class syntheticMaintPValidate:
+    def __init__(self, name, description):
+        self.name = name
+        self.description = description
+        self.reason = ""
+        self.criticality = "critical"
+        self.passed = True
+        self.recommended_action = ""
+        self.sub_reason = ""
+        self.showValidation = True
+        self.failureDetails = self.initFailureDetails()
+
+    def initFailureDetails(self):
+        failure_details = {}
+        failure_details["fail_type"] = ""
+        failure_details["header"] = ""
+        failure_details["footer"] = ""
+        failure_details["column"] = []
+        failure_details["row"] = []
+        return failure_details
+
+    def updateFailureDetails(self, result, recommended_action, reason, header, footer, column, row):
+        self.recommended_action = recommended_action
+        self.reason = reason
+        self.passed = False
+        self.failureDetails["fail_type"] = result
+        self.failureDetails["header"] = header
+        self.failureDetails["footer"] = footer
+        self.failureDetails["column"] = column
+        self.failureDetails["row"] = row
+
+    def buildResult(self):
+        result = {
+            "syntheticMaintPValidate": {
+                "attributes": {
+                    "name": self.name,
+                    "description": self.description,
+                    "reason": self.reason,
+                    "criticality": self.criticality,
+                    "passed": self.passed,
+                    "recommended_action": self.recommended_action,
+                    "sub_reason": self.sub_reason,
+                    "showValidation": self.showValidation,
+                    "failureDetails": self.failureDetails
+                }
+            }
+        }
+        return result
+
+    def writeResult(self):
+        """
+        Write the results of the syntheticMaintPValidate object to a file.
+        :return: None
+        """
+        filename = self.name + '.json'
+        path = "cx-preupgrade-validation-results"
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        with open(os.path.join(f'{path}', filename), "w") as f:
+            json.dump(self.buildResult(), f, indent=4)
+            #f.write(self.buildResult())
+
+
 class OldVerClassNotFound(Exception):
     """ Later versions of ACI can have class properties not found in older versions """
     pass
@@ -1032,6 +1095,13 @@ def print_result(title, result, msg='',
                  recommended_action='',
                  doc_url='',
                  adjust_title=False):
+    synth = syntheticMaintPValidate(title, "")
+    if result in [FAIL_O, FAIL_UF, ERROR, MANUAL, POST]:
+        # TODO: deal with unformatted data and headers
+        synth.updateFailureDetails(
+            result=result, recommended_action=recommended_action, reason=msg, header="", footer=doc_url, column=headers, row=data
+        )
+        synth.writeResult()
     padding = 120 - len(title) - len(msg)
     if adjust_title: padding += len(title) + 18
     output = '{}{:>{}}'.format(msg, result, padding)
