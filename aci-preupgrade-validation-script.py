@@ -121,7 +121,7 @@ class syntheticMaintPValidate:
         path = "cx-preupgrade-validation-results"
         if not os.path.isdir(path):
             os.mkdir(path)
-        with open(os.path.join(f'{path}', filename), "w") as f:
+        with open(os.path.join(path, filename), "w") as f:
             json.dump(self.buildResult(), f, indent=4)
 
 
