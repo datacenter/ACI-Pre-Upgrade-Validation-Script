@@ -4924,6 +4924,37 @@ def large_apic_database_check(index, total_checks, cversion,**kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion,**kwargs):
+    title = 'Stale pconsRA Mo Check'
+    result = PASS
+    msg = ''
+    headers = ["Target_DN", "pconsRA"]
+    
+    data = []
+    recommended_action = 'Contact Cisco TAC to clear stale pconsRA'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale_pcons_ra_mo_check'
+    print_title(title, index, total_checks)
+    
+    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
+        target_dn_reg = r'registry/class-901/instdn-\[(?P<target_dn>.+?)\]/ra'
+    
+        pcons_ra_api = 'pconsRA.json'
+        pcons_ra_mo = icurl('class',pcons_ra_api )
+        for mo in pcons_ra_mo:
+            pcons_ra_dn = mo['pconsRA']['attributes']['dn']
+            instdn_found = re.search(target_dn_reg, pcons_ra_dn)
+            if instdn_found:
+                target_dn = instdn_found.group('target_dn')        
+                target_dn_mo = icurl('mo',target_dn+'.json')
+                if not target_dn_mo:
+                    data.append([target_dn,pcons_ra_dn])   
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result                
+        
+
+
 
 def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     title = 'Equipment Disk Limits Exceeded'
@@ -5150,7 +5181,7 @@ if __name__ == "__main__":
         validate_32_64_bit_image_check,
         leaf_to_spine_redundancy_check,
         large_apic_database_check,
-
+        stale_pcons_ra_mo_check,
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,

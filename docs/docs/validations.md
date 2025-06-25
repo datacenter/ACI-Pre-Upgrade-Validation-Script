@@ -183,6 +183,7 @@ Items                                           | Defect       | This Script    
 [PBR High Scale Check][d23]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync Check][d24]               | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Observer Database Size][d25]         | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Stale pconsRA Object Check][d26]         | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -209,6 +210,7 @@ Items                                           | Defect       | This Script    
 [d23]: #pbr-high-scale-check
 [d24]: #standby-sup-image-sync-check
 [d25]: #observer-database-size
+[d26]: #stale_pcons_ra_mo_check
 
 
 ## General Check Details
@@ -2491,6 +2493,9 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 !!! tip
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
+### Stale pconsRA Object Check
+
+Due to [CSCwp22212][54], the APIC policymgr pocess may crash after upgrading to 6.0(3d) or above with a stale pconsRA object with instdn point to a stale fabricPodPGrp object. To avoid policymgr crash, TAC should be contacted to clean up the stale MO. 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2546,3 +2551,4 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [51]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-739971.html
 [52]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/cisco-aci-plug-in-snat-on-egress.html
 [53]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw45531
+[54]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
