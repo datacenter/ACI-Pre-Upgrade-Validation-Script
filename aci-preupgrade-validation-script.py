@@ -66,32 +66,34 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class syntheticMaintPValidate:
-    def __init__(self, func, name, description):
-        self.function_name = func
+    def __init__(self, name, description):
         self.name = name
         self.description = description
         self.reason = ""
-        self.criticality = "critical"
+        self.criticality = "informational"
         self.passed = True
         self.recommended_action = ""
         self.sub_reason = ""
         self.showValidation = True
-        self.failureDetails = self.initFailureDetails()
+        self.failureDetails = {}
 
-    def initFailureDetails(self):
-        failure_details = {}
-        failure_details["fail_type"] = ""
-        failure_details["header"] = ""
-        failure_details["footer"] = ""
-        failure_details["column"] = []
-        failure_details["row"] = []
-        return failure_details
-
-    def updateWithResults(self, result, recommended_action, reason, header, footer, column, row):
+    def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
         self.reason = reason
-        if result in [NA, PASS]:
+
+        # Show validation
+        if result in [NA, POST]:
             self.showValidation = False
-        else:
+
+        # Criticality
+        if result in [FAIL_O, FAIL_UF]:
+            self.criticality = "critical"
+        elif result in [ERROR]:
+            self.criticality = "major"
+        elif result in [MANUAL]:
+            self.criticality = "warning"
+
+        # FailureDetails
+        if result != PASS:
             self.passed = False
             self.recommended_action = recommended_action
             self.failureDetails["fail_type"] = result
@@ -99,6 +101,8 @@ class syntheticMaintPValidate:
             self.failureDetails["footer"] = footer
             self.failureDetails["column"] = column
             self.failureDetails["row"] = row
+            self.failureDetails["unformatted_column"] = unformatted_column
+            self.failureDetails["unformatted_rows"] = unformatted_rows
 
     def buildResult(self):
         result = {
@@ -1095,12 +1099,19 @@ def print_result(title, result, msg='',
                  unformatted_headers=None, unformatted_data=None,
                  recommended_action='',
                  doc_url='',
-                 adjust_title=False,
-                 func="test"):
-    synth = syntheticMaintPValidate(func, title, "")
+                 adjust_title=False):
+    synth = syntheticMaintPValidate(title, "")
     # TODO: deal with unformatted data and headers
     synth.updateWithResults(
-        result=result, recommended_action=recommended_action, reason=msg, header="", footer=doc_url, column=headers, row=data
+        result=result,
+        recommended_action=recommended_action,
+        reason=msg,
+        header="",
+        footer=doc_url,
+        column=headers,
+        row=data,
+        unformatted_column=unformatted_headers,
+        unformatted_rows=unformatted_data,
     )
     synth.writeResult()
     padding = 120 - len(title) - len(msg)
