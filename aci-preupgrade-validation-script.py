@@ -1139,11 +1139,7 @@ def _icurl(apitype, query, page=0, page_size=100000):
     pre = '&' if '?' in query else '?'
     query += '{}page={}&page-size={}'.format(pre, page, page_size)
     uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
-    if TOKEN:
-        cookie = "APIC-cookie={}".format(TOKEN)
-        cmd = ['curl', '-b', cookie, '-gs', uri]
-    else:
-        cmd = ['icurl', '-gs', uri]
+    cmd = ['icurl', '-gs', uri]
     logging.info('cmd = ' + ' '.join(cmd))
     response = subprocess.check_output(cmd)
     logging.debug('response: ' + str(response))
