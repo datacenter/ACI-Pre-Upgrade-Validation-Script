@@ -87,15 +87,18 @@ class syntheticMaintPValidate:
         failure_details["row"] = []
         return failure_details
 
-    def updateFailureDetails(self, result, recommended_action, reason, header, footer, column, row):
-        self.recommended_action = recommended_action
+    def updateWithResults(self, result, recommended_action, reason, header, footer, column, row):
         self.reason = reason
-        self.passed = False
-        self.failureDetails["fail_type"] = result
-        self.failureDetails["header"] = header
-        self.failureDetails["footer"] = footer
-        self.failureDetails["column"] = column
-        self.failureDetails["row"] = row
+        if result in [NA, PASS]:
+            self.showValidation = False
+        else:
+            self.passed = False
+            self.recommended_action = recommended_action
+            self.failureDetails["fail_type"] = result
+            self.failureDetails["header"] = header
+            self.failureDetails["footer"] = footer
+            self.failureDetails["column"] = column
+            self.failureDetails["row"] = row
 
     def buildResult(self):
         result = {
@@ -1095,12 +1098,11 @@ def print_result(title, result, msg='',
                  adjust_title=False,
                  func="test"):
     synth = syntheticMaintPValidate(func, title, "")
-    if result in [FAIL_O, FAIL_UF, ERROR, MANUAL, POST]:
-        # TODO: deal with unformatted data and headers
-        synth.updateFailureDetails(
-            result=result, recommended_action=recommended_action, reason=msg, header="", footer=doc_url, column=headers, row=data
-        )
-        synth.writeResult()
+    # TODO: deal with unformatted data and headers
+    synth.updateWithResults(
+        result=result, recommended_action=recommended_action, reason=msg, header="", footer=doc_url, column=headers, row=data
+    )
+    synth.writeResult()
     padding = 120 - len(title) - len(msg)
     if adjust_title: padding += len(title) + 18
     output = '{}{:>{}}'.format(msg, result, padding)
