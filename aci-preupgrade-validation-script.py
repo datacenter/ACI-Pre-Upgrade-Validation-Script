@@ -22,7 +22,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
-from argparse  import ArgumentParser
+from argparse import ArgumentParser
 import warnings
 import time
 import pexpect
@@ -1101,7 +1101,6 @@ def print_result(title, result, msg='',
                  doc_url='',
                  adjust_title=False):
     synth = syntheticMaintPValidate(title, "")
-    # TODO: deal with unformatted data and headers
     synth.updateWithResults(
         result=result,
         recommended_action=recommended_action,
@@ -5218,7 +5217,6 @@ if __name__ == "__main__":
                 'cversion': str(cversion), 'tversion': str(tversion), 'sw_cversion': str(sw_cversion)}
     api_checks = [
         # General Checks
-        # apic_version_md5_check,  # Connection
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
         r_leaf_compatibility_check,
@@ -5237,8 +5235,6 @@ if __name__ == "__main__":
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
-        # standby_apic_disk_space_check,  # Connection
-        # apic_ssd_check,  # Connection
         switch_ssd_check,
         port_configured_for_apic_check,
         port_configured_as_l2_check,
@@ -5306,7 +5302,6 @@ if __name__ == "__main__":
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
-        # observer_db_size_check,  # Connection
 
     ]
     conn_checks = [
