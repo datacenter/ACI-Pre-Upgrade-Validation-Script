@@ -22,7 +22,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
-import argparse
+from argparse  import ArgumentParser
 import warnings
 import time
 import pexpect
@@ -5171,27 +5171,24 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def args():
+    parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
+    parser.add_argument("-a", "--api-only", action="store_true", help="Run checks that are using only API. Checks using SSH are skipped.")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--version", help="CCO Version string, e.g. 6.0(2a)", type=str, default=None)
-    parser.add_argument("-s", "--scriptcontainer", help="Running in APIC script container, icurl checks only", action="store_true")
-    args = parser.parse_args()
-    tversion = None
-    if args.scriptcontainer:
-        username = password = None
-    else:
-        prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
-        prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+    args = args()
+    api_only = args.a
+    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
+    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+    if not api_only:
         prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
         username, password = get_credentials()
-
-    if args.version:
-        tversion = AciVersion(args.version)
-
     try:
         cversion = get_current_version()
-        if not tversion:
-            tversion = get_target_version()
+        tversion = AciVersion(args.t) if args.t else get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
@@ -5314,8 +5311,7 @@ if __name__ == "__main__":
 
     ]
     checks = conn_checks + api_checks
-    if args.scriptcontainer:
-        # No connections allowed within scriptcontainer
+    if api_only:
         checks = api_checks
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
