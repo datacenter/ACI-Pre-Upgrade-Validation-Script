@@ -22,7 +22,7 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
-import inspect
+import argparse
 import warnings
 import time
 import pexpect
@@ -5175,15 +5175,26 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
 
 
 if __name__ == "__main__":
-    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
-    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
-    prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
-    global TOKEN
-    TOKEN = os.getenv('webtoken')
-    username, password = get_credentials()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--version", help="CCO Version string, e.g. 6.0(2a)", type=str, default=None)
+    parser.add_argument("-s", "--scriptcontainer", help="Running in APIC script container, icurl checks only", action="store_true")
+    args = parser.parse_args()
+    tversion = None
+    if args.scriptcontainer:
+        username = password = None
+    else:
+        prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
+        prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+        prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
+        username, password = get_credentials()
+
+    if args.version:
+        tversion = AciVersion(args.version)
+
     try:
         cversion = get_current_version()
-        tversion = get_target_version()
+        if not tversion:
+            tversion = get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
@@ -5200,9 +5211,9 @@ if __name__ == "__main__":
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
                 "script_version": str(SCRIPT_VERSION), "check_details": [],
                 'cversion': str(cversion), 'tversion': str(tversion), 'sw_cversion': str(sw_cversion)}
-    checks = [
+    api_checks = [
         # General Checks
-        apic_version_md5_check,
+        # apic_version_md5_check,  # Connection
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
         r_leaf_compatibility_check,
@@ -5221,8 +5232,8 @@ if __name__ == "__main__":
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
-        standby_apic_disk_space_check,
-        apic_ssd_check,
+        # standby_apic_disk_space_check,  # Connection
+        # apic_ssd_check,  # Connection
         switch_ssd_check,
         port_configured_for_apic_check,
         port_configured_as_l2_check,
@@ -5290,9 +5301,25 @@ if __name__ == "__main__":
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
+        # observer_db_size_check,  # Connection
+
+    ]
+    conn_checks = [
+        # General
+        apic_version_md5_check,
+
+        # Faults
+        standby_apic_disk_space_check,
+        apic_ssd_check,
+
+        # Bugs
         observer_db_size_check,
 
     ]
+    checks = conn_checks + api_checks
+    if args.scriptcontainer:
+        # No connections allowed within scriptcontainer
+        checks = api_checks
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
