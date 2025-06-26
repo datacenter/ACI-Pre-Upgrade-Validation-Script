@@ -4685,7 +4685,6 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
                             data.append([node_dn, model])
     if data:
         result = FAIL_O
-    #  func=inspect.currentframe().f_code.co_name
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
