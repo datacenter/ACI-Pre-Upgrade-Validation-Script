@@ -5191,7 +5191,7 @@ def args():
 
 if __name__ == "__main__":
     args = args()
-    api_only = args.a
+    api_only = args.api_only
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
     if not api_only:
@@ -5199,7 +5199,7 @@ if __name__ == "__main__":
         username, password = get_credentials()
     try:
         cversion = get_current_version()
-        tversion = AciVersion(args.t) if args.t else get_target_version()
+        tversion = AciVersion(args.tversion) if args.tversion else get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
