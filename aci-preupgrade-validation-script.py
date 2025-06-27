@@ -2073,7 +2073,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     c.log = LOG_FILE
                     c.connect()
                 except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
                     print_result(node_title, ERROR)
                     has_error = True
                     continue
@@ -2081,7 +2081,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     c.cmd(
                         'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
                 except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
                     print_result(node_title, ERROR)
                     has_error = True
                     continue
@@ -2727,7 +2727,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', json.dumps(e.__dict__), '-'])
+            data.append([apic_name, '-', '-', str(e), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2737,7 +2737,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, '-', '-',
-                         'ls command via ssh failed due to:{}'.format(json.dumps(e.__dict__)), '-'])
+                         'ls command via ssh failed due to:{}'.format(str(e)), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2751,7 +2751,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
-                         'failed to check md5sum via ssh due to:{}'.format(json.dumps(e.__dict__)), '-'])
+                         'failed to check md5sum via ssh due to:{}'.format(str(e)), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2810,14 +2810,14 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', str(e)])
             has_error = True
             continue
 
         try:
             c.cmd("df -h")
         except Exception as e:
-            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', str(e)])
             has_error = True
             continue
 
@@ -5121,7 +5121,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([attr['id'], attr['name'], json.dumps(e.__dict__)])
+            data.append([attr['id'], attr['name'], str(e)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -5143,7 +5143,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
                     data.append([attr['id'], file_name, file_size])
             print_result(node_title, DONE)
         except Exception as e:
-            data.append([attr['id'], attr['name'], json.dumps(e.__dict__)])
+            data.append([attr['id'], attr['name'], str(e)])
             print_result(node_title, ERROR)
             has_error = True
             continue
