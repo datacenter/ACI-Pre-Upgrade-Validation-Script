@@ -5194,7 +5194,9 @@ if __name__ == "__main__":
     api_only = args.api_only
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
-    if not api_only:
+    if api_only:
+        username = password = None
+    else:
         prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
         username, password = get_credentials()
     try:
