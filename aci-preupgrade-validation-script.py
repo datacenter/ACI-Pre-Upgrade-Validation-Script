@@ -22,6 +22,8 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
+from argparse import ArgumentParser
+import shutil
 import warnings
 import time
 import pexpect
@@ -53,6 +55,7 @@ dom_regex = r"uni/(?:vmmp-[^/]+/)?(?P<type>phys|l2dom|l3dom|dom)-(?P<dom>[^/]+)"
 
 tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
+LIVE_RESULTS_DIR = "cx-preupgrade-validation-results"
 DIR = 'preupgrade_validator_logs/'
 BUNDLE_NAME = 'preupgrade_validator_%s%s.tgz' % (ts, tz)
 RESULT_FILE = DIR + 'preupgrade_validator_%s%s.txt' % (ts, tz)
@@ -62,6 +65,74 @@ fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %
 subprocess.check_output(['mkdir', '-p', DIR])
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+class syntheticMaintPValidate:
+    def __init__(self, name, description, path=LIVE_RESULTS_DIR):
+        self.name = name
+        self.description = description
+        self.reason = ""
+        self.criticality = "informational"
+        self.passed = True
+        self.recommended_action = ""
+        self.sub_reason = ""
+        self.showValidation = True
+        self.failureDetails = {}
+        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
+        self.filename = cleaned_name + '.json'
+        self.path = path
+
+    def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
+        self.reason = reason
+
+        # Show validation
+        if result in [NA, POST]:
+            self.showValidation = False
+
+        # Criticality
+        if result in [FAIL_O, FAIL_UF]:
+            self.criticality = "critical"
+        elif result in [ERROR]:
+            self.criticality = "major"
+        elif result in [MANUAL]:
+            self.criticality = "warning"
+
+        # FailureDetails
+        if result not in [NA, PASS]:
+            self.passed = False
+            self.recommended_action = recommended_action
+            self.failureDetails["fail_type"] = result
+            self.failureDetails["header"] = header
+            self.failureDetails["footer"] = footer
+            self.failureDetails["column"] = column
+            self.failureDetails["row"] = row
+            self.failureDetails["unformatted_column"] = unformatted_column
+            self.failureDetails["unformatted_rows"] = unformatted_rows
+
+    def buildResult(self):
+        result = {
+            "syntheticMaintPValidate": {
+                "attributes": {
+                    "name": self.name,
+                    "description": self.description,
+                    "reason": self.reason,
+                    "criticality": self.criticality,
+                    "passed": self.passed,
+                    "recommended_action": self.recommended_action,
+                    "sub_reason": self.sub_reason,
+                    "showValidation": self.showValidation,
+                    "failureDetails": self.failureDetails
+                }
+            }
+        }
+        return result
+
+    def writeResult(self):
+        if not os.path.isdir(self.path):
+            os.mkdir(self.path)
+        with open(os.path.join(self.path, self.filename), "w") as f:
+            json.dump(self.buildResult(), f, indent=4)
+        return "{}/{}".format(self.path, self.filename)
 
 
 class OldVerClassNotFound(Exception):
@@ -1032,6 +1103,19 @@ def print_result(title, result, msg='',
                  recommended_action='',
                  doc_url='',
                  adjust_title=False):
+    synth = syntheticMaintPValidate(title, "")
+    synth.updateWithResults(
+        result=result,
+        recommended_action=recommended_action,
+        reason=msg,
+        header="",
+        footer=doc_url,
+        column=headers,
+        row=data,
+        unformatted_column=unformatted_headers,
+        unformatted_rows=unformatted_data,
+    )
+    synth.writeResult()
     padding = 120 - len(title) - len(msg)
     if adjust_title: padding += len(title) + 18
     output = '{}{:>{}}'.format(msg, result, padding)
@@ -1948,7 +2032,7 @@ def switch_ssd_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
-
+# Connection based check
 def apic_ssd_check(index, total_checks, cversion, **kwargs):
     title = 'APIC SSD Health'
     result = FAIL_UF
@@ -1989,7 +2073,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     c.log = LOG_FILE
                     c.connect()
                 except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
                     print_result(node_title, ERROR)
                     has_error = True
                     continue
@@ -1997,7 +2081,7 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     c.cmd(
                         'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
                 except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
+                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
                     print_result(node_title, ERROR)
                     has_error = True
                     continue
@@ -2596,7 +2680,7 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
     return result
 
-
+# Connection based check
 def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
@@ -2616,7 +2700,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             desc = fm_mo["firmwareFirmware"]['attributes']["description"]
             md5 = fm_mo["firmwareFirmware"]['attributes']["checksum"]
             if "Image signing verification failed" in desc:
-                data.append(["All", tversion, md5,
+                data.append(["All", str(tversion), md5,
                              'Target image is corrupted', 'Delete and Upload Again'])
                 image_validaton = False
 
@@ -2643,7 +2727,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', e, '-'])
+            data.append([apic_name, '-', '-', str(e), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2653,7 +2737,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, '-', '-',
-                         'ls command via ssh failed due to:{}'.format(e), '-'])
+                         'ls command via ssh failed due to:{}'.format(str(e)), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2667,7 +2751,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
-                         'failed to check md5sum via ssh due to:{}'.format(e), '-'])
+                         'failed to check md5sum via ssh due to:{}'.format(str(e)), '-'])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2701,7 +2785,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     print_result(title, result, msg, headers, data, adjust_title=True)
     return result
 
-
+# Connection Based Check
 def standby_apic_disk_space_check(index, total_checks, **kwargs):
     title = 'Standby APIC Disk Space Usage'
     result = FAIL_UF
@@ -2726,14 +2810,14 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', str(e)])
             has_error = True
             continue
 
         try:
             c.cmd("df -h")
         except Exception as e:
-            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', str(e)])
             has_error = True
             continue
 
@@ -4616,8 +4700,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
                             data.append([node_dn, model])
     if data:
         result = FAIL_O
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -4953,9 +5036,9 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
 
     cryptkeys = icurl("mo", "uni/exportcryptkey.json")
     if not cryptkeys:
-        data = [[tversion, "Object Not Found", impact]]
+        data = [[str(tversion), "Object Not Found", impact]]
     elif cryptkeys[0]["pkiExportEncryptionKey"]["attributes"]["strongEncryptionEnabled"] != "yes":
-        data = [[tversion, "Disabled", impact]]
+        data = [[str(tversion), "Disabled", impact]]
     else:
         result = PASS
 
@@ -5007,12 +5090,12 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
     return result
 
-
+# Connection Base Check
 def observer_db_size_check(index, total_checks, username, password, **kwargs):
     title = 'Observer Database Size'
     result = PASS
     msg = ''
-    headers = ["Node" , "File Location", "Size (GB)"]
+    headers = ["Node", "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
@@ -5029,7 +5112,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     prints('')
     for apic in controllers:
         attr = apic['topSystem']['attributes']
-        node_title = 'Checking %s...' % attr['name'] 
+        node_title = 'Checking %s...' % attr['name']
         print_title(node_title)
         try:
             c = Connection(attr['address'])
@@ -5038,7 +5121,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([attr['id'], attr['name'], e])
+            data.append([attr['id'], attr['name'], str(e)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -5058,9 +5141,9 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
                     file_size = size_match.group("size")
                     file_name = "/data2/dbstats/" + size_match.group("file")
                     data.append([attr['id'], file_name, file_size])
-            print_result(node_title, DONE)            
+            print_result(node_title, DONE)
         except Exception as e:
-            data.append([attr['id'], attr['name'], e])
+            data.append([attr['id'], attr['name'], str(e)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -5101,14 +5184,28 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def args():
+    parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
+    parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = args()
+    is_puv = args.puv
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
-    prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
-    username, password = get_credentials()
+    if is_puv:
+        username = password = None
+        if os.path.exists(LIVE_RESULTS_DIR) and os.path.isdir(LIVE_RESULTS_DIR):
+            shutil.rmtree(LIVE_RESULTS_DIR)
+    else:
+        prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
+        username, password = get_credentials()
     try:
         cversion = get_current_version()
-        tversion = get_target_version()
+        tversion = AciVersion(args.tversion) if args.tversion else get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
@@ -5125,9 +5222,8 @@ if __name__ == "__main__":
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
                 "script_version": str(SCRIPT_VERSION), "check_details": [],
                 'cversion': str(cversion), 'tversion': str(tversion), 'sw_cversion': str(sw_cversion)}
-    checks = [
+    api_checks = [
         # General Checks
-        apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
         r_leaf_compatibility_check,
@@ -5146,8 +5242,6 @@ if __name__ == "__main__":
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
-        standby_apic_disk_space_check,
-        apic_ssd_check,
         switch_ssd_check,
         port_configured_for_apic_check,
         port_configured_as_l2_check,
@@ -5215,9 +5309,23 @@ if __name__ == "__main__":
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
+
+    ]
+    conn_checks = [
+        # General
+        apic_version_md5_check,
+
+        # Faults
+        standby_apic_disk_space_check,
+        apic_ssd_check,
+
+        # Bugs
         observer_db_size_check,
 
     ]
+    checks = conn_checks + api_checks
+    if is_puv:
+        checks = api_checks
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
         try:
@@ -5260,4 +5368,6 @@ if __name__ == "__main__":
     """.format(bundle=bundle_loc))
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
+    if not is_puv and os.path.exists(LIVE_RESULTS_DIR) and os.path.isdir(LIVE_RESULTS_DIR):
+        shutil.rmtree(LIVE_RESULTS_DIR)
     subprocess.check_output(['rm', '-rf', DIR])
