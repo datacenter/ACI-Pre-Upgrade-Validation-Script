@@ -76,6 +76,9 @@ class syntheticMaintPValidate:
         self.sub_reason = ""
         self.showValidation = True
         self.failureDetails = {}
+        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
+        self.filename = cleaned_name + '.json'
+        self.path = "cx-preupgrade-validation-results"
 
     def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
         self.reason = reason
@@ -123,13 +126,11 @@ class syntheticMaintPValidate:
         return result
 
     def writeResult(self):
-        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
-        filename = cleaned_name + '.json'
-        path = "cx-preupgrade-validation-results"
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        with open(os.path.join(path, filename), "w") as f:
+        if not os.path.isdir(self.path):
+            os.mkdir(self.path)
+        with open(os.path.join(self.path, self.filename), "w") as f:
             json.dump(self.buildResult(), f, indent=4)
+        return "{}/{}".format(self.path, self.filename)
 
 
 class OldVerClassNotFound(Exception):

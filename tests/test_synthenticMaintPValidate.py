@@ -1,5 +1,6 @@
 import pytest
 import importlib
+import json
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 
@@ -146,7 +147,9 @@ def test_syntheticMaintPValidate(
 ):
     synth = script.syntheticMaintPValidate(name, description)
     synth.updateWithResults(result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows)
-    result = synth.buildResult()
-    assert result["syntheticMaintPValidate"]["attributes"]["showValidation"] == expected_show
-    assert result["syntheticMaintPValidate"]["attributes"]["criticality"] == expected_criticality
-    assert result["syntheticMaintPValidate"]["attributes"]["passed"] == expected_passed
+    file = synth.writeResult()
+    with open(file, "r") as f:
+        data = json.load(f)
+    assert data["syntheticMaintPValidate"]["attributes"]["showValidation"] == expected_show
+    assert data["syntheticMaintPValidate"]["attributes"]["criticality"] == expected_criticality
+    assert data["syntheticMaintPValidate"]["attributes"]["passed"] == expected_passed
