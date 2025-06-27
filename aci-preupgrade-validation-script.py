@@ -23,6 +23,7 @@ from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
 from argparse import ArgumentParser
+import shutil
 import warnings
 import time
 import pexpect
@@ -54,6 +55,7 @@ dom_regex = r"uni/(?:vmmp-[^/]+/)?(?P<type>phys|l2dom|l3dom|dom)-(?P<dom>[^/]+)"
 
 tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
+LIVE_RESULTS_DIR = "cx-preupgrade-validation-results"
 DIR = 'preupgrade_validator_logs/'
 BUNDLE_NAME = 'preupgrade_validator_%s%s.tgz' % (ts, tz)
 RESULT_FILE = DIR + 'preupgrade_validator_%s%s.txt' % (ts, tz)
@@ -66,7 +68,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class syntheticMaintPValidate:
-    def __init__(self, name, description):
+    def __init__(self, name, description, path=LIVE_RESULTS_DIR):
         self.name = name
         self.description = description
         self.reason = ""
@@ -78,7 +80,7 @@ class syntheticMaintPValidate:
         self.failureDetails = {}
         cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
         self.filename = cleaned_name + '.json'
-        self.path = "cx-preupgrade-validation-results"
+        self.path = path
 
     def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
         self.reason = reason
@@ -5185,17 +5187,19 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
 def args():
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
-    parser.add_argument("-a", "--api-only", action="store_true", help="Run checks that are using only API. Checks using SSH are skipped.")
+    parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = args()
-    api_only = args.api_only
+    is_puv = args.puv
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
-    if api_only:
+    if is_puv:
         username = password = None
+        if os.path.exists(LIVE_RESULTS_DIR) and os.path.isdir(LIVE_RESULTS_DIR):
+            shutil.rmtree(LIVE_RESULTS_DIR)
     else:
         prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
         username, password = get_credentials()
@@ -5320,7 +5324,7 @@ if __name__ == "__main__":
 
     ]
     checks = conn_checks + api_checks
-    if api_only:
+    if is_puv:
         checks = api_checks
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
     for idx, check in enumerate(checks):
@@ -5364,4 +5368,6 @@ if __name__ == "__main__":
     """.format(bundle=bundle_loc))
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
+    if not is_puv and os.path.exists(LIVE_RESULTS_DIR) and os.path.isdir(LIVE_RESULTS_DIR):
+        shutil.rmtree(LIVE_RESULTS_DIR)
     subprocess.check_output(['rm', '-rf', DIR])
