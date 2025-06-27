@@ -93,7 +93,7 @@ class syntheticMaintPValidate:
             self.criticality = "warning"
 
         # FailureDetails
-        if result != PASS:
+        if result not in [NA, PASS]:
             self.passed = False
             self.recommended_action = recommended_action
             self.failureDetails["fail_type"] = result
