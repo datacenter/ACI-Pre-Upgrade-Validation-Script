@@ -60,9 +60,12 @@ DIR = 'preupgrade_validator_logs/'
 BUNDLE_NAME = 'preupgrade_validator_%s%s.tgz' % (ts, tz)
 RESULT_FILE = DIR + 'preupgrade_validator_%s%s.txt' % (ts, tz)
 JSON_FILE = DIR + 'preupgrade_validator_%s%s.json' % (ts, tz)
+SUMMARY_FILE = DIR + 'summary.json'
 LOG_FILE = DIR + 'preupgrade_validator_debug.log'
 fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %(message)s'.format(tz)
-subprocess.check_output(['mkdir', '-p', DIR])
+if os.path.isdir(DIR):
+    shutil.rmtree(DIR)
+os.mkdir(DIR)
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -515,7 +518,7 @@ class AciVersion():
         self.patch = v.group('patch') if v else None
         self.regex = v
         if not v:
-            raise RuntimeError("Parsing failure of ACI version `%s`", version)
+            raise RuntimeError("Parsing failure of ACI version `%s`" % version)
 
     def __str__(self):
         return self.version
@@ -1138,11 +1141,11 @@ def print_result(title, result, msg='',
 def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
-            raise OldVerPropNotFound('cversion does not have requested property')
+            raise OldVerPropNotFound('Your current ACI version does not have requested property')
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
-            raise OldVerClassNotFound('cversion does not have requested class')
+            raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
-            raise OldVerClassNotFound('cversion does not have requested class')
+            raise OldVerClassNotFound('Your current ACI version does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
 
@@ -1253,7 +1256,7 @@ def get_vpc_nodes():
     return vpc_nodes
 
 
-def get_switch_version(**kwargs):
+def get_switch_version():
     """ Returns lowest switch version as AciVersion instance """
     prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
     firmwares = icurl('class', 'firmwareRunning.json')
@@ -5186,18 +5189,26 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def args():
+# ---- Script Execution ----
+
+def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
     parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
-    return parser.parse_args()
+    parsed_args = parser.parse_args(args)
+    is_puv = parsed_args.puv
+    tversion = parsed_args.tversion
+    # if tversion arg was provided, validate if it is a valid ACI version
+    if tversion:
+        try:
+            tversion = AciVersion(tversion)
+        except RuntimeError as e:
+            prints(e)
+            sys.exit(1)
+    return is_puv, tversion
 
 
-if __name__ == "__main__":
-    args = args()
-    is_puv = args.puv
-    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
-    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+def prepare(is_puv, arg_tversion):
     if is_puv:
         username = password = None
         if os.path.exists(LIVE_RESULTS_DIR) and os.path.isdir(LIVE_RESULTS_DIR):
@@ -5207,15 +5218,12 @@ if __name__ == "__main__":
         username, password = get_credentials()
     try:
         cversion = get_current_version()
-        tversion = AciVersion(args.tversion) if args.tversion else get_target_version()
+        tversion = arg_tversion if arg_tversion else get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
-        prints('')
-        err = 'Error: %s' % e
-        print_title(err)
-        print_result(err, ERROR)
-        print_title("Initial query failed. Ensure APICs are healthy. Ending script run.")
+        prints('\n\nError: %s' % e)
+        prints("Initial query failed. Ensure APICs are healthy. Ending script run.")
         logging.exception(e)
         sys.exit()
     inputs = {'username': username, 'password': password,
@@ -5224,6 +5232,10 @@ if __name__ == "__main__":
     json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
                 "script_version": str(SCRIPT_VERSION), "check_details": [],
                 'cversion': str(cversion), 'tversion': str(tversion), 'sw_cversion': str(sw_cversion)}
+    return inputs, json_log
+
+
+def get_checks(is_puv):
     api_checks = [
         # General Checks
         target_version_compatibility_check,
@@ -5325,10 +5337,14 @@ if __name__ == "__main__":
         observer_db_size_check,
 
     ]
-    checks = conn_checks + api_checks
     if is_puv:
-        checks = api_checks
-    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
+        return api_checks
+    return conn_checks + api_checks
+
+
+def run_checks(checks, inputs, json_log):
+    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
+    summary = {key: 0 if key != 'TOTAL' else len(checks) for key in summary_headers}
     for idx, check in enumerate(checks):
         try:
             r = check(idx + 1, len(checks), **inputs)
@@ -5338,27 +5354,34 @@ if __name__ == "__main__":
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
         except Exception as e:
+            # synth.writeResult() uses the first arg in `print_result()` (i.e. title) as
+            # the filename. When a check has an error and ends up here, we don't know the
+            # title and we cannot use the error message as the title/filename either.
+            # Thus, using the func name of the check as the title/filename.
             prints('')
-            err = 'Error: %s' % e
-            print_title(err)
-            print_result(err, ERROR)
+            print_title(" " * len(check.__name__))  # not showing the func name in the stdout
+            msg = 'Unexpected Error: %s' % e
+            print_result(check.__name__, ERROR, msg)
             summary[ERROR] += 1
             logging.exception(e)
+
     prints('\n=== Summary Result ===\n')
-
-    jsonString = json.dumps(json_log)
-    with open(JSON_FILE, 'w') as f:
-        f.write(jsonString)
-
-    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:
         prints('{:{}} : {:2}'.format(key, max_header_len, summary[key]))
 
-    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
+    jsonString = json.dumps(json_log)
+    with open(JSON_FILE, 'w') as f:
+        f.write(jsonString)
 
+    with open(SUMMARY_FILE, 'w') as f:
+        f.write(json.dumps(summary))
+
+
+def wrapup(is_puv):
+    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
+    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
     prints("""
     Pre-Upgrade Check Complete.
     Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
@@ -5370,6 +5393,22 @@ if __name__ == "__main__":
     """.format(bundle=bundle_loc))
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
-    if not is_puv and os.path.exists(LIVE_RESULTS_DIR) and os.path.isdir(LIVE_RESULTS_DIR):
+    if not is_puv and os.path.isdir(LIVE_RESULTS_DIR):
         shutil.rmtree(LIVE_RESULTS_DIR)
-    subprocess.check_output(['rm', '-rf', DIR])
+    shutil.rmtree(DIR)
+
+
+def main(args=None):
+    is_puv, arg_tversion = parse_args(args)
+
+    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
+    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+
+    inputs, json_log = prepare(is_puv, arg_tversion)
+    checks = get_checks(is_puv)
+    run_checks(checks, inputs, json_log)
+    wrapup(is_puv)
+
+
+if __name__ == "__main__":
+    main()
