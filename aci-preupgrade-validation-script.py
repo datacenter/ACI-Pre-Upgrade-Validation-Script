@@ -1564,6 +1564,31 @@ def l3out_mtu_check(index, total_checks, **kwargs):
             else:
                 unformatted_data.append(
                     [l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'], iftype, addr, mtu])
+    #Adding check for floating L3outs
+    
+    fl3out_dn_regex = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)/vlifp-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>[^\]]+)\]-\[(?P<vlan>vlan-\d+)\]'
+    float_response_json = icurl('class', 'l3extVirtualLIfP.json')
+
+    if float_response_json:
+        l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')
+        fabricMtu = l2Pols[0]['l2InstPol']['attributes']['fabricMtu']
+        for l3extVirtualLIfP in float_response_json:
+            mtu = l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['mtu']
+            iftype = l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['ifInstT']
+            addr = l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['addr']
+            
+            if mtu == 'inherit':
+                mtu += " (%s)" % fabricMtu
+
+            float_dn = re.search(fl3out_dn_regex, l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['dn'])
+            
+            if float_dn:
+                data.append([float_dn.group("tenant"), float_dn.group("l3out"), float_dn.group("lnodep"),
+                             float_dn.group("lifp"), float_dn.group("pod"), float_dn.group("node"),
+                             float_dn.group("vlan"), iftype, addr, mtu])
+            else:
+                unformatted_data.append(
+                    [l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['dn'], iftype, addr, mtu])
 
     if not data and not unformatted_data:
         result = NA
