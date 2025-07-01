@@ -45,7 +45,7 @@ fake_inputs = {
 
 def test_run_checks(capsys, caplog):
     caplog.set_level(logging.CRITICAL)  # Skip logging.exceptions in pytest output as it is expected.
-    script.run_checks(fake_checks, fake_inputs, {"check_details": []})
+    script.run_checks(fake_checks, fake_inputs)
     captured = capsys.readouterr()
     print(captured.out)
     assert (

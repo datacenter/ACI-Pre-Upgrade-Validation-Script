@@ -1,6 +1,7 @@
 import pytest
 import importlib
 import logging
+import json
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 AciVersion = script.AciVersion
@@ -95,13 +96,26 @@ outputs = {
     ],
 )
 def test_prepare(mock_icurl, is_puv, arg_tversion, expected_result):
-    inputs, json_log = script.prepare(is_puv, arg_tversion)
+    checks = script.get_checks(is_puv)
+    inputs = script.prepare(is_puv, arg_tversion, len(checks))
     for key, value in expected_result.items():
         if "version" in key:
             assert isinstance(inputs[key], AciVersion)
             assert str(inputs[key]) == str(value)
         else:
             assert inputs[key] == value
+
+    with open(script.META_FILE, "r") as f:
+        meta = json.load(f)
+        assert meta["name"] == "PreupgradeCheck"
+        assert meta["method"] == "standalone script"
+        assert meta.get("datetime") is not None
+        assert meta["script_version"] == script.SCRIPT_VERSION
+        assert meta["cversion"] == str(expected_result["cversion"])
+        assert meta["tversion"] == str(expected_result["tversion"])
+        assert meta["sw_cversion"] == str(expected_result["sw_cversion"])
+        assert meta["is_puv"] == is_puv
+        assert meta["total_checks"] == len(checks)
 
 
 @pytest.mark.parametrize(
@@ -161,7 +175,8 @@ def test_prepare_exception(capsys, caplog, mock_icurl, is_puv, arg_tversion, exp
     caplog.set_level(logging.CRITICAL)
     with pytest.raises(SystemExit):
         with pytest.raises(Exception):
-            script.prepare(is_puv, arg_tversion)
+            checks = script.get_checks(is_puv)
+            script.prepare(is_puv, arg_tversion, len(checks))
     captured = capsys.readouterr()
     print(captured.out)
     assert captured.out.endswith(expected_result)
