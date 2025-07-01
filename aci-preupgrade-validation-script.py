@@ -1235,19 +1235,21 @@ def get_target_version():
         return None
 
 
-def get_vpc_nodes(**kwargs):
+def get_vpc_nodes():
     """ Returns list of VPC Node IDs; ['101', '102', etc...] """
-    prints("Collecting VPC Node IDs...\n")
+    prints("Collecting VPC Node IDs...", end='')
     vpc_nodes = []
-
-    prot_pols = kwargs.get("fabricNodePEp.json", None)
-    if not prot_pols:
-        prot_pols = icurl('class', 'fabricNodePEp.json')
-
-    if prot_pols:
-        for vpc_node in prot_pols:
-            vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
-
+    prot_pols = icurl('class', 'fabricNodePEp.json')
+    for vpc_node in prot_pols:
+        vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
+    vpc_nodes.sort()
+    # Display up to 4 node IDs
+    max_display = 4
+    if len(vpc_nodes) <= max_display:
+        prints('%s\n' % ", ".join(vpc_nodes))
+    else:
+        omitted_count = len(vpc_nodes) - max_display
+        prints('%s, ... (and %d more)\n' % (", ".join(vpc_nodes[:max_display]), omitted_count))
     return vpc_nodes
 
 
