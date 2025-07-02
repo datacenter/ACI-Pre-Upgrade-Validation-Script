@@ -86,6 +86,20 @@ class syntheticMaintPValidate:
         self.filename = cleaned_name + '.json'
         self.path = path
 
+    @staticmethod
+    def craftData(column, row):
+        data = []
+        if isinstance(row, list) and isinstance(column, list):
+            for i in range(len(row)):
+                entry = {}
+                for j in range(len(column)):
+                    if j < len(row[i]):
+                        entry[column[j]] = row[i][j]
+                    else:
+                        entry[column[j]] = None
+                data.append(entry)
+        return data
+
     def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
         self.reason = reason
 
@@ -112,6 +126,10 @@ class syntheticMaintPValidate:
             self.failureDetails["row"] = row
             self.failureDetails["unformatted_column"] = unformatted_column
             self.failureDetails["unformatted_rows"] = unformatted_rows
+            self.failureDetails["data"] = self.craftData(column, row)
+            if unformatted_column and unformatted_rows:
+                self.failureDetails["data"].extend(self.craftData(unformatted_column, unformatted_rows))
+                self.reason += " Parse failure occurred, please check unformatted data in the output data."
 
     def buildResult(self):
         result = {
