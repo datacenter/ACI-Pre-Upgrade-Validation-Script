@@ -512,7 +512,7 @@ class AciVersion():
         self.original = version
         v = re.search(self.v_regex, version)
         if not v:
-            raise ValueError("Parsing failure of ACI version `%s`", version)
+            raise ValueError("Parsing failure of ACI version `%s`" % version)
         self.version = "{major1}.{major2}({maint}{QAdot}{patch1}{patch2})".format(**v.groupdict())
         self.dot_version = "{major1}.{major2}.{maint}{QAdot}{patch1}{patch2}".format(**v.groupdict())
         self.simple_version = "{major1}.{major2}({maint})".format(**v.groupdict())
@@ -5229,7 +5229,7 @@ def parse_args(args):
     if tversion:
         try:
             tversion = AciVersion(tversion)
-        except RuntimeError as e:
+        except ValueError as e:
             prints(e)
             sys.exit(1)
     return is_puv, tversion

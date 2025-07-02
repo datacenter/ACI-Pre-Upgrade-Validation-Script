@@ -50,5 +50,5 @@ def test_tversion(args, expected_result):
 
 def test_tversion_invald():
     with pytest.raises(SystemExit):
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             script.parse_args(args=["-t", "invalid_version"])
