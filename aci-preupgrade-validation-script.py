@@ -1307,7 +1307,7 @@ def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     unformatted_data = []
     doc_url = 'ACI Troubleshooting Guide 2nd Edition - http://cs.co/9003ybZ1d'
     print_title(title, index, total_checks)
-    if cversion.older_than("4.2"):
+    if cversion.older_than("4.2(1a)"):
         recommended_action = 'Follow "Initial Fabric Setup" in ACI Troubleshooting Guide 2nd Edition'
     else:
         recommended_action = 'Troubleshoot by running "acidiag cluster" on APIC CLI'
