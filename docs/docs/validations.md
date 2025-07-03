@@ -184,6 +184,8 @@ Items                                           | Defect       | This Script    
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Policydist configpushShardCont defect][d26]    | CSCwp95515   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -210,6 +212,7 @@ Items                                           | Defect       | This Script    
 [d23]: #pbr-high-scale
 [d24]: #standby-sup-image-sync
 [d25]: #observer-database-size
+[d26]: #policydist-configpushshardcont-defect
 
 
 ## General Check Details
@@ -2540,6 +2543,14 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 !!! tip
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
+### Policydist configpushShardCont defect
+
+Due to [CSCwp95515][57], a configpushShardCont MO in policydist has a non-zero headTx while tailTx is zero. if APIC cluster is upgraded or if config is pushed to a PM shard corresponding to the DN that has the bad properties policydist can crash.
+
+The Policydist component is responsible for policy enforcement and replicating policy actions and maintaining consistency of policy state across all APICs in the cluster.
+
+The script scans for any instance of configpushShardCont that can lead to this defect, contact Cisco TAC to resolve the issue prior to the upgrade.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2598,3 +2609,4 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [54]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850
 [55]: https://www.cisco.com/c/en/us/products/collateral/cloud-systems-management/application-policy-infrastructure-controller-apic/eol-apic-virtual-edge-pod-pb.html
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
+[57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515

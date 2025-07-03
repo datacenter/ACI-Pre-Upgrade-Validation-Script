@@ -5101,6 +5101,33 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def configpush_shard_check(index, total_checks, tversion, **kwargs):
+    title = 'configpushShardCont headTx'
+    result = NA
+    msg = ''
+    headers = ["dn", "headTx",  "tailTx"]
+    data = []
+    recommended_action = 'Contact Cisco TAC for Support before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#policydist-configpushshardcont-defect'
+    print_title(title, index, total_checks)
+    configpushShardCont = 'configpushShardCont.json'
+    if tversion.older_than("6.1(4a)"):
+        configpush_sh_cont = icurl('class', configpushShardCont)
+        if configpush_sh_cont:
+            result = PASS
+            for sh_cont in configpush_sh_cont:
+                if sh_cont['configpushShardCont']['attributes']['headTx'] != '0' and sh_cont['configpushShardCont']['attributes']['tailTx'] == '0':
+                    sh_cont_dn = sh_cont['configpushShardCont']['attributes']['dn']
+                    headtx = sh_cont['configpushShardCont']['attributes']['headTx']
+                    tailtx = sh_cont['configpushShardCont']['attributes']['tailTx']
+                    data.append([sh_cont_dn, headtx, tailtx])
+    
+    if data:
+        result = FAIL_O
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)    
+    return result
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -5216,6 +5243,7 @@ if __name__ == "__main__":
         pbr_high_scale_check,
         standby_sup_sync_check,
         observer_db_size_check,
+        configpush_shard_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
