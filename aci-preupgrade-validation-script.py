@@ -4937,17 +4937,26 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion,**kwargs):
     
     if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
         target_dn_reg = r'registry/class-901/instdn-\[(?P<target_dn>.+?)\]/ra'
+        target_dn_reg_infra = r'registry/class-4367/instdn-\[(?P<target_dn>.+?)\]/ra'
     
         pcons_ra_api = 'pconsRA.json'
         pcons_ra_mo = icurl('class',pcons_ra_api )
         for mo in pcons_ra_mo:
             pcons_ra_dn = mo['pconsRA']['attributes']['dn']
             instdn_found = re.search(target_dn_reg, pcons_ra_dn)
+            instdn_found_infra = re.search(target_dn_reg_infra, pcons_ra_dn)
+    
             if instdn_found:
                 target_dn = instdn_found.group('target_dn')        
                 target_dn_mo = icurl('mo',target_dn+'.json')
                 if not target_dn_mo:
-                    data.append([target_dn,pcons_ra_dn])   
+                    data.append([target_dn,pcons_ra_dn])  
+            elif instdn_found_infra:
+                target_dn = instdn_found_infra.group('target_dn')        
+                target_dn_mo = icurl('mo',target_dn+'.json')
+                if not target_dn_mo:
+                    data.append([target_dn,pcons_ra_dn])  
+
     if data:
         result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
