@@ -5100,6 +5100,40 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion,**kwargs):
+    title = 'Stale pconsRA Mo Check'
+    result = PASS
+    msg = ''
+    headers = ["pconsRA_DN, Stale_Policy_DN"]
+    
+    data = []
+    recommended_action = 'Contact Cisco TAC to clear stale pconsRA'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale_pcons_ra_mo_check'
+    print_title(title, index, total_checks)
+    
+    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
+        pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
+        pcons_rssubtreedep_mo = icurl('class',pcons_rssubtreedep_api )
+        pcons_inst_dn_reg = r'registry/class-\d+/instdn-\[(?P<policy_dn>.+?)\]/ra'
+        pcons_ra_dn_reg = r'(?P<pcons_ra_dn>.+?)/p...-\['
+            
+        for mo in pcons_rssubtreedep_mo:
+            pcons_rssubtreedep_tdn = mo['pconsRsSubtreeDep']['attributes']['tDn']
+            instdn_found = re.search(pcons_inst_dn_reg, pcons_rssubtreedep_tdn)
+            radn_found = re.search(pcons_ra_dn_reg,pcons_rssubtreedep_tdn)
+            if instdn_found and radn_found:
+                pcons_ra_dn = radn_found.group('pcons_ra_dn')
+                policy_dn = instdn_found.group('policy_dn') 
+                pcons_ra_dn_mo = icurl('mo',pcons_ra_dn+'.json')
+                if pcons_ra_dn_mo:
+                    policy_dn_mo = icurl('mo',policy_dn+'.json')
+                    if not policy_dn_mo:
+                        data.append([pcons_ra_dn,policy_dn])  
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result     
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -5216,6 +5250,7 @@ if __name__ == "__main__":
         pbr_high_scale_check,
         standby_sup_sync_check,
         observer_db_size_check,
+        stale_pcons_ra_mo_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}

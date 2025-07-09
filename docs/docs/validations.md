@@ -184,6 +184,7 @@ Items                                           | Defect       | This Script    
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[Stale pconsRA Object Check][d26]               | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -210,6 +211,7 @@ Items                                           | Defect       | This Script    
 [d23]: #pbr-high-scale
 [d24]: #standby-sup-image-sync
 [d25]: #observer-database-size
+[d26]: #stale_pcons_ra_mo_check
 
 
 ## General Check Details
@@ -2540,6 +2542,10 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 !!! tip
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
+### Stale pconsRA Object Check
+
+Due to [CSCwp22212][57], the APIC policymgr pocess may crash after upgrading to 6.0(3d) or above with stale pconsRA object that instdn refers to a stale policy object. To avoid policymgr crash, TAC should be contacted to clean up the stale MO. 
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2598,3 +2604,4 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 [54]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvt47850
 [55]: https://www.cisco.com/c/en/us/products/collateral/cloud-systems-management/application-policy-infrastructure-controller-apic/eol-apic-virtual-edge-pod-pb.html
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
+[57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
