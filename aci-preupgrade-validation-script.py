@@ -5121,6 +5121,9 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
         pcons_inst_dn_reg = r'registry/class-\d+/instdn-\[(?P<policy_dn>.+?)\]/ra'
         pcons_ra_dn_reg = r'(?P<pcons_ra_dn>.+?)/p...-\['
 
+        pcons_ra_set = set()
+        policy_dn_set = set()
+
         for mo in pcons_rssubtreedep_mo:
             pcons_rssubtreedep_tdn = mo['pconsRsSubtreeDep']['attributes']['tDn']
             instdn_found = re.search(pcons_inst_dn_reg, pcons_rssubtreedep_tdn)
@@ -5128,13 +5131,21 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
             if instdn_found and radn_found:
                 pcons_ra_dn = radn_found.group('pcons_ra_dn')
                 policy_dn = instdn_found.group('policy_dn')
-                pcons_ra_api = pcons_ra_dn + '.json'
-                pcons_ra_dn_mo = icurl('mo', pcons_ra_api)
-                if pcons_ra_dn_mo:
-                    policy_dn_api = policy_dn + '.json'
-                    policy_dn_mo = icurl('mo', policy_dn_api)
-                    if not policy_dn_mo:
-                        data.append([pcons_ra_dn, policy_dn])
+                if pcons_ra_dn not in pcons_ra_set:
+                    pcons_ra_set.add(pcons_ra_dn)
+                if policy_dn not in policy_dn_set:
+                    policy_dn_set.add(policy_dn)
+
+        for policy_dn in policy_dn_set:
+            policy_dn_api = policy_dn + '.json'
+            policy_dn_mo = icurl('mo', policy_dn_api)
+            if not policy_dn_mo:
+                for pcons_ra_dn in pcons_ra_set:
+                    if policy_dn in pcons_ra_dn:
+                        pcons_ra_api = pcons_ra_dn + '.json'
+                        pcons_ra_dn_mo = icurl('mo', pcons_ra_api)
+                        if pcons_ra_dn_mo:
+                            data.append([pcons_ra_dn, policy_dn])
     else:
         print_result(title, NA, "Target version not supplied or not applicable. Skipping.")
         return NA
