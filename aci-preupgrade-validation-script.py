@@ -5111,6 +5111,10 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale_pcons_ra_mo_check'
     print_title(title, index, total_checks)
 
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
     if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
         pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
         pcons_rssubtreedep_mo = icurl('class', pcons_rssubtreedep_api)

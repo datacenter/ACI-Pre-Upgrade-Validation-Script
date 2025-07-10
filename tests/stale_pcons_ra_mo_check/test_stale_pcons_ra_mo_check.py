@@ -16,6 +16,17 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
+        # MANUAL when tversion not given
+        (
+            {
+                pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
+                pcons_ra_api: read_data(dir, 'pconsRA.json'),
+                policy_dn_api: read_data(dir, 'policyDn.json'),
+            },
+            "5.3(2a)",
+            "",
+            script.MANUAL,
+        ),
         # NA when tversion is older than 6.0(3d)
         (
             {
