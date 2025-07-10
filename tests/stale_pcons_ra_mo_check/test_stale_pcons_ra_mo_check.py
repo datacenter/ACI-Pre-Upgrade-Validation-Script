@@ -16,7 +16,7 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
-        # pass when version tversion is older than 6.0(3d)
+        # NA when tversion is older than 6.0(3d)
         (
             {
                 pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
@@ -25,9 +25,20 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
             },
             "5.3(2a)",
             "6.0(3c)",
-            script.PASS,
+            script.NA,
         ),
-        # pass when version tversion is older than 6.0(3d) and policy_dn is found.
+        # NA when tversion is older than 6.0(3d)
+        (
+            {
+                pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
+                pcons_ra_api: read_data(dir, 'pconsRA.json'),
+                policy_dn_api: read_data(dir, 'policyDn.json'),
+            },
+            "6.1(2a)",
+            "6.1(3c)",
+            script.NA,
+        ),
+        # pass when tversion is 6.0(3d)+ and policy_dn is found.
         (
             {
                 pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
@@ -38,7 +49,7 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
             "6.0(3d)",
             script.PASS,
         ),
-        # fail when version tversion is older than 6.0(3d) and policy_dn is NOT found.
+        # FAIL_O when version tversion is older than 6.0(3d) and policy_dn is NOT found (pcons is stale).
         (
             {
                 pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
