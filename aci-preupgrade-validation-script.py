@@ -5124,9 +5124,11 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion,**kwargs):
             if instdn_found and radn_found:
                 pcons_ra_dn = radn_found.group('pcons_ra_dn')
                 policy_dn = instdn_found.group('policy_dn') 
-                pcons_ra_dn_mo = icurl('mo',pcons_ra_dn+'.json')
+                pcons_ra_api = pcons_ra_dn+'.json'
+                pcons_ra_dn_mo = icurl('mo',pcons_ra_api)
                 if pcons_ra_dn_mo:
-                    policy_dn_mo = icurl('mo',policy_dn+'.json')
+                    policy_dn_api = policy_dn+'.json'
+                    policy_dn_mo = icurl('mo',policy_dn_api)
                     if not policy_dn_mo:
                         data.append([pcons_ra_dn,policy_dn])  
 
