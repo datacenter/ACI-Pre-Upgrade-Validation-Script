@@ -5234,15 +5234,60 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     return result
 
 
+def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
+    title = 'Stale pconsRA Mo Check'
+    result = PASS
+    msg = ''
+    headers = ["pconsRA_DN, Stale_Policy_DN"]
+
+    data = []
+    recommended_action = 'Contact Cisco TAC to clear stale pconsRA'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale_pcons_ra_mo_check'
+    print_title(title, index, total_checks)
+
+    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
+        pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
+        pcons_rssubtreedep_mo = icurl('class', pcons_rssubtreedep_api)
+        pcons_inst_dn_reg = r'registry/class-\d+/instdn-\[(?P<policy_dn>.+?)\]/ra'
+        pcons_ra_dn_reg = r'(?P<pcons_ra_dn>.+?)/p...-\['
+
+        for mo in pcons_rssubtreedep_mo:
+            pcons_rssubtreedep_tdn = mo['pconsRsSubtreeDep']['attributes']['tDn']
+            instdn_found = re.search(pcons_inst_dn_reg, pcons_rssubtreedep_tdn)
+            radn_found = re.search(pcons_ra_dn_reg, pcons_rssubtreedep_tdn)
+            if instdn_found and radn_found:
+                pcons_ra_dn = radn_found.group('pcons_ra_dn')
+                policy_dn = instdn_found.group('policy_dn')
+                pcons_ra_api = pcons_ra_dn+'.json'
+                pcons_ra_dn_mo = icurl('mo', pcons_ra_api)
+                if pcons_ra_dn_mo:
+                    policy_dn_api = policy_dn+'.json'
+                    policy_dn_mo = icurl('mo', policy_dn_api)
+                    if not policy_dn_mo:
+                        data.append([pcons_ra_dn, policy_dn])
+    else:
+        print_result(title, NA, "Not applicable for this version combination. Skipping.")
+        return NA
+
+    if data:
+        result = FAIL_O
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 # ---- Script Execution ----
 
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
+    parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
+    parser.add_argument("-d", "--debug_function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
     parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
     parsed_args = parser.parse_args(args)
     is_puv = parsed_args.puv
     tversion = parsed_args.tversion
+    cversion = parsed_args.cversion
+    debug_function = parsed_args.debug_function
     # if tversion arg was provided, validate if it is a valid ACI version
     if tversion:
         try:
@@ -5250,10 +5295,16 @@ def parse_args(args):
         except ValueError as e:
             prints(e)
             sys.exit(1)
-    return is_puv, tversion
+    if cversion:
+        try:
+            cversion = AciVersion(cversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+    return is_puv, tversion, cversion, debug_function
 
 
-def prepare(is_puv, arg_tversion, total_checks):
+def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
@@ -5261,7 +5312,7 @@ def prepare(is_puv, arg_tversion, total_checks):
     if not is_puv:
         username, password = get_credentials()
     try:
-        cversion = get_current_version()
+        cversion = arg_cversion if arg_cversion else get_current_version()
         tversion = arg_tversion if arg_tversion else get_target_version()
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
@@ -5377,6 +5428,7 @@ def get_checks(is_puv):
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
+        stale_pcons_ra_mo_check,
 
     ]
     conn_checks = [
@@ -5448,9 +5500,10 @@ def wrapup(is_puv):
 
 
 def main(args=None):
-    is_puv, arg_tversion = parse_args(args)
-    checks = get_checks(is_puv)
-    inputs = prepare(is_puv, arg_tversion, len(checks))
+    is_puv, arg_tversion, arg_cversion, func = parse_args(args)
+    debuggable_functions = {"stale_pcons_ra_mo_check": [stale_pcons_ra_mo_check]}
+    checks = debuggable_functions[func] if func else get_checks(is_puv)
+    inputs = prepare(is_puv, arg_tversion, arg_cversion, len(checks))
     run_checks(checks, inputs)
     wrapup(is_puv)
 
