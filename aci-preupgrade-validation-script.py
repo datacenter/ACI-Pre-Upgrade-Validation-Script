@@ -1228,8 +1228,16 @@ def get_credentials():
     return usr, pwd
 
 
-def get_current_version():
+def get_current_version(arg_cversion):
     """ Returns: AciVersion instance """
+    if arg_cversion:
+        prints("Current APIC version is overridden to %s" % arg_cversion)
+        try:
+            current_version = AciVersion(arg_cversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return current_version
     prints("Checking current APIC version...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
@@ -1241,8 +1249,16 @@ def get_current_version():
     return current_version
 
 
-def get_target_version():
+def get_target_version(arg_tversion):
     """ Returns: AciVersion instance """
+    if arg_tversion:
+        prints("Target APIC version is overridden to %s" % arg_tversion)
+        try:
+            target_version = AciVersion(arg_tversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return target_version
     prints("Gathering APIC Versions from Firmware Repository...\n")
     repo_list = []
     response_json = icurl('class',
@@ -5234,47 +5250,6 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Stale pconsRA Mo Check'
-    result = PASS
-    msg = ''
-    headers = ["pconsRA_DN, Stale_Policy_DN"]
-
-    data = []
-    recommended_action = 'Contact Cisco TAC to clear stale pconsRA'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale_pcons_ra_mo_check'
-    print_title(title, index, total_checks)
-
-    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
-        pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
-        pcons_rssubtreedep_mo = icurl('class', pcons_rssubtreedep_api)
-        pcons_inst_dn_reg = r'registry/class-\d+/instdn-\[(?P<policy_dn>.+?)\]/ra'
-        pcons_ra_dn_reg = r'(?P<pcons_ra_dn>.+?)/p...-\['
-
-        for mo in pcons_rssubtreedep_mo:
-            pcons_rssubtreedep_tdn = mo['pconsRsSubtreeDep']['attributes']['tDn']
-            instdn_found = re.search(pcons_inst_dn_reg, pcons_rssubtreedep_tdn)
-            radn_found = re.search(pcons_ra_dn_reg, pcons_rssubtreedep_tdn)
-            if instdn_found and radn_found:
-                pcons_ra_dn = radn_found.group('pcons_ra_dn')
-                policy_dn = instdn_found.group('policy_dn')
-                pcons_ra_api = pcons_ra_dn+'.json'
-                pcons_ra_dn_mo = icurl('mo', pcons_ra_api)
-                if pcons_ra_dn_mo:
-                    policy_dn_api = policy_dn+'.json'
-                    policy_dn_mo = icurl('mo', policy_dn_api)
-                    if not policy_dn_mo:
-                        data.append([pcons_ra_dn, policy_dn])
-    else:
-        print_result(title, NA, "Not applicable for this version combination. Skipping.")
-        return NA
-
-    if data:
-        result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
-    return result
-
-
 # ---- Script Execution ----
 
 def parse_args(args):
@@ -5288,19 +5263,6 @@ def parse_args(args):
     tversion = parsed_args.tversion
     cversion = parsed_args.cversion
     debug_function = parsed_args.debug_function
-    # if tversion arg was provided, validate if it is a valid ACI version
-    if tversion:
-        try:
-            tversion = AciVersion(tversion)
-        except ValueError as e:
-            prints(e)
-            sys.exit(1)
-    if cversion:
-        try:
-            cversion = AciVersion(cversion)
-        except ValueError as e:
-            prints(e)
-            sys.exit(1)
     return is_puv, tversion, cversion, debug_function
 
 
@@ -5312,8 +5274,8 @@ def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
     if not is_puv:
         username, password = get_credentials()
     try:
-        cversion = arg_cversion if arg_cversion else get_current_version()
-        tversion = arg_tversion if arg_tversion else get_target_version()
+        cversion = get_current_version(arg_cversion)
+        tversion = get_target_version(arg_tversion)
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
@@ -5340,7 +5302,7 @@ def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
     return inputs
 
 
-def get_checks(is_puv):
+def get_checks(is_puv, debug_func):
     api_checks = [
         # General Checks
         target_version_compatibility_check,
@@ -5428,7 +5390,6 @@ def get_checks(is_puv):
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
-        stale_pcons_ra_mo_check,
 
     ]
     conn_checks = [
@@ -5443,6 +5404,8 @@ def get_checks(is_puv):
         observer_db_size_check,
 
     ]
+    if debug_func:
+        return [check for check in api_checks + conn_checks if check.__name__ == debug_func]
     if is_puv:
         return api_checks
     return conn_checks + api_checks
@@ -5500,9 +5463,8 @@ def wrapup(is_puv):
 
 
 def main(args=None):
-    is_puv, arg_tversion, arg_cversion, func = parse_args(args)
-    debuggable_functions = {"stale_pcons_ra_mo_check": [stale_pcons_ra_mo_check]}
-    checks = debuggable_functions[func] if func else get_checks(is_puv)
+    is_puv, arg_tversion, arg_cversion, debug_func = parse_args(args)
+    checks = get_checks(is_puv, debug_func)
     inputs = prepare(is_puv, arg_tversion, arg_cversion, len(checks))
     run_checks(checks, inputs)
     wrapup(is_puv)
