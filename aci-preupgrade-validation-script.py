@@ -5102,44 +5102,44 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
 
 
 def isis_database_byte_check(index, total_checks, tversion, **kwargs):
-    title = 'ISIS DTEPs Byte Check'
+    title = 'ISIS DTEPs Byte Size'
     result = PASS
     msg = ''
-    headers = ["ISIS DTEPs Byte Count", "Recommended Action"]
+    headers = ["ISIS DTEPs Byte Size", "Recommended Action"]
     data = []
     recommended_action = 'Upgrade to a version with the fix for CSCwp15375. Current target version is affected.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
     print_title(title, index, total_checks)
 
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
-    
+
     affected_versions = ["6.1(1f)", "6.1(2f)", "6.1(2g)", "6.1(3f)"]
     is_affected = False
     for version in affected_versions:
         if tversion.same_as(version):
             is_affected = True
             break
-    
+
     if not is_affected:
         print_result(title, NA, "Target version not affected")
         return NA
 
     isisDTEp_api = 'isisDTEp.json'
     isisDTEp_api += '?query-target-filter=eq(isisDTEp.role,"spine")'
-    
+
     isisDTEps = icurl('class', isisDTEp_api)
-    
+
     physical_ids = set()
     proxy_acast_mac_ids = set()
     proxy_acast_v4_ids = set()
     proxy_acast_v6_ids = set()
-    
+
     for entry in isisDTEps:
         dtep_type = entry['isisDTEp']['attributes']['type']
         dtep_id = entry['isisDTEp']['attributes']['id']
-        
+
         if dtep_type == "physical":
             physical_ids.add(dtep_id)
         elif dtep_type == "physical,proxy-acast-mac":
@@ -5148,21 +5148,22 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
             proxy_acast_v4_ids.add(dtep_id)
         elif dtep_type == "physical,proxy-acast-v6":
             proxy_acast_v6_ids.add(dtep_id)
-    
+
     for physical_id in physical_ids:
         proxy_mac_id = next(iter(proxy_acast_mac_ids)) if proxy_acast_mac_ids else ""
         proxy_v4_id = next(iter(proxy_acast_v4_ids)) if proxy_acast_v4_ids else ""
         proxy_v6_id = next(iter(proxy_acast_v6_ids)) if proxy_acast_v6_ids else ""
-        
+
         total_bytes = len(physical_id) + len(proxy_mac_id) + len(proxy_v4_id) + len(proxy_v6_id)
-        
+
         if total_bytes >= 58:
             result = FAIL_O
             data.append([str(total_bytes), recommended_action])
-            break    
+            break
 
     print_result(title, result, msg, headers, data, doc_url=doc_url)
     return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
@@ -5325,4 +5326,3 @@ if __name__ == "__main__":
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
     subprocess.check_output(['rm', '-rf', DIR])
-

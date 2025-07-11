@@ -184,7 +184,7 @@ Items                                           | Defect       | This Script    
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[ISIS DTEPs Byte Check][d26]                    | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[ISIS DTEPs Byte Size][d26]                    | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -212,7 +212,7 @@ Items                                           | Defect       | This Script    
 [d23]: #pbr-high-scale
 [d24]: #standby-sup-image-sync
 [d25]: #observer-database-size
-[d26]: #isis-dteps-byte-check
+[d26]: #isis-dteps-byte-size
 
 
 ## General Check Details
@@ -2544,7 +2544,7 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
 
-### ISIS DTEPs Byte Check
+### ISIS DTEPs Byte Size
 
 Due to [CSCwp15375][57], tech support generation will result in a switch crash under the following conditions:
 - The `isisDTEp` address for a given spine + PROXY-ACAST-MAC address + PROXY-ACAST-V4 address + PROXY-ACAST-V6 address equals 58 bytes or more
@@ -2553,7 +2553,7 @@ Due to [CSCwp15375][57], tech support generation will result in a switch crash u
 Do not upgrade to any affected ACI software release if this check fails.
 
 !!! note
-    NDI integration can cause tech support generation to happen automatically, resulting in switch crash without user intervention.
+    Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
