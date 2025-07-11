@@ -5105,7 +5105,7 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
     title = 'ISIS DTEPs Byte Size'
     result = PASS
     msg = ''
-    headers = ["ISIS DTEPs Byte Size", "ISIS DTEPs", "Recommended Action"]
+    headers = ["ISIS DTEPs Byte Size", "ISIS DTEPs"]
     data = []
     recommended_action = 'Upgrade to a version with the fix for CSCwp15375. Current target version is affected.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
@@ -5139,14 +5139,14 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
 
             if total_bytes > 57:
                 result = FAIL_O
-                data.append([total_bytes, combined_dteps, recommended_action])
+                data.append([total_bytes, combined_dteps])
                 break
 
     else:
         print_result(title, NA, "Target version not affected")
         return NA
 
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
