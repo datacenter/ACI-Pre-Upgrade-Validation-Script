@@ -5157,6 +5157,55 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
     return result
 
 
+def isis_database_byte_check(index, total_checks, tversion, **kwargs):
+    title = 'ISIS DTEPs Byte Size'
+    result = PASS
+    msg = ''
+    headers = ["ISIS DTEPs Byte Size", "ISIS DTEPs"]
+    data = []
+    recommended_action = 'Upgrade to a version with the fix for CSCwp15375. Current target version is affected.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
+    print_title(title, index, total_checks)
+
+    if not tversion:
+        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        return MANUAL
+
+    if tversion.newer_than("6.1(1a)") and tversion.older_than("6.1(3g)"):
+        isisDTEp_api = 'isisDTEp.json'
+        isisDTEp_api += '?query-target-filter=eq(isisDTEp.role,"spine")'
+
+        isisDTEps = icurl('class', isisDTEp_api)
+
+        physical_ids = set()
+        proxy_acast_ids = set()
+
+        for entry in isisDTEps:
+            dtep_type = entry['isisDTEp']['attributes']['type']
+            dtep_id = entry['isisDTEp']['attributes']['id']
+
+            if dtep_type == "physical":
+                physical_ids.add(dtep_id)
+            elif "physical,proxy-acast" in dtep_type:
+                proxy_acast_ids.add(dtep_id)
+
+        for physical_id in physical_ids:
+            combined_dteps = ",".join([physical_id] + list(proxy_acast_ids))
+            total_bytes = len(combined_dteps)
+
+            if total_bytes > 57:
+                result = FAIL_O
+                data.append([total_bytes, combined_dteps])
+                break
+
+    else:
+        print_result(title, NA, "Target version not affected")
+        return NA
+
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    return result
+
+
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -5273,6 +5322,7 @@ if __name__ == "__main__":
         standby_sup_sync_check,
         observer_db_size_check,
         stale_pcons_ra_mo_check,
+        isis_database_byte_check,
 
     ]
     summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
