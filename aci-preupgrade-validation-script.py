@@ -1228,8 +1228,16 @@ def get_credentials():
     return usr, pwd
 
 
-def get_current_version():
+def get_current_version(arg_cversion):
     """ Returns: AciVersion instance """
+    if arg_cversion:
+        prints("Current APIC version is overridden to %s" % arg_cversion)
+        try:
+            current_version = AciVersion(arg_cversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return current_version
     prints("Checking current APIC version...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
@@ -1241,8 +1249,16 @@ def get_current_version():
     return current_version
 
 
-def get_target_version():
+def get_target_version(arg_tversion):
     """ Returns: AciVersion instance """
+    if arg_tversion:
+        prints("Target APIC version is overridden to %s" % arg_tversion)
+        try:
+            target_version = AciVersion(arg_tversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return target_version
     prints("Gathering APIC Versions from Firmware Repository...\n")
     repo_list = []
     response_json = icurl('class',
@@ -5239,21 +5255,18 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
+    parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
+    parser.add_argument("-d", "--debug_function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
     parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
     parsed_args = parser.parse_args(args)
     is_puv = parsed_args.puv
     tversion = parsed_args.tversion
-    # if tversion arg was provided, validate if it is a valid ACI version
-    if tversion:
-        try:
-            tversion = AciVersion(tversion)
-        except ValueError as e:
-            prints(e)
-            sys.exit(1)
-    return is_puv, tversion
+    cversion = parsed_args.cversion
+    debug_function = parsed_args.debug_function
+    return is_puv, tversion, cversion, debug_function
 
 
-def prepare(is_puv, arg_tversion, total_checks):
+def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
@@ -5261,8 +5274,8 @@ def prepare(is_puv, arg_tversion, total_checks):
     if not is_puv:
         username, password = get_credentials()
     try:
-        cversion = get_current_version()
-        tversion = arg_tversion if arg_tversion else get_target_version()
+        cversion = get_current_version(arg_cversion)
+        tversion = get_target_version(arg_tversion)
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
@@ -5289,7 +5302,7 @@ def prepare(is_puv, arg_tversion, total_checks):
     return inputs
 
 
-def get_checks(is_puv):
+def get_checks(is_puv, debug_func):
     api_checks = [
         # General Checks
         target_version_compatibility_check,
@@ -5391,6 +5404,8 @@ def get_checks(is_puv):
         observer_db_size_check,
 
     ]
+    if debug_func:
+        return [check for check in api_checks + conn_checks if check.__name__ == debug_func]
     if is_puv:
         return api_checks
     return conn_checks + api_checks
@@ -5448,9 +5463,9 @@ def wrapup(is_puv):
 
 
 def main(args=None):
-    is_puv, arg_tversion = parse_args(args)
-    checks = get_checks(is_puv)
-    inputs = prepare(is_puv, arg_tversion, len(checks))
+    is_puv, arg_tversion, arg_cversion, debug_func = parse_args(args)
+    checks = get_checks(is_puv, debug_func)
+    inputs = prepare(is_puv, arg_tversion, arg_cversion, len(checks))
     run_checks(checks, inputs)
     wrapup(is_puv)
 

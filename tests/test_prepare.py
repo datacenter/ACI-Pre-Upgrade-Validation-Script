@@ -27,7 +27,13 @@ def mock_get_target_version(monkeypatch):
     select a version.
     """
 
-    def _mock_get_target_version():
+    def _mock_get_target_version(arg_tversion):
+        if arg_tversion:
+            try:
+                return AciVersion(arg_tversion)
+            except ValueError as e:
+                script.prints(e)
+                raise SystemExit(1)
         return AciVersion("6.2(1a)")
 
     monkeypatch.setattr(script, "get_target_version", _mock_get_target_version)
@@ -56,7 +62,7 @@ outputs = {
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, is_puv, arg_tversion, expected_result",
+    "icurl_outputs, is_puv, arg_tversion, arg_cversion, debug_function, expected_result",
     [
         # Default, no argparse arguments
         (
@@ -66,6 +72,8 @@ outputs = {
                 "fabricNodePEp.json": outputs["vpc_nodes"],
             },
             False,
+            None,
+            None,
             None,
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.1(1a)"), "tversion": AciVersion("6.2(1a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
@@ -79,6 +87,8 @@ outputs = {
             },
             True,
             None,
+            None,
+            None,
             {"username": None, "password": None, "cversion": AciVersion("6.1(1a)"), "tversion": AciVersion("6.2(1a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
         # `arg_tversion` is provided (i.e. -t 6.1(4a))
@@ -90,14 +100,72 @@ outputs = {
                 "fabricNodePEp.json": outputs["vpc_nodes"],
             },
             False,
-            AciVersion("6.1(4a)"),
+            "6.1(4a)",
+            None,
+            None,
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.1(1a)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
+        ),
+        # `arg_tversion` and `arg_cversion` are both provided (i.e. -t 6.1(4a))
+        # The version `get_target_version()` is ignored.
+        (
+            {
+                "firmwareCtrlrRunning.json": outputs["cversion"],
+                "firmwareRunning.json": outputs["switch_version"],
+                "fabricNodePEp.json": outputs["vpc_nodes"],
+            },
+            False,
+            "6.1(4a)",
+            "6.0(8d)",
+            None,
+            {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(8d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
+        ),
+        # `arg_tversion`, `arg_cversion` and 'debug_function' are all provided
+        # The version `get_target_version()` is ignored.
+        (
+            {
+                "firmwareCtrlrRunning.json": outputs["cversion"],
+                "firmwareRunning.json": outputs["switch_version"],
+                "fabricNodePEp.json": outputs["vpc_nodes"],
+            },
+            False,
+            "6.1(4a)",
+            "6.0(4d)",
+            "ave_eol_check",
+            {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(4d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
+        ),
+        # veresions are switch syntax
+        # The version `get_target_version()` is ignored.
+        (
+            {
+                "firmwareCtrlrRunning.json": outputs["cversion"],
+                "firmwareRunning.json": outputs["switch_version"],
+                "fabricNodePEp.json": outputs["vpc_nodes"],
+            },
+            False,
+            "16.1(4a)",
+            "16.0(4d)",
+            "ave_eol_check",
+            {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(4d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
+        ),
+        # veresions are switch or APIC syntax
+        # The version `get_target_version()` is ignored.
+        (
+            {
+                "firmwareCtrlrRunning.json": outputs["cversion"],
+                "firmwareRunning.json": outputs["switch_version"],
+                "fabricNodePEp.json": outputs["vpc_nodes"],
+            },
+            False,
+            "n9000-16.2(1a).bin",
+            "aci-apic-dk9.6.0.1a.bin",
+            "ave_eol_check",
+            {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(1a)"), "tversion": AciVersion("6.2(1a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
     ],
 )
-def test_prepare(mock_icurl, is_puv, arg_tversion, expected_result):
-    checks = script.get_checks(is_puv)
-    inputs = script.prepare(is_puv, arg_tversion, len(checks))
+def test_prepare(mock_icurl, is_puv, arg_tversion, arg_cversion, debug_function, expected_result):
+    checks = script.get_checks(is_puv, debug_function)
+    inputs = script.prepare(is_puv, arg_tversion, arg_cversion, len(checks))
     for key, value in expected_result.items():
         if "version" in key:
             assert isinstance(inputs[key], AciVersion)
@@ -116,10 +184,24 @@ def test_prepare(mock_icurl, is_puv, arg_tversion, expected_result):
         assert meta["sw_cversion"] == str(expected_result["sw_cversion"])
         assert meta["is_puv"] == is_puv
         assert meta["total_checks"] == len(checks)
+        if debug_function:
+            assert meta["total_checks"] == 1
+
+
+def test_tversion_invald():
+    with pytest.raises(SystemExit):
+        with pytest.raises(ValueError):
+            script.prepare(False, "invalid_version", "6.0(1a)", 1)
+
+
+def test_cversion_invald():
+    with pytest.raises(SystemExit):
+        with pytest.raises(ValueError):
+            script.prepare(False, "6.0(1a)", "invalid_version", 1)
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, is_puv, arg_tversion, expected_result",
+    "icurl_outputs, is_puv, arg_tversion, arg_cversion, debug_function, expected_result",
     [
         # `get_cversion()` failure
         (
@@ -129,6 +211,8 @@ def test_prepare(mock_icurl, is_puv, arg_tversion, expected_result):
                 "fabricNodePEp.json": outputs["vpc_nodes"],
             },
             False,
+            None,
+            None,
             None,
             """\
 Checking current APIC version...
@@ -146,6 +230,8 @@ Initial query failed. Ensure APICs are healthy. Ending script run.
             },
             False,
             None,
+            None,
+            None,
             """\
 Gathering Lowest Switch Version from Firmware Repository...
 
@@ -162,6 +248,8 @@ Initial query failed. Ensure APICs are healthy. Ending script run.
             },
             False,
             None,
+            None,
+            None,
             """\
 Collecting VPC Node IDs...
 
@@ -171,12 +259,12 @@ Initial query failed. Ensure APICs are healthy. Ending script run.
         ),
     ],
 )
-def test_prepare_exception(capsys, caplog, mock_icurl, is_puv, arg_tversion, expected_result):
+def test_prepare_exception(capsys, caplog, mock_icurl, is_puv, arg_tversion, arg_cversion, debug_function, expected_result):
     caplog.set_level(logging.CRITICAL)
     with pytest.raises(SystemExit):
         with pytest.raises(Exception):
-            checks = script.get_checks(is_puv)
-            script.prepare(is_puv, arg_tversion, len(checks))
+            checks = script.get_checks(is_puv, debug_function)
+            script.prepare(is_puv, arg_tversion, arg_cversion, len(checks))
     captured = capsys.readouterr()
     print(captured.out)
     assert captured.out.endswith(expected_result)
