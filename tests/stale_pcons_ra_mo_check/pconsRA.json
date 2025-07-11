@@ -1,0 +1,33 @@
+{
+    "totalCount": "1",
+    "imdata": [
+        {
+            "pconsRA": {
+                "attributes": {
+                    "applyFilter": "yes",
+                    "childAction": "",
+                    "ctx": "uni/infra/attentp-PHY-DOM_AttEntityP",
+                    "deployStatus": "deployed",
+                    "distAll": "no",
+                    "dn": "registry/class-1809/instdn-[uni/phys-PHY-DOM]/ra-[uni/infra/attentp-PHY-DOM_AttEntityP]-6-0-0-0-SubtreeWithRels-mo",
+                    "incrDeploy": "no",
+                    "lcOwn": "local",
+                    "markedForDelete": "no",
+                    "modOnly": "no",
+                    "modTs": "2025-01-23T11:42:00.631+10:00",
+                    "nonDeployable": "no",
+                    "onBehalfOf": "no",
+                    "pendingRelease": "no",
+                    "resolverType": "mo",
+                    "rn": "ra-[uni/infra/attentp-PHY-DOM_AttEntityP]-6-0-0-0-SubtreeWithRels-mo",
+                    "slotId": "0",
+                    "status": "",
+                    "svc": "6",
+                    "systemId": "0",
+                    "systemType": "0",
+                    "updateType": "SubtreeWithRels"
+                }
+            }
+        }
+    ]
+}
