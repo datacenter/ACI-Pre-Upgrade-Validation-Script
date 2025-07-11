@@ -60,7 +60,7 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
             "6.0(3d)",
             script.PASS,
         ),
-        # pass when tversion is 6.0(3d)+ and tversion is newer than 6.1(4a).
+        # pass when tversion is newer than 6.1(4a).
         (
             {
                 pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
