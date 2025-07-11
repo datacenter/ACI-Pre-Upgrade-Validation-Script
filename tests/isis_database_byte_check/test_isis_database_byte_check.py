@@ -16,44 +16,58 @@ isisDTEp_api += '?query-target-filter=eq(isisDTEp.role,"spine")'
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result",
     [
-        ## Failure cases
+
+        # MANUAL cases
+        (
+            {isisDTEp_api: read_data(dir, "isisDTEp_POS.json")},
+            None,
+            script.MANUAL,
+        ),
+        # Failure cases
+        (
+            {isisDTEp_api: read_data(dir, "isisDTEp_POS.json")},
+            "6.0(1f)",
+            script.NA,
+        ),
+
+        # Failure cases
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_POS.json")},
             "6.1(1f)",
             script.FAIL_O,
-        ),    
+        ),
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_POS.json")},
             "6.1(2f)",
             script.FAIL_O,
-        ),     
+        ),
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_POS.json")},
             "6.1(2g)",
             script.FAIL_O,
-        ),     
+        ),
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_POS.json")},
             "6.1(3f)",
             script.FAIL_O,
-        ),      
+        ),
 
-        ## Pass cases
+        # Pass cases
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_NEG.json")},
             "6.1(1f)",
             script.PASS,
-        ),    
+        ),
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_NEG.json")},
             "6.1(2f)",
             script.PASS,
-        ),     
+        ),
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_NEG.json")},
             "6.1(2g)",
             script.PASS,
-        ),     
+        ),
         (
             {isisDTEp_api: read_data(dir, "isisDTEp_NEG.json")},
             "6.1(3f)",

@@ -2546,9 +2546,14 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 
 ### ISIS DTEPs Byte Size
 
-Due to [CSCwp15375][57], tech support generation will result in a switch crash under the following conditions:
-- The `isisDTEp` address for a given spine + PROXY-ACAST-MAC address + PROXY-ACAST-V4 address + PROXY-ACAST-V6 address equals 58 bytes or more
-- The ACI software version is 6.1(1f), 6.1(2f), 6.1(2g), or 6.1(3f)
+Due to [CSCwp15375][57], running a `show` command that dumps out the ISIS Link State Database under certain conditions, such as `show isis database detail vrf all`, will result in a switch crash.
+
+As Switch Tech Support generation includes ISIS show command output, Tech Support generation will also result in a switch crash under the same conditions.
+
+The specific conditions leading to the crash are:
+
+1. The ACI software version is 6.1(1f), 6.1(2f), 6.1(2g), or 6.1(3f)
+2. For any spine; The `isisDTEp` address + `PROXY-ACAST-MAC` address + `PROXY-ACAST-V4` address + `PROXY-ACAST-V6` address equals 58 bytes or more
 
 Do not upgrade to any affected ACI software release if this check fails.
 
