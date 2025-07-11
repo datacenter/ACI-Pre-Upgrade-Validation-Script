@@ -105,7 +105,7 @@ outputs = {
             None,
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.1(1a)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
-        # `arg_tversion`  and `arg_cversion` are both provided (i.e. -t 6.1(4a))
+        # `arg_tversion` and `arg_cversion` are both provided (i.e. -t 6.1(4a))
         # The version `get_target_version()` is ignored.
         (
             {
@@ -119,7 +119,7 @@ outputs = {
             None,
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(8d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
-        # `arg_tversion` is provided (i.e. -t 6.1(4a))
+        # `arg_tversion`, `arg_cversion` and 'debug_function' are all provided
         # The version `get_target_version()` is ignored.
         (
             {
@@ -132,6 +132,34 @@ outputs = {
             "6.0(4d)",
             "ave_eol_check",
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(4d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
+        ),
+        # veresions are switch syntax
+        # The version `get_target_version()` is ignored.
+        (
+            {
+                "firmwareCtrlrRunning.json": outputs["cversion"],
+                "firmwareRunning.json": outputs["switch_version"],
+                "fabricNodePEp.json": outputs["vpc_nodes"],
+            },
+            False,
+            "16.1(4a)",
+            "16.0(4d)",
+            "ave_eol_check",
+            {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(4d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
+        ),
+        # veresions are switch or APIC syntax
+        # The version `get_target_version()` is ignored.
+        (
+            {
+                "firmwareCtrlrRunning.json": outputs["cversion"],
+                "firmwareRunning.json": outputs["switch_version"],
+                "fabricNodePEp.json": outputs["vpc_nodes"],
+            },
+            False,
+            "n9000-16.2(1a).bin",
+            "aci-apic-dk9.6.0.1a.bin",
+            "ave_eol_check",
+            {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(1a)"), "tversion": AciVersion("6.2(1a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
     ],
 )
@@ -158,6 +186,18 @@ def test_prepare(mock_icurl, is_puv, arg_tversion, arg_cversion, debug_function,
         assert meta["total_checks"] == len(checks)
         if debug_function:
             assert meta["total_checks"] == 1
+
+
+def test_tversion_invald():
+    with pytest.raises(SystemExit):
+        with pytest.raises(ValueError):
+            script.prepare(False, "invalid_version", "6.0(1a)", 1)
+
+
+def test_cversion_invald():
+    with pytest.raises(SystemExit):
+        with pytest.raises(ValueError):
+            script.prepare(False, "6.0(1a)", "invalid_version", 1)
 
 
 @pytest.mark.parametrize(
@@ -223,7 +263,7 @@ def test_prepare_exception(capsys, caplog, mock_icurl, is_puv, arg_tversion, arg
     caplog.set_level(logging.CRITICAL)
     with pytest.raises(SystemExit):
         with pytest.raises(Exception):
-            checks = script.get_checks(is_puv)
+            checks = script.get_checks(is_puv, debug_function)
             script.prepare(is_puv, arg_tversion, arg_cversion, len(checks))
     captured = capsys.readouterr()
     print(captured.out)
