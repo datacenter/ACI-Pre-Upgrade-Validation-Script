@@ -5104,7 +5104,7 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
     title = 'Stale pconsRA Mo Check'
     result = PASS
     msg = ''
-    headers = ["pconsRA_DN", "Stale_Policy_DN"]
+    headers = ["Stale_pconsRA_DN", "Non_Existing_Policy_DN"]
 
     data = []
     recommended_action = 'Contact Cisco TAC to clear stale pconsRA'
