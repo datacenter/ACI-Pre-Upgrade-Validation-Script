@@ -82,8 +82,17 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
             "6.0(3d)",
             script.FAIL_O,
         ),
-
-
+        # FAIL_O when version tversion is older than 6.0(3d) and policy_dn is NOT found (pcons is stale).
+        (
+            {
+                pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
+                pcons_ra_api: read_data(dir, 'pconsRA.json'),
+                policy_dn_api: read_data(dir, 'policyDn_empty.json'),
+            },
+            "5.3(2a)",
+            "6.1(3d)",
+            script.FAIL_O,
+        ),
     ],
 )
 def test_logic(mock_icurl, cversion, tversion, expected_result):
