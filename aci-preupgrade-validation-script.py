@@ -5100,15 +5100,16 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
+
 def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Stale pconsRA Mo Check'
+    title = 'Stale pconsRA Objects'
     result = PASS
     msg = ''
-    headers = ["Stale_pconsRA_DN", "Non_Existing_Policy_DN"]
+    headers = ["Stale pconsRA DN", "Non-Existing DN"]
 
     data = []
-    recommended_action = 'Contact Cisco TAC to clear stale pconsRA'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale_pcons_ra_mo_check'
+    recommended_action = 'Contact Cisco TAC to delete stale pconsRA before upgrading'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-pconsra-object'
     print_title(title, index, total_checks)
 
     if not tversion:
@@ -5154,6 +5155,7 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
         result = FAIL_O
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
+
 
 if __name__ == "__main__":
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
