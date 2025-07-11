@@ -22,6 +22,8 @@ from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
+from argparse import ArgumentParser
+import shutil
 import warnings
 import time
 import pexpect
@@ -53,15 +55,106 @@ dom_regex = r"uni/(?:vmmp-[^/]+/)?(?P<type>phys|l2dom|l3dom|dom)-(?P<dom>[^/]+)"
 
 tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
-DIR = 'preupgrade_validator_logs/'
 BUNDLE_NAME = 'preupgrade_validator_%s%s.tgz' % (ts, tz)
+DIR = 'preupgrade_validator_logs/'
+JSON_DIR = DIR + 'json_results/'
+META_FILE = DIR + 'meta.json'
 RESULT_FILE = DIR + 'preupgrade_validator_%s%s.txt' % (ts, tz)
-JSON_FILE = DIR + 'preupgrade_validator_%s%s.json' % (ts, tz)
+SUMMARY_FILE = DIR + 'summary.json'
 LOG_FILE = DIR + 'preupgrade_validator_debug.log'
 fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %(message)s'.format(tz)
-subprocess.check_output(['mkdir', '-p', DIR])
+if os.path.isdir(DIR):
+    shutil.rmtree(DIR)
+os.mkdir(DIR)
+os.mkdir(JSON_DIR)
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+class syntheticMaintPValidate:
+    def __init__(self, name, description, path=JSON_DIR):
+        self.name = name
+        self.description = description
+        self.reason = ""
+        self.criticality = "informational"
+        self.passed = True
+        self.recommended_action = ""
+        self.sub_reason = ""
+        self.showValidation = True
+        self.failureDetails = {}
+        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
+        self.filename = cleaned_name + '.json'
+        self.path = path
+
+    @staticmethod
+    def craftData(column, row):
+        data = []
+        if isinstance(row, list) and isinstance(column, list):
+            for i in range(len(row)):
+                entry = {}
+                for j in range(len(column)):
+                    if j < len(row[i]):
+                        entry[column[j]] = row[i][j]
+                    else:
+                        entry[column[j]] = None
+                data.append(entry)
+        return data
+
+    def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
+        self.reason = reason
+
+        # Show validation
+        if result in [NA, POST]:
+            self.showValidation = False
+
+        # Criticality
+        if result in [FAIL_O, FAIL_UF]:
+            self.criticality = "critical"
+        elif result in [ERROR]:
+            self.criticality = "major"
+        elif result in [MANUAL]:
+            self.criticality = "warning"
+
+        # FailureDetails
+        if result not in [NA, PASS]:
+            self.passed = False
+            self.recommended_action = recommended_action
+            self.failureDetails["fail_type"] = result
+            self.failureDetails["header"] = header
+            self.failureDetails["footer"] = footer
+            self.failureDetails["column"] = column
+            self.failureDetails["row"] = row
+            self.failureDetails["unformatted_column"] = unformatted_column
+            self.failureDetails["unformatted_rows"] = unformatted_rows
+            self.failureDetails["data"] = self.craftData(column, row)
+            if unformatted_column and unformatted_rows:
+                self.failureDetails["data"].extend(self.craftData(unformatted_column, unformatted_rows))
+                self.reason += " Parse failure occurred, please check unformatted data in the output data."
+
+    def buildResult(self):
+        result = {
+            "syntheticMaintPValidate": {
+                "attributes": {
+                    "name": self.name,
+                    "description": self.description,
+                    "reason": self.reason,
+                    "criticality": self.criticality,
+                    "passed": self.passed,
+                    "recommended_action": self.recommended_action,
+                    "sub_reason": self.sub_reason,
+                    "showValidation": self.showValidation,
+                    "failureDetails": self.failureDetails
+                }
+            }
+        }
+        return result
+
+    def writeResult(self):
+        if not os.path.isdir(self.path):
+            os.mkdir(self.path)
+        with open(os.path.join(self.path, self.filename), "w") as f:
+            json.dump(self.buildResult(), f, indent=2)
+        return "{}/{}".format(self.path, self.filename)
 
 
 class OldVerClassNotFound(Exception):
@@ -425,50 +518,65 @@ class IPAddress:
 
 
 class AciVersion():
-    v_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)\.?(?P<patch>(?:[a-b]|[0-9a-z]+))\)?'
+    """
+    ACI Version parser class. Parses the version string and provides methods to compare versions.
+    Supported version formats:
+    - APIC: `5.2(7f)`, `5.2.7f`, `5.2(7.123a)`, `5.2.7.123a`, `5.2(7.123)`, `5.2.7.123`, `aci-apic-dk9.5.2.7f.iso/bin`
+    - Switch: `15.2(7f)`, `15.2.7f`, `15.2(7.123a)`, `15.2.7.123a`, `15.2(7.123)`, `15.2.7.123`, `aci-n9000-dk9.15.2.7f.bin`
+    """
+    v_regex = r'(?:dk9\.)?[1]?(?P<major1>\d)\.(?P<major2>\d)(?:\.|\()(?P<maint>\d+)(?P<QAdot>\.?)(?P<patch1>(?:[a-z]|\d+))(?P<patch2>[a-z]?)\)?'
 
     def __init__(self, version):
         self.original = version
         v = re.search(self.v_regex, version)
-        self.version = ('{major1}.{major2}({maint}{patch})'
-                        .format(**v.groupdict()) if v else None)
-        self.dot_version = ("{major1}.{major2}.{maint}{patch}"
-                            .format(**v.groupdict()) if v else None)
-        self.simple_version = ("{major1}.{major2}({maint})"
-                               .format(**v.groupdict()) if v else None)
-        self.major_version = ("{major1}.{major2}"
-                              .format(**v.groupdict()) if v else None)
-        self.major1 = v.group('major1') if v else None
-        self.major2 = v.group('major2') if v else None
-        self.maint = v.group('maint') if v else None
-        self.patch = v.group('patch') if v else None
-        self.regex = v
         if not v:
-            raise RuntimeError("Parsing failure of ACI version `%s`", version)
+            raise ValueError("Parsing failure of ACI version `%s`" % version)
+        self.version = "{major1}.{major2}({maint}{QAdot}{patch1}{patch2})".format(**v.groupdict())
+        self.dot_version = "{major1}.{major2}.{maint}{QAdot}{patch1}{patch2}".format(**v.groupdict())
+        self.simple_version = "{major1}.{major2}({maint})".format(**v.groupdict())
+        self.major_version = "{major1}.{major2}".format(**v.groupdict())
+        self.major1 = v.group("major1")
+        self.major2 = v.group("major2")
+        self.maint = v.group("maint")
+        self.patch1 = v.group("patch1")
+        self.patch2 = v.group("patch2")
+        self.regex = v
 
     def __str__(self):
         return self.version
 
     def older_than(self, version):
-        v = re.search(self.v_regex, version)
-        if not v: return None
-        for i in range(1, len(v.groups())+1):
-            if i < 4:
-                if int(self.regex.group(i)) > int(v.group(i)): return False
-                elif int(self.regex.group(i)) < int(v.group(i)): return True
-            if i == 4:
-                if self.regex.group(i) > v.group(i): return False
-                elif self.regex.group(i) < v.group(i): return True
+        v2 = version if isinstance(version, AciVersion) else AciVersion(version)
+        for key in ["major1", "major2", "maint"]:
+            if int(self.regex.group(key)) > int(v2.regex.group(key)): return False
+            elif int(self.regex.group(key)) < int(v2.regex.group(key)): return True
+        # Patch1 can be alphabet or number
+        if self.patch1.isalpha() and v2.patch1.isdigit():
+            return True  # e.g., 5.2(7f) is older than 5.2(7.123)
+        elif self.patch1.isdigit() and v2.patch1.isalpha():
+            return False
+        elif self.patch1.isalpha() and v2.patch1.isalpha():
+            if self.patch1 > v2.patch1: return False
+            elif self.patch1 < v2.patch1: return True
+        elif self.patch1.isdigit() and v2.patch1.isdigit():
+            if int(self.patch1) > int(v2.patch1): return False
+            elif int(self.patch1) < int(v2.patch1): return True
+            # Patch2 (alphabet) is optional.
+            if not self.patch2 and v2.patch2:
+                return True  # one without Patch2 is older.
+            elif self.patch2 and not v2.patch2:
+                return False
+            elif self.patch2 and v2.patch2:
+                if self.patch2 > v2.patch2: return False
+                elif self.patch2 < v2.patch2: return True
         return False
 
     def newer_than(self, version):
         return not self.older_than(version) and not self.same_as(version)
 
     def same_as(self, version):
-        v = re.search(self.v_regex, version)
-        ver = ('{major1}.{major2}({maint}{patch})'
-               .format(**v.groupdict()) if v else None)
-        return self.version == ver
+        v2 = version if isinstance(version, AciVersion) else AciVersion(version)
+        return self.version == v2.version
 
 
 class AciObjectCrawler(object):
@@ -1031,7 +1139,22 @@ def print_result(title, result, msg='',
                  unformatted_headers=None, unformatted_data=None,
                  recommended_action='',
                  doc_url='',
-                 adjust_title=False):
+                 adjust_title=False,
+                 json_output=True):
+    if json_output:
+        synth = syntheticMaintPValidate(title, "")
+        synth.updateWithResults(
+            result=result,
+            recommended_action=recommended_action,
+            reason=msg,
+            header="",
+            footer=doc_url,
+            column=headers,
+            row=data,
+            unformatted_column=unformatted_headers,
+            unformatted_rows=unformatted_data,
+        )
+        synth.writeResult()
     padding = 120 - len(title) - len(msg)
     if adjust_title: padding += len(title) + 18
     output = '{}{:>{}}'.format(msg, result, padding)
@@ -1054,11 +1177,11 @@ def print_result(title, result, msg='',
 def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
-            raise OldVerPropNotFound('cversion does not have requested property')
+            raise OldVerPropNotFound('Your current ACI version does not have requested property')
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
-            raise OldVerClassNotFound('cversion does not have requested class')
+            raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
-            raise OldVerClassNotFound('cversion does not have requested class')
+            raise OldVerClassNotFound('Your current ACI version does not have requested class')
         else:
             raise Exception('API call failed! Check debug log')
 
@@ -1094,6 +1217,7 @@ def icurl(apitype, query, page_size=100000):
 
 
 def get_credentials():
+    prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
     while True:
         usr = input('Enter username for APIC login          : ')
         if usr: break
@@ -1104,8 +1228,16 @@ def get_credentials():
     return usr, pwd
 
 
-def get_current_version():
+def get_current_version(arg_cversion):
     """ Returns: AciVersion instance """
+    if arg_cversion:
+        prints("Current APIC version is overridden to %s" % arg_cversion)
+        try:
+            current_version = AciVersion(arg_cversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return current_version
     prints("Checking current APIC version...", end='')
     firmwares = icurl('class', 'firmwareCtrlrRunning.json')
     for firmware in firmwares:
@@ -1117,8 +1249,16 @@ def get_current_version():
     return current_version
 
 
-def get_target_version():
+def get_target_version(arg_tversion):
     """ Returns: AciVersion instance """
+    if arg_tversion:
+        prints("Target APIC version is overridden to %s" % arg_tversion)
+        try:
+            target_version = AciVersion(arg_tversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return target_version
     prints("Gathering APIC Versions from Firmware Repository...\n")
     repo_list = []
     response_json = icurl('class',
@@ -1151,23 +1291,25 @@ def get_target_version():
         return None
 
 
-def get_vpc_nodes(**kwargs):
+def get_vpc_nodes():
     """ Returns list of VPC Node IDs; ['101', '102', etc...] """
-    prints("Collecting VPC Node IDs...\n")
+    prints("Collecting VPC Node IDs...", end='')
     vpc_nodes = []
-
-    prot_pols = kwargs.get("fabricNodePEp.json", None)
-    if not prot_pols:
-        prot_pols = icurl('class', 'fabricNodePEp.json')
-
-    if prot_pols:
-        for vpc_node in prot_pols:
-            vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
-
+    prot_pols = icurl('class', 'fabricNodePEp.json')
+    for vpc_node in prot_pols:
+        vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
+    vpc_nodes.sort()
+    # Display up to 4 node IDs
+    max_display = 4
+    if len(vpc_nodes) <= max_display:
+        prints('%s\n' % ", ".join(vpc_nodes))
+    else:
+        omitted_count = len(vpc_nodes) - max_display
+        prints('%s, ... (and %d more)\n' % (", ".join(vpc_nodes[:max_display]), omitted_count))
     return vpc_nodes
 
 
-def get_switch_version(**kwargs):
+def get_switch_version():
     """ Returns lowest switch version as AciVersion instance """
     prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
     firmwares = icurl('class', 'firmwareRunning.json')
@@ -1199,7 +1341,7 @@ def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     unformatted_data = []
     doc_url = 'ACI Troubleshooting Guide 2nd Edition - http://cs.co/9003ybZ1d'
     print_title(title, index, total_checks)
-    if cversion.older_than("4.2"):
+    if cversion.older_than("4.2(1a)"):
         recommended_action = 'Follow "Initial Fabric Setup" in ACI Troubleshooting Guide 2nd Edition'
     else:
         recommended_action = 'Troubleshoot by running "acidiag cluster" on APIC CLI'
@@ -1949,7 +2091,8 @@ def switch_ssd_check(index, total_checks, **kwargs):
     return result
 
 
-def apic_ssd_check(index, total_checks, cversion, **kwargs):
+# Connection based check
+def apic_ssd_check(index, total_checks, cversion, username, password, **kwargs):
     title = 'APIC SSD Health'
     result = FAIL_UF
     msg = ''
@@ -1989,16 +2132,16 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                     c.log = LOG_FILE
                     c.connect()
                 except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
-                    print_result(node_title, ERROR)
+                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                    print_result(node_title, ERROR, json_output=False)
                     has_error = True
                     continue
                 try:
                     c.cmd(
                         'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
                 except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', e])
-                    print_result(node_title, ERROR)
+                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                    print_result(node_title, ERROR, json_output=False)
                     has_error = True
                     continue
 
@@ -2010,12 +2153,12 @@ def apic_ssd_check(index, total_checks, cversion, **kwargs):
                                      wearout, recommended_action])
                         report_other = True
 
-                        print_result(node_title, DONE)
+                        print_result(node_title, DONE, json_output=False)
                         continue
                     if report_other:
                         data.append([pod_id, node_id, "Solid State Disk",
                                      wearout, "No Action Required"])
-                print_result(node_title, DONE)
+                print_result(node_title, DONE, json_output=False)
     else:
         headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
         unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
@@ -2597,6 +2740,7 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
     return result
 
 
+# Connection based check
 def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
     title = 'APIC Target version image and MD5 hash'
     result = FAIL_UF
@@ -2616,7 +2760,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             desc = fm_mo["firmwareFirmware"]['attributes']["description"]
             md5 = fm_mo["firmwareFirmware"]['attributes']["checksum"]
             if "Image signing verification failed" in desc:
-                data.append(["All", tversion, md5,
+                data.append(["All", str(tversion), md5,
                              'Target image is corrupted', 'Delete and Upload Again'])
                 image_validaton = False
 
@@ -2643,8 +2787,8 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', e, '-'])
-            print_result(node_title, ERROR)
+            data.append([apic_name, '-', '-', str(e), '-'])
+            print_result(node_title, ERROR, json_output=False)
             has_error = True
             continue
 
@@ -2653,13 +2797,13 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, '-', '-',
-                         'ls command via ssh failed due to:{}'.format(e), '-'])
-            print_result(node_title, ERROR)
+                         'ls command via ssh failed due to:{}'.format(str(e)), '-'])
+            print_result(node_title, ERROR, json_output=False)
             has_error = True
             continue
         if "No such file or directory" in c.output:
             data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
-            print_result(node_title, FAIL_UF)
+            print_result(node_title, FAIL_UF, json_output=False)
             continue
 
         try:
@@ -2667,13 +2811,13 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
-                         'failed to check md5sum via ssh due to:{}'.format(e), '-'])
-            print_result(node_title, ERROR)
+                         'failed to check md5sum via ssh due to:{}'.format(str(e)), '-'])
+            print_result(node_title, ERROR, json_output=False)
             has_error = True
             continue
         if "No such file or directory" in c.output:
             data.append([apic_name, str(tversion), '-', 'md5sum file not found', recommended_action])
-            print_result(node_title, FAIL_UF)
+            print_result(node_title, FAIL_UF, json_output=False)
             continue
         for line in c.output.split("\n"):
             words = line.split()
@@ -2686,11 +2830,11 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 break
         else:
             data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file', recommended_action])
-            print_result(node_title, ERROR)
+            print_result(node_title, ERROR, json_output=False)
             has_error = True
             continue
 
-        print_result(node_title, DONE)
+        print_result(node_title, DONE, json_output=False)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])
@@ -2702,6 +2846,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     return result
 
 
+# Connection Based Check
 def standby_apic_disk_space_check(index, total_checks, **kwargs):
     title = 'Standby APIC Disk Space Usage'
     result = FAIL_UF
@@ -2726,14 +2871,14 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', str(e)])
             has_error = True
             continue
 
         try:
             c.cmd("df -h")
         except Exception as e:
-            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', e])
+            data.append([stb['mbSn'], stb['oobIpAddr'], '-', '-', str(e)])
             has_error = True
             continue
 
@@ -3890,12 +4035,12 @@ def fabric_port_down_check(index, total_checks, **kwargs):
     recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
     print_title(title, index, total_checks)
-    
-    fault_api =  'faultInst.json'
+
+    fault_api = 'faultInst.json'
     fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
     fault_api += ',eq(faultInst.rule,"ethpm-if-port-down-fabric"))'
 
-    faultInsts = icurl('class',fault_api)
+    faultInsts = icurl('class', fault_api)
     dn_re = node_regex + r'/.+/phys-\[(?P<int>eth\d/\d+)\]'
 
     for faultInst in faultInsts:
@@ -3929,16 +4074,18 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
-    
-    lbpol_api =  'lbpPol.json'
+
+    lbpol_api = 'lbpPol.json'
     lbpol_api += '?query-target-filter=eq(lbpPol.pri,"on")'
 
     lbpPol = icurl('class', lbpol_api)
     if lbpPol:
-        if ((tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)")) or 
-            (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))):
-                result = FAIL_O
-                data.append(["CSCwf05073", "Target Version susceptible to Defect"])
+        if (
+            (tversion.newer_than("5.1(1h)") and tversion.older_than("5.2(8e)")) or
+            (tversion.major1 == "6" and tversion.older_than("6.0(3d)"))
+        ):
+            result = FAIL_O
+            data.append(["CSCwf05073", "Target Version susceptible to Defect"])
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -3991,7 +4138,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     print_title(title, index, total_checks)
 
     if cversion.older_than("4.2(6d)") or (cversion.major1 == "5" and cversion.older_than("5.1(1h)")):
-        epg_api =  'fvAEPg.json?'
+        epg_api = 'fvAEPg.json?'
         epg_api += 'rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
         fvAEPg = icurl('class', epg_api)
@@ -3999,7 +4146,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
             print_result(title, NA, "0 EPG Subnets found. Skipping.")
             return NA
 
-        bd_api =  'fvBD.json'
+        bd_api = 'fvBD.json'
         bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
 
         fvBD = icurl('class', bd_api)
@@ -4072,10 +4219,10 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
                         has_dest = True
                 if has_comm and not has_dest:
                     subj_dn_list.append(dn)
-            
+
             # Now check if affected match statement is in use by any route-map
             if len(subj_dn_list) > 0:
-                rtctrlCtxPs = icurl('class','rtctrlCtxP.json?rsp-subtree=full&rsp-subtree-class=rtctrlRsCtxPToSubjP,rtctrlRsScopeToAttrP&rsp-subtree-include=required')
+                rtctrlCtxPs = icurl('class', 'rtctrlCtxP.json?rsp-subtree=full&rsp-subtree-class=rtctrlRsCtxPToSubjP,rtctrlRsScopeToAttrP&rsp-subtree-include=required')
                 if rtctrlCtxPs:
                     for rtctrlCtxP in rtctrlCtxPs:
                         has_affected_subj = False
@@ -4092,7 +4239,7 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
                         if has_affected_subj and has_set:
                             dn = rtctrlCtxP['rtctrlCtxP']['attributes']['dn']
                             parent_dn = '/'.join(dn.rsplit('/', 1)[:-1])
-                            data.append([parent_dn,subj_dn,"Route-map has community match statement but no prefix list."])
+                            data.append([parent_dn, subj_dn, "Route-map has community match statement but no prefix list."])
 
         if data:
             result = FAIL_O
@@ -4113,8 +4260,8 @@ def fabricPathEp_target_check(index, total_checks, **kwargs):
     fabricPathEp_regex = r"topology/pod-\d+/(?:\w+)?paths-\d+(?:-\d+)?(?:/ext(?:\w+)?paths-(?P<fexA>\d+)(?:-(?P<fexB>\d+))?)?/pathep-\[(?P<path>.+)\]"
     eth_regex = r'eth(?P<first>\d+)/(?P<second>\d+)(?:/(?P<third>\d+))?'
 
-    hpath_api =  'infraRsHPathAtt.json'
-    oosPorts_api =  'fabricRsOosPath.json'
+    hpath_api = 'infraRsHPathAtt.json'
+    oosPorts_api = 'fabricRsOosPath.json'
     infraRsHPathAtt = icurl('class', hpath_api)
     fabricRsOosPath = icurl('class', oosPorts_api)
 
@@ -4191,7 +4338,7 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
 
     if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
         custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
-        lazy_vmm_count = icurl('class','fvRsDomAtt.json?query-target-filter=and(eq(fvRsDomAtt.tCl,"vmmDomP"),eq(fvRsDomAtt.resImedcy,"lazy"))&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
+        lazy_vmm_count = icurl('class', 'fvRsDomAtt.json?query-target-filter=and(eq(fvRsDomAtt.tCl,"vmmDomP"),eq(fvRsDomAtt.resImedcy,"lazy"))&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
 
         if int(custom_int_count) > 0 and int(lazy_vmm_count) > 0:
             result = FAIL_O
@@ -4405,8 +4552,8 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
     if cversion.newer_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
         result_32 = result_64 = "Not Found"
         target_sw_ver = 'n9000-1' + tversion.version
-        firmware_api =	'firmwareFirmware.json'
-        firmware_api +=	'?query-target-filter=eq(firmwareFirmware.fullVersion,"%s")' % (target_sw_ver)  
+        firmware_api = 'firmwareFirmware.json'
+        firmware_api += '?query-target-filter=eq(firmwareFirmware.fullVersion,"%s")' % (target_sw_ver)
         firmwares = icurl('class', firmware_api)
 
         for firmware in firmwares:
@@ -4524,7 +4671,7 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec-encryption-deprecated'
     print_title(title, index, total_checks)
 
-    cloudsec_api =  'cloudsecPreSharedKey.json'
+    cloudsec_api = 'cloudsecPreSharedKey.json'
 
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
@@ -4555,7 +4702,7 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     title = 'Out-of-Service Ports'
     result = PASS
     msg = ''
-    headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage" ]
+    headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage"]
     data = []
     recommended_action = 'Remove Out-of-service Policy on identified "up" ports or they will remain "down" after switch Upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out-of-service-ports'
@@ -4575,7 +4722,7 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
             data.append([node_data.group("pod"), node_data.group("node"), node_data.group("port"), oper_st, usage])
 
     if data:
-       result = FAIL_O 
+        result = FAIL_O
 
     print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
@@ -4594,30 +4741,29 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
     fcEntity_api = "fcEntity.json"
     fabricNode_api = 'fabricNode.json'
     fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
-    
+
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
-    
+
     if (tversion.newer_than("6.0(7a)") and tversion.older_than("6.0(9c)")) or tversion.same_as("6.1(1f)"):
-        fcEntitys =  icurl('class', fcEntity_api)
+        fcEntitys = icurl('class', fcEntity_api)
         fc_nodes = []
         if fcEntitys:
             for fcEntity in fcEntitys:
                 fc_nodes.append(fcEntity['fcEntity']['attributes']['dn'].split('/sys')[0])
-            
+
         if fc_nodes:
             fabricNodes = icurl('class', fabricNode_api)
             for node in fabricNodes:
-                 node_dn = node['fabricNode']['attributes']['dn']
-                 if node_dn in fc_nodes:
-                      model = node['fabricNode']['attributes']['model']
-                      if model in ["N9K-C93180YC-EX", "N9K-C93108TC-EX", "N9K-C93108LC-EX"]:
-                            data.append([node_dn, model])
+                node_dn = node['fabricNode']['attributes']['dn']
+                if node_dn in fc_nodes:
+                    model = node['fabricNode']['attributes']['model']
+                    if model in ["N9K-C93180YC-EX", "N9K-C93108TC-EX", "N9K-C93108LC-EX"]:
+                        data.append([node_dn, model])
     if data:
         result = FAIL_O
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -4646,7 +4792,7 @@ def tep_to_tep_ac_counter_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -4705,15 +4851,15 @@ def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-decommissioned-spine'
     print_title(title, index, total_checks)
 
-    decomissioned_api ='fabricRsDecommissionNode.json'
+    decomissioned_api = 'fabricRsDecommissionNode.json'
 
     active_spine_api = 'topSystem.json'
-    active_spine_api +=	'?query-target-filter=eq(topSystem.role,"spine")'
+    active_spine_api += '?query-target-filter=eq(topSystem.role,"spine")'
 
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
-    
+
     if tversion.newer_than("5.2(3d)") and tversion.older_than("6.0(3d)"):
         decomissioned_switches = icurl('class', decomissioned_api)
         if decomissioned_switches:
@@ -4744,11 +4890,11 @@ def n9408_model_check(index, total_checks, tversion, **kwargs):
 
     eqptCh_api = 'eqptCh.json'
     eqptCh_api += '?query-target-filter=eq(eqptCh.model,"N9K-C9400-SW-GX2A")'
-    
+
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
-    
+
     if tversion.newer_than("6.1(3a)"):
         eqptCh = icurl('class', eqptCh_api)
         for node in eqptCh:
@@ -4758,7 +4904,7 @@ def n9408_model_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -4776,7 +4922,7 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     vnsAdjacencyDefCont_api = 'vnsAdjacencyDefCont.json'
     vnsSvcRedirEcmpBucketCons_api = 'vnsSvcRedirEcmpBucketCons.json'
     count_filter = '?rsp-subtree-include=count'
-    
+
     if not tversion:
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
@@ -4784,7 +4930,7 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     if tversion.older_than("5.3(2c)"):
         vnsAdj = icurl('class', vnsAdjacencyDefCont_api+count_filter)
         vnsSvc = icurl('class', vnsSvcRedirEcmpBucketCons_api+count_filter)
-        
+
         vnsAdj_count = int(vnsAdj[0]['moCount']['attributes']['count'])
         vnsSvc_count = int(vnsSvc[0]['moCount']['attributes']['count'])
         total = vnsAdj_count + vnsSvc_count
@@ -4794,7 +4940,7 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -4865,8 +5011,10 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
 
-    if  ((cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
-        and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))):
+    if (
+        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
+        and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))
+    ):
         eqptSupC = icurl('class', eqptSupC_api)
         for node in eqptSupC:
             node_dn = node['eqptSupC']['attributes']['dn']
@@ -4880,7 +5028,7 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)         
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
     return result
 
 
@@ -4917,7 +5065,7 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
             data.append([dn_match.group('pod'), dn_match.group('node'), attributes['code'], percent, attributes['descr']])
         else:
             unformatted_data.append([attributes['dn'], percent, attributes['descr']])
-    
+
     if data or unformatted_data:
         result = FAIL_UF
 
@@ -4953,9 +5101,9 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
 
     cryptkeys = icurl("mo", "uni/exportcryptkey.json")
     if not cryptkeys:
-        data = [[tversion, "Object Not Found", impact]]
+        data = [[str(tversion), "Object Not Found", impact]]
     elif cryptkeys[0]["pkiExportEncryptionKey"]["attributes"]["strongEncryptionEnabled"] != "yes":
-        data = [[tversion, "Disabled", impact]]
+        data = [[str(tversion), "Disabled", impact]]
     else:
         result = PASS
 
@@ -5008,11 +5156,12 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     return result
 
 
+# Connection Base Check
 def observer_db_size_check(index, total_checks, username, password, **kwargs):
     title = 'Observer Database Size'
     result = PASS
     msg = ''
-    headers = ["Node" , "File Location", "Size (GB)"]
+    headers = ["Node", "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
@@ -5029,7 +5178,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
     prints('')
     for apic in controllers:
         attr = apic['topSystem']['attributes']
-        node_title = 'Checking %s...' % attr['name'] 
+        node_title = 'Checking %s...' % attr['name']
         print_title(node_title)
         try:
             c = Connection(attr['address'])
@@ -5038,8 +5187,8 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([attr['id'], attr['name'], e])
-            print_result(node_title, ERROR)
+            data.append([attr['id'], attr['name'], str(e)])
+            print_result(node_title, ERROR, json_output=False)
             has_error = True
             continue
         try:
@@ -5047,7 +5196,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.cmd(cmd)
             if "No such file or directory" in c.output:
                 data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
-                print_result(node_title, ERROR)
+                print_result(node_title, ERROR, json_output=False)
                 has_error = True
                 continue
             dbstats = c.output.split("\n")
@@ -5058,10 +5207,10 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
                     file_size = size_match.group("size")
                     file_name = "/data2/dbstats/" + size_match.group("file")
                     data.append([attr['id'], file_name, file_size])
-            print_result(node_title, DONE)            
+            print_result(node_title, DONE, json_output=False)
         except Exception as e:
-            data.append([attr['id'], attr['name'], e])
-            print_result(node_title, ERROR)
+            data.append([attr['id'], attr['name'], str(e)])
+            print_result(node_title, ERROR, json_output=False)
             has_error = True
             continue
     if has_error:
@@ -5206,33 +5355,61 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
     return result
 
 
-if __name__ == "__main__":
+# ---- Script Execution ----
+
+def parse_args(args):
+    parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
+    parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
+    parser.add_argument("-d", "--debug_function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
+    parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
+    parsed_args = parser.parse_args(args)
+    is_puv = parsed_args.puv
+    tversion = parsed_args.tversion
+    cversion = parsed_args.cversion
+    debug_function = parsed_args.debug_function
+    return is_puv, tversion, cversion, debug_function
+
+
+def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
-    prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
-    username, password = get_credentials()
+
+    username = password = None
+    if not is_puv:
+        username, password = get_credentials()
     try:
-        cversion = get_current_version()
-        tversion = get_target_version()
+        cversion = get_current_version(arg_cversion)
+        tversion = get_target_version(arg_tversion)
         vpc_nodes = get_vpc_nodes()
         sw_cversion = get_switch_version()
     except Exception as e:
-        prints('')
-        err = 'Error: %s' % e
-        print_title(err)
-        print_result(err, ERROR)
-        print_title("Initial query failed. Ensure APICs are healthy. Ending script run.")
+        prints('\n\nError: %s' % e)
+        prints("Initial query failed. Ensure APICs are healthy. Ending script run.")
         logging.exception(e)
         sys.exit()
     inputs = {'username': username, 'password': password,
               'cversion': cversion, 'tversion': tversion,
               'vpc_node_ids': vpc_nodes, 'sw_cversion': sw_cversion}
-    json_log = {"name": "PreupgradeCheck", "method": "standalone script", "datetime": ts + tz,
-                "script_version": str(SCRIPT_VERSION), "check_details": [],
-                'cversion': str(cversion), 'tversion': str(tversion), 'sw_cversion': str(sw_cversion)}
-    checks = [
+    metadata = {
+        "name": "PreupgradeCheck",
+        "method": "standalone script",
+        "datetime": ts + tz,
+        "script_version": str(SCRIPT_VERSION),
+        "cversion": str(cversion),
+        "tversion": str(tversion),
+        "sw_cversion": str(sw_cversion),
+        "is_puv": is_puv,
+        "total_checks": total_checks,
+    }
+    with open(META_FILE, "w") as f:
+        json.dump(metadata, f, indent=2)
+    return inputs
+
+
+def get_checks(is_puv, debug_func):
+    api_checks = [
         # General Checks
-        apic_version_md5_check,
         target_version_compatibility_check,
         gen1_switch_compatibility_check,
         r_leaf_compatibility_check,
@@ -5251,8 +5428,6 @@ if __name__ == "__main__":
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
-        standby_apic_disk_space_check,
-        apic_ssd_check,
         switch_ssd_check,
         port_configured_for_apic_check,
         port_configured_as_l2_check,
@@ -5320,42 +5495,64 @@ if __name__ == "__main__":
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
-        observer_db_size_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
 
     ]
-    summary = {PASS: 0, FAIL_O: 0, FAIL_UF: 0, ERROR: 0, MANUAL: 0, POST: 0, NA: 0, 'TOTAL': len(checks)}
+    conn_checks = [
+        # General
+        apic_version_md5_check,
+
+        # Faults
+        standby_apic_disk_space_check,
+        apic_ssd_check,
+
+        # Bugs
+        observer_db_size_check,
+
+    ]
+    if debug_func:
+        return [check for check in api_checks + conn_checks if check.__name__ == debug_func]
+    if is_puv:
+        return api_checks
+    return conn_checks + api_checks
+
+
+def run_checks(checks, inputs):
+    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
+    summary = {key: 0 if key != 'TOTAL' else len(checks) for key in summary_headers}
     for idx, check in enumerate(checks):
         try:
             r = check(idx + 1, len(checks), **inputs)
             summary[r] += 1
-            json_log["check_details"].append({"check_number": idx + 1, "name": check.__name__, "results": r})
         except KeyboardInterrupt:
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
         except Exception as e:
+            # synth.writeResult() uses the first arg in `print_result()` (i.e. title) as
+            # the filename. When a check has an error and ends up here, we don't know the
+            # title and we cannot use the error message as the title/filename either.
+            # Thus, using the func name of the check as the title/filename.
             prints('')
-            err = 'Error: %s' % e
-            print_title(err)
-            print_result(err, ERROR)
+            print_title(" " * len(check.__name__))  # not showing the func name in the stdout
+            msg = 'Unexpected Error: %s' % e
+            print_result(check.__name__, ERROR, msg)
             summary[ERROR] += 1
             logging.exception(e)
+
     prints('\n=== Summary Result ===\n')
-
-    jsonString = json.dumps(json_log)
-    with open(JSON_FILE, 'w') as f:
-        f.write(jsonString)
-
-    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
     res = max(summary_headers, key=len)
     max_header_len = len(res)
     for key in summary_headers:
         prints('{:{}} : {:2}'.format(key, max_header_len, summary[key]))
 
-    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
+    with open(SUMMARY_FILE, 'w') as f:
+        json.dump(summary, f, indent=2)
 
+
+def wrapup(is_puv):
+    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
+    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
     prints("""
     Pre-Upgrade Check Complete.
     Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
@@ -5367,4 +5564,18 @@ if __name__ == "__main__":
     """.format(bundle=bundle_loc))
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
-    subprocess.check_output(['rm', '-rf', DIR])
+    # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
+    if not is_puv and os.path.isdir(DIR):
+        shutil.rmtree(DIR)
+
+
+def main(args=None):
+    is_puv, arg_tversion, arg_cversion, debug_func = parse_args(args)
+    checks = get_checks(is_puv, debug_func)
+    inputs = prepare(is_puv, arg_tversion, arg_cversion, len(checks))
+    run_checks(checks, inputs)
+    wrapup(is_puv)
+
+
+if __name__ == "__main__":
+    main()
