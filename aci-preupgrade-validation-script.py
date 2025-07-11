@@ -5105,7 +5105,7 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
     title = 'ISIS DTEPs Byte Size'
     result = PASS
     msg = ''
-    headers = ["ISIS DTEPs Byte Size", "Recommended Action"]
+    headers = ["ISIS DTEPs Byte Size", "ISIS DTEPs", "Recommended Action"]
     data = []
     recommended_action = 'Upgrade to a version with the fix for CSCwp15375. Current target version is affected.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
@@ -5115,51 +5115,36 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
 
-    affected_versions = ["6.1(1f)", "6.1(2f)", "6.1(2g)", "6.1(3f)"]
-    is_affected = False
-    for version in affected_versions:
-        if tversion.same_as(version):
-            is_affected = True
-            break
+    if tversion.newer_than("6.1(1a)") and tversion.older_than("6.1(3g)"):
+        isisDTEp_api = 'isisDTEp.json'
+        isisDTEp_api += '?query-target-filter=eq(isisDTEp.role,"spine")'
 
-    if not is_affected:
+        isisDTEps = icurl('class', isisDTEp_api)
+
+        physical_ids = set()
+        proxy_acast_ids = set()
+
+        for entry in isisDTEps:
+            dtep_type = entry['isisDTEp']['attributes']['type']
+            dtep_id = entry['isisDTEp']['attributes']['id']
+
+            if dtep_type == "physical":
+                physical_ids.add(dtep_id)
+            elif "physical,proxy-acast" in dtep_type:
+                proxy_acast_ids.add(dtep_id)
+
+        for physical_id in physical_ids:
+            combined_dteps = ",".join([physical_id] + list(proxy_acast_ids))
+            total_bytes = len(combined_dteps)
+
+            if total_bytes > 57:
+                result = FAIL_O
+                data.append([total_bytes, combined_dteps, recommended_action])
+                break
+
+    else:
         print_result(title, NA, "Target version not affected")
         return NA
-
-    isisDTEp_api = 'isisDTEp.json'
-    isisDTEp_api += '?query-target-filter=eq(isisDTEp.role,"spine")'
-
-    isisDTEps = icurl('class', isisDTEp_api)
-
-    physical_ids = set()
-    proxy_acast_mac_ids = set()
-    proxy_acast_v4_ids = set()
-    proxy_acast_v6_ids = set()
-
-    for entry in isisDTEps:
-        dtep_type = entry['isisDTEp']['attributes']['type']
-        dtep_id = entry['isisDTEp']['attributes']['id']
-
-        if dtep_type == "physical":
-            physical_ids.add(dtep_id)
-        elif dtep_type == "physical,proxy-acast-mac":
-            proxy_acast_mac_ids.add(dtep_id)
-        elif dtep_type == "physical,proxy-acast-v4":
-            proxy_acast_v4_ids.add(dtep_id)
-        elif dtep_type == "physical,proxy-acast-v6":
-            proxy_acast_v6_ids.add(dtep_id)
-
-    for physical_id in physical_ids:
-        proxy_mac_id = next(iter(proxy_acast_mac_ids)) if proxy_acast_mac_ids else ""
-        proxy_v4_id = next(iter(proxy_acast_v4_ids)) if proxy_acast_v4_ids else ""
-        proxy_v6_id = next(iter(proxy_acast_v6_ids)) if proxy_acast_v6_ids else ""
-
-        total_bytes = len(physical_id) + len(proxy_mac_id) + len(proxy_v4_id) + len(proxy_v6_id)
-
-        if total_bytes >= 58:
-            result = FAIL_O
-            data.append([str(total_bytes), recommended_action])
-            break
 
     print_result(title, result, msg, headers, data, doc_url=doc_url)
     return result
