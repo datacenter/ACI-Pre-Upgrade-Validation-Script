@@ -60,6 +60,17 @@ policy_dn_api = 'uni/phys-PHY-DOM.json'
             "6.0(3d)",
             script.PASS,
         ),
+        # pass when tversion is 6.0(3d)+ and tversion is newer than 6.1(4a).
+        (
+            {
+                pcons_rs_subtree_dep_api: read_data(dir, 'pconsRsSubtreeDep.json'),
+                pcons_ra_api: read_data(dir, 'pconsRA.json'),
+                policy_dn_api: read_data(dir, 'policyDn.json')
+            },
+            "5.3(2a)",
+            "6.1(4a)",
+            script.NA,
+        ),
         # FAIL_O when version tversion is older than 6.0(3d) and policy_dn is NOT found (pcons is stale).
         (
             {
