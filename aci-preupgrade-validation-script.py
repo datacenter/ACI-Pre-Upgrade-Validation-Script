@@ -5115,7 +5115,7 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
         print_result(title, MANUAL, "Target version not supplied. Skipping.")
         return MANUAL
 
-    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)"):
+    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)") and tversion.older_than("6.1(4a)"):
         pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
         pcons_rssubtreedep_mo = icurl('class', pcons_rssubtreedep_api)
         pcons_inst_dn_reg = r'registry/class-\d+/instdn-\[(?P<policy_dn>.+?)\]/ra'
