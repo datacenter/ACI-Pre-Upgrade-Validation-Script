@@ -6,171 +6,171 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 
 @pytest.mark.parametrize(
-    "name, description, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows, expected_show, expected_criticality, expected_passed",
+    "func_name, name, description, result, recommended_action, reason, doc_url, column, row, unformatted_column, unformatted_rows, expected_show, expected_criticality, expected_passed",
     [
         # Check 1: NA
         (
+            "fake_func_name_NA_test",
             "NA",
             "",
             script.NA,
             "",
             "",
             "",
-            "",
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             False,
             "informational",
-            True
+            "passed"
         ),
         # Check 2: PASS
         (
+            "fake_func_name_PASS_test",
             "PASS",
             "",
             script.PASS,
             "",
             "",
             "",
-            "",
             [],
             [],
             [],
             [],
             True,
             "informational",
-            True
+            "passed"
         ),
         # Check 3: POST
         (
+            "fake_func_name_POST_test",
             "POST",
             "",
             script.POST,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             False,
             "informational",
-            False
+            "failed"
         ),
         # Check 4: MANUAL
         (
+            "fake_func_name_MANUAL_test",
             "MANUAL",
             "",
             script.MANUAL,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             True,
             "warning",
-            False
+            "failed"
         ),
         # Check 5: ERROR
         (
+            "fake_func_name_ERROR_test",
             "ERROR",
             "",
             script.ERROR,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             True,
             "major",
-            False
+            "failed"
         ),
         # Check 6: FAIL_UF
         (
+            "fake_func_name_FAIL_UF_test",
             "FAIL_UF",
             "",
             script.FAIL_UF,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             ["col1", "col2"],
             [["row1", "row2"], ["row3", "row4"]],
             True,
             "critical",
-            False
+            "failed"
         ),
         # Check 7: FAIL_O
         (
+            "fake_func_name_FAIL_O_test",
             "FAIL_O",
             "",
             script.FAIL_O,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             ["col1", "col2", "col3"],
             [["row1", "row2", "row3"], ["row4", "row5", "row6"]],
             ["col4", "col5"],
             [["row1", "row2"], ["row3", "row4"]],
             True,
             "critical",
-            False
+            "failed"
         ),
         # Check 8: FAIL_O Formatted only
         (
+            "fake_func_name_FAIL_O_formatted_only_test",
             "FAIL_O Formatted only",
             "",
             script.FAIL_O,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             ["col1", "col2", "col3"],
             [["row1", "row2", "row3"], ["row4", "row5", "row6"]],
             [],
             [],
             True,
             "critical",
-            False
+            "failed"
         ),
         # Check 9: FAIL_O
         (
+            "fake_func_name_FAIL_O_unformatted_only_test",
             "FAIL_O Unformatted only",
             "",
             script.FAIL_O,
             "reboot",
             "test reason",
-            "test header",
-            "test footer",
+            "https://test_doc_url.html",
             [],
             [],
             ["col1", "col2", "col3"],
             [["row1", "row2", "row3"], ["row4", "row5", "row6"]],
             True,
             "critical",
-            False
+            "failed"
         ),
     ],
 )
 def test_syntheticMaintPValidate(
+    func_name,
     name,
     description,
     result,
     recommended_action,
     reason,
-    header,
-    footer,
+    doc_url,
     column,
     row,
     unformatted_column,
@@ -179,11 +179,12 @@ def test_syntheticMaintPValidate(
     expected_criticality,
     expected_passed,
 ):
-    synth = script.syntheticMaintPValidate(name, description)
-    synth.updateWithResults(result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows)
+    synth = script.syntheticMaintPValidate(func_name, name, description)
+    synth.updateWithResults(result, recommended_action, reason, doc_url, column, row, unformatted_column, unformatted_rows)
     file = synth.writeResult()
     with open(file, "r") as f:
         data = json.load(f)
-    assert data["syntheticMaintPValidate"]["attributes"]["showValidation"] == expected_show
-    assert data["syntheticMaintPValidate"]["attributes"]["criticality"] == expected_criticality
-    assert data["syntheticMaintPValidate"]["attributes"]["passed"] == expected_passed
+    assert data["ruleId"] == func_name
+    assert data["showValidation"] == expected_show
+    assert data["severity"] == expected_criticality
+    assert data["ruleStatus"] == expected_passed

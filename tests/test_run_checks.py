@@ -12,7 +12,7 @@ def check_builder(func_name, title, result):
         if result == script.ERROR:
             raise Exception("This is a test exception to result in `script.ERROR`.")
         else:
-            script.print_result(title, result)
+            script.print_result(title, result, func_name=func_name)
             return result
 
     return _check

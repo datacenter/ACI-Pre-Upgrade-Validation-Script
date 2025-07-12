@@ -23,6 +23,7 @@ from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
 from argparse import ArgumentParser
+import inspect
 import shutil
 import warnings
 import time
@@ -72,17 +73,19 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class syntheticMaintPValidate:
-    def __init__(self, name, description, path=JSON_DIR):
+    def __init__(self, func_name, name, description, path=JSON_DIR):
+        self.ruleId = func_name
         self.name = name
         self.description = description
         self.reason = ""
-        self.criticality = "informational"
-        self.passed = True
-        self.recommended_action = ""
         self.sub_reason = ""
+        self.recommended_action = ""
+        self.docUrl = ""
+        self.severity = "informational"
+        self.ruleStatus = "passed"  # passed|failed
         self.showValidation = True
         self.failureDetails = {}
-        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.name)
+        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId)
         self.filename = cleaned_name + '.json'
         self.path = path
 
@@ -100,52 +103,47 @@ class syntheticMaintPValidate:
                 data.append(entry)
         return data
 
-    def updateWithResults(self, result, recommended_action, reason, header, footer, column, row, unformatted_column, unformatted_rows):
+    def updateWithResults(self, result, recommended_action, reason, doc_url, column, rows, unformatted_column, unformatted_rows):
         self.reason = reason
+        self.recommended_action = recommended_action
+        self.docUrl = doc_url
 
         # Show validation
         if result in [NA, POST]:
             self.showValidation = False
 
-        # Criticality
+        # Severity
         if result in [FAIL_O, FAIL_UF]:
-            self.criticality = "critical"
+            self.severity = "critical"
         elif result in [ERROR]:
-            self.criticality = "major"
+            self.severity = "major"
         elif result in [MANUAL]:
-            self.criticality = "warning"
+            self.severity = "warning"
 
-        # FailureDetails
         if result not in [NA, PASS]:
-            self.passed = False
-            self.recommended_action = recommended_action
-            self.failureDetails["fail_type"] = result
-            self.failureDetails["header"] = header
-            self.failureDetails["footer"] = footer
-            self.failureDetails["column"] = column
-            self.failureDetails["row"] = row
-            self.failureDetails["unformatted_column"] = unformatted_column
-            self.failureDetails["unformatted_rows"] = unformatted_rows
-            self.failureDetails["data"] = self.craftData(column, row)
+            self.ruleStatus = "failed"
+            self.failureDetails["failType"] = result
+            self.failureDetails["data"] = self.craftData(column, rows)
             if unformatted_column and unformatted_rows:
-                self.failureDetails["data"].extend(self.craftData(unformatted_column, unformatted_rows))
-                self.reason += " Parse failure occurred, please check unformatted data in the output data."
+                self.failureDetails["unformatted_data"] = self.craftData(unformatted_column, unformatted_rows)
+                self.reason += (
+                    "\nParse failure occurred for some data, the provided data may not be complete. "
+                    "Please contact Cisco TAC to work on the missing data."
+                )
 
     def buildResult(self):
         result = {
-            "syntheticMaintPValidate": {
-                "attributes": {
-                    "name": self.name,
-                    "description": self.description,
-                    "reason": self.reason,
-                    "criticality": self.criticality,
-                    "passed": self.passed,
-                    "recommended_action": self.recommended_action,
-                    "sub_reason": self.sub_reason,
-                    "showValidation": self.showValidation,
-                    "failureDetails": self.failureDetails
-                }
-            }
+            "ruleId": self.ruleId,
+            "name": self.name,
+            "description": self.description,
+            "reason": self.reason,
+            "sub_reason": self.sub_reason,
+            "recommended_action": self.recommended_action,
+            "docUrl": self.docUrl,
+            "severity": self.severity,
+            "ruleStatus": self.ruleStatus,
+            "showValidation": self.showValidation,
+            "failureDetails": self.failureDetails,
         }
         return result
 
@@ -1139,18 +1137,18 @@ def print_result(title, result, msg='',
                  unformatted_headers=None, unformatted_data=None,
                  recommended_action='',
                  doc_url='',
+                 func_name='',
                  adjust_title=False,
                  json_output=True):
     if json_output:
-        synth = syntheticMaintPValidate(title, "")
+        synth = syntheticMaintPValidate(func_name, title, "")
         synth.updateWithResults(
             result=result,
             recommended_action=recommended_action,
             reason=msg,
-            header="",
-            footer=doc_url,
+            doc_url=doc_url,
             column=headers,
-            row=data,
+            rows=data,
             unformatted_column=unformatted_headers,
             unformatted_rows=unformatted_data,
         )
@@ -1365,7 +1363,7 @@ def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
     elif not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,
-                 recommended_action, doc_url)
+                 recommended_action, doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1398,7 +1396,7 @@ def switch_status_check(index, total_checks, **kwargs):
         msg = 'Switch fabricNode not found!'
     elif not data:
         result = PASS
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1425,7 +1423,7 @@ def maintp_grp_crossing_4_0_check(index, total_checks, cversion, tversion, **kwa
                 data.append([g['maintMaintP']['attributes']['name'], 'Maintenance Group', recommended_action])
             else:
                 data.append([g['firmwareFwP']['attributes']['name'], 'Firmware Group', recommended_action])
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1459,7 +1457,7 @@ def ntp_status_check(index, total_checks, **kargs):
             data.append([dn.group('pod'), dn.group('node'), recommended_action])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1503,7 +1501,7 @@ def features_to_disable_check(index, total_checks, cversion, tversion, **kwargs)
                 data.append(['Rogue Endpoint', name, 'Enabled', ra])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1522,7 +1520,8 @@ def switch_group_guideline_check(index, total_checks, **kwargs):
         result = MANUAL
         msg = 'No upgrade groups found!'
         print_result(title, result, msg, headers, data,
-                     recommended_action=recommended_action, doc_url=doc_url)
+                     recommended_action=recommended_action, doc_url=doc_url,
+                     func_name=inspect.currentframe().f_code.co_name)
         return result
 
     spine_type = ['', 'RR ', 'IPN/ISN ']
@@ -1619,7 +1618,8 @@ def switch_group_guideline_check(index, total_checks, **kwargs):
     if not data and not msg:
         result = PASS
     print_result(title, result, msg, headers, data,
-                 recommended_action=recommended_action, doc_url=doc_url)
+                 recommended_action=recommended_action, doc_url=doc_url,
+                 func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1669,7 +1669,7 @@ def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
     if not data:
         result = PASS
         msg = 'All below 50% or pre-downloaded'
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1710,7 +1710,7 @@ def l3out_mtu_check(index, total_checks, **kwargs):
     if not data and not unformatted_data:
         result = NA
         msg = 'No L3Out Interfaces found'
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1740,7 +1740,7 @@ def port_configured_as_l2_check(index, total_checks, **kwargs):
                 [fc, faultDelegate['faultDelegate']['attributes']['dn'], recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1772,7 +1772,7 @@ def port_configured_as_l3_check(index, total_checks, **kwargs):
                 [fc, faultDelegate['faultDelegate']['attributes']['dn'], recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1795,7 +1795,7 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     filter = '?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
     faultInsts = icurl("class", "faultInst.json" + filter)
     if not faultInsts:
-        print_result(title, PASS)
+        print_result(title, PASS, func_name=inspect.currentframe().f_code.co_name)
         return PASS
 
     vnid2vrf = {}
@@ -1837,7 +1837,7 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
         data = [["F0467", epg] for epg in conflicts["_"]["_"]["faulted_extepgs"]]
         if not data and not unformatted_data:
             result = PASS
-        print_result(title, result, msg, headers_old, data, unformatted_headers, unformatted_data, recommended_action)
+        print_result(title, result, msg, headers_old, data, unformatted_headers, unformatted_data, recommended_action, func_name=inspect.currentframe().f_code.co_name)
         return result
 
     # Proceed further only for new versions with VRF/prefix data in faults
@@ -1881,7 +1881,7 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1943,7 +1943,8 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
     if not data and not unformatted_data:
         result = PASS
     print_result(title, result, msg, headers, data,
-                 unformatted_headers, unformatted_data, recommended_action=recommended_action)
+                 unformatted_headers, unformatted_data, recommended_action=recommended_action,
+                 func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -1972,7 +1973,7 @@ def bd_subnet_overlap_check(index, total_checks, **kwargs):
                     unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2003,7 +2004,7 @@ def bd_duplicate_subnet_check(index, total_checks, **kwargs):
                                      recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2050,7 +2051,7 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
         if not data and not unformatted_data:
             result = PASS
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2087,7 +2088,7 @@ def switch_ssd_check(index, total_checks, **kwargs):
                                      recommended_action.get(fc, 'Resolve the fault')])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2113,7 +2114,7 @@ def apic_ssd_check(index, total_checks, cversion, username, password, **kwargs):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         report_other = False
         if not controller:
-            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
             return ERROR
         else:
             checked_apics = {}
@@ -2175,7 +2176,7 @@ def apic_ssd_check(index, total_checks, cversion, username, password, **kwargs):
         result = ERROR
     elif not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2203,7 +2204,7 @@ def port_configured_for_apic_check(index, total_checks, **kwargs):
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2224,7 +2225,7 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
     infraSetPols = icurl('mo', 'uni/infra/settings.json')
     if infraSetPols[0]['infraSetPol']['attributes'].get('validateOverlappingVlans') in ['true', 'yes']:
         msg = '`Enforce EPG VLAN Validation` is enabled. No need to check overlapping VLANs'
-        print_result(title, result, msg)
+        print_result(title, result, msg, func_name=inspect.currentframe().f_code.co_name)
         return result
 
     # Get VLAN pools and ports from access policy
@@ -2391,7 +2392,7 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                             impact,
                         ])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2418,7 +2419,7 @@ def scalability_faults_check(index, total_checks, **kwargs):
             unformatted_data.append([f['code'], f['dn'], f['descr'], recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2456,7 +2457,7 @@ def apic_disk_space_faults_check(index, total_checks, cversion, **kwargs):
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2486,7 +2487,7 @@ def l3out_route_map_direction_check(index, total_checks, **kwargs):
                 data.append(basic + [rmap, dir, recommended_action.format(dir)])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2502,7 +2503,7 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     def is_old(v):
@@ -2511,7 +2512,7 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
     c_is_old = is_old(cversion)
     t_is_old = is_old(tversion)
     if (c_is_old and t_is_old) or (not c_is_old and not t_is_old):
-        print_result(title, NA)
+        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
         return NA
 
     dn_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/'
@@ -2540,7 +2541,7 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
                     ])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2667,7 +2668,7 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
                         ])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2709,7 +2710,7 @@ def bgp_peer_loopback_check(index, total_checks, **kwargs):
                         dn.group('pod'), dn.group('node'), recommended_action])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2736,7 +2737,7 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2750,7 +2751,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
     recommended_action = 'Delete the firmware from APIC and re-download'
     print_title(title, index, total_checks)
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     image_validaton = True
@@ -2765,7 +2766,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 image_validaton = False
 
     if not image_validaton:
-        print_result(title, result, msg, headers, data)
+        print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
         return result
 
     md5s = []
@@ -2842,7 +2843,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         result = ERROR
     elif not data:
         result = PASS
-    print_result(title, result, msg, headers, data, adjust_title=True)
+    print_result(title, result, msg, headers, data, adjust_title=True, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2899,7 +2900,7 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     elif not data:
         result = PASS
         msg = 'all below {}%'.format(threshold)
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2916,7 +2917,7 @@ def r_leaf_compatibility_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     remote_leafs = icurl('class', 'fabricNode.json?&query-target-filter=eq(fabricNode.nodeType,"remote-leaf-wan")')
@@ -2940,7 +2941,7 @@ def r_leaf_compatibility_check(index, total_checks, tversion, **kwargs):
         if ra:
             result = FAIL_O
             data.append([str(tversion), "Present", direct_enabled, ra])
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -2976,7 +2977,7 @@ def ep_announce_check(index, total_checks, cversion, tversion, **kwargs):
         if current_version_affected and target_version_affected:
             result = FAIL_O
             data.append(['CSCvi76161', recommended_action])
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3001,7 +3002,7 @@ def vmm_controller_status_check(index, total_checks, **kwargs):
                 result = FAIL_O
                 data.append([domName, hostOrIp, "offline", recommended_action])
 
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3038,7 +3039,7 @@ def vmm_controller_adj_check(index, total_checks, **kwargs):
                             [adj['faultInst']['attributes']['code'], adj['faultInst']['attributes']['dn'],
                              recommended_action])
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3068,7 +3069,7 @@ def vpc_paired_switches_check(index, total_checks, vpc_node_ids=None, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3111,7 +3112,7 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
         result = MANUAL
         msg = 'Target version not supplied. Skipping.'
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3146,7 +3147,7 @@ def intersight_upgrade_status_check(index, total_checks, **kwargs):
         result = NA
         msg = 'Intersight Device Connector not responding'
 
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3189,7 +3190,7 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
         data.append([redistribMetric, mpod, msite, recommended_action])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3204,7 +3205,7 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if cversion.older_than("4.2(1a)") and tversion.newer_than("4.2(1a)"):
@@ -3226,7 +3227,7 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3256,7 +3257,7 @@ def docker0_subnet_overlap_check(index, total_checks, **kwargs):
             result = FAIL_UF
             data.append([tep, bip, recommended_action])
 
-    print_result(title, result, msg, headers, data)
+    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3278,7 +3279,7 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3309,7 +3310,7 @@ def target_version_compatibility_check(index, total_checks, cversion, tversion, 
         if not data:
             result = PASS
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3339,7 +3340,7 @@ def gen1_switch_compatibility_check(index, total_checks, tversion, **kwargs):
         if not data:
             result = PASS
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3362,7 +3363,7 @@ def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
             result = FAIL_O
             data.append(["CSCvz65560", "Target Version susceptible to Defect"])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3378,11 +3379,11 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if not vpc_node_ids:
-        print_result(title, result, 'No VPC Nodes found. Not susceptible.')
+        print_result(title, result, 'No VPC Nodes found. Not susceptible.', func_name=inspect.currentframe().f_code.co_name)
         return result
 
     # Check for Fiber 1000base-SX, CSCvv33100
@@ -3414,7 +3415,7 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     if data:
         result = MANUAL
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3429,11 +3430,11 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
     print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, MANUAL, "Current switch version not found. Check switch health.")
+        print_result(title, MANUAL, "Current switch version not found. Check switch health.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if not tversion:
-        print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
@@ -3443,7 +3444,7 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
                 result = FAIL_O
                 data.append([str(sw_cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3458,7 +3459,7 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.newer_than("4.2(6a)"):
@@ -3507,7 +3508,7 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                                     if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
                                         data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3567,7 +3568,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             genrsa_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             genrsa_proc.communicate()[0].strip()
             if genrsa_proc.returncode != 0:
-                print_result(title, ERROR, 'openssl cmd issue, send logs to TAC')
+                print_result(title, ERROR, 'openssl cmd issue, send logs to TAC', func_name=inspect.currentframe().f_code.co_name)
                 return ERROR
 
             # Prep certreq
@@ -3595,7 +3596,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3611,13 +3612,13 @@ def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.same_as("6.0(2h)"):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         if not controller:
-            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
             return ERROR
 
         fabricDomain = controller[0]['topSystem']['attributes']['fabricDomain']
@@ -3626,7 +3627,7 @@ def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3643,7 +3644,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
     fpga_concern = False
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if cversion.older_than("5.2(8f)"):
@@ -3661,7 +3662,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
         if not sups:
-            print_result(title, ERROR, 'No sups found. This is unlikely.')
+            print_result(title, ERROR, 'No sups found. This is unlikely.', func_name=inspect.currentframe().f_code.co_name)
             return ERROR
 
         for sup in sups:
@@ -3675,7 +3676,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3691,7 +3692,7 @@ def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if cversion.older_than("6.0(1a)") and tversion.newer_than("6.0(1a)"):
@@ -3710,7 +3711,7 @@ def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3730,7 +3731,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     affected_versions = ["4.2(7)", "5.2(1)", "5.2(2)"]
@@ -3738,7 +3739,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
         cversion.simple_version in affected_versions
         and tversion.simple_version in affected_versions
     ):
-        print_result(title, NA)
+        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
         return NA
 
     # ACI Node EPGs (providers)
@@ -3778,7 +3779,7 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
 
     if data:
         result = MANUAL
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3794,13 +3795,13 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
         topSystem = icurl('class', 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")')
         if not topSystem:
-            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
             return ERROR
         for controller in topSystem:
             if controller['topSystem']['attributes']['nodeType'] == "virtual":
@@ -3810,7 +3811,7 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3826,7 +3827,7 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     affected_versions = ["6.0(3)", "6.0(4)", "6.0(5)"]
@@ -3843,7 +3844,7 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3879,7 +3880,7 @@ def access_untagged_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3931,7 +3932,7 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         },
     }
     if not tversion or (tversion and cversion.older_than(str(tversion))):
-        print_result(title, POST, 'Re-run script after APICs are upgraded and back to Fully-Fit')
+        print_result(title, POST, 'Re-run script after APICs are upgraded and back to Fully-Fit', func_name=inspect.currentframe().f_code.co_name)
         return POST
 
     for new_mo in new_mo_dict:
@@ -3963,7 +3964,7 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -3987,7 +3988,7 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
     if not data:
         result = PASS
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4011,7 +4012,7 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
         # Pre 4.x did not have this class
         msg = 'cversion does not have class fvUplinkOrderCont'
         result = NA
-        print_result(title, result, msg)
+        print_result(title, result, msg, func_name=inspect.currentframe().f_code.co_name)
         return result
 
     if affected_uplinks:
@@ -4020,7 +4021,7 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
             dn = re.search(vmm_epg_regex, uplink['fvUplinkOrderCont']['attributes']['dn'])
             data.append([dn.group("tenant"), dn.group("ap"), dn.group("epg"), dn.group("dom")])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4057,7 +4058,7 @@ def fabric_port_down_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4072,7 +4073,7 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     lbpol_api = 'lbpPol.json'
@@ -4087,7 +4088,7 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
             result = FAIL_O
             data.append(["CSCwf05073", "Target Version susceptible to Defect"])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4102,7 +4103,7 @@ def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwar
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if (
@@ -4123,7 +4124,7 @@ def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwar
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4143,7 +4144,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
 
         fvAEPg = icurl('class', epg_api)
         if not fvAEPg:
-            print_result(title, NA, "0 EPG Subnets found. Skipping.")
+            print_result(title, NA, "0 EPG Subnets found. Skipping.", func_name=inspect.currentframe().f_code.co_name)
             return NA
 
         bd_api = 'fvBD.json'
@@ -4186,7 +4187,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4201,7 +4202,7 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if (tversion.major1 == "5" and tversion.major2 == "2" and tversion.older_than("5.2(8a)")):
@@ -4244,7 +4245,7 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
         if data:
             result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4318,7 +4319,7 @@ def fabricPathEp_target_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4333,7 +4334,7 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
@@ -4344,7 +4345,7 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
             result = FAIL_O
             data.append(['CSCwf00416'])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4359,11 +4360,11 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
     print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, MANUAL, "Current switch version not found. Check switch health.")
+        print_result(title, MANUAL, "Current switch version not found. Check switch health.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if not tversion:
-        print_result(title, MANUAL, "Target switch version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target switch version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
@@ -4390,7 +4391,7 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
         if data:
             result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4407,7 +4408,7 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
     bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.')
+        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)")):
@@ -4455,7 +4456,7 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
         if data:
             result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4470,11 +4471,11 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if not (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)")):
-        print_result(title, NA)
+        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
         return NA
 
     tn_regex = r"uni/tn-(?P<tn>[^/]+)"
@@ -4487,7 +4488,7 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
     for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
         graphAtt_rns = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["dn"].split("/")
         if len(graphAtt_rns) < 3:
-            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.")
+            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.", func_name=inspect.currentframe().f_code.co_name)
             return ERROR
 
         # Get vzAny(VRF) relations of the contract. There can be multiple VRFs per contract.
@@ -4527,7 +4528,7 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
                 data.append([vrf, contract, sg])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4542,11 +4543,11 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
-        print_result(title, POST, 'Re-run after APICs are upgraded to 6.0(2) or later')
+        print_result(title, POST, 'Re-run after APICs are upgraded to 6.0(2) or later', func_name=inspect.currentframe().f_code.co_name)
         return POST
 
     if cversion.newer_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
@@ -4578,7 +4579,7 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
         result = NA
         msg = 'Target version below 6.0(2)'
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4657,7 +4658,7 @@ def fabric_link_redundancy_check(index, total_checks, **kwargs):
     elif not sp_missing and t1_missing:
         recommended_action = t1_recommended_action
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4674,7 +4675,7 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     cloudsec_api = 'cloudsecPreSharedKey.json'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     try:
@@ -4682,7 +4683,7 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
     except OldVerClassNotFound:
         msg = 'cversion does not have class cloudsecPreSharedKey'
         result = NA
-        print_result(title, result, msg)
+        print_result(title, result, msg, func_name=inspect.currentframe().f_code.co_name)
         return result
 
     if tversion.newer_than("6.0(6a)"):
@@ -4694,7 +4695,7 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
             result = MANUAL
         else:
             result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4724,7 +4725,7 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4743,7 +4744,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
     fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if (tversion.newer_than("6.0(7a)") and tversion.older_than("6.0(9c)")) or tversion.same_as("6.1(1f)"):
@@ -4763,7 +4764,7 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
                         data.append([node_dn, model])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4792,7 +4793,7 @@ def tep_to_tep_ac_counter_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4836,7 +4837,7 @@ def clock_signal_component_failure_check(index, total_checks, **kwargs):
         result = MANUAL
         recommended_action += sn_string[:-1]
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
 
     return result
 
@@ -4857,7 +4858,7 @@ def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
     active_spine_api += '?query-target-filter=eq(topSystem.role,"spine")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.newer_than("5.2(3d)") and tversion.older_than("6.0(3d)"):
@@ -4874,7 +4875,7 @@ def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
                     data.append([node_id, name, state])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4892,7 +4893,7 @@ def n9408_model_check(index, total_checks, tversion, **kwargs):
     eqptCh_api += '?query-target-filter=eq(eqptCh.model,"N9K-C9400-SW-GX2A")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.newer_than("6.1(3a)"):
@@ -4904,7 +4905,7 @@ def n9408_model_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4924,7 +4925,7 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     count_filter = '?rsp-subtree-include=count'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.older_than("5.3(2c)"):
@@ -4940,7 +4941,7 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -4957,10 +4958,10 @@ def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs)
 
     # Applicable only when crossing 6.1(2) as upgrade instead of downgrade.
     if cversion.newer_than("6.1(2a)"):
-        print_result(title, NA)
+        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
         return NA
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     commHttpses = icurl("class", "commHttps.json")
@@ -4989,7 +4990,7 @@ def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs)
             recommended_action = "6.1(2)+ will reject this config. " + recommended_action
         else:
             result = FAIL_UF
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5008,7 +5009,7 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     eqptSupC_api += '?query-target-filter=eq(eqptSupC.rdSt,"standby")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if (
@@ -5028,7 +5029,7 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5069,7 +5070,7 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     if data or unformatted_data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5088,7 +5089,7 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.newer_than("6.1(2a)"):
@@ -5107,7 +5108,7 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
     else:
         result = PASS
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5128,11 +5129,11 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if not (cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)")):
-        print_result(title, NA)
+        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
         return NA
 
     dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)/"
@@ -5152,7 +5153,7 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
 
     if data or unformatted_data:
         result = MANUAL
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url)
+    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5172,7 +5173,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
 
     controllers = icurl('class', topSystem_api)
     if not controllers:
-        print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?')
+        print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
         return ERROR
     has_error = False
     prints('')
@@ -5217,7 +5218,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
         result = ERROR
     elif data:
         result = FAIL_UF
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5235,7 +5236,7 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     ave_api += '?query-target-filter=eq(vmmDomP.enableAVE,"true")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.newer_than("6.0(1a)"):
@@ -5246,7 +5247,7 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5262,7 +5263,7 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)") and tversion.older_than("6.1(4a)"):
@@ -5297,12 +5298,12 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
                         if pcons_ra_dn_mo:
                             data.append([pcons_ra_dn, policy_dn])
     else:
-        print_result(title, NA, "Target version not supplied or not applicable. Skipping.")
+        print_result(title, NA, "Target version not supplied or not applicable. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return NA
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5317,7 +5318,7 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
     print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.")
+        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
         return MANUAL
 
     if tversion.newer_than("6.1(1a)") and tversion.older_than("6.1(3g)"):
@@ -5348,10 +5349,10 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
                 break
 
     else:
-        print_result(title, NA, "Target version not affected")
+        print_result(title, NA, "Target version not affected", func_name=inspect.currentframe().f_code.co_name)
         return NA
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url)
+    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
     return result
 
 
@@ -5529,14 +5530,11 @@ def run_checks(checks, inputs):
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
         except Exception as e:
-            # synth.writeResult() uses the first arg in `print_result()` (i.e. title) as
-            # the filename. When a check has an error and ends up here, we don't know the
-            # title and we cannot use the error message as the title/filename either.
-            # Thus, using the func name of the check as the title/filename.
+            func_name = check.__name__
             prints('')
-            print_title(" " * len(check.__name__))  # not showing the func name in the stdout
+            print_title(" " * len(func_name))  # not showing the func name in the stdout
             msg = 'Unexpected Error: %s' % e
-            print_result(check.__name__, ERROR, msg)
+            print_result(func_name, ERROR, msg, func_name=func_name)
             summary[ERROR] += 1
             logging.exception(e)
 
