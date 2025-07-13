@@ -16,14 +16,14 @@
 
 from __future__ import division
 from __future__ import print_function
-from six import iteritems
+from six import iteritems, text_type
 from six.moves import input
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
 from argparse import ArgumentParser
-import inspect
+import functools
 import shutil
 import warnings
 import time
@@ -36,6 +36,7 @@ import os
 import re
 
 SCRIPT_VERSION = "v2.6.0"
+# result constants
 DONE = 'DONE'
 PASS = 'PASS'
 FAIL_O = 'FAIL - OUTAGE WARNING!!'
@@ -44,6 +45,10 @@ ERROR = 'ERROR !!'
 MANUAL = 'MANUAL CHECK REQUIRED'
 POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
+# message constants
+TVER_MISSING = "Target version not supplied. Skipping."
+VER_NOT_AFFECTED = "Version not affected."
+# regex constants
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
 port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
 path_regex = (
@@ -70,89 +75,6 @@ os.mkdir(DIR)
 os.mkdir(JSON_DIR)
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-
-class syntheticMaintPValidate:
-    def __init__(self, func_name, name, description, path=JSON_DIR):
-        self.ruleId = func_name
-        self.name = name
-        self.description = description
-        self.reason = ""
-        self.sub_reason = ""
-        self.recommended_action = ""
-        self.docUrl = ""
-        self.severity = "informational"
-        self.ruleStatus = "passed"  # passed|failed
-        self.showValidation = True
-        self.failureDetails = {}
-        cleaned_name = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId)
-        self.filename = cleaned_name + '.json'
-        self.path = path
-
-    @staticmethod
-    def craftData(column, row):
-        data = []
-        if isinstance(row, list) and isinstance(column, list):
-            for i in range(len(row)):
-                entry = {}
-                for j in range(len(column)):
-                    if j < len(row[i]):
-                        entry[column[j]] = row[i][j]
-                    else:
-                        entry[column[j]] = None
-                data.append(entry)
-        return data
-
-    def updateWithResults(self, result, recommended_action, reason, doc_url, column, rows, unformatted_column, unformatted_rows):
-        self.reason = reason
-        self.recommended_action = recommended_action
-        self.docUrl = doc_url
-
-        # Show validation
-        if result in [NA, POST]:
-            self.showValidation = False
-
-        # Severity
-        if result in [FAIL_O, FAIL_UF]:
-            self.severity = "critical"
-        elif result in [ERROR]:
-            self.severity = "major"
-        elif result in [MANUAL]:
-            self.severity = "warning"
-
-        if result not in [NA, PASS]:
-            self.ruleStatus = "failed"
-            self.failureDetails["failType"] = result
-            self.failureDetails["data"] = self.craftData(column, rows)
-            if unformatted_column and unformatted_rows:
-                self.failureDetails["unformatted_data"] = self.craftData(unformatted_column, unformatted_rows)
-                self.reason += (
-                    "\nParse failure occurred for some data, the provided data may not be complete. "
-                    "Please contact Cisco TAC to work on the missing data."
-                )
-
-    def buildResult(self):
-        result = {
-            "ruleId": self.ruleId,
-            "name": self.name,
-            "description": self.description,
-            "reason": self.reason,
-            "sub_reason": self.sub_reason,
-            "recommended_action": self.recommended_action,
-            "docUrl": self.docUrl,
-            "severity": self.severity,
-            "ruleStatus": self.ruleStatus,
-            "showValidation": self.showValidation,
-            "failureDetails": self.failureDetails,
-        }
-        return result
-
-    def writeResult(self):
-        if not os.path.isdir(self.path):
-            os.mkdir(self.path)
-        with open(os.path.join(self.path, self.filename), "w") as f:
-            json.dump(self.buildResult(), f, indent=2)
-        return "{}/{}".format(self.path, self.filename)
 
 
 class OldVerClassNotFound(Exception):
@@ -247,7 +169,7 @@ class Connection(object):
         if self.log is not None and self._log is None:
             # if self.log is a string, then attempt to open file pointer (do not catch exception, we want it
             # to die if there's an error opening the logfile)
-            if isinstance(self.log, str) or isinstance(self.log, unicode):
+            if isinstance(self.log, str) or isinstance(self.log, text_type):
                 self._log = open(self.log, "ab")
             else:
                 self._log = self.log
@@ -351,7 +273,6 @@ class Connection(object):
             "prompt": self.prompt
         }
 
-        last_match = None
         while max_attempts > 0:
             max_attempts -= 1
             match = self.__expect(matches, timeout)
@@ -383,7 +304,6 @@ class Connection(object):
             elif match == "timeout":
                 logging.debug("timeout received but connection still opened, send enter")
                 self.child.sendline("\r\n")
-            last_match = match
         # did not find prompt within max attempts, failed login
         logging.error("failed to login after multiple attempts")
         return False
@@ -999,6 +919,150 @@ def is_firstver_gt_secondver(first_ver, second_ver):
     return result
 
 
+class syntheticMaintPValidate:
+    """
+    APIC uses an object called `syntheticMaintPValidate` to store the results of
+    each rule/check in the pre-upgrade validation which is run during the upgrade
+    workflow in the APIC GUI. When this script is invoked during the workflow, it
+    is expected to write the results of each rule/check to a JSON file (one per rule)
+    in a specific format.
+    """
+    # Expected keys in the JSON file
+    __slots__ = (
+        "ruleId", "name", "description", "reason", "sub_reason", "recommended_action",
+        "docUrl", "severity", "ruleStatus", "showValidation", "failureDetails",
+    )
+
+    def __init__(self, func_name, name, description):
+        self.ruleId = func_name
+        self.name = name
+        self.description = description
+        self.reason = ""
+        self.sub_reason = ""
+        self.recommended_action = ""
+        self.docUrl = ""
+        self.severity = "informational"
+        self.ruleStatus = "passed"  # passed|failed
+        self.showValidation = True
+        self.failureDetails = {
+            "failType": "",
+            "data": [],
+            "unformatted_data": [],
+        }
+
+    @staticmethod
+    def craftData(column, rows):
+        if not (isinstance(rows, list) and isinstance(column, list)):
+            raise TypeError("Rows and column must be lists.")
+        data = []
+        for i in range(len(rows)):
+            entry = {}
+            for j in range(len(column)):
+                if j < len(rows[i]):
+                    entry[column[j]] = rows[i][j]
+                else:
+                    entry[column[j]] = None
+            data.append(entry)
+        return data
+
+    def updateWithResults(self, result, recommended_action, msg, doc_url, headers, data, unformatted_headers, unformatted_data):
+        self.reason = msg
+        self.recommended_action = recommended_action
+        self.docUrl = doc_url
+
+        # Show validation
+        if result in [NA, POST]:
+            self.showValidation = False
+
+        # Severity
+        if result in [FAIL_O, FAIL_UF]:
+            self.severity = "critical"
+        elif result in [ERROR]:
+            self.severity = "major"
+        elif result in [MANUAL]:
+            self.severity = "warning"
+
+        if result not in [NA, PASS]:
+            self.ruleStatus = "failed"
+            self.failureDetails["failType"] = result
+            self.failureDetails["data"] = self.craftData(headers, data)
+            if unformatted_headers and unformatted_data:
+                self.failureDetails["unformatted_data"] = self.craftData(unformatted_headers, unformatted_data)
+                if self.reason:
+                    self.reason += "\n"
+                self.reason += (
+                    "Parse failure occurred, the provided data may not be complete. "
+                    "Please contact Cisco TAC to identify the missing data."
+                )
+
+    def buildResult(self):
+        return {slot: getattr(self, slot) for slot in self.__slots__}
+
+    def writeResult(self, path=JSON_DIR):
+        filename = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId) + '.json'
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        with open(os.path.join(path, filename), "w") as f:
+            json.dump(self.buildResult(), f, indent=2)
+        return "{}/{}".format(path, filename)
+
+
+class Result:
+    """Class to hold the result of a check."""
+    __slots__ = ("result", "msg", "headers", "data", "unformatted_headers", "unformatted_data", "recommended_action", "doc_url", "adjust_title")
+
+    def __init__(self, result=PASS, msg="", headers=None, data=None, unformatted_headers=None, unformatted_data=None, recommended_action="", doc_url="", adjust_title=False):
+        self.result = result
+        self.msg = msg
+        self.headers = headers if headers is not None else []
+        self.data = data if data is not None else []
+        self.unformatted_headers = unformatted_headers if unformatted_headers is not None else []
+        self.unformatted_data = unformatted_data if unformatted_data is not None else []
+        self.recommended_action = recommended_action
+        self.doc_url = doc_url
+        self.adjust_title = adjust_title
+
+    def as_dict(self):
+        return {slot: getattr(self, slot) for slot in self.__slots__}
+
+    def as_dict_for_json_result(self):
+        return {slot: getattr(self, slot) for slot in self.__slots__ if slot != "adjust_title"}
+
+
+def check_wrapper(check_title):
+    """
+    Decorator to wrap a check function to handle the printing of title and results,
+    and to write the results in a file in a JSON format.
+    """
+    def decorator(check_func):
+        @functools.wraps(check_func)
+        def wrapper(index, total_checks, *args, **kwargs):
+            # Print `[Check  1/81] <title>...`
+            print_title(check_title, index, total_checks)
+
+            try:
+                # Run check, expecting it to return a `Result` object
+                r = check_func(*args, **kwargs)
+            except Exception as e:
+                r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
+                logging.exception(e)
+
+            # Print `[Check  1/81] <title>... <result> + <failure details>`
+            print_result(title=check_title, **r.as_dict())
+
+            # Write results in JSON
+            # Using `wrapper.__name__` instead of `check_func.__name` because
+            # both show the original check func name and `wrapper.__name__` can
+            # be dynamically changed inside each check func if needed. (mainly
+            # for test or debugging)
+            synth = syntheticMaintPValidate(wrapper.__name__, check_title, "")
+            synth.updateWithResults(**r.as_dict_for_json_result())
+            synth.writeResult()
+            return r.result
+        return wrapper
+    return decorator
+
+
 def format_table(headers, data,
                  min_width=5, left_padding=2, hdr_sp='-', col_sp='  '):
     """ get string results in table format
@@ -1137,22 +1201,7 @@ def print_result(title, result, msg='',
                  unformatted_headers=None, unformatted_data=None,
                  recommended_action='',
                  doc_url='',
-                 func_name='',
-                 adjust_title=False,
-                 json_output=True):
-    if json_output:
-        synth = syntheticMaintPValidate(func_name, title, "")
-        synth.updateWithResults(
-            result=result,
-            recommended_action=recommended_action,
-            reason=msg,
-            doc_url=doc_url,
-            column=headers,
-            rows=data,
-            unformatted_column=unformatted_headers,
-            unformatted_rows=unformatted_data,
-        )
-        synth.writeResult()
+                 adjust_title=False):
     padding = 120 - len(title) - len(msg)
     if adjust_title: padding += len(title) + 18
     output = '{}{:>{}}'.format(msg, result, padding)
@@ -1161,7 +1210,7 @@ def print_result(title, result, msg='',
         output += '\n' + format_table(headers, data)
     if unformatted_data:
         unformatted_data.sort()
-        output += '\n' + format_table(unformatted_headers, unformatted_data)
+        output += '\n\n' + format_table(unformatted_headers, unformatted_data)
     if data or unformatted_data:
         output += '\n'
         if recommended_action:
@@ -1329,21 +1378,19 @@ def get_switch_version():
         return None
 
 
-def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
-    title = 'APIC Cluster is Fully-Fit'
+@check_wrapper(check_title="APIC Cluster is Fully-Fit")
+def apic_cluster_health_check(cversion, **kwargs):
     result = FAIL_UF
     msg = ''
     headers = ['APIC-ID\n(Seen By)', 'APIC-ID\n(Affected)', 'Admin State', 'Operational State', 'Health State']
     unformatted_headers = ['Affected DN', 'Admin State', 'Operational State', 'Health State']
     data = []
     unformatted_data = []
-    doc_url = 'ACI Troubleshooting Guide 2nd Edition - http://cs.co/9003ybZ1d'
-    print_title(title, index, total_checks)
+    doc_url = 'http://cs.co/9003ybZ1d'  # ACI Troubleshooting Guide 2nd Edition
     if cversion.older_than("4.2(1a)"):
         recommended_action = 'Follow "Initial Fabric Setup" in ACI Troubleshooting Guide 2nd Edition'
     else:
         recommended_action = 'Troubleshoot by running "acidiag cluster" on APIC CLI'
-
     dn_regex = node_regex + r'/av/node-(?P<winode>\d)'
     infraWiNodes = icurl('class', 'infraWiNode.json')
     for av in infraWiNodes:
@@ -1362,19 +1409,16 @@ def apic_cluster_health_check(index, total_checks, cversion, **kwargs):
         msg = 'infraWiNode (Appliance Vector) not found!'
     elif not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data,
-                 recommended_action, doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def switch_status_check(index, total_checks, **kwargs):
-    title = 'Switches are all in Active state'
+@check_wrapper(check_title="Switches are all in Active state")
+def switch_status_check(**kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ['Pod-ID', 'Node-ID', 'State', 'Recommended Action']
+    headers = ['Pod-ID', 'Node-ID', 'State']
     data = []
     recommended_action = 'Bring this node back to "active"'
-    print_title(title, index, total_checks)
     # fabricNode.fabricSt shows `disabled` for both Decommissioned and Maintenance (GIR).
     # fabricRsDecommissionNode.debug==yes is required to show `disabled (Maintenance)`.
     fabricNodes = icurl('class', 'fabricNode.json?&query-target-filter=ne(fabricNode.role,"controller")')
@@ -1390,55 +1434,49 @@ def switch_status_check(index, total_checks, **kwargs):
         for gir in girNodes:
             if node_id == gir['fabricRsDecommissionNode']['attributes']['targetId']:
                 state = state + ' (Maintenance)'
-        data.append([pod_id, node_id, state, recommended_action])
+        data.append([pod_id, node_id, state])
     if not fabricNodes:
         result = MANUAL
         msg = 'Switch fabricNode not found!'
     elif not data:
         result = PASS
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
 
 
-def maintp_grp_crossing_4_0_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Firmware/Maintenance Groups when crossing 4.0 Release'
+@check_wrapper(check_title="Firmware/Maintenance Groups when crossing 4.0 Release")
+def maintp_grp_crossing_4_0_check(cversion, tversion, **kwargs):
     result = PASS
     msg = ''
-    headers = ["Group Name", "Group Type", "Recommended Action"]
+    headers = ["Group Name", "Group Type"]
     data = []
     recommended_action = 'Remove the group prior to APIC upgrade. Create a new switch group once APICs are upgraded to post-4.0.'
-    print_title(title, index, total_checks)
-
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#firmwaremaintenance-groups-when-crossing-40-release"
     if (int(cversion.major1) >= 4) or (tversion and (int(tversion.major1) <= 3)):
         result = NA
-        msg = 'Versions not applicable'
+        msg = VER_NOT_AFFECTED
     elif (int(cversion.major1) < 4) and not tversion:
         result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
+        msg = TVER_MISSING
     else:
         groups = icurl('mo', '/uni/fabric.json?query-target=children&target-subtree-class=maintMaintP,firmwareFwP')
         for g in groups:
             result = FAIL_O
             if g.get('maintMaintP'):
-                data.append([g['maintMaintP']['attributes']['name'], 'Maintenance Group', recommended_action])
+                data.append([g['maintMaintP']['attributes']['name'], 'Maintenance Group'])
             else:
-                data.append([g['firmwareFwP']['attributes']['name'], 'Firmware Group', recommended_action])
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+                data.append([g['firmwareFwP']['attributes']['name'], 'Firmware Group'])
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def ntp_status_check(index, total_checks, **kargs):
-    title = 'NTP Status'
+@check_wrapper(check_title="NTP Status")
+def ntp_status_check(**kargs):
     result = FAIL_UF
-    msg = ''
-    headers = ["Pod-ID", "Node-ID", "Recommended Action"]
+    headers = ["Pod-ID", "Node-ID"]
     data = []
     recommended_action = 'Not Synchronized. Check NTP config and NTP server reachability.'
-    print_title(title, index, total_checks)
-
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ntp-status"
     fabricNodes = icurl('class', 'fabricNode.json')
     nodes = [fn['fabricNode']['attributes']['id'] for fn in fabricNodes]
-
     apicNTPs = icurl('class', 'datetimeNtpq.json')
     switchNTPs = icurl('class', 'datetimeClkPol.json')
     for apicNTP in apicNTPs:
@@ -1454,24 +1492,22 @@ def ntp_status_check(index, total_checks, **kargs):
     for fn in fabricNodes:
         if fn['fabricNode']['attributes']['id'] in nodes:
             dn = re.search(node_regex, fn['fabricNode']['attributes']['dn'])
-            data.append([dn.group('pod'), dn.group('node'), recommended_action])
+            data.append([dn.group('pod'), dn.group('node')])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def features_to_disable_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Features that need to be Disabled prior to Upgrade'
+@check_wrapper(check_title="Features that need to be Disabled prior to Upgrade")
+def features_to_disable_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Feature", "Name", "Status", "Recommended Action"]
     data = []
-    print_title(title, index, total_checks)
+    recommended_action = 'Disable the feature prior to upgrade'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#features-that-need-to-be-disabled-prior-to-upgrade"
 
     apPlugins = icurl('class', 'apPlugin.json?&query-target-filter=ne(apPlugin.pluginSt,"inactive")')
     infraMOs = icurl('mo', 'uni/infra.json?query-target=subtree&target-subtree-class=infrazoneZone,epControlP')
-
     default_apps = ['IntersightDC', 'NIALite', 'NIBASE', 'ApicVision']
     default_appDNs = ['pluginContr/plugin-Cisco_' + app for app in default_apps]
     if apPlugins:
@@ -1501,28 +1537,20 @@ def features_to_disable_check(index, total_checks, cversion, tversion, **kwargs)
                 data.append(['Rogue Endpoint', name, 'Enabled', ra])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def switch_group_guideline_check(index, total_checks, **kwargs):
-    title = 'Switch Upgrade Group Guidelines'
+@check_wrapper(check_title="Switch Upgrade Group Guidelines")
+def switch_group_guideline_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ['Group Name', 'Pod-ID', 'Node-IDs', 'Failure Reason']
     data = []
     recommended_action = 'Upgrade nodes in each line above separately in another group.'
-    doc_url = 'Guidelines for Switch Upgrades in ACI Firmware Upgrade Overview'
-    print_title(title, index, total_checks)
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-upgrade-group-guidelines'
 
     maints = icurl('class', 'maintMaintGrp.json?rsp-subtree=children')
     if not maints:
-        result = MANUAL
-        msg = 'No upgrade groups found!'
-        print_result(title, result, msg, headers, data,
-                     recommended_action=recommended_action, doc_url=doc_url,
-                     func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(result=MANUAL, msg='No upgrade groups found!', doc_url=doc_url)
 
     spine_type = ['', 'RR ', 'IPN/ISN ']
     f_spines = [defaultdict(list) for t in spine_type]
@@ -1615,21 +1643,19 @@ def switch_group_guideline_check(index, total_checks, **kwargs):
                 data.append([m_name, m_vpc_peers[0]['pod'],
                              ','.join(x['node'] for x in m_vpc_peers),
                              reason_vpc])
-    if not data and not msg:
+    if not data:
         result = PASS
-    print_result(title, result, msg, headers, data,
-                 recommended_action=recommended_action, doc_url=doc_url,
-                 func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
-    title = 'Switch Node /bootflash usage'
+@check_wrapper(check_title="Switch Node /bootflash usage")
+def switch_bootflash_usage_check(tversion, **kwargs):
     result = FAIL_UF
     msg = ''
     headers = ["Pod-ID", "Node-ID", "Utilization", "Alert"]
     data = []
-    print_title(title, index, total_checks)
+    recommended_action = "Over 50% usage! Contact Cisco TAC for Support"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-node-bootflash-usage"
 
     partitions_api = 'eqptcapacityFSPartition.json'
     partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
@@ -1640,8 +1666,7 @@ def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
 
     partitions = icurl('class', partitions_api)
     if not partitions:
-        result = ERROR
-        msg = 'bootflash objects not found'
+        return Result(result=ERROR, msg='bootflash objects not found', doc_url=doc_url)
 
     predownloaded_nodes = []
     try:
@@ -1664,25 +1689,25 @@ def switch_bootflash_usage_check(index, total_checks, tversion, **kwargs):
 
         usage = (used / (avail + used)) * 100
         if (usage >= 50) and (node not in predownloaded_nodes):
-            data.append([pod, node, usage, "Over 50% usage! Contact Cisco TAC for Support"])
+            data.append([pod, node, usage])
 
     if not data:
         result = PASS
         msg = 'All below 50% or pre-downloaded'
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def l3out_mtu_check(index, total_checks, **kwargs):
-    title = 'L3Out MTU'
+@check_wrapper(check_title="L3Out MTU")
+def l3out_mtu_check(**kwargs):
     result = MANUAL
-    msg = 'Verify that these MTUs match with connected devices'
+    msg = ""
     headers = ["Tenant", "L3Out", "Node Profile", "Logical Interface Profile",
                "Pod", "Node", "Interface", "Type", "IP Address", "MTU"]
     data = []
     unformatted_headers = ['L3 DN', "Type", "IP Address", "MTU"]
     unformatted_data = []
-    print_title(title, index, total_checks)
+    recommended_action = 'Verify that these MTUs match with connected devices'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-mtu"
 
     dn_regex = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)/rspathL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/.*paths-(?P<nodes>\d{3,4}|\d{3,4}-\d{3,4})/pathep-\[(?P<int>.+)\]\]'
     response_json = icurl('class', 'l3extRsPathL3OutAtt.json')
@@ -1710,20 +1735,27 @@ def l3out_mtu_check(index, total_checks, **kwargs):
     if not data and not unformatted_data:
         result = NA
         msg = 'No L3Out Interfaces found'
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        msg=msg,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def port_configured_as_l2_check(index, total_checks, **kwargs):
-    title = 'L3 Port Config (F0467 port-configured-as-l2)'
+@check_wrapper(check_title="L3 Port Config (F0467 port-configured-as-l2)")
+def port_configured_as_l2_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ['Fault', 'Tenant', 'L3Out', 'Node', 'Path', 'Recommended Action']
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port as L2'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l2l3-port-config"
 
     l2dn_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/fd-\[.+rtdOutDef-.+/node-(?P<node>\d{3,4})/(?P<path>.+)/nwissues'
     l2response_json = icurl('class',
@@ -1732,28 +1764,31 @@ def port_configured_as_l2_check(index, total_checks, **kwargs):
         fc = faultDelegate['faultDelegate']['attributes']['code']
         dn = re.search(l2dn_regex, faultDelegate['faultDelegate']['attributes']['dn'])
         if dn:
-            data.append([fc, dn.group('tenant'), dn.group('l3out'),
-                         dn.group('node'), dn.group('path'),
-                         recommended_action])
+            data.append([fc, dn.group('tenant'), dn.group('l3out'), dn.group('node'), dn.group('path')])
         else:
-            unformatted_data.append(
-                [fc, faultDelegate['faultDelegate']['attributes']['dn'], recommended_action])
+            unformatted_data.append([fc, faultDelegate['faultDelegate']['attributes']['dn']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def port_configured_as_l3_check(index, total_checks, **kwargs):
-    title = 'L2 Port Config (F0467 port-configured-as-l3)'
+@check_wrapper(check_title="L2 Port Config (F0467 port-configured-as-l3)")
+def port_configured_as_l3_check(**kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ['Fault', 'Pod', 'Node', 'Tenant', 'AP', 'EPG', 'Port', 'Recommended Action']
+    headers = ['Fault', 'Pod', 'Node', 'Tenant', 'AP', 'EPG', 'Port']
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port as L3'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l2l3-port-config"
 
     l3affected_regex = r'topology/(?P<pod>[^/]+)/(?P<node>[^/]+)/.+uni/tn-(?P<tenant>[^/]+)/ap-(?P<ap>[^/]+)/epg-(?P<epg>\w+).+(?P<port>eth\d+/\d+)'
     l3response_json = icurl('class',
@@ -1761,32 +1796,36 @@ def port_configured_as_l3_check(index, total_checks, **kwargs):
     for faultDelegate in l3response_json:
         fc = faultDelegate['faultDelegate']['attributes']['code']
         affected_array = re.search(l3affected_regex, faultDelegate['faultDelegate']['attributes']['dn'])
-
         if affected_array:
-            data.append(
-                [fc, affected_array.group("pod"), affected_array.group("node"), affected_array.group("tenant"),
-                 affected_array.group("ap"), affected_array.group("epg"), affected_array.group("port"),
-                 recommended_action])
+            data.append([
+                fc, affected_array.group("pod"), affected_array.group("node"), affected_array.group("tenant"),
+                affected_array.group("ap"), affected_array.group("epg"), affected_array.group("port")
+            ])
         else:
-            unformatted_data.append(
-                [fc, faultDelegate['faultDelegate']['attributes']['dn'], recommended_action])
+            unformatted_data.append([fc, faultDelegate['faultDelegate']['attributes']['dn']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def prefix_already_in_use_check(index, total_checks, **kwargs):
-    title = 'L3Out Subnets (F0467 prefix-entry-already-in-use)'
+@check_wrapper(check_title="L3Out Subnets (F0467 prefix-entry-already-in-use)")
+def prefix_already_in_use_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["VRF Name", "Prefix", "L3Out EPGs without F0467", "L3Out EPGs with F0467"]
     headers_old = ["Fault", "Failed L3Out EPG"]
     data = []
     unformatted_headers = ['Fault', 'Fault Description', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing the overlapping prefix from the faulted L3Out EPG.'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-subnets"
 
     # Old versions (pre-CSCvq93592) do not show VRF VNID and prefix in use (2nd line)
     desc_regex = r'Configuration failed for (?P<failedEpg>.+) due to Prefix Entry Already Used in Another EPG'
@@ -1795,8 +1834,7 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
     filter = '?query-target-filter=and(wcard(faultInst.changeSet,"prefix-entry-already-in-use"),wcard(faultInst.dn,"uni/epp/rtd"))'
     faultInsts = icurl("class", "faultInst.json" + filter)
     if not faultInsts:
-        print_result(title, PASS, func_name=inspect.currentframe().f_code.co_name)
-        return PASS
+        return Result(result=PASS)
 
     vnid2vrf = {}
     fvCtxs = icurl("class", "fvCtx.json")
@@ -1837,8 +1875,15 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
         data = [["F0467", epg] for epg in conflicts["_"]["_"]["faulted_extepgs"]]
         if not data and not unformatted_data:
             result = PASS
-        print_result(title, result, msg, headers_old, data, unformatted_headers, unformatted_data, recommended_action, func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(
+            result=result,
+            headers=headers_old,
+            data=data,
+            unformatted_headers=unformatted_headers,
+            unformatted_data=unformatted_data,
+            recommended_action=recommended_action,
+            doc_url=doc_url,
+        )
 
     # Proceed further only for new versions with VRF/prefix data in faults
     # Get L3Out DNs in the VRFs mentioned by the faults
@@ -1881,20 +1926,26 @@ def prefix_already_in_use_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def encap_already_in_use_check(index, total_checks, **kwargs):
-    title = 'Encap Already In Use (F0467 encap-already-in-use)'
+@check_wrapper(check_title="Encap Already In Use (F0467 encap-already-in-use)")
+def encap_already_in_use_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Faulted EPG/L3Out", "Node", "Port", "In Use Encap(s)", "In Use by EPG/L3Out"]
     data = []
     unformatted_headers = ['Fault Description']
     unformatted_data = []
     recommended_action = 'Resolve the overlapping encap configuration prior to upgrade'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#encap-already-in-use"
 
     # <port> can be `ethX/X` or the name of I/F policy group
     # <vlan> is not there for older versions
@@ -1942,22 +1993,26 @@ def encap_already_in_use_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data,
-                 unformatted_headers, unformatted_data, recommended_action=recommended_action,
-                 func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def bd_subnet_overlap_check(index, total_checks, **kwargs):
-    title = 'BD Subnets (F1425 subnet-overlap)'
+@check_wrapper(check_title="BD Subnets (F1425 subnet-overlap)")
+def bd_subnet_overlap_check(**kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ["Fault", "Pod", "Node", "VRF", "Interface", "Address", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "VRF", "Interface", "Address"]
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing BD subnets causing the overlap'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bd-subnets"
 
     dn_regex = node_regex + r'/.+dom-(?P<vrf>[^/]+)/if-(?P<int>[^/]+)/addr-\[(?P<addr>[^/]+/\d{2})'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=wcard(faultInst.changeSet,"subnet-overlap")')
@@ -1968,25 +2023,31 @@ def bd_subnet_overlap_check(index, total_checks, **kwargs):
                 dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
                 if dn_array:
                     data.append([fc, dn_array.group("pod"), dn_array.group("node"), dn_array.group("vrf"),
-                                 dn_array.group("int"), dn_array.group("addr"), recommended_action])
+                                 dn_array.group("int"), dn_array.group("addr")])
                 else:
-                    unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
+                    unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def bd_duplicate_subnet_check(index, total_checks, **kwargs):
-    title = 'BD Subnets (F0469 duplicate-subnets-within-ctx)'
+@check_wrapper(check_title="BD Subnets (F0469 duplicate-subnets-within-ctx)")
+def bd_duplicate_subnet_check(**kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ["Fault", "Pod", "Node", "Bridge Domain 1", "Bridge Domain 2", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "Bridge Domain 1", "Bridge Domain 2"]
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Fault Description', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN', 'Fault Description']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing BD subnets causing the duplicate'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bd-subnets"
 
     descr_regex = r'duplicate-subnets-within-ctx: (?P<bd1>.+)\s,(?P<bd2>.+)'
     faultInsts = icurl('class',
@@ -1996,22 +2057,25 @@ def bd_duplicate_subnet_check(index, total_checks, **kwargs):
         dn = re.search(node_regex, faultInst['faultInst']['attributes']['dn'])
         descr = re.search(descr_regex, faultInst['faultInst']['attributes']['descr'])
         if dn and descr:
-            data.append([fc, dn.group("pod"), dn.group("node"),
-                         descr.group("bd1"), descr.group("bd2"), recommended_action])
+            data.append([fc, dn.group("pod"), dn.group("node"), descr.group("bd1"), descr.group("bd2")])
         else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'],
-                                     faultInst['faultInst']['attributes']['descr'],
-                                     recommended_action])
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], faultInst['faultInst']['attributes']['descr']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def hw_program_fail_check(index, total_checks, cversion, **kwargs):
-    title = 'HW Programming Failure (F3544 L3Out Prefixes, F3545 Contracts, actrl-resource-unavailable)'
+@check_wrapper(check_title="HW Programming Failure (F3544 L3Out Prefixes, F3545 Contracts, actrl-resource-unavailable)")
+def hw_program_fail_check(cversion, **kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Fault", "Pod", "Node", "Fault Description", "Recommended Action"]
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Fault Description', 'Recommended Action']
@@ -2022,7 +2086,7 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
         'F3544': 'Ensure that LPM and host routes usage are below the capacity and resolve the fault',
         'F3545': 'Ensure that Policy CAM usage is below the capacity and resolve the fault'
     }
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#hw-programming-failure"
 
     # Faults F3544 and F3545 don't exist until 4.1(1a)+
     if cversion.older_than("4.1(1a)"):
@@ -2047,18 +2111,21 @@ def hw_program_fail_check(index, total_checks, cversion, **kwargs):
                     fc, faultInst['faultInst']['attributes']['dn'],
                     faultInst['faultInst']['attributes']['descr'],
                     recommended_action.get(fc, 'Resolve the fault')])
-
         if not data and not unformatted_data:
             result = PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        doc_url=doc_url,
+    )
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
 
-
-def switch_ssd_check(index, total_checks, **kwargs):
-    title = 'Switch SSD Health (F3073, F3074 equipment-flash-warning)'
+@check_wrapper(check_title="Switch SSD Health (F3073, F3074 equipment-flash-warning)")
+def switch_ssd_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed", "Recommended Action"]
     data = []
     unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed", "Recommended Action"]
@@ -2068,7 +2135,7 @@ def switch_ssd_check(index, total_checks, **kwargs):
         'F3073': 'Contact Cisco TAC for replacement procedure',
         'F3074': 'Monitor (no impact to upgrades)'
     }
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-ssd-health"
 
     cs_regex = r'model \(New: (?P<model>\w+)\),'
     faultInsts = icurl('class',
@@ -2088,78 +2155,79 @@ def switch_ssd_check(index, total_checks, **kwargs):
                                      recommended_action.get(fc, 'Resolve the fault')])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        doc_url=doc_url,
+    )
 
 
-# Connection based check
-def apic_ssd_check(index, total_checks, cversion, username, password, **kwargs):
-    title = 'APIC SSD Health'
+# Connection Based Check
+@check_wrapper(check_title="APIC SSD Health")
+def apic_ssd_check(cversion, username, password, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
     unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-ssd-health"
 
     has_error = False
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
     adjust_title = False
     if len(faultInsts) == 0 and (cversion.older_than("4.2(7f)") or cversion.older_than("5.2(1g)")):
+        controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+        if not controller:
+            return Result(result=ERROR, msg="topSystem response empty. Is the cluster healthy?", doc_url=doc_url)
+
         print('')
         adjust_title = True
-        controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         report_other = False
-        if not controller:
-            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
-            return ERROR
-        else:
-            checked_apics = {}
-            for apic in controller:
-                attr = apic['topSystem']['attributes']
-                if attr['address'] in checked_apics: continue
-                checked_apics[attr['address']] = 1
-                pod_id = attr['podId']
-                node_id = attr['id']
-                node_title = 'Checking %s...' % attr['name']
-                print_title(node_title)
-                try:
-                    c = Connection(attr['address'])
-                    c.username = username
-                    c.password = password
-                    c.log = LOG_FILE
-                    c.connect()
-                except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
-                    print_result(node_title, ERROR, json_output=False)
-                    has_error = True
-                    continue
-                try:
-                    c.cmd(
-                        'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
-                except Exception as e:
-                    data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
-                    print_result(node_title, ERROR, json_output=False)
-                    has_error = True
-                    continue
+        checked_apics = {}
+        for apic in controller:
+            attr = apic['topSystem']['attributes']
+            if attr['address'] in checked_apics: continue
+            checked_apics[attr['address']] = 1
+            pod_id = attr['podId']
+            node_id = attr['id']
+            node_title = 'Checking %s...' % attr['name']
+            print_title(node_title)
+            try:
+                c = Connection(attr['address'])
+                c.username = username
+                c.password = password
+                c.log = LOG_FILE
+                c.connect()
+            except Exception as e:
+                data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                print_result(node_title, ERROR)
+                has_error = True
+                continue
+            try:
+                c.cmd(
+                    'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
+            except Exception as e:
+                data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                print_result(node_title, ERROR)
+                has_error = True
+                continue
 
-                wearout_ind = re.search(r'SSD Wearout Indicator is (?P<wearout>[0-9]+)', c.output)
-                if wearout_ind is not None:
-                    wearout = wearout_ind.group('wearout')
-                    if int(wearout) < 5:
-                        data.append([pod_id, node_id, "Solid State Disk",
-                                     wearout, recommended_action])
-                        report_other = True
-
-                        print_result(node_title, DONE, json_output=False)
-                        continue
-                    if report_other:
-                        data.append([pod_id, node_id, "Solid State Disk",
-                                     wearout, "No Action Required"])
-                print_result(node_title, DONE, json_output=False)
+            wearout_ind = re.search(r'SSD Wearout Indicator is (?P<wearout>[0-9]+)', c.output)
+            if wearout_ind is not None:
+                wearout = wearout_ind.group('wearout')
+                if int(wearout) < 5:
+                    data.append([pod_id, node_id, "Solid State Disk", wearout, recommended_action])
+                    report_other = True
+                    print_result(node_title, DONE)
+                    continue
+                if report_other:
+                    data.append([pod_id, node_id, "Solid State Disk", wearout, "No Action Required"])
+            print_result(node_title, DONE)
     else:
         headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
         unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
@@ -2176,20 +2244,26 @@ def apic_ssd_check(index, total_checks, cversion, username, password, **kwargs):
         result = ERROR
     elif not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, adjust_title=adjust_title, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        doc_url=doc_url,
+        adjust_title=adjust_title,
+    )
 
 
-def port_configured_for_apic_check(index, total_checks, **kwargs):
-    title = 'Config On APIC Connected Port (F0467 port-configured-for-apic)'
+@check_wrapper(check_title="Config On APIC Connected Port (F0467 port-configured-for-apic)")
+def port_configured_for_apic_check(**kwargs):
     result = FAIL_UF
-    msg = ''
-    headers = ["Fault", "Pod", "Node", "Port", "EPG", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "Port", "EPG"]
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Remove config overlapping with APIC Connected Interfaces'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#config-on-apic-connected-port"
 
     dn_regex = node_regex + r'/.+fv-\[(?P<epg>.+)\]/node-\d{3,4}/.+\[(?P<port>eth\d{1,2}/\d{1,2}).+/nwissues'
     faultInsts = icurl('class',
@@ -2198,20 +2272,25 @@ def port_configured_for_apic_check(index, total_checks, **kwargs):
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         if dn:
-            data.append([fc, dn.group("pod"), dn.group("node"), dn.group("port"),
-                         dn.group("epg"), recommended_action])
+            data.append([fc, dn.group("pod"), dn.group("node"), dn.group("port"), dn.group("epg")])
         else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def overlapping_vlan_pools_check(index, total_checks, **kwargs):
-    title = 'Overlapping VLAN Pools'
+@check_wrapper(check_title="Overlapping VLAN Pools")
+def overlapping_vlan_pools_check(**kwargs):
     result = PASS
-    msg = ''
     headers = ['Tenant', 'AP', 'EPG', 'Node', 'Port', 'VLAN Scope', 'VLAN ID', 'VLAN Pools (Domains)', 'Impact']
     data = []
     recommended_action = """
@@ -2220,13 +2299,10 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
     When `Impact` shows `Flood Scope`, you should check whether it is ok that STP BPDUs, or any BUM traffic when using Flood-in-Encap, may not be flooded within the same VLAN ID across all the nodes/ports.
     Note that only the nodes causing the overlap are shown above."""
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#overlapping-vlan-pool'
-    print_title(title, index, total_checks)
 
     infraSetPols = icurl('mo', 'uni/infra/settings.json')
     if infraSetPols[0]['infraSetPol']['attributes'].get('validateOverlappingVlans') in ['true', 'yes']:
-        msg = '`Enforce EPG VLAN Validation` is enabled. No need to check overlapping VLANs'
-        print_result(title, result, msg, func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(result=PASS, msg="`Enforce EPG VLAN Validation` is enabled. No need to check overlapping VLANs")
 
     # Get VLAN pools and ports from access policy
     mo_classes = AciAccessPolicyParser.get_classes()
@@ -2391,21 +2467,18 @@ def overlapping_vlan_pools_check(index, total_checks, **kwargs):
                             ', '.join(vpool_domains),
                             impact,
                         ])
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def scalability_faults_check(index, total_checks, **kwargs):
-    title = 'Scalability (faults related to Capacity Dashboard)'
+@check_wrapper(check_title="Scalability (faults related to Capacity Dashboard)")
+def scalability_faults_check(**kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ["Fault", "Pod", "Node", "Description", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "Description"]
     data = []
-    unformatted_headers = ["Fault", "Fault DN", "Description", "Recommended Action"]
+    unformatted_headers = ["Fault", "Fault DN", "Description"]
     unformatted_data = []
     recommended_action = 'Review config and reduce the usage'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#scalability-faults-related-to-capacity-dashboard"
 
     faultInsts = icurl('class', 'eqptcapacityEntity.json?rsp-subtree-include=faults,no-scoped')
     for fault in faultInsts:
@@ -2414,23 +2487,30 @@ def scalability_faults_check(index, total_checks, **kwargs):
         f = fault['faultInst']['attributes']
         dn = re.search(node_regex, f['dn'])
         if dn:
-            data.append([f['code'], dn.group('pod'), dn.group('node'), f['descr'], recommended_action])
+            data.append([f['code'], dn.group('pod'), dn.group('node'), f['descr']])
         else:
-            unformatted_data.append([f['code'], f['dn'], f['descr'], recommended_action])
+            unformatted_data.append([f['code'], f['dn'], f['descr']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def apic_disk_space_faults_check(index, total_checks, cversion, **kwargs):
-    title = 'APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)'
+@check_wrapper(check_title="APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)")
+def apic_disk_space_faults_check(cversion, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Current Usage %', 'Recommended Action']
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
     unformatted_data = []
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-disk-space-usage"
     recommended_action = {
         '/firmware': 'Remove unneeded images',
         '/techsupport': 'Remove unneeded techsupports/cores'
@@ -2438,7 +2518,6 @@ def apic_disk_space_faults_check(index, total_checks, cversion, **kwargs):
     default_action = 'Contact Cisco TAC.'
     if cversion.same_as('4.0(1h)') or cversion.older_than('3.2(6i)'):
         default_action += ' A typical issue is CSCvn13119.'
-    print_title(title, index, total_checks)
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2}%) full'
@@ -2457,20 +2536,25 @@ def apic_disk_space_faults_check(index, total_checks, cversion, **kwargs):
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        doc_url=doc_url,
+    )
 
 
-def l3out_route_map_direction_check(index, total_checks, **kwargs):
+@check_wrapper(check_title="L3Out Route Map import/export direction")
+def l3out_route_map_direction_check(**kwargs):
     """ Implementation change due to CSCvm75395 - 4.1(1) """
-    title = 'L3Out Route Map import/export direction'
     result = FAIL_O
-    msg = ''
     headers = ["Tenant", "L3Out", "External EPG", "Subnet", "Subnet Scope",
                "Route Map", "Direction", "Recommended Action", ]
     data = []
     recommended_action = 'The subnet scope must have {}-rtctrl'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-route-map-importexport-direction"
 
     dn_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/instP-(?P<epg>[^/]+)/extsubnet-\[(?P<subnet>[^\]]+)\]'
     l3extSubnets = icurl('class',
@@ -2487,24 +2571,20 @@ def l3out_route_map_direction_check(index, total_checks, **kwargs):
                 data.append(basic + [rmap, dir, recommended_action.format(dir)])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, doc_url=doc_url)
 
 
-def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion, **kwargs):
+@check_wrapper(check_title="L3Out Route Map Match Rule with missing-target")
+def l3out_route_map_missing_target_check(cversion, tversion, **kwargs):
     """ Implementation change due to CSCwc11570 - 5.2.8/6.0.2 """
-    title = 'L3Out Route Map Match Rule with missing-target'
     result = FAIL_O
-    msg = ''
     headers = ['Tenant', 'L3Out', 'Route Map', 'Context', 'Action', 'Match Rule']
     data = []
     recommended_action = 'The configured match rules do not exist. Update the route maps with existing match rules.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-route-map-match-rule-with-missing-target'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     def is_old(v):
         return True if v.older_than("5.2(8a)") or v.simple_version == "6.0(1)" else False
@@ -2512,8 +2592,7 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
     c_is_old = is_old(cversion)
     t_is_old = is_old(tversion)
     if (c_is_old and t_is_old) or (not c_is_old and not t_is_old):
-        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
-        return NA
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     dn_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/'
     # Get a missing-target match rule in a route map with type `combinable`
@@ -2541,19 +2620,16 @@ def l3out_route_map_missing_target_check(index, total_checks, cversion, tversion
                     ])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
-    title = 'L3Out Loopback IP Overlap With L3Out Interfaces'
+@check_wrapper(check_title="L3Out Loopback IP Overlap With L3Out Interfaces")
+def l3out_overlapping_loopback_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ['Tenant:VRF', 'Node ID', 'Loopback IP (Tenant:L3Out:NodeP)', 'Interface IP (Tenant:L3Out:NodeP:IFP)']
     data = []
     recommended_action = 'Change either the loopback or L3Out interface IP subnet to avoid overlap.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-loopback-ip-overlap-with-l3out-interfaces'
-    print_title(title, index, total_checks)
 
     tn_regex = r'uni/tn-(?P<tenant>[^/]+)/'
     path_regex = r'topology/pod-(?P<pod>\d+)/(?:prot)?paths-(?P<node1>\d+)(?:-(?P<node2>\d+))?'
@@ -2668,19 +2744,17 @@ def l3out_overlapping_loopback_check(index, total_checks, **kwargs):
                         ])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def bgp_peer_loopback_check(index, total_checks, **kwargs):
+@check_wrapper(check_title="BGP Peer Profile at node level without Loopback")
+def bgp_peer_loopback_check(**kwargs):
     """ Implementation change due to CSCvm28482 - 4.1(2) """
-    title = 'BGP Peer Profile at node level without Loopback'
     result = FAIL_O
-    msg = ''
-    headers = ["Tenant", "L3Out", "Node Profile", "Pod", "Node", "Recommended Action"]
+    headers = ["Tenant", "L3Out", "Node Profile", "Pod", "Node"]
     data = []
     recommended_action = 'Configure a loopback or configure bgpPeerP under interfaces instead of nodes'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgp-peer-profile-at-node-level-without-loopback"
 
     name_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodep>[^/]+)'
     l3extLNodePs = icurl('class',
@@ -2707,23 +2781,21 @@ def bgp_peer_loopback_check(index, total_checks, **kwargs):
                     dn = re.search(node_regex, l3extLNodeP_child['l3extRsNodeL3OutAtt']['attributes']['tDn'])
                     data.append([
                         name.group('tenant'), name.group('l3out'), name.group('nodep'),
-                        dn.group('pod'), dn.group('node'), recommended_action])
+                        dn.group('pod'), dn.group('node')])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
-    title = 'Different infra VLAN via LLDP (F0454 infra-vlan-mismatch)'
+@check_wrapper(check_title="Different infra VLAN via LLDP (F0454 infra-vlan-mismatch)")
+def lldp_with_infra_vlan_mismatch_check(**kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ["Fault", "Pod", "Node", "Port", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "Port"]
     data = []
     unformatted_headers = ["Fault", "Fault DN", "Failure Reason"]
     unformatted_data = []
     recommended_action = 'Disable LLDP on this port if it is expected to receive LLDP with a mismatched infra VLAN'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#different-infra-vlan-via-lldp"
 
     dn_regex = node_regex + r'/sys/lldp/inst/if-\[(?P<port>eth\d{1,2}/\d{1,2})\]/fault-F0454'
     faultInsts = icurl('class',
@@ -2732,27 +2804,33 @@ def lldp_with_infra_vlan_mismatch_check(index, total_checks, **kwargs):
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         if dn:
-            data.append([fc, dn.group("pod"), dn.group("node"), dn.group("port"), recommended_action])
+            data.append([fc, dn.group("pod"), dn.group("node"), dn.group("port")])
         else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-# Connection based check
-def apic_version_md5_check(index, total_checks, tversion, username, password, **kwargs):
-    title = 'APIC Target version image and MD5 hash'
+# Connection Based Check
+@check_wrapper(check_title="APIC Target version image and MD5 hash")
+def apic_version_md5_check(tversion, username, password, **kwargs):
     result = FAIL_UF
-    msg = ''
-    headers = ['APIC', 'Firmware', 'md5sum', 'Failure', 'Recommended Action']
+    headers = ['APIC', 'Firmware', 'md5sum', 'Failure']
     data = []
     recommended_action = 'Delete the firmware from APIC and re-download'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-target-version-image-and-md5-hash"
+
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     image_validaton = True
     mo = icurl('mo', 'fwrepo/fw-aci-apic-dk9.%s.json' % tversion.dot_version)
@@ -2761,13 +2839,11 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             desc = fm_mo["firmwareFirmware"]['attributes']["description"]
             md5 = fm_mo["firmwareFirmware"]['attributes']["checksum"]
             if "Image signing verification failed" in desc:
-                data.append(["All", str(tversion), md5,
-                             'Target image is corrupted', 'Delete and Upload Again'])
+                data.append(["All", str(tversion), md5, 'Target image is corrupted'])
                 image_validaton = False
 
     if not image_validaton:
-        print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(result=FAIL_UF, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
     md5s = []
     md5_names = []
@@ -2789,7 +2865,7 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
             c.connect()
         except Exception as e:
             data.append([apic_name, '-', '-', str(e), '-'])
-            print_result(node_title, ERROR, json_output=False)
+            print_result(node_title, ERROR)
             has_error = True
             continue
 
@@ -2799,12 +2875,12 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         except Exception as e:
             data.append([apic_name, '-', '-',
                          'ls command via ssh failed due to:{}'.format(str(e)), '-'])
-            print_result(node_title, ERROR, json_output=False)
+            print_result(node_title, ERROR)
             has_error = True
             continue
         if "No such file or directory" in c.output:
-            data.append([apic_name, str(tversion), '-', 'image not found', recommended_action])
-            print_result(node_title, FAIL_UF, json_output=False)
+            data.append([apic_name, str(tversion), '-', 'image not found'])
+            print_result(node_title, FAIL_UF)
             continue
 
         try:
@@ -2813,12 +2889,12 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
                          'failed to check md5sum via ssh due to:{}'.format(str(e)), '-'])
-            print_result(node_title, ERROR, json_output=False)
+            print_result(node_title, ERROR)
             has_error = True
             continue
         if "No such file or directory" in c.output:
-            data.append([apic_name, str(tversion), '-', 'md5sum file not found', recommended_action])
-            print_result(node_title, FAIL_UF, json_output=False)
+            data.append([apic_name, str(tversion), '-', 'md5sum file not found'])
+            print_result(node_title, FAIL_UF)
             continue
         for line in c.output.split("\n"):
             words = line.split()
@@ -2830,33 +2906,32 @@ def apic_version_md5_check(index, total_checks, tversion, username, password, **
                 md5_names.append(apic_name)
                 break
         else:
-            data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file', recommended_action])
-            print_result(node_title, ERROR, json_output=False)
+            data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file'])
+            print_result(node_title, ERROR)
             has_error = True
             continue
 
-        print_result(node_title, DONE, json_output=False)
+        print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
-            data.append([name, str(tversion), md5, 'md5sum do not match on all APICs', recommended_action])
+            data.append([name, str(tversion), md5, 'md5sum do not match on all APICs'])
     if has_error:
         result = ERROR
     elif not data:
         result = PASS
-    print_result(title, result, msg, headers, data, adjust_title=True, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
 
 
 # Connection Based Check
-def standby_apic_disk_space_check(index, total_checks, **kwargs):
-    title = 'Standby APIC Disk Space Usage'
+@check_wrapper(check_title="Standby APIC Disk Space Usage")
+def standby_apic_disk_space_check(**kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ['SN', 'OOB', 'Mount Point', 'Current Usage %', 'Recommended Action']
+    headers = ['SN', 'OOB', 'Mount Point', 'Current Usage %']
     data = []
     recommended_action = 'Contact Cisco TAC'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-apic-disk-space-usage"
     threshold = 75  # usage (%)
-    print_title(title, index, total_checks)
 
     has_error = False
     checked_stby = []
@@ -2891,7 +2966,7 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
                     directory = fs.group(1)
                     usage = fs.group(5)
                     if int(usage) >= threshold:
-                        data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage, recommended_action])
+                        data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage])
     if not infraSnNodes:
         result = NA
         msg = 'No standby APIC found'
@@ -2900,123 +2975,108 @@ def standby_apic_disk_space_check(index, total_checks, **kwargs):
     elif not data:
         result = PASS
         msg = 'all below {}%'.format(threshold)
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def r_leaf_compatibility_check(index, total_checks, tversion, **kwargs):
-    title = 'Remote Leaf Compatibility'
+@check_wrapper(check_title="Remote Leaf Compatibility")
+def r_leaf_compatibility_check(tversion, **kwargs):
     result = PASS
-    msg = ''
-    headers = ['Target Version', 'Remote Leaf', 'Direct Traffic Forwarding', 'Recommended Action']
+    headers = ['Target Version', 'Remote Leaf', 'Direct Traffic Forwarding']
     data = []
     recommended_action_4_2_2 = 'Upgrade remote leaf nodes before spine nodes or\ndisable Direct Traffic Forwarding (CSCvs16767)'
     recommended_action_5a = 'Direct Traffic Forwarding is required on 5.0 or later. Enable the feature before the upgrade'
     recommended_action_5b = ('Direct Traffic Forwarding is required on 5.0 or later.\n'
                              'Upgrade to 4.1(2)-4.2(x) first to enable the feature before upgrading to 5.0 or later.')
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-remote-leaf-switch"
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     remote_leafs = icurl('class', 'fabricNode.json?&query-target-filter=eq(fabricNode.nodeType,"remote-leaf-wan")')
     if not remote_leafs:
-        result = NA
-        msg = 'No Remote Leaf Found'
-    else:
-        infraSetPols = icurl('mo', 'uni/infra/settings.json')
-        direct = infraSetPols[0]['infraSetPol']['attributes'].get('enableRemoteLeafDirect')
-        direct_enabled = 'Not Supported'
-        if direct:
-            direct_enabled = direct == 'yes'
+        return Result(result=NA, msg="No Remote Leaf Found")
 
-        ra = ''
-        if tversion.simple_version == "4.2(2)" and direct_enabled is True:
-            ra = recommended_action_4_2_2
-        elif int(tversion.major1) >= 5 and direct_enabled is False:
-            ra = recommended_action_5a
-        elif int(tversion.major1) >= 5 and direct_enabled == 'Not Supported':
-            ra = recommended_action_5b
-        if ra:
-            result = FAIL_O
-            data.append([str(tversion), "Present", direct_enabled, ra])
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    infraSetPols = icurl('mo', 'uni/infra/settings.json')
+    direct = infraSetPols[0]['infraSetPol']['attributes'].get('enableRemoteLeafDirect')
+    direct_enabled = 'Not Supported'
+    if direct:
+        direct_enabled = direct == 'yes'
+
+    ra = ''
+    if tversion.simple_version == "4.2(2)" and direct_enabled is True:
+        ra = recommended_action_4_2_2
+    elif int(tversion.major1) >= 5 and direct_enabled is False:
+        ra = recommended_action_5a
+    elif int(tversion.major1) >= 5 and direct_enabled == 'Not Supported':
+        ra = recommended_action_5b
+    if ra:
+        result = FAIL_O
+        data.append([str(tversion), "Present", direct_enabled])
+    return Result(result=result, headers=headers, data=data, recommended_action=ra, doc_url=doc_url)
 
 
-def ep_announce_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'EP Announce Compatibility'
+@check_wrapper(check_title="EP Announce Compatibility")
+def ep_announce_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ['Susceptible Defect', 'Recommended Action']
     data = []
     recommended_action = ('For fabrics running a pre-12.2(4p) ACI switch release, '
                           'upgrade to 12.2(4r) and then upgrade to the desired destination release.\n'
                           'For fabrics running a 12.3(1) ACI switch release, '
                           'upgrade to 13.1(2v) and then upgrade to the desired destination release.')
-    print_title(title, index, total_checks)
 
     fixed_versions = ["2.2(4p)", "2.2(4q)", "2.2(4r)"]
     current_version_affected = False
     target_version_affected = False
 
     if not tversion:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
-    else:
-        if cversion.version not in fixed_versions and int(cversion.major1) < 3:
-            current_version_affected = True
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
-        if tversion.major1 == "3":
-            if int(tversion.major2) >= 2 and int(tversion.maint) >= 2:
-                target_version_affected = True
-        elif int(tversion.major1) >= 4:
+    if cversion.version not in fixed_versions and int(cversion.major1) < 3:
+        current_version_affected = True
+
+    if tversion.major1 == "3":
+        if int(tversion.major2) >= 2 and int(tversion.maint) >= 2:
             target_version_affected = True
+    elif int(tversion.major1) >= 4:
+        target_version_affected = True
 
-        if current_version_affected and target_version_affected:
-            result = FAIL_O
-            data.append(['CSCvi76161', recommended_action])
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    if current_version_affected and target_version_affected:
+        result = FAIL_O
+        data.append(['CSCvi76161', recommended_action])
+    return Result(result=result, headers=headers, data=data)
 
 
-def vmm_controller_status_check(index, total_checks, **kwargs):
-    title = 'VMM Domain Controller Status'
+@check_wrapper(check_title="VMM Domain Controller Status")
+def vmm_controller_status_check(**kwargs):
     result = PASS
-    msg = ''
-    headers = ['VMM Domain', 'vCenter IP or Hostname', 'Current State', 'Recommended Action']
+    headers = ['VMM Domain', 'vCenter IP or Hostname', 'Current State']
     data = []
     recommended_action = 'Check network connectivity to the vCenter.'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vmm-domain-controller-status"
 
     vmmDoms = icurl('class', 'compCtrlr.json')
     if not vmmDoms:
-        result = NA
-        msg = 'No VMM Domains Found'
-    else:
-        for dom in vmmDoms:
-            if dom['compCtrlr']['attributes']['operSt'] == "offline":
-                domName = dom['compCtrlr']['attributes']['domName']
-                hostOrIp = dom['compCtrlr']['attributes']['hostOrIp']
-                result = FAIL_O
-                data.append([domName, hostOrIp, "offline", recommended_action])
-
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+        return Result(result=NA, msg='No VMM Domains Found')
+    for dom in vmmDoms:
+        if dom['compCtrlr']['attributes']['operSt'] == "offline":
+            domName = dom['compCtrlr']['attributes']['domName']
+            hostOrIp = dom['compCtrlr']['attributes']['hostOrIp']
+            result = FAIL_O
+            data.append([domName, hostOrIp, "offline"])
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def vmm_controller_adj_check(index, total_checks, **kwargs):
-    title = 'VMM Domain LLDP/CDP Adjacency Status'
+@check_wrapper(check_title="VMM Domain LLDP/CDP Adjacency Status")
+def vmm_controller_adj_check(**kwargs):
     result = PASS
     msg = ''
-    headers = ['VMM Domain', 'Host IP or Hostname', 'Recommended Action']
+    headers = ['VMM Domain', 'Host IP or Hostname']
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
-
     recommended_action = 'Ensure consistent use of expected Discovery Protocol from Hypervisor to ACI Leaf.'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vmm-domain-lldpcdp-adjacency-status"
 
     adjFaults = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F606391")')
     adj_regex = r'adapters on the host: (?P<host>[^\(]+)'
@@ -3029,59 +3089,53 @@ def vmm_controller_adj_check(index, total_checks, **kwargs):
                 if "prov-VMware" in adj['faultInst']['attributes']['dn']:
                     r1 = re.search(adj_regex, adj['faultInst']['attributes']['descr'])
                     r2 = re.search(dom_reg, adj['faultInst']['attributes']['dn'])
+                    result = FAIL_O
                     if r1 and r2:
                         host = r1.group("host")
                         dom = r2.group("dom")
-                        result = FAIL_O
-                        data.append([dom, host, recommended_action])
+                        data.append([dom, host])
                     else:
-                        unformatted_data.append(
-                            [adj['faultInst']['attributes']['code'], adj['faultInst']['attributes']['dn'],
-                             recommended_action])
+                        unformatted_data.append([adj['faultInst']['attributes']['code'], adj['faultInst']['attributes']['dn']])
+    return Result(
+        result=result,
+        msg=msg,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, func_name=inspect.currentframe().f_code.co_name)
-    return result
 
-
-def vpc_paired_switches_check(index, total_checks, vpc_node_ids=None, **kwargs):
-    title = 'VPC-paired Leaf switches'
-    result = FAIL_O
-    msg = ''
-    headers = ["Node ID", "Node Name", "Recommended Action"]
+@check_wrapper(check_title="VPC-paired Leaf switches")
+def vpc_paired_switches_check(vpc_node_ids, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Node Name"]
     data = []
-    recommended_action = 'Determine if dataplane redundancy is available if this node goes down'
+    recommended_action = 'Determine if dataplane redundancy is available if these nodes go down.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vpc-paired-leaf-switches'
-    print_title(title, index, total_checks)
-
-    if not vpc_node_ids:
-        msg = 'No VPC definitions found!'
-        vpc_node_ids = []
 
     top_system = icurl('class', 'topSystem.json')
-
     for node in top_system:
         node_id = node['topSystem']['attributes']['id']
         role = node['topSystem']['attributes']['role']
         if role == 'leaf' and (node_id not in vpc_node_ids):
             result = MANUAL
             name = node['topSystem']['attributes']['name']
-            data.append([node_id, name, recommended_action])
+            data.append([node_id, name])
 
-    if not data:
-        result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
-    title = 'APIC CIMC Compatibility'
+@check_wrapper(check_title="APIC CIMC Compatibility")
+def cimc_compatibilty_check(tversion, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ["Node ID", "Model", "Current CIMC version", "Catalog Recommended CIMC Version", "Warning"]
     data = []
     recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
-    print_title(title, index, total_checks)
+
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
         try:
@@ -3106,25 +3160,21 @@ def cimc_compatibilty_check(index, total_checks, tversion, **kwargs):
                 result = PASS
 
         except KeyError:
-            result = MANUAL
-            msg = 'eqptCh does not have cimcVersion parameter on this version'
+            return Result(result=MANUAL, msg="eqptCh does not have cimcVersion parameter on this version", headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
     else:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def intersight_upgrade_status_check(index, total_checks, **kwargs):
-    title = 'Intersight Device Connector upgrade status'
+@check_wrapper(check_title="Intersight Device Connector upgrade status")
+def intersight_upgrade_status_check(**kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ["Connector Status", "Recommended Action"]
+    headers = ["Connector Status"]
     data = []
     recommended_action = 'Wait a few minutes for the upgrade to complete'
-    doc_url = '"Intersight Device Connector is upgrading" in Pre-Upgrade Check Lists'
-    print_title(title, index, total_checks)
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#intersight-device-connector-upgrade-status'
 
     cmd = ['icurl', '-gks', 'https://127.0.0.1/connector/UpgradeStatus']
 
@@ -3135,7 +3185,7 @@ def intersight_upgrade_status_check(index, total_checks, **kwargs):
 
         try:
             if resp_json[0]['Status'] != 'Idle':
-                data.append([resp_json[0]['UpgradeNotification'], recommended_action])
+                data.append([resp_json[0]['UpgradeNotification']])
         except KeyError:
             if resp_json['code'] == 'InternalServerError':
                 msg = 'Connector reporting InternalServerError, Non-Upgrade issue'
@@ -3147,19 +3197,16 @@ def intersight_upgrade_status_check(index, total_checks, **kwargs):
         result = NA
         msg = 'Intersight Device Connector not responding'
 
-    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
-    title = 'ISIS Redistribution metric for MPod/MSite'
+@check_wrapper(check_title="ISIS Redistribution metric for MPod/MSite")
+def isis_redis_metric_mpod_msite_check(**kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment", "Recommendation"]
+    headers = ["ISIS Redistribution Metric", "MPod Deployment", "MSite Deployment"]
     data = []
-    recommended_action = None
-    doc_url = '"ISIS Redistribution Metric" from ACI Best Practices Quick Summary - http://cs.co/9001zNNr7'
-    print_title(title, index, total_checks)
+    recommended_action = ""
+    doc_url = 'http://cs.co/9001zNNr7'  # "ISIS Redistribution Metric" from ACI Best Practices Quick Summary
 
     isis_mo = icurl('mo', 'uni/fabric/isisDomP-default.json')
     redistribMetric = isis_mo[0]['isisDomPol']['attributes'].get('redistribMetric')
@@ -3187,26 +3234,22 @@ def isis_redis_metric_mpod_msite_check(index, total_checks, **kwargs):
                         pods_list.append(podid)
             mpod = (len(pods_list) > 1)
     if mpod or msite:
-        data.append([redistribMetric, mpod, msite, recommended_action])
+        data.append([redistribMetric, mpod, msite])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversion=None, **kwargs):
-    title = 'BGP route target type for GOLF over L2EVPN'
+@check_wrapper(check_title="BGP route target type for GOLF over L2EVPN")
+def bgp_golf_route_target_type_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    msg = ''
-    headers = ["VRF DN", "Global Name", "Route Target", "Recommendation"]
+    headers = ["VRF DN", "Global Name", "Route Target"]
     data = []
     recommended_action = "Reconfigure extended: RT with prefix route-target: "
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvm23100'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if cversion.older_than("4.2(1a)") and tversion.newer_than("4.2(1a)"):
         fvctx_mo = icurl('class', 'fvCtx.json?rsp-subtree=full&rsp-subtree-class=l3extGlobalCtxName,bgpRtTarget&rsp-subtree-include=required')
@@ -3223,22 +3266,19 @@ def bgp_golf_route_target_type_check(index, total_checks, cversion=None, tversio
                         if child.get('bgpRtTargetP'):
                             for bgprt in child['bgpRtTargetP']['children']:
                                 if bgprt.get('bgpRtTarget') and not bgprt['bgpRtTarget']['attributes']['rt'].startswith('route-target:'):
-                                    data.append([vrfdn, globalname, bgprt['bgpRtTarget']['attributes']['rt'], recommended_action])
-
+                                    data.append([vrfdn, globalname, bgprt['bgpRtTarget']['attributes']['rt']])
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def docker0_subnet_overlap_check(index, total_checks, **kwargs):
-    title = 'APIC Container Bridge IP Overlap with APIC TEP'
+@check_wrapper(check_title="APIC Container Bridge IP Overlap with APIC TEP")
+def docker0_subnet_overlap_check(**kwargs):
     result = PASS
-    msg = ''
-    headers = ["Container Bridge IP", "APIC TEP", "Recommended Action"]
+    headers = ["Container Bridge IP", "APIC TEP"]
     data = []
     recommended_action = 'Change the container bridge IP via "Apps > Settings" on the APIC GUI'
-    print_title(title, index, total_checks)
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-container-bridge-ip-overlap-with-apic-tep"
 
     containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
     if not containerPols:
@@ -3255,21 +3295,18 @@ def docker0_subnet_overlap_check(index, total_checks, **kwargs):
     for tep in teps:
         if IPAddress.ip_in_subnet(tep, bip):
             result = FAIL_UF
-            data.append([tep, bip, recommended_action])
+            data.append([tep, bip])
 
-    print_result(title, result, msg, headers, data, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
-    title = 'Eventmgr DB size defect susceptibility'
+@check_wrapper(check_title="Eventmgr DB size defect susceptibility")
+def eventmgr_db_defect_check(cversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Potential Defect", "Doc URL"]
     data = []
     recommended_action = 'Contact Cisco TAC to check the DB size via root'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#eventmgr-db-size-defect-susceptibility'
-    print_title(title, index, total_checks)
 
     if cversion.older_than('3.2(5d)') or (cversion.major1 == '4' and cversion.older_than('4.1(1i)')):
         data.append(['CSCvn20175', 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvn20175'])
@@ -3279,112 +3316,92 @@ def eventmgr_db_defect_check(index, total_checks, cversion, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def target_version_compatibility_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Target version compatibility'
+@check_wrapper(check_title="Target version compatibility")
+def target_version_compatibility_check(cversion, tversion, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ["Current version", "Target Version", "Warning"]
     data = []
     recommended_action = ''
     doc_url = 'APIC Upgrade/Downgrade Support Matrix - http://cs.co/9005ydMQP'
-    print_title(title, index, total_checks)
+
     if not tversion:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
-    else:
-        if cversion.simple_version != tversion.simple_version:
-            compatRsUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
-                                   "/rsupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + "].json"
-            compatRsUpgRel = icurl('mo', compatRsUpgRelString)
-            if not compatRsUpgRel:
-                compatRtUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
-                                       "/rtupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + "].json"
-                compatRtUpgRel = icurl('mo', compatRtUpgRelString)
-                if not compatRtUpgRel:
-                    data.append([str(cversion), str(tversion), 'Target version not a supported hop'])
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if cversion.simple_version != tversion.simple_version:
+        compatRsUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
+                                "/rsupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + "].json"
+        compatRsUpgRel = icurl('mo', compatRsUpgRelString)
+        if not compatRsUpgRel:
+            compatRtUpgRelString = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
+                                    "/rtupgRel-[uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + "].json"
+            compatRtUpgRel = icurl('mo', compatRtUpgRelString)
+            if not compatRtUpgRel:
+                data.append([str(cversion), str(tversion), 'Target version not a supported hop'])
 
-        if not data:
-            result = PASS
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    if not data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def gen1_switch_compatibility_check(index, total_checks, tversion, **kwargs):
-    title = 'Gen 1 switch compatibility'
+@check_wrapper(check_title="Gen 1 switch compatibility")
+def gen1_switch_compatibility_check(tversion, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ["Target Version", "Node ID", "Model", "Warning"]
     gen1_models = ["N9K-C9336PQ", "N9K-X9736PQ", "N9K-C9504-FM", "N9K-C9508-FM", "N9K-C9516-FM", "N9K-C9372PX-E",
                    "N9K-C9372TX-E", "N9K-C9332PQ", "N9K-C9372PX", "N9K-C9372TX", "N9K-C9396PX", "N9K-C9396TX",
                    "N9K-C93128TX"]
     data = []
     recommended_action = 'Select supported target version or upgrade hardware'
-    doc_url = 'ACI 5.0(1) Switch Release Notes - http://cs.co/9001ydKCV'
-    print_title(title, index, total_checks)
+    doc_url = 'http://cs.co/9001ydKCV'
+
     if not tversion:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
-    else:
-        if tversion.newer_than("5.0(1a)"):
-            fabric_node = icurl('class', 'fabricNode.json')
-            for node in fabric_node:
-                if node['fabricNode']['attributes']['model'] in gen1_models:
-                    data.append([str(tversion), node['fabricNode']['attributes']['id'],
-                                 node['fabricNode']['attributes']['model'], 'Not supported on 5.x+'])
-
-        if not data:
-            result = PASS
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if tversion.newer_than("5.0(1a)"):
+        fabric_node = icurl('class', 'fabricNode.json')
+        for node in fabric_node:
+            if node['fabricNode']['attributes']['model'] in gen1_models:
+                data.append([str(tversion), node['fabricNode']['attributes']['id'],
+                            node['fabricNode']['attributes']['model'], 'Not supported on 5.x+'])
+    if not data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def contract_22_defect_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Contract Port 22 Defect'
+@check_wrapper(check_title="Contract Port 22 Defect")
+def contract_22_defect_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Potential Defect", "Reason"]
     data = []
-    recommended_action = 'Review Software Advisory for details'
-    doc_url = 'Cisco Software Advisory Notices for CSCvz65560 - http://cs.co/9007yh22H'
-    print_title(title, index, total_checks)
+    recommended_action = 'Review Cisco Software Advisory Notices for CSCvz65560'
+    doc_url = 'http://cs.co/9007yh22H'
 
     if not tversion:
-        result = MANUAL
-        msg = 'Target version not supplied. Skipping.'
-    else:
-        if cversion.older_than("5.0(1a)") and (tversion.newer_than("5.0(1a)") and
-                                               tversion.older_than("5.2(2g)")):
-            result = FAIL_O
-            data.append(["CSCvz65560", "Target Version susceptible to Defect"])
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    if cversion.older_than("5.0(1a)") and (tversion.newer_than("5.0(1a)") and
+                                           tversion.older_than("5.2(2g)")):
+        result = FAIL_O
+        data.append(["CSCvz65560", "Target Version susceptible to Defect"])
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,  vpc_node_ids=None, **kwargs):
-    title = 'Link Level Flow Control'
+@check_wrapper(check_title="Link Level Flow Control")
+def llfc_susceptibility_check(cversion, tversion, vpc_node_ids, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Pod", "NodeId", "Int", "Type", "BugId", "Warning"]
     data = []
     sx_affected = t_affected = False
     recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if not vpc_node_ids:
-        print_result(title, result, 'No VPC Nodes found. Not susceptible.', func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(result=PASS, msg="No VPC Nodes found. Not susceptible.")
 
     # Check for Fiber 1000base-SX, CSCvv33100
     if cversion.older_than("4.2(6d)") and tversion.newer_than("4.2(6c)"):
@@ -3415,27 +3432,22 @@ def llfc_susceptibility_check(index, total_checks, cversion=None, tversion=None,
     if data:
         result = MANUAL
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tversion=None, **kwargs):
-    title = 'telemetryStatsServerP Object'
+@check_wrapper(check_title="telemetryStatsServerP Object")
+def telemetryStatsServerP_object_check(sw_cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Current version", "Target Version", "Warning"]
     data = []
     recommended_action = 'Change telemetryStatsServerP.collectorLocation to "none" prior to upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#telemetrystatserverp-object'
-    print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, MANUAL, "Current switch version not found. Check switch health.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg="Current switch version not found. Check switch health.")
 
     if not tversion:
-        print_result(title, MANUAL, 'Current or target Switch version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if sw_cversion.older_than("4.2(4d)") and tversion.newer_than("5.2(2d)"):
         telemetryStatsServerP_json = icurl('class', 'telemetryStatsServerP.json')
@@ -3444,23 +3456,19 @@ def telemetryStatsServerP_object_check(index, total_checks, sw_cversion=None, tv
                 result = FAIL_O
                 data.append([str(sw_cversion), str(tversion), 'telemetryStatsServerP.collectorLocation = "apic" Found'])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
-    title = 'Internal VLAN Pool'
+@check_wrapper(check_title="Internal VLAN Pool")
+def internal_vlanpool_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["VLAN Pool", "Internal VLAN Block(s)", "Non-AVE Domain", "Warning"]
     data = []
     recommended_action = 'Ensure Leaf Front-Panel VLAN Blocks are explicitly set to "external (on the wire)"'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvw33061'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.newer_than("4.2(6a)"):
         fvnsVlanInstP_json = icurl('class', 'fvnsVlanInstP.json?rsp-subtree=children&rsp-subtree-class=fvnsRtVlanNs,fvnsEncapBlk&rsp-subtree-include=required')
@@ -3508,19 +3516,16 @@ def internal_vlanpool_check(index, total_checks, tversion=None, **kwargs):
                                     if [vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'] not in data:
                                         data.append([vlanInstP_name, ', '.join(encap_blk_dict[vlanInstP_name]), vmmDomP["vmmDomP"]["attributes"]["dn"], 'VLANs in this Block will be removed from switch Front-Panel if not corrected'])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def apic_ca_cert_validation(index, total_checks, **kwargs):
-    title = 'APIC CA Cert Validation'
+@check_wrapper(check_title="APIC CA Cert Validation")
+def apic_ca_cert_validation(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Certreq Response"]
     data = []
     recommended_action = "Contact Cisco TAC to fix APIC CA Certs"
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvy35257'
-    print_title(title, index, total_checks)
 
     certreq_out = kwargs.get("certreq_out")
     if not certreq_out:
@@ -3568,8 +3573,7 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
             genrsa_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             genrsa_proc.communicate()[0].strip()
             if genrsa_proc.returncode != 0:
-                print_result(title, ERROR, 'openssl cmd issue, send logs to TAC', func_name=inspect.currentframe().f_code.co_name)
-                return ERROR
+                return Result(result=ERROR, msg="openssl cmd issue, send logs to TAC.")
 
             # Prep certreq
             with open(sign) as f:
@@ -3596,30 +3600,24 @@ def apic_ca_cert_validation(index, total_checks, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'FabricDomain Name'
+@check_wrapper(check_title="FabricDomain Name")
+def fabricdomain_name_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["FabricDomain", "Reason"]
     data = []
     recommended_action = "Do not upgrade to 6.0(2)"
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf80352'
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.same_as("6.0(2h)"):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         if not controller:
-            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
-            return ERROR
+            return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
 
         fabricDomain = controller[0]['topSystem']['attributes']['fabricDomain']
         if re.search(r'#|;', fabricDomain):
@@ -3627,25 +3625,21 @@ def fabricdomain_name_check(index, total_checks, cversion, tversion, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Spine SUP HW Revision'
+@check_wrapper(check_title="Spine SUP HW Revision")
+def sup_hwrev_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Pod", "Node", "Sup Slot", "Part Number", "VRM Concern", "FPGA Concern"]
     data = []
     recommended_action = "Review Field Notice FN74050 within Reference Document for all details."
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#spine-sup-hw-revision'
-    print_title(title, index, total_checks)
     vrm_concern = False
     fpga_concern = False
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if cversion.older_than("5.2(8f)"):
         vrm_concern = True
@@ -3662,8 +3656,7 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
         if not sups:
-            print_result(title, ERROR, 'No sups found. This is unlikely.', func_name=inspect.currentframe().f_code.co_name)
-            return ERROR
+            return Result(result=ERROR, msg='No sups found. This is unlikely.')
 
         for sup in sups:
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
@@ -3676,24 +3669,19 @@ def sup_hwrev_check(index, total_checks, cversion, tversion, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Per-Leaf Fabric Uplink Limit Validation'
+@check_wrapper(check_title="Per-Leaf Fabric Uplink Limit")
+def uplink_limit_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Node", "Uplink Count"]
     data = []
     recommended_action = "Reduce Per-Leaf Port Profile Uplinks to supported scale; 56 or less."
     doc_url = 'http://cs.co/ACI_Access_Interfaces_Config_Guide'
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if cversion.older_than("6.0(1a)") and tversion.newer_than("6.0(1a)"):
         port_profiles = icurl('class', 'eqptPortP.json?query-target-filter=eq(eqptPortP.ctrl,"uplink")')
@@ -3711,15 +3699,13 @@ def uplink_limit_check(index, total_checks, cversion, tversion, **kwargs):
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
+@check_wrapper(check_title="OoB Mgmt Security")
+def oob_mgmt_security_check(cversion, tversion, **kwargs):
     """Implementation change due to CSCvx29282/CSCvz96117"""
-    title = "OoB Mgmt Security"
     result = PASS
-    msg = ""
     headers = ["ACI Node EPG", "External Instance (Subnets)", "OoB Contracts"]
     data = []
     recommended_action = (
@@ -3728,19 +3714,15 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#oob-mgmt-security"
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     affected_versions = ["4.2(7)", "5.2(1)", "5.2(2)"]
     if cversion.simple_version not in affected_versions or (
         cversion.simple_version in affected_versions
         and tversion.simple_version in affected_versions
     ):
-        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
-        return NA
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     # ACI Node EPGs (providers)
     mgmtOoBs = icurl("class", "mgmtOoB.json?rsp-subtree=children")
@@ -3779,30 +3761,24 @@ def oob_mgmt_security_check(index, total_checks, cversion, tversion, **kwargs):
 
     if data:
         result = MANUAL
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Mini ACI Upgrade to 6.0(2)+'
+@check_wrapper(check_title="Mini ACI Upgrade to 6.0(2)+")
+def mini_aci_6_0_2_check(cversion, tversion, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ["Pod ID", "Node ID", "APIC Type", "Failure Reason"]
     data = []
     recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+."
     doc_url = 'Upgrading Mini ACI - http://cs.co/9009bBTQB'
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
         topSystem = icurl('class', 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")')
         if not topSystem:
-            print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
-            return ERROR
+            return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
         for controller in topSystem:
             if controller['topSystem']['attributes']['nodeType'] == "virtual":
                 pod_id = controller["topSystem"]["attributes"]["podId"]
@@ -3811,24 +3787,19 @@ def mini_aci_6_0_2_check(index, total_checks, cversion, tversion, **kwargs):
 
     if not data:
         result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
-    title = "SUP-A/A+ High Memory Usage"
+@check_wrapper(check_title="SUP-A/A+ High Memory Usage")
+def sup_a_high_memory_check(tversion, **kwargs):
     result = PASS
-    msg = ""
     headers = ["Pod ID", "Node ID", "SUP Model", "Active/Standby"]
     data = []
     recommended_action = "Change the target version to the one with memory optimization in a near-future 6.0 release."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#sup-aa-high-memory-usage"
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     affected_versions = ["6.0(3)", "6.0(4)", "6.0(5)"]
     if tversion.simple_version in affected_versions:
@@ -3844,21 +3815,18 @@ def sup_a_high_memory_check(index, total_checks, tversion, **kwargs):
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def access_untagged_check(index, total_checks, **kwargs):
-    title = 'Access (Untagged) Port Config (F0467 native-or-untagged-encap-failure)'
+@check_wrapper(check_title="Access (Untagged) Port Config (F0467 native-or-untagged-encap-failure)")
+def access_untagged_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Fault", "POD ID", "Node ID", "Port", "Tenant", "Application Profile", "Application EPG", "Recommended Action"]
     unformatted_headers = ['Fault', 'Fault Description', 'Recommended Action']
     unformatted_data = []
     data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port in Access(untagged) or native mode.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
-    print_title(title, index, total_checks)
 
     faultInsts = icurl('class', 'faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
     fault_dn_regex = r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
@@ -3880,19 +3848,24 @@ def access_untagged_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action="", doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Post Upgrade Callback Integrity'
+@check_wrapper(check_title="Post Upgrade Callback Integrity")
+def post_upgrade_cb_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Missed Objects", "Impact"]
     data = []
     recommended_action = 'Contact Cisco TAC with Output'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-callback-integrity'
-    print_title(title, index, total_checks)
 
     new_mo_dict = {
         "infraImplicitSetPol": {
@@ -3932,8 +3905,7 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
         },
     }
     if not tversion or (tversion and cversion.older_than(str(tversion))):
-        print_result(title, POST, 'Re-run script after APICs are upgraded and back to Fully-Fit', func_name=inspect.currentframe().f_code.co_name)
-        return POST
+        return Result(result=POST, msg="Re-run script after APICs are upgraded and back to Fully-Fit")
 
     for new_mo in new_mo_dict:
         skip_current_mo = False
@@ -3964,20 +3936,16 @@ def post_upgrade_cb_check(index, total_checks, cversion, tversion, **kwargs):
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
-    title = 'EECDH SSL Cipher'
+@check_wrapper(check_title="EECDH SSL Cipher")
+def eecdh_cipher_check(cversion, **kwargs):
     result = FAIL_UF
-    msg = ''
     headers = ["DN", "Cipher", "State", "Failure Reason"]
     data = []
     recommended_action = "Re-enable EECDH key exchange prior to APIC upgrade."
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#eecdh-ssl-cipher'
-
-    print_title(title, index, total_checks)
 
     if cversion.newer_than("4.2(1a)"):
         commCipher = icurl('class', 'commCipher.json')
@@ -3987,20 +3955,16 @@ def eecdh_cipher_check(index, total_checks, cversion, **kwargs):
 
     if not data:
         result = PASS
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def vmm_active_uplinks_check(index, total_checks, **kwargs):
-    title = 'fvUplinkOrderCont with blank active uplinks definition'
+@check_wrapper(check_title="fvUplinkOrderCont with blank active uplinks definition")
+def vmm_active_uplinks_check(**kwargs):
     result = PASS
-    msg = ''
     headers = ["Tenant", "Application Profile", "Application EPG", "VMM Domain"]
     data = []
     recommended_action = 'Identify Active Uplinks and apply this to the VMM domain association of each EPG'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#vmm-uplink-container-with-empty-actives'
-    print_title(title, index, total_checks)
 
     uplink_api = 'fvUplinkOrderCont.json'
     uplink_api += '?query-target-filter=eq(fvUplinkOrderCont.active,"")'
@@ -4010,10 +3974,7 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
         affected_uplinks = icurl('class', uplink_api)
     except OldVerClassNotFound:
         # Pre 4.x did not have this class
-        msg = 'cversion does not have class fvUplinkOrderCont'
-        result = NA
-        print_result(title, result, msg, func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(result=NA, msg="cversion does not have class fvUplinkOrderCont")
 
     if affected_uplinks:
         result = FAIL_O
@@ -4021,21 +3982,18 @@ def vmm_active_uplinks_check(index, total_checks, **kwargs):
             dn = re.search(vmm_epg_regex, uplink['fvUplinkOrderCont']['attributes']['dn'])
             data.append([dn.group("tenant"), dn.group("ap"), dn.group("epg"), dn.group("dom")])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def fabric_port_down_check(index, total_checks, **kwargs):
-    title = 'Fabric Port is Down (F1394 ethpm-if-port-down-fabric)'
+@check_wrapper(check_title="Fabric Port is Down (F1394 ethpm-if-port-down-fabric)")
+def fabric_port_down_check(**kwargs):
     result = FAIL_O
-    msg = ''
     headers = ["Pod", "Node", "Int", "Reason", "Lifecycle"]
     unformatted_headers = ['dn', 'Fault Description', 'Lifecycle']
     unformatted_data = []
     data = []
     recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
-    print_title(title, index, total_checks)
 
     fault_api = 'faultInst.json'
     fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
@@ -4058,23 +4016,27 @@ def fabric_port_down_check(index, total_checks, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def fabric_dpp_check(index, total_checks, tversion, **kwargs):
-    title = 'CoS 3 with Dynamic Packet Prioritization'
+@check_wrapper(check_title='CoS 3 with Dynamic Packet Prioritization')
+def fabric_dpp_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Potential Defect", "Reason"]
     data = []
     recommended_action = 'Change the target version to the fixed version of CSCwf05073'
     doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf05073'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     lbpol_api = 'lbpPol.json'
     lbpol_api += '?query-target-filter=eq(lbpPol.pri,"on")'
@@ -4088,23 +4050,19 @@ def fabric_dpp_check(index, total_checks, tversion, **kwargs):
             result = FAIL_O
             data.append(["CSCwf05073", "Target Version susceptible to Defect"])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwargs):
-    title = 'N9K-C93108TC-FX3P/FX3H Interface Down'
+@check_wrapper(check_title='N9K-C93108TC-FX3P/FX3H Interface Down')
+def n9k_c93108tc_fx3p_interface_down_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Node ID", "Node Name", "Product ID"]
     data = []
     recommended_action = 'Change the target version to the fixed version of CSCwh81430'
     doc_url = 'https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74085.html'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (
         tversion.older_than("5.2(8h)")
@@ -4124,19 +4082,16 @@ def n9k_c93108tc_fx3p_interface_down_check(index, total_checks, tversion, **kwar
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def subnet_scope_check(index, total_checks, cversion, **kwargs):
-    title = 'BD and EPG Subnet Scope Consistency'
+@check_wrapper(check_title='BD and EPG Subnet Scope Consistency')
+def subnet_scope_check(cversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["BD DN", "BD Scope", "EPG DN", "EPG Scope"]
     data = []
     recommended_action = 'Configure the same Scope for the identified subnet pairings'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#bd-and-epg-subnet-scope-consistency'
-    print_title(title, index, total_checks)
 
     if cversion.older_than("4.2(6d)") or (cversion.major1 == "5" and cversion.older_than("5.1(1h)")):
         epg_api = 'fvAEPg.json?'
@@ -4144,8 +4099,7 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
 
         fvAEPg = icurl('class', epg_api)
         if not fvAEPg:
-            print_result(title, NA, "0 EPG Subnets found. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-            return NA
+            return Result(result=NA, msg="No EPG Subnets found. Skipping.")
 
         bd_api = 'fvBD.json'
         bd_api += '?rsp-subtree=children&rsp-subtree-class=fvSubnet&rsp-subtree-include=required'
@@ -4187,23 +4141,19 @@ def subnet_scope_check(index, total_checks, cversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
-    title = 'Route-map Community Match Defect'
+@check_wrapper(check_title='Route-map Community Match Defect')
+def rtmap_comm_match_defect_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Route-map DN", "Route-map Match DN", "Failure Reason"]
     data = []
     recommended_action = 'Add a prefix list match to each route-map prior to upgrading.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#route-map-community-match'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (tversion.major1 == "5" and tversion.major2 == "2" and tversion.older_than("5.2(8a)")):
         rtctrlSubjPs = icurl('class', 'rtctrlSubjP.json?rsp-subtree=full&rsp-subtree-class=rtctrlMatchCommFactor,rtctrlMatchRtDest&rsp-subtree-include=required')
@@ -4245,19 +4195,16 @@ def rtmap_comm_match_defect_check(index, total_checks, tversion, **kwargs):
         if data:
             result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def fabricPathEp_target_check(index, total_checks, **kwargs):
-    title = 'Invalid fabricPathEp Targets'
+@check_wrapper(check_title='Invalid fabricPathEp Targets')
+def fabricPathEp_target_check(**kwargs):
     result = PASS
-    msg = ''
     headers = ["Invalid DN", "Reason"]
     data = []
     recommended_action = 'Contact TAC for cleanup procedure'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#invalid-fex-fabricpathep-dn-references'
-    print_title(title, index, total_checks)
     fabricPathEp_regex = r"topology/pod-\d+/(?:\w+)?paths-\d+(?:-\d+)?(?:/ext(?:\w+)?paths-(?P<fexA>\d+)(?:-(?P<fexB>\d+))?)?/pathep-\[(?P<path>.+)\]"
     eth_regex = r'eth(?P<first>\d+)/(?P<second>\d+)(?:/(?P<third>\d+))?'
 
@@ -4319,23 +4266,19 @@ def fabricPathEp_target_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kwargs):
-    title = 'LLDP Custom Interface Description Defect'
+@check_wrapper(check_title='LLDP Custom Interface Description Defect')
+def lldp_custom_int_description_defect_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Potential Defect"]
     data = []
     recommended_action = 'Target version is not recommended; Custom interface descriptions and lazy VMM domain attachments found.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#lldp-custom-interface-description'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.major1 == '6' and tversion.older_than('6.0(3a)'):
         custom_int_count = icurl('class', 'infraPortBlk.json?query-target-filter=ne(infraPortBlk.descr,"")&rsp-subtree-include=count')[0]['moCount']['attributes']['count']
@@ -4345,27 +4288,22 @@ def lldp_custom_int_description_defect_check(index, total_checks, tversion, **kw
             result = FAIL_O
             data.append(['CSCwf00416'])
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tversion, **kwargs):
-    title = 'Unsupported FEC Configuration For N9K-C93180YC-EX'
+@check_wrapper(check_title='Unsupported FEC Configuration For N9K-C93180YC-EX')
+def unsupported_fec_configuration_ex_check(sw_cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Pod ID", "Node ID", "Switch Model", "Interface", "FEC Mode"]
     data = []
     recommended_action = 'Nexus C93180YC-EX switches do not support IEEE-RS-FEC or CONS16-RS-FEC mode. Misconfigured ports will be hardware disabled upon upgrade. Remove unsupported FEC configuration prior to upgrade.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#unsupported-fec-configuration-for-n9k-c93180yc-ex'
-    print_title(title, index, total_checks)
 
     if not sw_cversion:
-        print_result(title, MANUAL, "Current switch version not found. Check switch health.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg="Current switch version not found. Check switch health.")
 
     if not tversion:
-        print_result(title, MANUAL, "Target switch version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if sw_cversion.older_than('5.0(1a)') and tversion.newer_than("5.0(1a)"):
         api = 'topSystem.json'
@@ -4391,25 +4329,21 @@ def unsupported_fec_configuration_ex_check(index, total_checks, sw_cversion, tve
         if data:
             result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'L3out /32 Static Route and BD Subnet Overlap'
+@check_wrapper(check_title='L3out /32 Static Route and BD Subnet Overlap')
+def static_route_overlap_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ['L3out', '/32 Static Route', 'BD', 'BD Subnet']
     data = []
     recommended_action = 'Change /32 static route design or target a fixed version'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-32-overlap-with-bd-subnet'
-    print_title(title, index, total_checks)
     iproute_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<nodeprofile>[^/]+)/rsnodeL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]/rt-\[(?P<addr>[^/]+)/(?P<netmask>\d{1,2})\]'
     bd_subnet_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/subnet-\[(?P<subnet>[^/]+/\d{2})\]'
 
     if not tversion:
-        print_result(title, MANUAL, 'Target version not supplied. Skipping.', func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (cversion.older_than("5.2(6e)") and tversion.newer_than("5.0(1a)") and tversion.older_than("5.2(6e)")):
         slash32filter = 'ipRouteP.json?query-target-filter=and(wcard(ipRouteP.dn,"/32"))'
@@ -4456,27 +4390,22 @@ def static_route_overlap_check(index, total_checks, cversion, tversion, **kwargs
         if data:
             result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwargs):
-    title = "vzAny-to-vzAny Service Graph when crossing 5.0 release"
+@check_wrapper(check_title='vzAny-to-vzAny Service Graph when crossing 5.0 release')
+def vzany_vzany_service_epg_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ""
     headers = ["VRF (Tn:VRF)", "Contract (Tn:Contract)", "Service Graph (Tn:SG)"]
     data = []
     recommended_action = "Be aware of transient traffic disruption for vzAny-to-vzAny Service Graph during APIC upgrade."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-to-vzany-service-graph-when-crossing-50-release"
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if not (cversion.older_than("5.0(1a)") and tversion.newer_than("5.0(1a)")):
-        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
-        return NA
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     tn_regex = r"uni/tn-(?P<tn>[^/]+)"
     vrf_regex = tn_regex + r"/ctx-(?P<vrf>[^/]+)"
@@ -4488,8 +4417,7 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
     for vzRsSubjGraphAtt in vzRsSubjGraphAtts:
         graphAtt_rns = vzRsSubjGraphAtt["vzRsSubjGraphAtt"]["attributes"]["dn"].split("/")
         if len(graphAtt_rns) < 3:
-            print_result(title, ERROR, "Failed to get contract DN from vzRsSubjGraphAtt DN.", func_name=inspect.currentframe().f_code.co_name)
-            return ERROR
+            return Result(result=ERROR, msg="Failed to get contract DN from vzRsSubjGraphAtt DN")
 
         # Get vzAny(VRF) relations of the contract. There can be multiple VRFs per contract.
         vrfs = defaultdict(set)  # key: VRF, value: vzRtAnyToCons, vzRtAnyToProv
@@ -4528,27 +4456,22 @@ def vzany_vzany_service_epg_check(index, total_checks, cversion, tversion, **kwa
                 data.append([vrf, contract, sg])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kwargs):
-    title = '32 and 64-Bit Firmware Image for Switches'
+@check_wrapper(check_title='32 and 64-Bit Firmware Image for Switches')
+def validate_32_64_bit_image_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Target Switch Version", "32-Bit Image Result", "64-Bit Image Result"]
     data = []
     recommended_action = 'Upload the missing 32 or 64 bit Switch Image to the Firmware repository'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#602-requires-32-and-64-bit-switch-images'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
-        print_result(title, POST, 'Re-run after APICs are upgraded to 6.0(2) or later', func_name=inspect.currentframe().f_code.co_name)
-        return POST
+        return Result(result=POST, msg="Re-run after APICs are upgraded to 6.0(2) or later")
 
     if cversion.newer_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
         result_32 = result_64 = "Not Found"
@@ -4574,26 +4497,21 @@ def validate_32_64_bit_image_check(index, total_checks, cversion, tversion, **kw
         if result_32 in ["Not Found", "INVALID"] or result_64 in ["Not Found", "INVALID"]:
             result = FAIL_UF
             data.append([target_sw_ver, result_32, result_64])
-
     else:
-        result = NA
-        msg = 'Target version below 6.0(2)'
+        return Result(result=NA, msg="Target version below 6.0(2)")
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def fabric_link_redundancy_check(index, total_checks, **kwargs):
-    title = 'Fabric Link Redundancy'
+@check_wrapper(check_title='Fabric Link Redundancy')
+def fabric_link_redundancy_check(**kwargs):
     result = PASS
-    msg = ''
     headers = ["Leaf Name", "Fabric Link Adjacencies", "Problem"]
     data = []
     recommended_action = ""
     sp_recommended_action = "Connect the leaf switch(es) to multiple spine switches for redundancy"
     t1_recommended_action = "Connect the tier 2 leaf switch(es) to multiple tier1 leaf switches for redundancy"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fabric-link-redundancy"
-    print_title(title, index, total_checks)
 
     fabric_nodes_api = 'fabricNode.json'
     fabric_nodes_api += '?query-target-filter=and(or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine")),eq(fabricNode.fabricSt,"active"))'
@@ -4658,33 +4576,26 @@ def fabric_link_redundancy_check(index, total_checks, **kwargs):
     elif not sp_missing and t1_missing:
         recommended_action = t1_recommended_action
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
-    title = 'CloudSec Encrpytion Deprecated'
+@check_wrapper(check_title='CloudSec Encryption Deprecated')
+def cloudsec_encryption_depr_check(tversion, **kwargs):
     result = NA
-    msg = ''
     headers = ["Findings"]
     data = []
     recommended_action = 'Validate if CloudSec Encryption is enabled within Nexus Dashboard Orchestrator'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#cloudsec-encryption-deprecated'
-    print_title(title, index, total_checks)
 
     cloudsec_api = 'cloudsecPreSharedKey.json'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     try:
         cloudsecPreSharedKey = icurl('class', cloudsec_api)
     except OldVerClassNotFound:
-        msg = 'cversion does not have class cloudsecPreSharedKey'
-        result = NA
-        print_result(title, result, msg, func_name=inspect.currentframe().f_code.co_name)
-        return result
+        return Result(result=NA, msg="cversion does not have class cloudsecPreSharedKey")
 
     if tversion.newer_than("6.0(6a)"):
         if len(cloudsecPreSharedKey) > 1:
@@ -4695,19 +4606,16 @@ def cloudsec_encryption_depr_check(index, total_checks, tversion, **kwargs):
             result = MANUAL
         else:
             result = PASS
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def out_of_service_ports_check(index, total_checks, **kwargs):
-    title = 'Out-of-Service Ports'
+@check_wrapper(check_title='Out-of-Service Ports')
+def out_of_service_ports_check(**kwargs):
     result = PASS
-    msg = ''
     headers = ["Pod ID", "Node ID", "Port ID", "Operational State", "Usage"]
     data = []
     recommended_action = 'Remove Out-of-service Policy on identified "up" ports or they will remain "down" after switch Upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out-of-service-ports'
-    print_title(title, index, total_checks)
 
     ethpmPhysIf_api = 'ethpmPhysIf.json'
     ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
@@ -4725,27 +4633,23 @@ def out_of_service_ports_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def fc_ex_model_check(index, total_checks, tversion, **kwargs):
-    title = 'FC/FCOE support removed for -EX platforms'
+@check_wrapper(check_title='FC/FCOE support removed for -EX platforms')
+def fc_ex_model_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["FC/FCOE Node ID", "Model"]
     data = []
     recommended_action = 'Select a different target version. Refer to the doc for additional details.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fcfcoe-support-for-ex-switches'
-    print_title(title, index, total_checks)
 
     fcEntity_api = "fcEntity.json"
     fabricNode_api = 'fabricNode.json'
     fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (tversion.newer_than("6.0(7a)") and tversion.older_than("6.0(9c)")) or tversion.same_as("6.1(1f)"):
         fcEntitys = icurl('class', fcEntity_api)
@@ -4764,19 +4668,16 @@ def fc_ex_model_check(index, total_checks, tversion, **kwargs):
                         data.append([node_dn, model])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def tep_to_tep_ac_counter_check(index, total_checks, **kwargs):
-    title = 'TEP-to-TEP Atomic Counter scalability'
+@check_wrapper(check_title='TEP-to-TEP Atomic Counter scalability')
+def tep_to_tep_ac_counter_check(**kwargs):
     result = NA
-    msg = ''
     headers = ["dbgAcPath Count", "Supported Maximum"]
     data = []
     recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counters-scalability'
-    print_title(title, index, total_checks)
 
     ac_limit = 1600
     atomic_counter_api = 'dbgAcPath.json'
@@ -4793,19 +4694,16 @@ def tep_to_tep_ac_counter_check(index, total_checks, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def clock_signal_component_failure_check(index, total_checks, **kwargs):
-    title = 'Nexus 950X FM or LC Might Fail to boot after reload'
+@check_wrapper(check_title='Nexus 950X FM or LC Might Fail to boot after reload')
+def clock_signal_component_failure_check(**kwargs):
     result = PASS
-    msg = ''
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
     recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251.\n\tSN String:\n\t'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
-    print_title(title, index, total_checks)
 
     eqptFC_api = 'eqptFC.json'
     eqptFC_api += '?query-target-filter=or(eq(eqptFC.model,"N9K-C9504-FM-E"),eq(eqptFC.model,"N9K-C9508-FM-E"))'
@@ -4837,29 +4735,23 @@ def clock_signal_component_failure_check(index, total_checks, **kwargs):
         result = MANUAL
         recommended_action += sn_string[:-1]
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
-    title = 'Stale decomissioned Spine'
+@check_wrapper(check_title='Stale Decomissioned Spine')
+def stale_decomissioned_spine_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Susceptible Spine Node Id", "Spine Name", "Current Node State"]
     data = []
     recommended_action = 'Remove fabricRsDecommissionNode objects pointing to above Spine Nodes before APIC upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-decommissioned-spine'
-    print_title(title, index, total_checks)
 
     decomissioned_api = 'fabricRsDecommissionNode.json'
-
     active_spine_api = 'topSystem.json'
     active_spine_api += '?query-target-filter=eq(topSystem.role,"spine")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.newer_than("5.2(3d)") and tversion.older_than("6.0(3d)"):
         decomissioned_switches = icurl('class', decomissioned_api)
@@ -4875,26 +4767,22 @@ def stale_decomissioned_spine_check(index, total_checks, tversion, **kwargs):
                     data.append([node_id, name, state])
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def n9408_model_check(index, total_checks, tversion, **kwargs):
-    title = 'N9K-C9408 Platform Model'
+@check_wrapper(check_title='N9K-C9408 Platform Model')
+def n9408_model_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Node ID", "Model"]
     data = []
     recommended_action = 'Identified N9K-C9408 must be decommissioned then recomissioned after upgrade to 6.1(3)'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-platform-model'
-    print_title(title, index, total_checks)
 
     eqptCh_api = 'eqptCh.json'
     eqptCh_api += '?query-target-filter=eq(eqptCh.model,"N9K-C9400-SW-GX2A")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.newer_than("6.1(3a)"):
         eqptCh = icurl('class', eqptCh_api)
@@ -4905,19 +4793,16 @@ def n9408_model_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
-    title = 'PBR High Scale'
+@check_wrapper(check_title='PBR High Scale')
+def pbr_high_scale_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Fabric-Wide PBR Object Count"]
     data = []
     recommended_action = 'High PBR scale detected, target a fixed version for CSCwi66348'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#pbr-high-scale'
-    print_title(title, index, total_checks)
 
     # Not querying fvAdjDefCons as it fails from APIC
     vnsAdjacencyDefCont_api = 'vnsAdjacencyDefCont.json'
@@ -4925,8 +4810,7 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     count_filter = '?rsp-subtree-include=count'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.older_than("5.3(2c)"):
         vnsAdj = icurl('class', vnsAdjacencyDefCont_api+count_filter)
@@ -4941,28 +4825,22 @@ def pbr_high_scale_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs):
-    title = "HTTPS Request Throttle Rate"
+@check_wrapper(check_title='HTTPS Request Throttle Rate')
+def https_throttle_rate_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ""
     headers = ["Mgmt Access Policy", "HTTPS Throttle Rate"]
     data = []
     recommended_action = "Reduce the throttle rate to 40 (req/sec), 2400 (req/min) or lower."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#https-request-throttle-rate"
 
-    print_title(title, index, total_checks)
-
     # Applicable only when crossing 6.1(2) as upgrade instead of downgrade.
     if cversion.newer_than("6.1(2a)"):
-        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
-        return NA
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     commHttpses = icurl("class", "commHttps.json")
     for commHttps in commHttpses:
@@ -4990,27 +4868,23 @@ def https_throttle_rate_check(index, total_checks, cversion, tversion, **kwargs)
             recommended_action = "6.1(2)+ will reject this config. " + recommended_action
         else:
             result = FAIL_UF
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Standby Sup Image Sync'
+@check_wrapper(check_title='Standby SUP Image Sync')
+def standby_sup_sync_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Pod ID", "Node ID", "Standby SUP Slot"]
     data = []
     recommended_action = 'Target an interim image with fix for CSCwa44220 that is smaller than 2Gigs, such as 5.2(8i)'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-sup-image-sync'
-    print_title(title, index, total_checks)
 
     sup_regex = node_regex + r'/sys/ch/supslot-(?P<slot>\d)'
     eqptSupC_api = 'eqptSupC.json'
     eqptSupC_api += '?query-target-filter=eq(eqptSupC.rdSt,"standby")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (
         (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
@@ -5029,22 +4903,18 @@ def standby_sup_sync_check(index, total_checks, cversion, tversion, **kwargs):
     if data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
-    title = 'Equipment Disk Limits Exceeded'
+@check_wrapper(check_title='Equipment Disk Limits Exceeded')
+def equipment_disk_limits_exceeded(**kwargs):
     result = PASS
-    msg = ''
     headers = ['Pod', 'Node', 'Code', '%', 'Description',]
     data = []
     unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
     recommended_action = 'Review the reference document for commands to validate disk usage'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
-
-    print_title(title, index, total_checks)
 
     usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
     f182x_api = 'faultInst.json'
@@ -5070,14 +4940,20 @@ def equipment_disk_limits_exceeded(index, total_checks, **kwargs):
     if data or unformatted_data:
         result = FAIL_UF
 
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
-def aes_encryption_check(index, total_checks, tversion, **kwargs):
-    title = "Global AES Encryption"
+@check_wrapper(check_title='Global AES Encryption')
+def aes_encryption_check(tversion, **kwargs):
     result = FAIL_UF
-    msg = ""
     headers = ["Target Version", "Global AES Encryption", "Impact"]
     data = []
     recommended_action = (
@@ -5086,11 +4962,8 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#global-aes-encryption"
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.newer_than("6.1(2a)"):
         impact = "Upgrade Failure"
@@ -5108,14 +4981,12 @@ def aes_encryption_check(index, total_checks, tversion, **kwargs):
     else:
         result = PASS
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, **kwargs):
-    title = "Service Graph BD Forceful Routing"
+@check_wrapper(check_title='Service Graph BD Forceful Routing')
+def service_bd_forceful_routing_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ""
     headers = ["Bridge Domain (Tenant:BD)", "Service Graph Device (Tenant:Device)"]
     data = []
     unformatted_headers = ["DN of fvRtEPpInfoToBD"]
@@ -5126,15 +4997,11 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-graph-bd-forceful-routing"
 
-    print_title(title, index, total_checks)
-
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if not (cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)")):
-        print_result(title, NA, func_name=inspect.currentframe().f_code.co_name)
-        return NA
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)/"
     dn_regex += r"rtvnsEPpInfoToBD-\[uni/tn-(?P<sg_tn>[^/])+/LDevInst-\[uni/tn-(?P<ldev_tn>[^/]+)/lDevVip-(?P<ldev>[^\]]+)\].*\]"
@@ -5153,28 +5020,33 @@ def service_bd_forceful_routing_check(index, total_checks, cversion, tversion, *
 
     if data or unformatted_data:
         result = MANUAL
-    print_result(title, result, msg, headers, data, unformatted_headers, unformatted_data, recommended_action, doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
 # Connection Base Check
-def observer_db_size_check(index, total_checks, username, password, **kwargs):
-    title = 'Observer Database Size'
+@check_wrapper(check_title='Observer Database Size')
+def observer_db_size_check(username, password, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Node", "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
-    print_title(title, index, total_checks)
 
     topSystem_api = 'topSystem.json'
     topSystem_api += '?query-target-filter=eq(topSystem.role,"controller")'
 
     controllers = icurl('class', topSystem_api)
     if not controllers:
-        print_result(title, ERROR, 'topSystem response empty. Is the cluster healthy?', func_name=inspect.currentframe().f_code.co_name)
-        return ERROR
+        return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
+
     has_error = False
     prints('')
     for apic in controllers:
@@ -5189,7 +5061,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.connect()
         except Exception as e:
             data.append([attr['id'], attr['name'], str(e)])
-            print_result(node_title, ERROR, json_output=False)
+            print_result(node_title, ERROR)
             has_error = True
             continue
         try:
@@ -5197,7 +5069,7 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
             c.cmd(cmd)
             if "No such file or directory" in c.output:
                 data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
-                print_result(node_title, ERROR, json_output=False)
+                print_result(node_title, ERROR)
                 has_error = True
                 continue
             dbstats = c.output.split("\n")
@@ -5208,36 +5080,32 @@ def observer_db_size_check(index, total_checks, username, password, **kwargs):
                     file_size = size_match.group("size")
                     file_name = "/data2/dbstats/" + size_match.group("file")
                     data.append([attr['id'], file_name, file_size])
-            print_result(node_title, DONE, json_output=False)
+            print_result(node_title, DONE)
         except Exception as e:
             data.append([attr['id'], attr['name'], str(e)])
-            print_result(node_title, ERROR, json_output=False)
+            print_result(node_title, ERROR)
             has_error = True
             continue
     if has_error:
         result = ERROR
     elif data:
         result = FAIL_UF
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
 
 
-def ave_eol_check(index, total_checks, tversion, **kwargs):
-    title = 'AVE End-of-Life'
+@check_wrapper(check_title='AVE End-of-Life')
+def ave_eol_check(tversion, **kwargs):
     result = NA
-    msg = ''
     headers = ["AVE Domain Name"]
     data = []
     recommended_action = 'AVE domain(s) must be migrated to supported domain types prior to 6.0+ upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ave-end-of-life'
-    print_title(title, index, total_checks)
 
     ave_api = 'vmmDomP.json'
     ave_api += '?query-target-filter=eq(vmmDomP.enableAVE,"true")'
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.newer_than("6.0(1a)"):
         ave = icurl('class', ave_api)
@@ -5247,24 +5115,19 @@ def ave_eol_check(index, total_checks, tversion, **kwargs):
     if data:
         result = FAIL_O
 
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
-    title = 'Stale pconsRA Objects'
+@check_wrapper(check_title='Stale pconsRA Objects')
+def stale_pcons_ra_mo_check(cversion, tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["Stale pconsRA DN", "Non-Existing DN"]
-
     data = []
     recommended_action = 'Contact Cisco TAC to delete stale pconsRA before upgrading'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-pconsra-object'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)") and tversion.older_than("6.1(4a)"):
         pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
@@ -5298,28 +5161,23 @@ def stale_pcons_ra_mo_check(index, total_checks, cversion, tversion, **kwargs):
                         if pcons_ra_dn_mo:
                             data.append([pcons_ra_dn, policy_dn])
     else:
-        print_result(title, NA, "Target version not supplied or not applicable. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return NA
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     if data:
         result = FAIL_O
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def isis_database_byte_check(index, total_checks, tversion, **kwargs):
-    title = 'ISIS DTEPs Byte Size'
+@check_wrapper(check_title='ISIS DTEPs Byte Size')
+def isis_database_byte_check(tversion, **kwargs):
     result = PASS
-    msg = ''
     headers = ["ISIS DTEPs Byte Size", "ISIS DTEPs"]
     data = []
     recommended_action = 'Upgrade to a version with the fix for CSCwp15375. Current target version is affected.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
-    print_title(title, index, total_checks)
 
     if not tversion:
-        print_result(title, MANUAL, "Target version not supplied. Skipping.", func_name=inspect.currentframe().f_code.co_name)
-        return MANUAL
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.newer_than("6.1(1a)") and tversion.older_than("6.1(3g)"):
         isisDTEp_api = 'isisDTEp.json'
@@ -5347,13 +5205,9 @@ def isis_database_byte_check(index, total_checks, tversion, **kwargs):
                 result = FAIL_O
                 data.append([total_bytes, combined_dteps])
                 break
-
     else:
-        print_result(title, NA, "Target version not affected", func_name=inspect.currentframe().f_code.co_name)
-        return NA
-
-    print_result(title, result, msg, headers, data, recommended_action=recommended_action, doc_url=doc_url, func_name=inspect.currentframe().f_code.co_name)
-    return result
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -5529,14 +5383,6 @@ def run_checks(checks, inputs):
         except KeyboardInterrupt:
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
-        except Exception as e:
-            func_name = check.__name__
-            prints('')
-            print_title(" " * len(func_name))  # not showing the func name in the stdout
-            msg = 'Unexpected Error: %s' % e
-            print_result(func_name, ERROR, msg, func_name=func_name)
-            summary[ERROR] += 1
-            logging.exception(e)
 
     prints('\n=== Summary Result ===\n')
     res = max(summary_headers, key=len)

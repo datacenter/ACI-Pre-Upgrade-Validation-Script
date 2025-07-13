@@ -188,3 +188,20 @@ def test_syntheticMaintPValidate(
     assert data["showValidation"] == expected_show
     assert data["severity"] == expected_criticality
     assert data["ruleStatus"] == expected_passed
+
+
+@pytest.mark.parametrize(
+    "headers, data",
+    [
+        ("", []),  # invalid headers (columns)
+        ([], {}),  # invalid data (rows)
+        ("", {}),  # invalid headers and data
+    ]
+)
+def test_invalid_headers_or_data(headers, data):
+    with pytest.raises(TypeError):
+        synth = script.syntheticMaintPValidate("func_name", "Check Title", "A Description")
+        synth.craftData(
+            column=headers,
+            rows=data,
+        )
