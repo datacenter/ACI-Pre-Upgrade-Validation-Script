@@ -5077,7 +5077,6 @@ def large_apic_database_check(index, total_checks, cversion, **kwargs):
                     if ":" in svc_stats:
                         class_name = svc_stats.split(":")[0].strip()
                         mo_count = svc_stats.split(":")[1].strip()
-                        print(mo_count)
                         if int(mo_count) > 1000*1000*1.5:
                             data.append([id, dme, class_name, mo_count])
     else:
