@@ -62,7 +62,7 @@ outputs = {
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, is_puv, arg_tversion, arg_cversion, debug_function, expected_result",
+    "icurl_outputs, api_only, arg_tversion, arg_cversion, debug_function, expected_result",
     [
         # Default, no argparse arguments
         (
@@ -77,7 +77,7 @@ outputs = {
             None,
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.1(1a)"), "tversion": AciVersion("6.2(1a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
-        # `is_puv` is True (i.e. --puv)
+        # `api_only` is True (i.e. --puv)
         # No `get_credentials()`, no username nor password
         (
             {
@@ -163,9 +163,9 @@ outputs = {
         ),
     ],
 )
-def test_prepare(mock_icurl, is_puv, arg_tversion, arg_cversion, debug_function, expected_result):
-    checks = script.get_checks(is_puv, debug_function)
-    inputs = script.prepare(is_puv, arg_tversion, arg_cversion, len(checks))
+def test_prepare(mock_icurl, api_only, arg_tversion, arg_cversion, debug_function, expected_result):
+    checks = script.get_checks(api_only, debug_function)
+    inputs = script.prepare(api_only, arg_tversion, arg_cversion, len(checks))
     for key, value in expected_result.items():
         if "version" in key:
             assert isinstance(inputs[key], AciVersion)
@@ -182,7 +182,7 @@ def test_prepare(mock_icurl, is_puv, arg_tversion, arg_cversion, debug_function,
         assert meta["cversion"] == str(expected_result["cversion"])
         assert meta["tversion"] == str(expected_result["tversion"])
         assert meta["sw_cversion"] == str(expected_result["sw_cversion"])
-        assert meta["is_puv"] == is_puv
+        assert meta["api_only"] == api_only
         assert meta["total_checks"] == len(checks)
         if debug_function:
             assert meta["total_checks"] == 1
@@ -201,7 +201,7 @@ def test_cversion_invald():
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, is_puv, arg_tversion, arg_cversion, debug_function, expected_result",
+    "icurl_outputs, api_only, arg_tversion, arg_cversion, debug_function, expected_result",
     [
         # `get_cversion()` failure
         (
@@ -259,12 +259,12 @@ Initial query failed. Ensure APICs are healthy. Ending script run.
         ),
     ],
 )
-def test_prepare_exception(capsys, caplog, mock_icurl, is_puv, arg_tversion, arg_cversion, debug_function, expected_result):
+def test_prepare_exception(capsys, caplog, mock_icurl, api_only, arg_tversion, arg_cversion, debug_function, expected_result):
     caplog.set_level(logging.CRITICAL)
     with pytest.raises(SystemExit):
         with pytest.raises(Exception):
-            checks = script.get_checks(is_puv, debug_function)
-            script.prepare(is_puv, arg_tversion, arg_cversion, len(checks))
+            checks = script.get_checks(api_only, debug_function)
+            script.prepare(api_only, arg_tversion, arg_cversion, len(checks))
     captured = capsys.readouterr()
     print(captured.out)
     assert captured.out.endswith(expected_result)

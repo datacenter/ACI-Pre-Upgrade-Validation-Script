@@ -14,23 +14,24 @@ def test_no_args():
     # To simulate the script being run without any command-line arguments,
     # we set `sys.argv[1:]` to an empty list when `args` is `None`.
     sys.argv[1:] = []
-    is_puv, tversion, cversion, debug_function = script.parse_args(args=None)
-    assert is_puv is False
+    api_only, tversion, cversion, debug_function, no_cleanup = script.parse_args(args=None)
+    assert api_only is False
     assert tversion is None
     assert cversion is None
     assert debug_function is None
+    assert no_cleanup is False
 
 
 @pytest.mark.parametrize(
     "args, expected_result",
     [
         ([], False),
-        (["--puv"], True),
+        (["--api-only"], True),
     ],
 )
-def test_puv(args, expected_result):
-    is_puv, tversion, cversion, debug_function = script.parse_args(args)
-    assert is_puv == expected_result
+def test_api_only(args, expected_result):
+    api_only, tversion, cversion, debug_function, no_cleanup = script.parse_args(args)
+    assert api_only == expected_result
 
 
 @pytest.mark.parametrize(
@@ -45,7 +46,7 @@ def test_puv(args, expected_result):
     ],
 )
 def test_tversion(args, expected_result):
-    is_puv, tversion, cversion, debug_function = script.parse_args(args)
+    api_only, tversion, cversion, debug_function, no_cleanup = script.parse_args(args)
     if tversion is not None:
         assert isinstance(tversion, str)
     assert str(tversion) == str(expected_result)
@@ -63,7 +64,7 @@ def test_tversion(args, expected_result):
     ],
 )
 def test_cversion(args, expected_result):
-    is_puv, tversion, cversion, debug_function = script.parse_args(args)
+    api_only, tversion, cversion, debug_function, no_cleanup = script.parse_args(args)
     if cversion is not None:
         assert isinstance(cversion, str)
     assert str(cversion) == str(expected_result)
@@ -78,7 +79,7 @@ def test_cversion(args, expected_result):
     ],
 )
 def test_debug_func(args, expected_result):
-    is_puv, tversion, cversion, debug_function = script.parse_args(args)
+    api_only, tversion, cversion, debug_function, no_cleanup = script.parse_args(args)
     if debug_function is not None:
         assert isinstance(debug_function, str)
     assert str(debug_function) == str(expected_result)

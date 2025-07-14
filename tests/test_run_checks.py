@@ -6,7 +6,7 @@ import os
 script = importlib.import_module("aci-preupgrade-validation-script")
 AciVersion = script.AciVersion
 JSON_DIR = script.JSON_DIR
-ApicResult = script.syntheticMaintPValidate
+ApicResult = script.AciResult
 Result = script.Result
 check_wrapper = script.check_wrapper
 
