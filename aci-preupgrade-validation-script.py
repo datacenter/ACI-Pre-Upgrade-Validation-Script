@@ -919,9 +919,9 @@ def is_firstver_gt_secondver(first_ver, second_ver):
     return result
 
 
-class syntheticMaintPValidate:
+class AciResult:
     """
-    APIC uses an object called `syntheticMaintPValidate` to store the results of
+    APIC uses an object called `AciResult` to store the results of
     each rule/check in the pre-upgrade validation which is run during the upgrade
     workflow in the APIC GUI. When this script is invoked during the workflow, it
     is expected to write the results of each rule/check to a JSON file (one per rule)
@@ -1055,7 +1055,7 @@ def check_wrapper(check_title):
             # both show the original check func name and `wrapper.__name__` can
             # be dynamically changed inside each check func if needed. (mainly
             # for test or debugging)
-            synth = syntheticMaintPValidate(wrapper.__name__, check_title, "")
+            synth = AciResult(wrapper.__name__, check_title, "")
             synth.updateWithResults(**r.as_dict_for_json_result())
             synth.writeResult()
             return r.result
@@ -5216,22 +5216,24 @@ def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
     parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
-    parser.add_argument("-d", "--debug_function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
-    parser.add_argument("--puv", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
+    parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
+    parser.add_argument("--api-only", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
+    parser.add_argument("--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
     parsed_args = parser.parse_args(args)
-    is_puv = parsed_args.puv
+    api_only = parsed_args.api_only
     tversion = parsed_args.tversion
     cversion = parsed_args.cversion
     debug_function = parsed_args.debug_function
-    return is_puv, tversion, cversion, debug_function
+    no_cleanup = parsed_args.no_cleanup
+    return api_only, tversion, cversion, debug_function, no_cleanup
 
 
-def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
+def prepare(api_only, arg_tversion, arg_cversion, total_checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
     username = password = None
-    if not is_puv:
+    if not api_only:
         username, password = get_credentials()
     try:
         cversion = get_current_version(arg_cversion)
@@ -5254,7 +5256,7 @@ def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
         "cversion": str(cversion),
         "tversion": str(tversion),
         "sw_cversion": str(sw_cversion),
-        "is_puv": is_puv,
+        "api_only": api_only,
         "total_checks": total_checks,
     }
     with open(META_FILE, "w") as f:
@@ -5262,7 +5264,7 @@ def prepare(is_puv, arg_tversion, arg_cversion, total_checks):
     return inputs
 
 
-def get_checks(is_puv, debug_func):
+def get_checks(api_only, debug_func):
     api_checks = [
         # General Checks
         target_version_compatibility_check,
@@ -5368,7 +5370,7 @@ def get_checks(is_puv, debug_func):
     ]
     if debug_func:
         return [check for check in api_checks + conn_checks if check.__name__ == debug_func]
-    if is_puv:
+    if api_only:
         return api_checks
     return conn_checks + api_checks
 
@@ -5394,7 +5396,7 @@ def run_checks(checks, inputs):
         json.dump(summary, f, indent=2)
 
 
-def wrapup(is_puv):
+def wrapup(no_cleanup):
     subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
     bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
     prints("""
@@ -5409,16 +5411,16 @@ def wrapup(is_puv):
     prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
 
     # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
-    if not is_puv and os.path.isdir(DIR):
+    if not no_cleanup and os.path.isdir(DIR):
         shutil.rmtree(DIR)
 
 
 def main(args=None):
-    is_puv, arg_tversion, arg_cversion, debug_func = parse_args(args)
-    checks = get_checks(is_puv, debug_func)
-    inputs = prepare(is_puv, arg_tversion, arg_cversion, len(checks))
+    api_only, arg_tversion, arg_cversion, debug_func, no_cleanup = parse_args(args)
+    checks = get_checks(api_only, debug_func)
+    inputs = prepare(api_only, arg_tversion, arg_cversion, len(checks))
     run_checks(checks, inputs)
-    wrapup(is_puv)
+    wrapup(no_cleanup)
 
 
 if __name__ == "__main__":
