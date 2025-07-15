@@ -68,13 +68,9 @@ META_FILE = DIR + 'meta.json'
 RESULT_FILE = DIR + 'preupgrade_validator_%s%s.txt' % (ts, tz)
 SUMMARY_FILE = DIR + 'summary.json'
 LOG_FILE = DIR + 'preupgrade_validator_debug.log'
-fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %(message)s'.format(tz)
-if os.path.isdir(DIR):
-    shutil.rmtree(DIR)
-os.mkdir(DIR)
-os.mkdir(JSON_DIR)
-logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+log = logging.getLogger()
 
 
 class OldVerClassNotFound(Exception):
@@ -147,7 +143,7 @@ class Connection(object):
     def __connected(self):
         # determine if a connection is already open
         connected = (self.child is not None and self.child.isatty())
-        logging.debug("check for valid connection: %r" % connected)
+        log.debug("check for valid connection: %r" % connected)
         return connected
 
     @property
@@ -173,7 +169,7 @@ class Connection(object):
                 self._log = open(self.log, "ab")
             else:
                 self._log = self.log
-            logging.debug("setting logfile to %s" % self._log.name)
+            log.debug("setting logfile to %s" % self._log.name)
             if self.child is not None:
                 self.child.logfile = self._log
 
@@ -195,18 +191,18 @@ class Connection(object):
                 self.port = 23
         # spawn new thread
         if self.protocol.lower() == "ssh":
-            logging.debug(
+            log.debug(
                 "spawning new pexpect connection: ssh %s@%s -p %d" % (self.username, self.hostname, self.port))
             no_verify = " -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
             if self.verify: no_verify = ""
             self.child = pexpect.spawn("ssh %s %s@%s -p %d" % (no_verify, self.username, self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
         elif self.protocol.lower() == "telnet":
-            logging.info("spawning new pexpect connection: telnet %s %d" % (self.hostname, self.port))
+            log.info("spawning new pexpect connection: telnet %s %d" % (self.hostname, self.port))
             self.child = pexpect.spawn("telnet %s %d" % (self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
         else:
-            logging.error("unknown protocol %s" % self.protocol)
+            log.error("unknown protocol %s" % self.protocol)
             raise Exception("Unsupported protocol: %s" % self.protocol)
 
         # start logging
@@ -215,7 +211,7 @@ class Connection(object):
     def close(self):
         # try to gracefully close the connection if opened
         if self.__connected():
-            logging.info("closing current connection")
+            log.info("closing current connection")
             self.child.close()
         self.child = None
         self._login = False
@@ -241,16 +237,16 @@ class Connection(object):
             indexed.append(matches[i])
             mapping.append(i)
         result = self.child.expect(indexed, timeout)
-        logging.debug("timeout: %d, matched: '%s'\npexpect output: '%s%s'" % (
+        log.debug("timeout: %d, matched: '%s'\npexpect output: '%s%s'" % (
             timeout, self.child.after, self.child.before, self.child.after))
         if result <= len(mapping) and result >= 0:
-            logging.debug("expect matched result[%d] = %s" % (result, mapping[result]))
+            log.debug("expect matched result[%d] = %s" % (result, mapping[result]))
             return mapping[result]
         ds = ''
-        logging.error("unexpected pexpect return index: %s" % result)
+        log.error("unexpected pexpect return index: %s" % result)
         for i in range(0, len(mapping)):
             ds += '[%d] %s\n' % (i, mapping[i])
-        logging.debug("mapping:\n%s" % ds)
+        log.debug("mapping:\n%s" % ds)
         raise Exception("Unexpected pexpect return index: %s" % result)
 
     def login(self, max_attempts=7, timeout=17):
@@ -258,7 +254,7 @@ class Connection(object):
         returns true on successful login, else returns false
         """
 
-        logging.debug("Logging into host")
+        log.debug("Logging into host")
 
         # successfully logged in at a different time
         if not self.__connected(): self.connect()
@@ -277,35 +273,35 @@ class Connection(object):
             max_attempts -= 1
             match = self.__expect(matches, timeout)
             if match == "console":  # press return to get started
-                logging.debug("matched console, send enter")
+                log.debug("matched console, send enter")
                 self.child.sendline("\r\n")
             elif match == "refuse":  # connection refused
-                logging.error("connection refused by host")
+                log.error("connection refused by host")
                 return False
             elif match == "yes/no":  # yes/no for SSH key acceptance
-                logging.debug("received yes/no prompt, send yes")
+                log.debug("received yes/no prompt, send yes")
                 self.child.sendline("yes")
             elif match == "username":  # username/login prompt
-                logging.debug("received username prompt, send username")
+                log.debug("received username prompt, send username")
                 self.child.sendline(self.username)
             elif match == "password":
                 # don't log passwords to the logfile
                 self.stop_log()
-                logging.debug("matched password prompt, send password")
+                log.debug("matched password prompt, send password")
                 self.child.sendline(self.password)
                 # restart logging
                 self.start_log()
             elif match == "prompt":
-                logging.debug("successful login")
+                log.debug("successful login")
                 self._login = True
                 # force terminal length at login
                 self.term_len = self._term_len
                 return True
             elif match == "timeout":
-                logging.debug("timeout received but connection still opened, send enter")
+                log.debug("timeout received but connection still opened, send enter")
                 self.child.sendline("\r\n")
         # did not find prompt within max attempts, failed login
-        logging.error("failed to login after multiple attempts")
+        log.error("failed to login after multiple attempts")
         return False
 
     def cmd(self, command, **kargs):
@@ -348,7 +344,7 @@ class Connection(object):
         self.output = ""
         # check if we've ever logged into device or currently connected
         if (not self.__connected()) or (not self._login):
-            logging.debug("no active connection, attempt to login")
+            log.debug("no active connection, attempt to login")
             if not self.login():
                 raise Exception("failed to login to host")
 
@@ -357,7 +353,7 @@ class Connection(object):
         if not echo_cmd: self.stop_log()
 
         # execute command
-        logging.debug("cmd command: %s" % command)
+        log.debug("cmd command: %s" % command)
         if sendline:
             self.child.sendline(command)
         else:
@@ -373,7 +369,7 @@ class Connection(object):
         result = self.__expect(matches, timeout)
         self.output = "%s%s" % (self.child.before.decode("utf-8"), self.child.after.decode("utf-8"))
         if result == "eof" or result == "timeout":
-            logging.warning("unexpected %s occurred" % result)
+            log.warning("unexpected %s occurred" % result)
         return result
 
 
@@ -693,7 +689,7 @@ class AciAccessPolicyParser(AciObjectCrawler):
     def get_node_ids_from_ifsel(self, ifsel_dn):
         ifp = self.get_parent(ifsel_dn, self.IFP)
         if not ifp:
-            logging.warning("No I/F Profile for Selector (%s)", ifsel_dn)
+            log.warning("No I/F Profile for Selector (%s)", ifsel_dn)
             return []
         node_ids = self.get_node_ids_from_ifp(ifp["dn"])
         return node_ids
@@ -765,7 +761,7 @@ class AciAccessPolicyParser(AciObjectCrawler):
                         node2fexid[_node_id] = fex_id
                 node_ids = node2fexid.keys()
                 if len(node_ids) > 2:
-                    logging.error(
+                    log.error(
                         "FEX HIF handling failed as it shows more than 2 nodes."
                     )
                     break
@@ -1045,7 +1041,7 @@ def check_wrapper(check_title):
                 r = check_func(*args, **kwargs)
             except Exception as e:
                 r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
-                logging.exception(e)
+                log.exception(e)
 
             # Print `[Check  1/81] <title>... <result> + <failure details>`
             print_result(title=check_title, **r.as_dict())
@@ -1241,9 +1237,9 @@ def _icurl(apitype, query, page=0, page_size=100000):
     query += '{}page={}&page-size={}'.format(pre, page, page_size)
     uri = 'http://127.0.0.1:7777/api/{}/{}'.format(apitype, query)
     cmd = ['icurl', '-gs', uri]
-    logging.info('cmd = ' + ' '.join(cmd))
+    log.info('cmd = ' + ' '.join(cmd))
     response = subprocess.check_output(cmd)
-    logging.debug('response: ' + str(response))
+    log.debug('response: ' + str(response))
     data = json.loads(response)
     _icurl_error_handler(data['imdata'])
     return data
@@ -1569,7 +1565,7 @@ def switch_group_guideline_check(**kwargs):
         if nodes[key]['role'] == 'spine':
             dn = re.search(node_regex, key)
             if not dn:
-                logging.error('Failed to parse - %s', key)
+                log.error('Failed to parse - %s', key)
                 continue
             f_spines[0][dn.group('pod')].append(int(dn.group('node')))
 
@@ -1586,7 +1582,7 @@ def switch_group_guideline_check(**kwargs):
         if nodes.get(tDn, {}).get('role') == 'spine':
             dn = re.search(node_regex, tDn)
             if not dn:
-                logging.error('Failed to parse - %s', tDn)
+                log.error('Failed to parse - %s', tDn)
                 continue
             f_spines[2][dn.group('pod')].append(int(dn.group('node')))
 
@@ -1595,7 +1591,7 @@ def switch_group_guideline_check(**kwargs):
     for lldp in lldps:
         dn = re.search(node_regex, lldp['lldpCtrlrAdjEp']['attributes']['dn'])
         if not dn:
-            logging.error('Failed to parse - %s', lldp['lldpCtrlrAdjEp']['attributes']['dn'])
+            log.error('Failed to parse - %s', lldp['lldpCtrlrAdjEp']['attributes']['dn'])
             continue
         apic_id_pod = '-'.join([lldp['lldpCtrlrAdjEp']['attributes']['id'], dn.group('pod')])
         apic_leafs[apic_id_pod].add(int(dn.group('node')))
@@ -2663,7 +2659,7 @@ def l3out_overlapping_loopback_check(**kwargs):
                         node = np_child['l3extRsNodeL3OutAtt']
                         m = re.search(node_regex, node['attributes']['tDn'])
                         if not m:
-                            logging.error('Failed to parse tDn - %s', node['attributes']['tDn'])
+                            log.error('Failed to parse tDn - %s', node['attributes']['tDn'])
                             continue
                         node_id = m.group('node')
 
@@ -2694,7 +2690,7 @@ def l3out_overlapping_loopback_check(**kwargs):
                             port = ifp_child['l3extRsPathL3OutAtt']
                             m = re.search(path_regex, port['attributes']['tDn'])
                             if not m:
-                                logging.error('Failed to parse tDn - %s', port['attributes']['tDn'])
+                                log.error('Failed to parse tDn - %s', port['attributes']['tDn'])
                                 continue
                             node1_id = m.group('node1')
                             node2_id = m.group('node2')
@@ -3178,7 +3174,7 @@ def intersight_upgrade_status_check(**kwargs):
 
     cmd = ['icurl', '-gks', 'https://127.0.0.1/connector/UpgradeStatus']
 
-    logging.info('cmd = ' + ' '.join(cmd))
+    log.info('cmd = ' + ' '.join(cmd))
     response = subprocess.check_output(cmd)
     try:
         resp_json = json.loads(response)
@@ -3550,16 +3546,16 @@ def apic_ca_cert_validation(**kwargs):
             '''
             # Re-run cleanup for Issue #120
             if os.path.exists(cert_gen_filename):
-                logging.debug('CA CHECK file found and removed: ' + ''.join(cert_gen_filename))
+                log.debug('CA CHECK file found and removed: ' + ''.join(cert_gen_filename))
                 os.remove(cert_gen_filename)
             if os.path.exists(key_pem):
-                logging.debug('CA CHECK file found and removed: ' + ''.join(key_pem))
+                log.debug('CA CHECK file found and removed: ' + ''.join(key_pem))
                 os.remove(key_pem)
             if os.path.exists(csr_pem):
-                logging.debug('CA CHECK file found and removed: ' + ''.join(csr_pem))
+                log.debug('CA CHECK file found and removed: ' + ''.join(csr_pem))
                 os.remove(csr_pem)
             if os.path.exists(sign):
-                logging.debug('CA CHECK file found and removed: ' + ''.join(sign))
+                log.debug('CA CHECK file found and removed: ' + ''.join(sign))
                 os.remove(sign)
 
             with open(cert_gen_filename, 'w') as f:
@@ -3569,7 +3565,7 @@ def apic_ca_cert_validation(**kwargs):
             cmd = 'openssl genrsa -out ' + key_pem + ' 2048'
             cmd = cmd + ' && openssl req -config ' + cert_gen_filename + ' -new -key ' + key_pem + ' -out ' + csr_pem
             cmd = cmd + ' && openssl dgst -sha256 -hmac ' + passphrase + ' -out ' + sign + ' ' + csr_pem
-            logging.debug('cmd = '+''.join(cmd))
+            log.debug('cmd = '+''.join(cmd))
             genrsa_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             genrsa_proc.communicate()[0].strip()
             if genrsa_proc.returncode != 0:
@@ -3589,11 +3585,11 @@ def apic_ca_cert_validation(**kwargs):
             payload = '{"aaaCertGenReq":{"attributes":{"type":"csvc","hmac":"%s", "certreq": "%s", ' \
                       '"podip": "None", "podmac": "None", "podname": "None"}}}' % (hmac, certreq)
             cmd = 'icurl -kX POST %s -d \' %s \'' % (url, payload)
-            logging.debug('cmd = ' + ''.join(cmd))
+            log.debug('cmd = ' + ''.join(cmd))
             certreq_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
             certreq_out = certreq_proc.communicate()[0].strip()
 
-    logging.debug(certreq_out)
+    log.debug(certreq_out)
     if '"error":{"attributes"' in str(certreq_out):
         # Spines can crash on 5.2(6e)+, but APIC CA Certs should be fixed regardless of tver
         data.append([certreq_out])
@@ -4431,7 +4427,7 @@ def vzany_vzany_service_epg_check(cversion, tversion, **kwargs):
             elif "vzRtAnyToProv" in vzRtAny:
                 rel_class = "vzRtAnyToProv"
             else:
-                logging.warning("Unexpected class - %s", vzRtAny.keys())
+                log.warning("Unexpected class - %s", vzRtAny.keys())
                 continue
             vrf_tdn = vzRtAny[rel_class]["attributes"]["tDn"]
             vrf_match = re.search(vrf_regex, vrf_tdn)
@@ -5010,7 +5006,7 @@ def service_bd_forceful_routing_check(cversion, tversion, **kwargs):
     for fvRtEPpInfoToBD in fvRtEPpInfoToBDs:
         m = re.search(dn_regex, fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
         if not m:
-            logging.error("Failed to match %s", fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
+            log.error("Failed to match %s", fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
             unformatted_data.append([fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"]])
             continue
         data.append([
@@ -5225,6 +5221,21 @@ def parse_args(args):
     return parsed_args
 
 
+def initialize():
+    """
+    Initialize the script environment, create necessary directories and set up log.
+    Not required for some options such as `--version` or `--total-checks`.
+    """
+    if os.path.isdir(DIR):
+        log.info("Cleaning up previous run files in %s", DIR)
+        shutil.rmtree(DIR)
+    log.info("Creating directories %s and %s", DIR, JSON_DIR)
+    os.mkdir(DIR)
+    os.mkdir(JSON_DIR)
+    fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %(message)s'.format(tz)
+    logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
+
+
 def prepare(api_only, arg_tversion, arg_cversion, total_checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
@@ -5240,7 +5251,7 @@ def prepare(api_only, arg_tversion, arg_cversion, total_checks):
     except Exception as e:
         prints('\n\nError: %s' % e)
         prints("Initial query failed. Ensure APICs are healthy. Ending script run.")
-        logging.exception(e)
+        log.exception(e)
         sys.exit()
     inputs = {'username': username, 'password': password,
               'cversion': cversion, 'tversion': tversion,
@@ -5409,18 +5420,21 @@ def wrapup(no_cleanup):
 
     # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
     if not no_cleanup and os.path.isdir(DIR):
+        log.info('Cleaning up temporary files and directories...')
         shutil.rmtree(DIR)
 
 
 def main(_args=None):
     args = parse_args(_args)
     if args.version:
-        prints(SCRIPT_VERSION)
+        print(SCRIPT_VERSION)
         return
     checks = get_checks(args.api_only, args.debug_function)
     if args.total_checks:
-        prints("Total Number of Checks: {}".format(len(checks)))
+        print("Total Number of Checks: {}".format(len(checks)))
         return
+
+    initialize()
     inputs = prepare(args.api_only, args.tversion, args.cversion, len(checks))
     run_checks(checks, inputs)
     wrapup(args.no_cleanup)

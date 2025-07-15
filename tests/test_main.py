@@ -1,6 +1,5 @@
 import pytest
 import importlib
-import sys
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 AciVersion = script.AciVersion
