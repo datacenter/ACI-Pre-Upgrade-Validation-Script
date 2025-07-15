@@ -5217,15 +5217,12 @@ def parse_args(args):
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
     parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
     parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
-    parser.add_argument("--api-only", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
-    parser.add_argument("--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
+    parser.add_argument("-a", "--api-only", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
+    parser.add_argument("-n", "--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
+    parser.add_argument("-v", "--version", action="store_true", help="Show the script version.")
+    parser.add_argument("--total-checks", action="store_true", help="Show the total number of checks.")
     parsed_args = parser.parse_args(args)
-    api_only = parsed_args.api_only
-    tversion = parsed_args.tversion
-    cversion = parsed_args.cversion
-    debug_function = parsed_args.debug_function
-    no_cleanup = parsed_args.no_cleanup
-    return api_only, tversion, cversion, debug_function, no_cleanup
+    return parsed_args
 
 
 def prepare(api_only, arg_tversion, arg_cversion, total_checks):
@@ -5264,7 +5261,7 @@ def prepare(api_only, arg_tversion, arg_cversion, total_checks):
     return inputs
 
 
-def get_checks(api_only, debug_func):
+def get_checks(api_only, debug_function):
     api_checks = [
         # General Checks
         target_version_compatibility_check,
@@ -5368,8 +5365,8 @@ def get_checks(api_only, debug_func):
         observer_db_size_check,
 
     ]
-    if debug_func:
-        return [check for check in api_checks + conn_checks if check.__name__ == debug_func]
+    if debug_function:
+        return [check for check in api_checks + conn_checks if check.__name__ == debug_function]
     if api_only:
         return api_checks
     return conn_checks + api_checks
@@ -5415,12 +5412,18 @@ def wrapup(no_cleanup):
         shutil.rmtree(DIR)
 
 
-def main(args=None):
-    api_only, arg_tversion, arg_cversion, debug_func, no_cleanup = parse_args(args)
-    checks = get_checks(api_only, debug_func)
-    inputs = prepare(api_only, arg_tversion, arg_cversion, len(checks))
+def main(_args=None):
+    args = parse_args(_args)
+    if args.version:
+        prints(SCRIPT_VERSION)
+        return
+    checks = get_checks(args.api_only, args.debug_function)
+    if args.total_checks:
+        prints("Total Number of Checks: {}".format(len(checks)))
+        return
+    inputs = prepare(args.api_only, args.tversion, args.cversion, len(checks))
     run_checks(checks, inputs)
-    wrapup(no_cleanup)
+    wrapup(args.no_cleanup)
 
 
 if __name__ == "__main__":
