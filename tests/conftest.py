@@ -10,7 +10,12 @@ sys.path.append(PROJECT_DIR)
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def init():
+    script.initialize()
 
 
 @pytest.fixture

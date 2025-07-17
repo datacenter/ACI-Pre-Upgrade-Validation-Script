@@ -1,0 +1,49 @@
+{
+    "dbs": [
+        {
+            "name": "ifc_eventmgr-1.db",
+            "apic": "2",
+            "dme": "ifc_eventmgr",
+            "shard_replica": "S11_R0",
+            "type": "Regular",
+            "size_b": 5368709121,
+            "size_h": "5120.8M"
+        },
+        {
+            "name": "ifc_policymgr.db",
+            "apic": "2",
+            "dme": "ifc_policymgr",
+            "shard_replica": "S32_R1",
+            "type": "Regular",
+            "size_b": 59133952,
+            "size_h": "56.4M"
+        },
+        {
+            "name": "ifc_ae.db",
+            "apic": "2",
+            "dme": "ifc_ae",
+            "shard_replica": "S255_R127",
+            "type": "Regular",
+            "size_b": 52435968,
+            "size_h": "50.0M"
+        },
+        {
+            "name": "ifc_eventmgr-1.db",
+            "apic": "2",
+            "dme": "ifc_eventmgr",
+            "shard_replica": "S17_R0",
+            "type": "Regular",
+            "size_b": 46935040,
+            "size_h": "44.8M"
+        },
+        {
+            "name": "ifc_dhcpd.db",
+            "apic": "2",
+            "dme": "ifc_dhcpd",
+            "shard_replica": "S255_R127",
+            "type": "Regular",
+            "size_b": 46110720,
+            "size_h": "44.0M"
+        }
+    ]
+}

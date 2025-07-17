@@ -35,6 +35,7 @@ Items                                                        | This Script      
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Large APIC Database][g18]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -53,6 +54,7 @@ Items                                                        | This Script      
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #fabric-link-redundancy
+[g18]: #large-apic-database
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
@@ -470,6 +472,18 @@ For additional information, see the [Guidelines and Limitations for Upgrading or
 When upgrading the switches, traffic traversing a Leaf Switch that is connected to only a single spine (or a tier-2 Leaf Switch that is connected to only a single tier-1 Leaf Switch) will exhibit a Data Path Outage during the spine (or tier-1 leaf) upgrade as there will be no alternate dataplane paths available.
 
 To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches (or tier-1 Leaf Switches). This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch (or tier-1 Leaf Switch).
+
+### Large APIC Database
+
+It is generally expected that individual APIC DB Shard sizes remain below 5G in steady state, even in high scale configurations. If a single shard goes above this size, it can lead to an elongated upgrade timing, or even an upgrade failure, and in most cases is indicative of an underlying condition.
+
+The script performs 2 different checks depending on the version you are running.
+
+If current version is below 6.1(3), the script checks all APICs' class's object count. If the count is found to be above 150*1000*1000 then it will flag the DME for further investigation.
+
+If the current version is 6.1(3f) or above, the script will utilize the newly added `acidiag dbsize` command and check if any of the top large DB files have exceeded 5G.
+
+When alerted to this specific warning, Contact TAC to collect a database dump of the DME and shards that are in question for further analysis.
 
 
 ## Fault Check Details
