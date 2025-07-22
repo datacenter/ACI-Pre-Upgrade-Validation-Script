@@ -5215,8 +5215,8 @@ def parse_args(args):
     parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
     parser.add_argument("-a", "--api-only", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
     parser.add_argument("-n", "--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
-    parser.add_argument("-v", "--version", action="store_true", help="Show the script version.")
-    parser.add_argument("--total-checks", action="store_true", help="Show the total number of checks.")
+    parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
+    parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
     parsed_args = parser.parse_args(args)
     return parsed_args
 
