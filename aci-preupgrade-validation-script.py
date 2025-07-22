@@ -2923,7 +2923,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
 def standby_apic_disk_space_check(**kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ['SN', 'OOB', 'Mount Point', 'Current Usage %']
+    headers = ['SN', 'OOB', 'Mount Point', 'Current Usage %', 'Details']
     data = []
     recommended_action = 'Contact Cisco TAC'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-apic-disk-space-usage"
@@ -2962,7 +2962,7 @@ def standby_apic_disk_space_check(**kwargs):
                     directory = fs.group(1)
                     usage = fs.group(5)
                     if int(usage) >= threshold:
-                        data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage])
+                        data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage, '-'])
     if not infraSnNodes:
         result = NA
         msg = 'No standby APIC found'
@@ -3143,6 +3143,9 @@ def cimc_compatibilty_check(tversion, **kwargs):
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
+                    if not compatMo:
+                        msg = "No compatibility information found for {}/{}".format(model, tversion.simple_version)
+                        return Result(result=MANUAL, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
                     warning = ""
                     if compatMo and recommended_cimc:

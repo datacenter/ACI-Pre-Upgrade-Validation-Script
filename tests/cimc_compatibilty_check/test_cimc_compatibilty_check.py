@@ -11,7 +11,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # icurl queries
-eqptCh_api =  'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")'
+eqptCh_api = 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")'
 
 compatRsSuppHwL2_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl2].json'
 compatRsSuppHwM1_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm1].json'
@@ -39,6 +39,14 @@ compatRsSuppHwM1_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[
             compatRsSuppHwM1_api: read_data(dir, "compatRsSuppHw_605_M1.json")},
             "6.0(5a)",
             script.PASS,
+        ),
+        # Seen in QA testing where version + model does not have catalog entry
+        (
+            {eqptCh_api: read_data(dir, "eqptCh_newver.json"),
+            compatRsSuppHwL2_api: read_data(dir, "compatRsSuppHw_605_L2.json"),
+            compatRsSuppHwM1_api: read_data(dir, "compatRsSuppHw_empty.json")},
+            "6.0(5a)",
+            script.MANUAL,
         ),
     ],
 )
