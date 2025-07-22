@@ -1747,9 +1747,9 @@ def l3out_mtu_check(**kwargs):
 @check_wrapper(check_title="L3 Port Config (F0467 port-configured-as-l2)")
 def port_configured_as_l2_check(**kwargs):
     result = FAIL_O
-    headers = ['Fault', 'Tenant', 'L3Out', 'Node', 'Path', 'Recommended Action']
+    headers = ['Fault', 'Tenant', 'L3Out', 'Node', 'Path']
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port as L2'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l2l3-port-config"
@@ -2006,7 +2006,7 @@ def bd_subnet_overlap_check(**kwargs):
     result = FAIL_O
     headers = ["Fault", "Pod", "Node", "VRF", "Interface", "Address"]
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing BD subnets causing the overlap'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bd-subnets"
@@ -2168,7 +2168,7 @@ def apic_ssd_check(cversion, username, password, **kwargs):
     result = FAIL_UF
     headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
-    unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
+    unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-ssd-health"
@@ -2201,7 +2201,7 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 c.log = LOG_FILE
                 c.connect()
             except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                data.append([attr['id'], attr['name'], '-', '-', str(e)])
                 print_result(node_title, ERROR)
                 has_error = True
                 continue
@@ -2209,7 +2209,7 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 c.cmd(
                     'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
             except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                data.append([attr['id'], attr['name'], '-', '-', str(e)])
                 print_result(node_title, ERROR)
                 has_error = True
                 continue
@@ -2227,7 +2227,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
             print_result(node_title, DONE)
     else:
         headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
-        unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
         for faultInst in faultInsts:
             dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
             lifetime_remaining = "<5%"
@@ -4906,7 +4905,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title='Equipment Disk Limits Exceeded')
 def equipment_disk_limits_exceeded(**kwargs):
     result = PASS
-    headers = ['Pod', 'Node', 'Code', '%', 'Description',]
+    headers = ['Pod', 'Node', 'Code', '%', 'Description']
     data = []
     unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
