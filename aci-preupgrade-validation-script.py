@@ -5377,7 +5377,7 @@ def get_checks(api_only, debug_function):
 
         # Bugs
         observer_db_size_check,
-        configpush_shard_check,
+        #configpush_shard_check,
 
     ]
     if debug_function:
