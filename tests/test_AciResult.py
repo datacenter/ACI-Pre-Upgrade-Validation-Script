@@ -144,7 +144,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
             "critical",
             "failed"
         ),
-        # Check 9: FAIL_O
+        # Check 9: FAIL_O unformatted only
         (
             "fake_func_name_FAIL_O_unformatted_only_test",
             "FAIL_O Unformatted only",
@@ -200,6 +200,21 @@ def test_AciResult(
 )
 def test_invalid_headers_or_data(headers, data):
     with pytest.raises(TypeError):
+        synth = script.AciResult("func_name", "Check Title", "A Description")
+        synth.craftData(
+            column=headers,
+            rows=data,
+        )
+
+@pytest.mark.parametrize(
+    "headers, data",
+    [
+        (["col1", "col2"], [["row1"], ["row2"]]),  # Rows are shorter
+        (["col1"], [["row1", "row2"], ["row3", "row4"]]),  # columns are shorter
+    ]
+)
+def test_mismatched_lengths(headers, data):
+    with pytest.raises(ValueError):
         synth = script.AciResult("func_name", "Check Title", "A Description")
         synth.craftData(
             column=headers,

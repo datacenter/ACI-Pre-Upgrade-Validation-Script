@@ -951,13 +951,14 @@ class AciResult:
         if not (isinstance(rows, list) and isinstance(column, list)):
             raise TypeError("Rows and column must be lists.")
         data = []
-        for i in range(len(rows)):
+        c_len = len(column)
+        for row_entry in range(len(rows)):
+            r_len = len(rows[row_entry])
+            if r_len != c_len:
+                raise ValueError("Row length ({}), data: {} does not match column length ({}).".format(r_len, rows[row_entry], c_len))
             entry = {}
-            for j in range(len(column)):
-                if j < len(rows[i]):
-                    entry[column[j]] = rows[i][j]
-                else:
-                    entry[column[j]] = None
+            for col_pos in range(c_len):
+                entry[column[col_pos]] = rows[row_entry][col_pos]
             data.append(entry)
         return data
 
@@ -1648,7 +1649,7 @@ def switch_group_guideline_check(**kwargs):
 def switch_bootflash_usage_check(tversion, **kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ["Pod-ID", "Node-ID", "Utilization", "Alert"]
+    headers = ["Pod-ID", "Node-ID", "Utilization"]
     data = []
     recommended_action = "Over 50% usage! Contact Cisco TAC for Support"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-node-bootflash-usage"
@@ -2860,7 +2861,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', str(e), '-'])
+            data.append([apic_name, '-', '-', str(e)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2870,7 +2871,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, '-', '-',
-                         'ls command via ssh failed due to:{}'.format(str(e)), '-'])
+                         'ls command via ssh failed due to:{}'.format(str(e))])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2884,7 +2885,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
-                         'failed to check md5sum via ssh due to:{}'.format(str(e)), '-'])
+                         'failed to check md5sum via ssh due to:{}'.format(str(e))])
             print_result(node_title, ERROR)
             has_error = True
             continue
