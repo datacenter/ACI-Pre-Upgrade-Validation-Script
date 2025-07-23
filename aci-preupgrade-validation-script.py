@@ -3166,6 +3166,7 @@ def cimc_compatibilty_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# Subprocess Check - icurl
 @check_wrapper(check_title="Intersight Device Connector upgrade status")
 def intersight_upgrade_status_check(**kwargs):
     result = FAIL_UF
@@ -3518,6 +3519,7 @@ def internal_vlanpool_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# Subprocess check - openssl
 @check_wrapper(check_title="APIC CA Cert Validation")
 def apic_ca_cert_validation(**kwargs):
     result = FAIL_O
@@ -5208,7 +5210,9 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title='Large APIC Database')
+
+# Subprocess check - cat + acidiag
+@check_wrapper(check_title='APIC Database Size')
 def large_apic_database_check(cversion, **kwargs):
     title = 'Large APIC Database'
     result = PASS
@@ -5360,7 +5364,6 @@ def get_checks(api_only, debug_function):
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
-        large_apic_database_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -5414,7 +5417,6 @@ def get_checks(api_only, debug_function):
         telemetryStatsServerP_object_check,
         llfc_susceptibility_check,
         internal_vlanpool_check,
-        apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
@@ -5439,6 +5441,8 @@ def get_checks(api_only, debug_function):
     conn_checks = [
         # General
         apic_version_md5_check,
+        large_apic_database_check,
+
 
         # Faults
         standby_apic_disk_space_check,
@@ -5446,6 +5450,8 @@ def get_checks(api_only, debug_function):
 
         # Bugs
         observer_db_size_check,
+        apic_ca_cert_validation,
+
 
     ]
     if debug_function:
