@@ -6,7 +6,7 @@ import os
 script = importlib.import_module("aci-preupgrade-validation-script")
 AciVersion = script.AciVersion
 JSON_DIR = script.JSON_DIR
-ApicResult = script.AciResult
+AciResult = script.AciResult
 Result = script.Result
 check_wrapper = script.check_wrapper
 
@@ -162,10 +162,10 @@ TOTAL                       :  8
                 else:
                     assert data["failureDetails"]["failType"] == ""
                 # failureDetails.data
-                assert data["failureDetails"]["data"] == ApicResult.craftData(
+                assert data["failureDetails"]["data"] == AciResult.craftData(
                     others.get("headers", []), others.get("data", [])
                 )
-                assert data["failureDetails"]["unformatted_data"] == ApicResult.craftData(
+                assert data["failureDetails"]["unformatted_data"] == AciResult.craftData(
                     others.get("unformatted_headers", []), others.get("unformatted_data", [])
                 )
                 # other fields

@@ -35,7 +35,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v2.6.0"
+SCRIPT_VERSION = "v3.0.0"
 # result constants
 DONE = 'DONE'
 PASS = 'PASS'
@@ -951,13 +951,14 @@ class AciResult:
         if not (isinstance(rows, list) and isinstance(column, list)):
             raise TypeError("Rows and column must be lists.")
         data = []
-        for i in range(len(rows)):
+        c_len = len(column)
+        for row_entry in range(len(rows)):
+            r_len = len(rows[row_entry])
+            if r_len != c_len:
+                raise ValueError("Row length ({}), data: {} does not match column length ({}).".format(r_len, rows[row_entry], c_len))
             entry = {}
-            for j in range(len(column)):
-                if j < len(rows[i]):
-                    entry[column[j]] = rows[i][j]
-                else:
-                    entry[column[j]] = None
+            for col_pos in range(c_len):
+                entry[column[col_pos]] = rows[row_entry][col_pos]
             data.append(entry)
         return data
 
@@ -1648,7 +1649,7 @@ def switch_group_guideline_check(**kwargs):
 def switch_bootflash_usage_check(tversion, **kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ["Pod-ID", "Node-ID", "Utilization", "Alert"]
+    headers = ["Pod-ID", "Node-ID", "Utilization"]
     data = []
     recommended_action = "Over 50% usage! Contact Cisco TAC for Support"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-node-bootflash-usage"
@@ -1746,9 +1747,9 @@ def l3out_mtu_check(**kwargs):
 @check_wrapper(check_title="L3 Port Config (F0467 port-configured-as-l2)")
 def port_configured_as_l2_check(**kwargs):
     result = FAIL_O
-    headers = ['Fault', 'Tenant', 'L3Out', 'Node', 'Path', 'Recommended Action']
+    headers = ['Fault', 'Tenant', 'L3Out', 'Node', 'Path']
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing this config or other configs using this port as L2'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l2l3-port-config"
@@ -2005,7 +2006,7 @@ def bd_subnet_overlap_check(**kwargs):
     result = FAIL_O
     headers = ["Fault", "Pod", "Node", "VRF", "Interface", "Address"]
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Resolve the conflict by removing BD subnets causing the overlap'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bd-subnets"
@@ -2167,7 +2168,7 @@ def apic_ssd_check(cversion, username, password, **kwargs):
     result = FAIL_UF
     headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
-    unformatted_headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
+    unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-ssd-health"
@@ -2200,7 +2201,7 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 c.log = LOG_FILE
                 c.connect()
             except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                data.append([attr['id'], attr['name'], '-', '-', str(e)])
                 print_result(node_title, ERROR)
                 has_error = True
                 continue
@@ -2208,7 +2209,7 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 c.cmd(
                     'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
             except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', '-', str(e)])
+                data.append([attr['id'], attr['name'], '-', '-', str(e)])
                 print_result(node_title, ERROR)
                 has_error = True
                 continue
@@ -2226,7 +2227,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
             print_result(node_title, DONE)
     else:
         headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
-        unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
         for faultInst in faultInsts:
             dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
             lifetime_remaining = "<5%"
@@ -2860,7 +2860,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', str(e), '-'])
+            data.append([apic_name, '-', '-', str(e)])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2870,7 +2870,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, '-', '-',
-                         'ls command via ssh failed due to:{}'.format(str(e)), '-'])
+                         'ls command via ssh failed due to:{}'.format(str(e))])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2884,7 +2884,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
                   tversion.dot_version)
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
-                         'failed to check md5sum via ssh due to:{}'.format(str(e)), '-'])
+                         'failed to check md5sum via ssh due to:{}'.format(str(e))])
             print_result(node_title, ERROR)
             has_error = True
             continue
@@ -2923,7 +2923,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
 def standby_apic_disk_space_check(**kwargs):
     result = FAIL_UF
     msg = ''
-    headers = ['SN', 'OOB', 'Mount Point', 'Current Usage %']
+    headers = ['SN', 'OOB', 'Mount Point', 'Current Usage %', 'Details']
     data = []
     recommended_action = 'Contact Cisco TAC'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#standby-apic-disk-space-usage"
@@ -2962,7 +2962,7 @@ def standby_apic_disk_space_check(**kwargs):
                     directory = fs.group(1)
                     usage = fs.group(5)
                     if int(usage) >= threshold:
-                        data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage])
+                        data.append([stb['mbSn'], stb['oobIpAddr'], directory, usage, '-'])
     if not infraSnNodes:
         result = NA
         msg = 'No standby APIC found'
@@ -3143,6 +3143,9 @@ def cimc_compatibilty_check(tversion, **kwargs):
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
+                    if not compatMo:
+                        msg = "No compatibility information found for {}/{}".format(model, tversion.simple_version)
+                        return Result(result=MANUAL, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
                     warning = ""
                     if compatMo and recommended_cimc:
@@ -4905,7 +4908,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title='Equipment Disk Limits Exceeded')
 def equipment_disk_limits_exceeded(**kwargs):
     result = PASS
-    headers = ['Pod', 'Node', 'Code', '%', 'Description',]
+    headers = ['Pod', 'Node', 'Code', '%', 'Description']
     data = []
     unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
