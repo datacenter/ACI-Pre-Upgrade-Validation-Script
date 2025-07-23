@@ -186,7 +186,7 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-
+[Policydist configpushShardCont defect][d28]    | CSCwp95515   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -215,6 +215,7 @@ Items                                           | Defect       | This Script    
 [d25]: #observer-database-size
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
+[d28]: #policydist-configpushshardcont-defect
 
 
 ## General Check Details
@@ -2569,6 +2570,15 @@ Do not upgrade to any affected ACI software release if this check fails.
     Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
 
 
+### Policydist configpushShardCont defect
+
+Due to [CSCwp95515][59], a configpushShardCont MO in policydist has a non-zero headTx while tailTx is zero or viceversa. if APIC cluster is upgraded or if config is pushed to a PM shard corresponding to the DN that has the bad properties policydist can crash.
+
+The Policydist component is responsible for policy enforcement and replicating policy actions and maintaining consistency of policy state across all APICs in the cluster.
+
+The script scans for any instance of configpushShardCont that can lead to this defect, contact Cisco TAC to resolve the issue prior to the upgrade.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2628,3 +2638,4 @@ Do not upgrade to any affected ACI software release if this check fails.
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
+[59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515

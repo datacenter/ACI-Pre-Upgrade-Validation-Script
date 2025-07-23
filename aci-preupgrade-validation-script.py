@@ -5208,6 +5208,45 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='configpushShardCont headTx')
+def configpush_shard_check(tversion, **kwargs):
+    result = NA
+    headers = ["dn", "headTx",  "tailTx"]
+    data = []
+    recommended_action = 'Contact Cisco TAC for Support before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#policydist-configpushshardcont-defect'
+    
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING) 
+       
+    if tversion.older_than("6.1(4a)"):
+        configpushShardCont = 'configpushShardCont.json'
+        configpush_sh_cont = icurl('class', configpushShardCont)
+        if configpush_sh_cont:
+            result = PASS
+            for sh_cont in configpush_sh_cont:
+                if (
+                    (
+                        sh_cont['configpushShardCont']['attributes']['headTx'] != '0' 
+                        and 
+                        sh_cont['configpushShardCont']['attributes']['tailTx'] == '0'
+                    ) 
+                    or 
+                    (
+                        sh_cont['configpushShardCont']['attributes']['tailTx'] != '0' 
+                        and 
+                        sh_cont['configpushShardCont']['attributes']['headTx'] == '0'
+                    )
+                    ):
+                    sh_cont_dn = sh_cont['configpushShardCont']['attributes']['dn']
+                    headtx = sh_cont['configpushShardCont']['attributes']['headTx']
+                    tailtx = sh_cont['configpushShardCont']['attributes']['tailTx']
+                    data.append([sh_cont_dn, headtx, tailtx])
+    
+    if data:
+        result = FAIL_O
+  
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
 
@@ -5365,6 +5404,7 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
+        configpush_shard_check,
 
     ]
     conn_checks = [
@@ -5377,7 +5417,7 @@ def get_checks(api_only, debug_function):
 
         # Bugs
         observer_db_size_check,
-        #configpush_shard_check,
+        
 
     ]
     if debug_function:
