@@ -5214,17 +5214,12 @@ def isis_database_byte_check(tversion, **kwargs):
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
 def large_apic_database_check(cversion, **kwargs):
-    title = 'Large APIC Database'
     result = PASS
-    msg = ''
     headers = ["APIC Id", "DME", "Class", "Counters"]
 
     data = []
-    recommended_action = 'Contact Cisco TAC to investigate the large than usual DB size'
+    recommended_action = 'Contact Cisco TAC to investigate all flaged DB size concerns'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database'
-
-    top_class_stats = kwargs.get("top_class_stats")
-    top_db_stats = kwargs.get("top_db_stats")
 
     dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
     apic_svr_dict = {}
@@ -5243,13 +5238,10 @@ def large_apic_database_check(cversion, **kwargs):
                 if len(apic_svr_dict) == 3 and int(id) != 2:
                     continue
                 apic_hostname = apic_svr_dict[id]
+                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
+                top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
 
-                if not top_class_stats:
-                    collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
-                    collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                    top_class_stats = collect_shard_stats.communicate()[0].strip().decode("utf-8")
-
-                for svc_stats in top_class_stats.splitlines():
+                for svc_stats in top_class_stats:
                     logging.debug("APIC Id: " + id + " + DME name: " + dme + " + MoCounter " + str(svc_stats))
                     if ":" in svc_stats:
                         class_name = svc_stats.split(":")[0].strip()
@@ -5262,16 +5254,12 @@ def large_apic_database_check(cversion, **kwargs):
             if len(apic_svr_dict) == 3 and int(id) != 2:
                 continue
             collect_stats_cmd = "acidiag dbsize --topshard --apic " + id + " -f json"
-            logging.debug(collect_stats_cmd)
-
-            if not top_db_stats:
-                collect_shard_stats = subprocess.Popen(collect_stats_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-                collect_shard_stats_data = collect_shard_stats.communicate()[0].strip()
-                top_db_stats = json.loads(collect_shard_stats_data)
+            collect_shard_stats_data = run_cmd(collect_stats_cmd, splitlines=False)
+            top_db_stats = json.loads(collect_shard_stats_data)
 
             for db_stats in top_db_stats['dbs']:
                 logging.debug(db_stats)
-                if int(db_stats['size_b'])>=1073741824 * 5:
+                if int(db_stats['size_b']) >= 1073741824 * 5:
                     apic_id = db_stats['apic']
                     dme = db_stats['dme']
                     shard = db_stats['shard_replica']
@@ -5280,6 +5268,31 @@ def large_apic_database_check(cversion, **kwargs):
     if data:
         result = FAIL_O
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+def run_cmd(cmd, splitlines=True):
+    """
+    Run a shell command.
+    :param cmd: Command to run, can be a string or a list.
+    :param splitlines: If True, splits the output into a list of lines. 
+                       If False, returns the raw text output as a single string.
+    Returns the output of the command.
+    """
+    if isinstance(cmd, list):
+        cmd = ' '.join(cmd)
+    try:
+        log.info('run_cmd = ' + cmd)
+        response = subprocess.check_output(cmd, text=True, shell=True)
+        log.debug('response: ' + str(response))
+        if splitlines:
+            return response.splitlines()
+        return response
+    except subprocess.TimeoutExpired as e:
+        log.error("Command '%s' timed out after", cmd)
+        return None
+    except subprocess.CalledProcessError as e:
+        log.error("Command '%s' failed with error: %s", cmd, e.output.strip())
+        return None
 
 # ---- Script Execution ----
 

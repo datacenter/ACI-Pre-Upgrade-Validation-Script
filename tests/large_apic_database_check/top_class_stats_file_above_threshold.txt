@@ -1,3 +1,0 @@
-compProv                 : 1800000
-compatCtlrFw             : 1700000
-aaaIRbacRule             : 1600000

@@ -186,3 +186,43 @@ def mock_conn(monkeypatch, conn_failure, conn_cmds):
     MockConnection.conn_failure = conn_failure
     MockConnection.conn_cmds = conn_cmds
     monkeypatch.setattr(script, "Connection", MockConnection)
+
+
+@pytest.fixture
+def cmd_outputs():
+    """
+    Mocked output for `run_cmd` function.
+    This is used to avoid executing real commands in tests.
+    """
+    return {
+        "ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.6.0.5h.bin": {
+            "splitlines": False,
+            "output": "6.1G -rwxr-xr-x 1 root root 6.1G Apr  3 16:36 /firmware/fwrepos/fwrepo/aci-apic-dk9.6.0.5h.bin\napic1#",
+        }
+    }
+
+
+@pytest.fixture
+def mock_run_cmd(monkeypatch, cmd_outputs):
+    """
+    Mock the `run_cmd` function to avoid executing real commands.
+    This is useful for tests that do not require actual command execution.
+    """
+    def _mock_run_cmd(cmd, splitlines=False):
+        details = cmd_outputs.get(cmd)
+        if details is None:
+            log.error("Command `%s` not found in test data", cmd)
+            return ""
+        splitlines = details.get("splitlines", False)
+
+        output = details.get("output")
+        if output is None:
+            log.error("Output for cmd `%s` not found in test data", cmd)
+            output = ""
+
+        log.debug("Mocked run_cmd called with args: %s, kwargs: %s", cmd, splitlines)
+        if splitlines:
+            return output.splitlines()
+        else:
+            return output
+    monkeypatch.setattr(script, "run_cmd", _mock_run_cmd)
