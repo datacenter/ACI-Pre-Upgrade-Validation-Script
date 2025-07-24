@@ -5213,13 +5213,13 @@ def isis_database_byte_check(tversion, **kwargs):
 
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
-def large_apic_database_check(cversion, **kwargs):
+def apic_database_size_check(cversion, **kwargs):
     result = PASS
     headers = ["APIC Id", "DME", "Class", "Counters"]
 
     data = []
     recommended_action = 'Contact Cisco TAC to investigate all flaged DB size concerns'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#large-apic-database'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-database-size'
 
     dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
     apic_svr_dict = {}
@@ -5242,7 +5242,7 @@ def large_apic_database_check(cversion, **kwargs):
                 top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
 
                 for svc_stats in top_class_stats:
-                    logging.debug("APIC Id: " + id + " + DME name: " + dme + " + MoCounter " + str(svc_stats))
+                    log.debug("APIC Id: " + id + " + DME name: " + dme + " + MoCounter " + str(svc_stats))
                     if ":" in svc_stats:
                         class_name = svc_stats.split(":")[0].strip()
                         mo_count = svc_stats.split(":")[1].strip()
@@ -5454,7 +5454,7 @@ def get_checks(api_only, debug_function):
     conn_checks = [
         # General
         apic_version_md5_check,
-        large_apic_database_check,
+        apic_database_size_check,
 
 
         # Faults

@@ -35,7 +35,7 @@ Items                                                        | This Script      
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Large APIC Database][g18]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[APIC Database Size][g18]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -54,7 +54,7 @@ Items                                                        | This Script      
 [g15]: #post-upgrade-callback-integrity
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #fabric-link-redundancy
-[g18]: #large-apic-database
+[g18]: #apic-database-size
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
