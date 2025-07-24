@@ -5260,7 +5260,7 @@ def apic_database_size_check(cversion, **kwargs):
                 collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3'
                 top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
 
-                for svc_stats in top_class_stats[:3]:
+                for svc_stats in top_class_stats[:4]:
                     if ":" in svc_stats:
                         class_name = svc_stats.split(":")[0].strip()
                         mo_count = svc_stats.split(":")[1].strip()
