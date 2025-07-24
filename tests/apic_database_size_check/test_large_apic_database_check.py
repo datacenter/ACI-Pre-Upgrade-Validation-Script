@@ -11,9 +11,10 @@ log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 apic_node_api = 'infraWiNode.json'
 
-apic1_cat = "cat /debug/apic1/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
-apic2_cat = "cat /debug/apic2/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
-apic3_cat = "cat /debug/apic3/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
+apic2_pm_cat = "cat /debug/apic2/policymgr/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
+apic2_pd_cat = "cat /debug/apic2/policydist/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
+apic2_vmm_cat = "cat /debug/apic2/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
+apic2_evm_cat = "cat /debug/apic2/eventmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3"
 
 apic1_acidiag = "acidiag dbsize --topshard --apic 1 -f json"
 apic2_acidiag = "acidiag dbsize --topshard --apic 2 -f json"
@@ -136,20 +137,22 @@ acidiag_neg = """{
         (
             {apic_node_api: read_data(dir, 'infraWiNode.json')},
             {
-                apic1_cat: {"splitlines": True, "output": mitcounters_pos},
-                apic2_cat: {"splitlines": True, "output": mitcounters_pos},
-                apic3_cat: {"splitlines": True, "output": mitcounters_pos},
+                apic2_pm_cat: {"splitlines": True, "output": mitcounters_pos},
+                apic2_pd_cat: {"splitlines": True, "output": mitcounters_pos},
+                apic2_vmm_cat: {"splitlines": True, "output": mitcounters_pos},
+                apic2_evm_cat: {"splitlines": True, "output": mitcounters_pos},
             },
             "5.3(2a)",
-            script.FAIL_O,
+            script.FAIL_UF,
         ),
         # pass when version older than 6.1(3a) but top Mo counter less than 1.5M
         (
             {apic_node_api: read_data(dir, 'infraWiNode.json')},
             {
-                apic1_cat: {"splitlines": True, "output": mitcounters_neg},
-                apic2_cat: {"splitlines": True, "output": mitcounters_neg},
-                apic3_cat: {"splitlines": True, "output": mitcounters_neg},
+                apic2_pm_cat: {"splitlines": True, "output": mitcounters_neg},
+                apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
+                apic2_vmm_cat: {"splitlines": True, "output": mitcounters_neg},
+                apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
             },
             "5.3(2a)",
             script.PASS,
@@ -174,11 +177,11 @@ acidiag_neg = """{
                 apic3_acidiag: {"splitlines": False, "output": acidiag_pos},
             },
             "6.1(3f)",
-            script.FAIL_O,
+            script.FAIL_UF,
         ),
     ],
 )
 def test_logic(mock_icurl, mock_run_cmd, cversion, expected_result):
     cver = script.AciVersion(cversion) if cversion else None
-    result = script.large_apic_database_check(1, 1, cver)
+    result = script.apic_database_size_check(1, 1, cver)
     assert result == expected_result

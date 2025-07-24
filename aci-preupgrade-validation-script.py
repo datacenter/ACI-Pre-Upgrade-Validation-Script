@@ -5266,7 +5266,7 @@ def apic_database_size_check(cversion, **kwargs):
                     size = db_stats['size_h']
                     data.append([id, dme, shard, size])
     if data:
-        result = FAIL_O
+        result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
