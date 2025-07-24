@@ -5255,10 +5255,12 @@ def apic_database_size_check(cversion, **kwargs):
                 continue
             collect_stats_cmd = "acidiag dbsize --topshard --apic " + id + " -f json"
             collect_shard_stats_data = run_cmd(collect_stats_cmd, splitlines=False)
+            if collect_shard_stats_data is None:
+                return Result(result=NA, msg="acidiag command not available to current user")
             top_db_stats = json.loads(collect_shard_stats_data)
 
             for db_stats in top_db_stats['dbs']:
-                logging.debug(db_stats)
+                log.debug(db_stats)
                 if int(db_stats['size_b']) >= 1073741824 * 5:
                     apic_id = db_stats['apic']
                     dme = db_stats['dme']
