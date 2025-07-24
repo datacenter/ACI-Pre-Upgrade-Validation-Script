@@ -1260,6 +1260,28 @@ def icurl(apitype, query, page_size=100000):
     return total_imdata
 
 
+def run_cmd(cmd, splitlines=True):
+    """
+    Run a shell command.
+    :param cmd: Command to run, can be a string or a list.
+    :param splitlines: If True, splits the output into a list of lines. 
+                       If False, returns the raw text output as a single string.
+    Returns the output of the command.
+    """
+    if isinstance(cmd, list):
+        cmd = ' '.join(cmd)
+    try:
+        log.info('run_cmd = ' + cmd)
+        response = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        log.debug('response: ' + str(response))
+        if splitlines:
+            return response.splitlines()
+        return response
+    except subprocess.CalledProcessError as e:
+        log.error("Command '%s' failed with error: %s", cmd, e.output.strip())
+        return None
+
+
 def get_credentials():
     prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
     while True:
@@ -3551,16 +3573,12 @@ def apic_ca_cert_validation(**kwargs):
             '''
             # Re-run cleanup for Issue #120
             if os.path.exists(cert_gen_filename):
-                log.debug('CA CHECK file found and removed: ' + ''.join(cert_gen_filename))
                 os.remove(cert_gen_filename)
             if os.path.exists(key_pem):
-                log.debug('CA CHECK file found and removed: ' + ''.join(key_pem))
                 os.remove(key_pem)
             if os.path.exists(csr_pem):
-                log.debug('CA CHECK file found and removed: ' + ''.join(csr_pem))
                 os.remove(csr_pem)
             if os.path.exists(sign):
-                log.debug('CA CHECK file found and removed: ' + ''.join(sign))
                 os.remove(sign)
 
             with open(cert_gen_filename, 'w') as f:
@@ -5215,44 +5233,43 @@ def isis_database_byte_check(tversion, **kwargs):
 @check_wrapper(check_title='APIC Database Size')
 def apic_database_size_check(cversion, **kwargs):
     result = PASS
-    headers = ["APIC Id", "DME", "Class", "Counters"]
-
+    headers = ["APIC ID", "DME", "Class Name", "Object Count"]
     data = []
-    recommended_action = 'Contact Cisco TAC to investigate all flaged DB size concerns'
+    recommended_action = 'Contact Cisco TAC to investigate all flagged high object counts'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-database-size'
 
     dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
-    apic_svr_dict = {}
-    apic_node_api = 'infraWiNode.json'
-    apic_node_mo = icurl('class', apic_node_api)
+    unique_list = {}
+    apic_id_to_name = {}
+    apic_node_mo = icurl('class', 'infraWiNode.json')
     for apic in apic_node_mo:
         if apic['infraWiNode']['attributes']['operSt'] == 'available':
             apic_id = apic['infraWiNode']['attributes']['id']
             apic_name = apic['infraWiNode']['attributes']['nodeName']
-            if apic_id not in apic_svr_dict:
-                apic_svr_dict[apic_id] = apic_name
+            if apic_id not in apic_id_to_name:
+                apic_id_to_name[apic_id] = apic_name
+
+    # For 3 APIC cluster, only check APIC Id 2 due to static local shards (R0)
+    if len(apic_id_to_name) == 3:
+        apic_id_to_name = {"2": apic_id_to_name["2"]}
 
     if cversion.older_than("6.1(3a)"):
         for dme in dme_svc_list:
-            for id in apic_svr_dict:
-                if len(apic_svr_dict) == 3 and int(id) != 2:
-                    continue
-                apic_hostname = apic_svr_dict[id]
-                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3 | head -3'
+            for id in apic_id_to_name:
+                apic_hostname = apic_id_to_name[id]
+                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3'
                 top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
 
-                for svc_stats in top_class_stats:
-                    log.debug("APIC Id: " + id + " + DME name: " + dme + " + MoCounter " + str(svc_stats))
+                for svc_stats in top_class_stats[:3]:
                     if ":" in svc_stats:
                         class_name = svc_stats.split(":")[0].strip()
                         mo_count = svc_stats.split(":")[1].strip()
                         if int(mo_count) > 1000*1000*1.5:
-                            data.append([id, dme, class_name, mo_count])
+                            unique_list[class_name] = {"id": id, "dme": dme, "checked_val": mo_count}
     else:
-        headers = ["APIC Id", "DME", "Shard ", "Size"]
-        for id in apic_svr_dict:
-            if len(apic_svr_dict) == 3 and int(id) != 2:
-                continue
+        headers = ["APIC ID", "DME", "Shard", "Size"]
+        recommended_action = 'Contact Cisco TAC to investigate all flagged large DB sizes'
+        for id in apic_id_to_name:
             collect_stats_cmd = "acidiag dbsize --topshard --apic " + id + " -f json"
             collect_shard_stats_data = run_cmd(collect_stats_cmd, splitlines=False)
             if collect_shard_stats_data is None:
@@ -5260,41 +5277,24 @@ def apic_database_size_check(cversion, **kwargs):
             top_db_stats = json.loads(collect_shard_stats_data)
 
             for db_stats in top_db_stats['dbs']:
-                log.debug(db_stats)
                 if int(db_stats['size_b']) >= 1073741824 * 5:
                     apic_id = db_stats['apic']
                     dme = db_stats['dme']
                     shard = db_stats['shard_replica']
                     size = db_stats['size_h']
-                    data.append([id, dme, shard, size])
+                    unique_list[shard] = {"id": id, "dme": dme, "checked_val": size}
+
+    # dedup based on unique_key
+    if unique_list:
+        for unique_key, details in unique_list.items():
+            apic_id = details['id']
+            dme = details['dme']
+            checked_val = details['checked_val']
+            data.append([apic_id, dme, unique_key, checked_val])
+
     if data:
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
-def run_cmd(cmd, splitlines=True):
-    """
-    Run a shell command.
-    :param cmd: Command to run, can be a string or a list.
-    :param splitlines: If True, splits the output into a list of lines. 
-                       If False, returns the raw text output as a single string.
-    Returns the output of the command.
-    """
-    if isinstance(cmd, list):
-        cmd = ' '.join(cmd)
-    try:
-        log.info('run_cmd = ' + cmd)
-        response = subprocess.check_output(cmd, text=True, shell=True)
-        log.debug('response: ' + str(response))
-        if splitlines:
-            return response.splitlines()
-        return response
-    except subprocess.TimeoutExpired as e:
-        log.error("Command '%s' timed out after", cmd)
-        return None
-    except subprocess.CalledProcessError as e:
-        log.error("Command '%s' failed with error: %s", cmd, e.output.strip())
-        return None
 
 # ---- Script Execution ----
 
@@ -5466,7 +5466,6 @@ def get_checks(api_only, debug_function):
         # Bugs
         observer_db_size_check,
         apic_ca_cert_validation,
-
 
     ]
     if debug_function:
