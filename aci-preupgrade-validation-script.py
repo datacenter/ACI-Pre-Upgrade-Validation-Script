@@ -958,7 +958,7 @@ class AciResult:
                 raise ValueError("Row length ({}), data: {} does not match column length ({}).".format(r_len, rows[row_entry], c_len))
             entry = {}
             for col_pos in range(c_len):
-                entry[column[col_pos]] = rows[row_entry][col_pos]
+                entry[column[col_pos]] = str(rows[row_entry][col_pos])
             data.append(entry)
         return data
 
@@ -1260,6 +1260,28 @@ def icurl(apitype, query, page_size=100000):
     return total_imdata
 
 
+def run_cmd(cmd, splitlines=True):
+    """
+    Run a shell command.
+    :param cmd: Command to run, can be a string or a list.
+    :param splitlines: If True, splits the output into a list of lines. 
+                       If False, returns the raw text output as a single string.
+    Returns the output of the command.
+    """
+    if isinstance(cmd, list):
+        cmd = ' '.join(cmd)
+    try:
+        log.info('run_cmd = ' + cmd)
+        response = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        log.debug('response: ' + str(response))
+        if splitlines:
+            return response.splitlines()
+        return response
+    except subprocess.CalledProcessError as e:
+        log.error("Command '%s' failed with error: %s", cmd, str(e))
+        raise e
+
+
 def get_credentials():
     prints('To use a non-default Login Domain, enter apic#DOMAIN\\\\USERNAME')
     while True:
@@ -1375,7 +1397,7 @@ def get_switch_version():
         return None
 
 
-@check_wrapper(check_title="APIC Cluster is Fully-Fit")
+@check_wrapper(check_title="APIC Cluster Status")
 def apic_cluster_health_check(cversion, **kwargs):
     result = FAIL_UF
     msg = ''
@@ -1409,7 +1431,7 @@ def apic_cluster_health_check(cversion, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title="Switches are all in Active state")
+@check_wrapper(check_title="Switch Fabric Membership Status")
 def switch_status_check(**kwargs):
     result = FAIL_UF
     msg = ''
@@ -3166,6 +3188,7 @@ def cimc_compatibilty_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# Subprocess Check - icurl
 @check_wrapper(check_title="Intersight Device Connector upgrade status")
 def intersight_upgrade_status_check(**kwargs):
     result = FAIL_UF
@@ -3518,6 +3541,7 @@ def internal_vlanpool_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# Subprocess check - openssl
 @check_wrapper(check_title="APIC CA Cert Validation")
 def apic_ca_cert_validation(**kwargs):
     result = FAIL_O
@@ -3549,16 +3573,12 @@ def apic_ca_cert_validation(**kwargs):
             '''
             # Re-run cleanup for Issue #120
             if os.path.exists(cert_gen_filename):
-                log.debug('CA CHECK file found and removed: ' + ''.join(cert_gen_filename))
                 os.remove(cert_gen_filename)
             if os.path.exists(key_pem):
-                log.debug('CA CHECK file found and removed: ' + ''.join(key_pem))
                 os.remove(key_pem)
             if os.path.exists(csr_pem):
-                log.debug('CA CHECK file found and removed: ' + ''.join(csr_pem))
                 os.remove(csr_pem)
             if os.path.exists(sign):
-                log.debug('CA CHECK file found and removed: ' + ''.join(sign))
                 os.remove(sign)
 
             with open(cert_gen_filename, 'w') as f:
@@ -3984,7 +4004,7 @@ def vmm_active_uplinks_check(**kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title="Fabric Port is Down (F1394 ethpm-if-port-down-fabric)")
+@check_wrapper(check_title="Fabric Port Status (F1394 ethpm-if-port-down-fabric)")
 def fabric_port_down_check(**kwargs):
     result = FAIL_O
     headers = ["Pod", "Node", "Int", "Reason", "Lifecycle"]
@@ -3992,7 +4012,7 @@ def fabric_port_down_check(**kwargs):
     unformatted_data = []
     data = []
     recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-status'
 
     fault_api = 'faultInst.json'
     fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
@@ -4905,7 +4925,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='Equipment Disk Limits Exceeded')
+@check_wrapper(check_title='Equipment Disk Limits')
 def equipment_disk_limits_exceeded(**kwargs):
     result = PASS
     headers = ['Pod', 'Node', 'Code', '%', 'Description']
@@ -4913,7 +4933,7 @@ def equipment_disk_limits_exceeded(**kwargs):
     unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
     recommended_action = 'Review the reference document for commands to validate disk usage'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#equipment-disk-limits'
 
     usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
     f182x_api = 'faultInst.json'
@@ -5208,44 +5228,73 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title='configpushShardCont headTx')
-def configpush_shard_check(tversion, **kwargs):
-    result = NA
-    headers = ["dn", "headTx",  "tailTx"]
+
+# Subprocess check - cat + acidiag
+@check_wrapper(check_title='APIC Database Size')
+def apic_database_size_check(cversion, **kwargs):
+    result = PASS
+    headers = ["APIC ID", "DME", "Class Name", "Object Count"]
     data = []
-    recommended_action = 'Contact Cisco TAC for Support before upgrade'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#policydist-configpushshardcont-defect'
-    
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING) 
-       
-    if tversion.older_than("6.1(4a)"):
-        configpushShardCont = 'configpushShardCont.json'
-        configpush_sh_cont = icurl('class', configpushShardCont)
-        if configpush_sh_cont:
-            result = PASS
-            for sh_cont in configpush_sh_cont:
-                if (
-                    (
-                        sh_cont['configpushShardCont']['attributes']['headTx'] != '0' 
-                        and 
-                        sh_cont['configpushShardCont']['attributes']['tailTx'] == '0'
-                    ) 
-                    or 
-                    (
-                        sh_cont['configpushShardCont']['attributes']['tailTx'] != '0' 
-                        and 
-                        sh_cont['configpushShardCont']['attributes']['headTx'] == '0'
-                    )
-                    ):
-                    sh_cont_dn = sh_cont['configpushShardCont']['attributes']['dn']
-                    headtx = sh_cont['configpushShardCont']['attributes']['headTx']
-                    tailtx = sh_cont['configpushShardCont']['attributes']['tailTx']
-                    data.append([sh_cont_dn, headtx, tailtx])
-    
+    recommended_action = 'Contact Cisco TAC to investigate all flagged high object counts'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-database-size'
+
+    dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
+    unique_list = {}
+    apic_id_to_name = {}
+    apic_node_mo = icurl('class', 'infraWiNode.json')
+    for apic in apic_node_mo:
+        if apic['infraWiNode']['attributes']['operSt'] == 'available':
+            apic_id = apic['infraWiNode']['attributes']['id']
+            apic_name = apic['infraWiNode']['attributes']['nodeName']
+            if apic_id not in apic_id_to_name:
+                apic_id_to_name[apic_id] = apic_name
+
+    # For 3 APIC cluster, only check APIC Id 2 due to static local shards (R0)
+    if len(apic_id_to_name) == 3:
+        apic_id_to_name = {"2": apic_id_to_name["2"]}
+
+    if cversion.older_than("6.1(3a)"):
+        for dme in dme_svc_list:
+            for id in apic_id_to_name:
+                apic_hostname = apic_id_to_name[id]
+                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3'
+                top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
+
+                for svc_stats in top_class_stats[:4]:
+                    if ":" in svc_stats:
+                        class_name = svc_stats.split(":")[0].strip()
+                        mo_count = svc_stats.split(":")[1].strip()
+                        if int(mo_count) > 1000*1000*1.5:
+                            unique_list[class_name] = {"id": id, "dme": dme, "checked_val": mo_count}
+    else:
+        headers = ["APIC ID", "DME", "Shard", "Size"]
+        recommended_action = 'Contact Cisco TAC to investigate all flagged large DB sizes'
+        for id in apic_id_to_name:
+            collect_stats_cmd = "acidiag dbsize --topshard --apic " + id + " -f json"
+            try:
+                collect_shard_stats_data = run_cmd(collect_stats_cmd, splitlines=False)
+            except subprocess.CalledProcessError:
+                return Result(result=MANUAL, msg="acidiag command not available to current user")
+            top_db_stats = json.loads(collect_shard_stats_data)
+
+            for db_stats in top_db_stats['dbs']:
+                if int(db_stats['size_b']) >= 1073741824 * 5:
+                    apic_id = db_stats['apic']
+                    dme = db_stats['dme']
+                    shard = db_stats['shard_replica']
+                    size = db_stats['size_h']
+                    unique_list[shard] = {"id": id, "dme": dme, "checked_val": size}
+
+    # dedup based on unique_key
+    if unique_list:
+        for unique_key, details in unique_list.items():
+            apic_id = details['id']
+            dme = details['dme']
+            checked_val = details['checked_val']
+            data.append([apic_id, dme, unique_key, checked_val])
+
     if data:
-        result = FAIL_O
-  
+        result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
@@ -5384,7 +5433,6 @@ def get_checks(api_only, debug_function):
         telemetryStatsServerP_object_check,
         llfc_susceptibility_check,
         internal_vlanpool_check,
-        apic_ca_cert_validation,
         fabricdomain_name_check,
         sup_hwrev_check,
         sup_a_high_memory_check,
@@ -5404,12 +5452,12 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
-        configpush_shard_check,
 
     ]
     conn_checks = [
         # General
         apic_version_md5_check,
+        apic_database_size_check,
 
         # Faults
         standby_apic_disk_space_check,
@@ -5417,7 +5465,7 @@ def get_checks(api_only, debug_function):
 
         # Bugs
         observer_db_size_check,
-        
+        apic_ca_cert_validation,
 
     ]
     if debug_function:
