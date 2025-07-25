@@ -1,6 +1,7 @@
 import pytest
 import importlib
 from subprocess import CalledProcessError
+from six import string_types
 script = importlib.import_module("aci-preupgrade-validation-script")
 
 
@@ -9,8 +10,8 @@ script = importlib.import_module("aci-preupgrade-validation-script")
     [
         (["ls", "-l"], True, list),
         ("ls -l", True, list),
-        (["ls", "-l"], False, str),
-        ("ls -l", False, str),
+        (["ls", "-l"], False, string_types),
+        ("ls -l", False, string_types),
     ],
 )
 def test_run_cmd_output_type(cmd, splitlines, expected_type):
