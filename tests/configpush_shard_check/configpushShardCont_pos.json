@@ -3,11 +3,25 @@
         "configpushShardCont": {
             "attributes": {
                 "childAction": "",
-                "dn": "configpush/sh-20",
-                "headTx": "0",
+                "dn": "configpush/sh-22",
+                "headTx": "576460752318322171",
                 "lcOwn": "local",
-                "modTs": "2025-07-01T16:54:36.155+00:00",
-                "shard": "20",
+                "modTs": "2025-06-28T21:32:58.754+00:00",
+                "shard": "2",
+                "status": "",
+                "tailTx": "0"
+            }
+        }
+    },
+    {
+        "configpushShardCont": {
+            "attributes": {
+                "childAction": "",
+                "dn": "configpush/sh-31",
+                "headTx": "516460756318314171",
+                "lcOwn": "local",
+                "modTs": "2025-06-23T18:12:06.867+00:00",
+                "shard": "3",
                 "status": "",
                 "tailTx": "0"
             }
@@ -23,21 +37,7 @@
                 "modTs": "2025-06-28T21:32:58.754+00:00",
                 "shard": "2",
                 "status": "",
-                "tailTx": "0"
-            }
-        }
-    },
-    {
-        "configpushShardCont": {
-            "attributes": {
-                "childAction": "",
-                "dn": "configpush/sh-17",
-                "headTx": "0",
-                "lcOwn": "local",
-                "modTs": "2025-06-28T00:12:53.523+00:00",
-                "shard": "17",
-                "status": "",
-                "tailTx": "0"
+                "tailTx": "576460752318322171"
             }
         }
     },
@@ -51,7 +51,7 @@
                 "modTs": "2025-06-23T18:12:06.867+00:00",
                 "shard": "3",
                 "status": "",
-                "tailTx": "0"
+                "tailTx": "516460756318314171"
             }
         }
     }
