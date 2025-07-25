@@ -958,7 +958,7 @@ class AciResult:
                 raise ValueError("Row length ({}), data: {} does not match column length ({}).".format(r_len, rows[row_entry], c_len))
             entry = {}
             for col_pos in range(c_len):
-                entry[column[col_pos]] = rows[row_entry][col_pos]
+                entry[column[col_pos]] = str(rows[row_entry][col_pos])
             data.append(entry)
         return data
 
