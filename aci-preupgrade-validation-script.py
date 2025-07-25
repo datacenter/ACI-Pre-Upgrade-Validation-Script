@@ -1278,8 +1278,8 @@ def run_cmd(cmd, splitlines=True):
             return response.splitlines()
         return response
     except subprocess.CalledProcessError as e:
-        log.error("Command '%s' failed with error: %s", cmd, e.output.strip())
-        return None
+        log.error("Command '%s' failed with error: %s", cmd, str(e))
+        raise e
 
 
 def get_credentials():
@@ -5457,7 +5457,6 @@ def get_checks(api_only, debug_function):
         # General
         apic_version_md5_check,
         apic_database_size_check,
-
 
         # Faults
         standby_apic_disk_space_check,
