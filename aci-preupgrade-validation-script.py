@@ -5271,9 +5271,10 @@ def apic_database_size_check(cversion, **kwargs):
         recommended_action = 'Contact Cisco TAC to investigate all flagged large DB sizes'
         for id in apic_id_to_name:
             collect_stats_cmd = "acidiag dbsize --topshard --apic " + id + " -f json"
-            collect_shard_stats_data = run_cmd(collect_stats_cmd, splitlines=False)
-            if collect_shard_stats_data is None:
-                return Result(result=NA, msg="acidiag command not available to current user")
+            try:
+                collect_shard_stats_data = run_cmd(collect_stats_cmd, splitlines=False)
+            except subprocess.CalledProcessError:
+                return Result(result=MANUAL, msg="acidiag command not available to current user")
             top_db_stats = json.loads(collect_shard_stats_data)
 
             for db_stats in top_db_stats['dbs']:

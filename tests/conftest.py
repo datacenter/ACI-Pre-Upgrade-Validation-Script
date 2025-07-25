@@ -3,6 +3,7 @@ import sys
 import pytest
 import logging
 import importlib
+from subprocess import CalledProcessError
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(TEST_DIR)
@@ -213,8 +214,10 @@ def mock_run_cmd(monkeypatch, cmd_outputs):
         if details is None:
             log.error("Command `%s` not found in test data", cmd)
             return ""
-        splitlines = details.get("splitlines", False)
+        if details.get("CalledProcessError"):
+            raise CalledProcessError(127, cmd)
 
+        splitlines = details.get("splitlines", False)
         output = details.get("output")
         if output is None:
             log.error("Output for cmd `%s` not found in test data", cmd)

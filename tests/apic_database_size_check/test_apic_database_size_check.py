@@ -296,3 +296,37 @@ def test_logic(mock_icurl, mock_run_cmd, cversion, expected_result):
     cver = script.AciVersion(cversion) if cversion else None
     result = script.apic_database_size_check(1, 1, cver)
     assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs, cmd_outputs, cversion, expected_result",
+    [
+        # If user does not have permissions to run acidiag, flag MANUAL
+        (
+            {apic_node_api: read_data(dir, 'infraWiNode_4.json')},
+            {
+                apic1_acidiag: {"CalledProcessError": True},
+                apic2_acidiag: {"CalledProcessError": True},
+                apic3_acidiag: {"CalledProcessError": True},
+            },
+            "6.1(3f)",
+            script.MANUAL,
+        ),
+        # If user has permissions to run acidiag but command fails, flag ERROR
+        (
+            {apic_node_api: read_data(dir, 'infraWiNode_4.json')},
+            {
+                apic1_acidiag: {"CalledProcessError": True},
+                apic2_acidiag: {"CalledProcessError": True},
+                apic3_acidiag: {"CalledProcessError": True},
+                apic4_acidiag: {"CalledProcessError": True},
+            },
+            "6.1(3f)",
+            script.MANUAL,
+        ),
+    ],
+)
+def test_permission_logic(mock_icurl, mock_run_cmd, cversion, expected_result):
+    cver = script.AciVersion(cversion) if cversion else None
+    result = script.apic_database_size_check(1, 1, cver)
+    assert result == expected_result
