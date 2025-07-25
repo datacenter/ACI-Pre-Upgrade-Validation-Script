@@ -1397,7 +1397,7 @@ def get_switch_version():
         return None
 
 
-@check_wrapper(check_title="APIC Cluster is Fully-Fit")
+@check_wrapper(check_title="APIC Cluster Status")
 def apic_cluster_health_check(cversion, **kwargs):
     result = FAIL_UF
     msg = ''
@@ -1431,7 +1431,7 @@ def apic_cluster_health_check(cversion, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title="Switches are all in Active state")
+@check_wrapper(check_title="Switch Fabric Membership Status")
 def switch_status_check(**kwargs):
     result = FAIL_UF
     msg = ''
@@ -4004,7 +4004,7 @@ def vmm_active_uplinks_check(**kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title="Fabric Port is Down (F1394 ethpm-if-port-down-fabric)")
+@check_wrapper(check_title="Fabric Port Status (F1394 ethpm-if-port-down-fabric)")
 def fabric_port_down_check(**kwargs):
     result = FAIL_O
     headers = ["Pod", "Node", "Int", "Reason", "Lifecycle"]
@@ -4012,7 +4012,7 @@ def fabric_port_down_check(**kwargs):
     unformatted_data = []
     data = []
     recommended_action = 'Identify if these ports are needed for redundancy and reason for being down'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-is-down'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#fabric-port-status'
 
     fault_api = 'faultInst.json'
     fault_api += '?&query-target-filter=and(eq(faultInst.code,"F1394")'
@@ -4925,7 +4925,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='Equipment Disk Limits Exceeded')
+@check_wrapper(check_title='Equipment Disk Limits')
 def equipment_disk_limits_exceeded(**kwargs):
     result = PASS
     headers = ['Pod', 'Node', 'Code', '%', 'Description']
@@ -4933,7 +4933,7 @@ def equipment_disk_limits_exceeded(**kwargs):
     unformatted_headers = ['Fault DN', '%', 'Recommended Action']
     unformatted_data = []
     recommended_action = 'Review the reference document for commands to validate disk usage'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/##equipment-disk-limits-exceeded'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#equipment-disk-limits'
 
     usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
     f182x_api = 'faultInst.json'
