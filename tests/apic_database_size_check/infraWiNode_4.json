@@ -1,0 +1,127 @@
+{
+    "totalCount": "12",
+    "imdata": [
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-1/av/node-1",
+            "id": "1",
+            "nodeName": "apic1",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-1/av/node-2",
+            "id": "2",
+            "nodeName": "apic2",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-1/av/node-3",
+            "id": "3",
+            "nodeName": "apic3",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-1/av/node-4",
+            "id": "4",
+            "nodeName": "apic4",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-2/av/node-1",
+            "id": "1",
+            "nodeName": "apic1",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-2/av/node-2",
+            "id": "2",
+            "nodeName": "apic2",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-2/av/node-3",
+            "id": "3",
+            "nodeName": "apic3",
+            "operSt": "available"
+
+          }
+        }
+      },
+
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-2/av/node-4",
+            "id": "4",
+            "nodeName": "apic4",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-3/av/node-1",
+            "id": "1",
+            "nodeName": "apic1",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-3/av/node-2",
+            "id": "2",
+            "nodeName": "apic2",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-3/av/node-3",
+            "id": "3",
+            "nodeName": "apic3",
+            "operSt": "available"
+          }
+        }
+      },
+      {
+        "infraWiNode": {
+          "attributes": {
+            "dn": "topology/pod-1/node-3/av/node-4",
+            "id": "4",
+            "nodeName": "apic4",
+            "operSt": "available"
+          }
+        }
+      }
+    ]
+  }  
