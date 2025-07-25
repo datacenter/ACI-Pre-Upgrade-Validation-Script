@@ -137,7 +137,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
             "test reason",
             "https://test_doc_url.html",
             ["col1", "col2", "col3"],
-            [["row1", "row2", 3], ["row4", "row5", 3]],
+            [["row1", None, 3], ["row4", None, 3]],
             [],
             [],
             True,
