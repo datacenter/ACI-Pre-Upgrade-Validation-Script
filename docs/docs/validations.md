@@ -35,7 +35,7 @@ Items                                                        | This Script      
 [Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[APIC Database Size][g18]                                   | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -473,17 +473,23 @@ When upgrading the switches, traffic traversing a Leaf Switch that is connected 
 
 To prevent this scenario, ensure that every leaf is connected to at least two Spine Switches (or tier-1 Leaf Switches). This check will alert if any Leaf Switches are found to only be connected to a single Spine Switch (or tier-1 Leaf Switch).
 
-### Large APIC Database
+### APIC Database Size
 
-It is generally expected that individual APIC DB Shard sizes remain below 5G in steady state, even in high scale configurations. If a single shard goes above this size, it can lead to an elongated upgrade timing, or even an upgrade failure, and in most cases is indicative of an underlying condition.
+APIC Database Shard sizing is generally expected to remain below 5G in steady-state conditions, even in the case of high scale setups. Database shard sizing directly influences the Upgrade Workflow timing, as the database conversion phase directly involves parsing through the entire DB contents. Large shards lead to longer upgrade timings, which in some cases have been seen to lead to upgrade failures. In most cases, a large shard size has been mapped to an underlying condition that needs to be addressed.
 
 The script performs 2 different checks depending on the version you are running.
 
-If current version is below 6.1(3), the script checks all APICs' class's object count. If the count is found to be above 150*1000*1000 then it will flag the DME for further investigation.
+For current versions below 6.1(3):
 
-If the current version is 6.1(3f) or above, the script will utilize the newly added `acidiag dbsize` command and check if any of the top large DB files have exceeded 5G.
+- The script checks all APICs' class's object count for a subset of services (DMEs) via a file scan. 
+- If the count is found to be above `150*1000*1000`, then that class will be flagged for further investigation.
 
-When alerted to this specific warning, Contact TAC to collect a database dump of the DME and shards that are in question for further analysis.
+For current version is 6.1(3f):
+
+- 6.1(3f) introduces a new `acidiag dbsize` command which displays the top largest DB sizes. 
+- The script will utilize the new command and flag any DB shard which have surpassed 5G.
+
+In either scenario, contact TAC to collect a database dump of the flagged DME(s) and shard(s) for further analysis.
 
 
 ## Fault Check Details

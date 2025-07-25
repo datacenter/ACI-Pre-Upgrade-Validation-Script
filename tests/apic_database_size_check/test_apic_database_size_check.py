@@ -169,7 +169,7 @@ acidiag_neg = """{
 @pytest.mark.parametrize(
     "icurl_outputs, cmd_outputs, cversion, expected_result",
     [
-        ## 3 APIC cluster
+        # 3 APIC cluster
         # Failure when version older than 6.1(3a) but top Mo counter exceed 1.5M
         (
             {apic_node_api: read_data(dir, 'infraWiNode_3.json')},
@@ -217,7 +217,7 @@ acidiag_neg = """{
             script.FAIL_UF,
         ),
 
-        ## 4 APIC cluster
+        # 4 APIC cluster
         # Failure when version older than 6.1(3a) but top Mo counter exceed 1.5M
         (
             {apic_node_api: read_data(dir, 'infraWiNode_4.json')},
