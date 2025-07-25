@@ -1,6 +1,7 @@
 import pytest
 import importlib
 import json
+from six import string_types
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 
@@ -156,7 +157,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
             [],
             [],
             ["col1", "col2", "col3"],
-            [["row1", "row2", 3], ["row4", "row5", 3]],
+            [["row1", None, 3], ["row4", None, 3]],
             True,
             "critical",
             "failed"
@@ -190,10 +191,10 @@ def test_AciResult(
     assert data["ruleStatus"] == expected_passed
     for entry in data["failureDetails"]["data"]:
         for vals in entry.values():
-            assert isinstance(vals, str)
+            assert isinstance(vals, string_types)
     for entry in data["failureDetails"]["unformatted_data"]:
         for vals in entry.values():
-            assert isinstance(vals, str)
+            assert isinstance(vals, string_types)
 
 @pytest.mark.parametrize(
     "headers, data",
