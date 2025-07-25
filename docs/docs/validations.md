@@ -24,8 +24,8 @@ Items                                                        | This Script      
 [Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767 | :white_check_mark:
 [APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)| :no_entry_sign:
-[APIC Cluster is Fully-Fit][g7]                              | :white_check_mark: | :white_check_mark: 4.2(6) | :white_check_mark:
-[Switches are all in Active state][g8]                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6) | :white_check_mark:
+[Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
 [Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps | :white_check_mark:
@@ -43,8 +43,8 @@ Items                                                        | This Script      
 [g4]: #compatibility-switch-hardware-gen1
 [g5]: #compatibility-remote-leaf-switch
 [g6]: #apic-target-version-image-and-md5-hash
-[g7]: #apic-cluster-is-fully-fit
-[g8]: #switches-are-all-in-active-state
+[g7]: #apic-cluster-status
+[g8]: #switch-fabric-membership-status
 [g9]: #ntp-status
 [g10]: #firmwaremaintenance-groups-when-crossing-40-release
 [g11]: #features-that-need-to-be-disabled-prior-to-upgrade
@@ -77,8 +77,8 @@ Items                                         | Faults         | This Script    
 [Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
-[Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-[Equipment Disk Limits Exceeded][f20]         | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
 
 
 
@@ -100,8 +100,8 @@ Items                                         | Faults         | This Script    
 [f16]: #different-infra-vlan-via-lldp
 [f17]: #hw-programming-failure
 [f18]: #scalability-faults-related-to-capacity-dashboard
-[f19]: #fabric-port-is-down
-[f20]: #equipment-disk-limits-exceeded
+[f19]: #fabric-port-status
+[f20]: #equipment-disk-limits
 
 
 ### Configuration Checks
@@ -308,7 +308,7 @@ Upgrade Image transfer touchpoints:
         ```
 
 
-### APIC Cluster is Fully-Fit
+### APIC Cluster Status
 
 The script checks whether or not the APIC cluster is in the **Fully Fit** state.
 
@@ -318,7 +318,7 @@ If your APICs are currently on release 4.2(1) or later, the command `acidiag clu
 
 
 
-### Switches are all in Active state
+### Switch Fabric Membership Status
 
 The script checks whether or not all ACI switches are in an **Active** state.
 
@@ -1365,7 +1365,7 @@ Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacit
     ```
 
 
-### Fabric Port is Down
+### Fabric Port Status
 
 The script checks for fault code `F1394` with rule `ethpm-if-port-down-fabric`, which is raised against a fabric port that is admin up and used to be operaitonally up at some point in the past, but is now operationally down.
 
@@ -1461,7 +1461,7 @@ Failure to do so may lead to outages during switch upgrades due to leaf nodes no
     ```
 
 
-### Equipment Disk Limits Exceeded
+### Equipment Disk Limits
 
 This fault occurs when the disk usage of a partiton increases beyond its threshold.
 
