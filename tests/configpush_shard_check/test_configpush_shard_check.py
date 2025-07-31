@@ -11,7 +11,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 # icurl queries
 configpushShardCont_api = 'configpushShardCont.json'
-configpushShardCont_api += '?query-target-filter=or(ne(configpushShardCont.tailTx,"0"),ne(configpushShardCont.headTx,"0"))'
+configpushShardCont_api += '?query-target-filter=and(ne(configpushShardCont.tailTx,"0"),eq(configpushShardCont.headTx,"0"))'
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result",

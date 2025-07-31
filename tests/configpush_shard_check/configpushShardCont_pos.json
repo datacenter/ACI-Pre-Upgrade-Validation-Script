@@ -32,12 +32,12 @@
             "attributes": {
                 "childAction": "",
                 "dn": "configpush/sh-2",
-                "headTx": "0",
+                "headTx": "576460752318322171",
                 "lcOwn": "local",
                 "modTs": "2025-06-28T21:32:58.754+00:00",
                 "shard": "2",
                 "status": "",
-                "tailTx": "576460752318322171"
+                "tailTx": "0"
             }
         }
     },
@@ -46,12 +46,12 @@
             "attributes": {
                 "childAction": "",
                 "dn": "configpush/sh-3",
-                "headTx": "0",
+                "headTx": "516460756318314171",
                 "lcOwn": "local",
                 "modTs": "2025-06-23T18:12:06.867+00:00",
                 "shard": "3",
                 "status": "",
-                "tailTx": "516460756318314171"
+                "tailTx": "0"
             }
         }
     }
