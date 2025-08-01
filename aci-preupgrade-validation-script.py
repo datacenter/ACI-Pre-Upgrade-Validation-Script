@@ -5298,13 +5298,13 @@ def apic_database_size_check(cversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='configpushShardCont headTx')
+@check_wrapper(check_title='PolicyDist configpushShardCont crash')
 def configpush_shard_check(tversion, **kwargs):
     result = NA
     headers = ["dn", "headTx",  "tailTx"]
     data = []
     recommended_action = 'Contact Cisco TAC for Support before upgrade'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#policydist-configpushshardcont-defect'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#policydist-configpushshardcont-crash'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING) 
@@ -5312,15 +5312,14 @@ def configpush_shard_check(tversion, **kwargs):
     if tversion.older_than("6.1(4a)"):
         result = PASS
         configpushShardCont_api = 'configpushShardCont.json'
-        configpushShardCont_api += '?query-target-filter=and(ne(configpushShardCont.tailTx,"0"),eq(configpushShardCont.headTx,"0"))'
+        configpushShardCont_api += '?query-target-filter=and(eq(configpushShardCont.tailTx,"0"),ne(configpushShardCont.headTx,"0"))'
         configpush_sh_cont = icurl('class', configpushShardCont_api)
         if configpush_sh_cont:
             for sh_cont in configpush_sh_cont:
                 headtx = sh_cont['configpushShardCont']['attributes']['headTx']
                 tailtx = sh_cont['configpushShardCont']['attributes']['tailTx']
-                if (headtx != '0' and tailtx == '0'):
-                    sh_cont_dn = sh_cont['configpushShardCont']['attributes']['dn']
-                    data.append([sh_cont_dn, headtx, tailtx])
+                sh_cont_dn = sh_cont['configpushShardCont']['attributes']['dn']
+                data.append([sh_cont_dn, headtx, tailtx])
 
     if data:
         result = FAIL_O
