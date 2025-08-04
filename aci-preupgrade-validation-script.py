@@ -5298,7 +5298,7 @@ def apic_database_size_check(cversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='PolicyDist configpushShardCont crash')
+@check_wrapper(check_title='Policydist configpushShardCont crash')
 def configpush_shard_check(tversion, **kwargs):
     result = NA
     headers = ["dn", "headTx",  "tailTx"]
