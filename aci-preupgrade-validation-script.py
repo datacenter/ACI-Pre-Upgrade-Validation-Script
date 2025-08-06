@@ -1751,6 +1751,8 @@ def l3out_mtu_check(**kwargs):
                 unformatted_data.append(
                     [l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'], iftype, addr, mtu])
 
+    #Adding check for Virtual L3Outs
+    
     if not data and not unformatted_data:
         result = NA
         msg = 'No L3Out Interfaces found'

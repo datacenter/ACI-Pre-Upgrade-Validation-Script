@@ -1,0 +1,64 @@
+[
+        {
+            "l3extVirtualLIfP": {
+                "attributes": {
+                    "addr": "172.16.20.6/29",
+                    "annotation": "",
+                    "autostate": "disabled",
+                    "childAction": "",
+                    "configIssues": "subnet-mismatch",
+                    "descr": "",
+                    "dn": "uni/tn-vavictor_TenantA/out-Static_FloatL3Out/lnodep-Static_FloatL3Out_nodeProfile/lifp-Static_FloatL3Out_interfaceProfile/vlifp-[topology/pod-1/node-102]-[vlan-46]",
+                    "encap": "vlan-46",
+                    "encapScope": "local",
+                    "extMngdBy": "",
+                    "ifInstT": "ext-svi",
+                    "ipv6Dad": "enabled",
+                    "lcOwn": "local",
+                    "llAddr": "::",
+                    "mac": "00:22:BD:F8:19:FF",
+                    "modTs": "2025-05-10T23:51:21.629+00:00",
+                    "mode": "regular",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "mtu": "9000",
+                    "name": "",
+                    "nodeDn": "topology/pod-1/node-102",
+                    "status": "",
+                    "targetDscp": "unspecified",
+                    "uid": "15374",
+                    "userdom": ":all:common:"
+                }
+            }
+        },
+        {
+            "l3extVirtualLIfP": {
+                "attributes": {
+                    "addr": "10.0.1.101/24",
+                    "annotation": "",
+                    "autostate": "disabled",
+                    "childAction": "",
+                    "configIssues": "subnet-mismatch",
+                    "descr": "",
+                    "dn": "uni/tn-vmenchac_test/out-Floating_L3out/lnodep-Floating_L3out_nodeProfile/lifp-Floating_L3out_interfaceProfile/vlifp-[topology/pod-1/node-101]-[vlan-101]",
+                    "encap": "vlan-101",
+                    "encapScope": "local",
+                    "extMngdBy": "",
+                    "ifInstT": "ext-svi",
+                    "ipv6Dad": "enabled",
+                    "lcOwn": "local",
+                    "llAddr": "::",
+                    "mac": "00:22:BD:F8:19:FF",
+                    "modTs": "2025-04-16T22:56:00.905+00:00",
+                    "mode": "regular",
+                    "monPolDn": "uni/tn-common/monepg-default",
+                    "mtu": "1500",
+                    "name": "",
+                    "nodeDn": "topology/pod-1/node-101",
+                    "status": "",
+                    "targetDscp": "unspecified",
+                    "uid": "15374",
+                    "userdom": ":all:"
+                }
+            }
+        }
+    ]
