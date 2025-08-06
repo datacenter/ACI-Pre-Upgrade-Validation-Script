@@ -30,24 +30,7 @@ l2Pols = 'uni/fabric/l2pol-default.json'
         ({response_json: read_data(dir, "l3extRsPathL3OutAtt.json"), 
           l2Pols: read_data(dir, "l2pol-default.json"),
           virtual_l3out_api: read_data(dir, "l3extVirtualLIfP.json")}, script.MANUAL),        
-        # Overlap within the same L3Out - Router ID as loopback (non-VPC)
-        # ({response_json: read_data(dir, "same_l3out_rtrId_non_vpc.json")}, script.FAIL_O),
-        # # Overlap within the same L3Out - Router ID as loopback (VPC)
-        # ({response_json: read_data(dir, "same_l3out_rtrId.json")}, script.FAIL_O),
-        # # Overlap within the same L3Out - Explicit loopback (VPC) - IPv4/v6
-        # ({response_json: read_data(dir, "same_l3out_loopback.json")}, script.FAIL_O),
-        # # Overlap within the same L3Out - Explicit loopback (VPC) - IPv4/v6 - 2 l3extLoopBackIfP's under same l3extRsNodeL3OutAtt.
-        # ({response_json: read_data(dir, "same_l3out_two_loopbacks.json")}, script.FAIL_O),
-        # # Overlap within the same L3Out - Explicit loopback with subnet mask /32,/128 (VPC) - IPv4/v6
-        # ({response_json: read_data(dir, "same_l3out_loopback_with_subnet_mask.json")}, script.FAIL_O),
-        # # Overlap within the same L3Out - Explicit loopback and Router ID as loopback (VPC)
-        # ({response_json: read_data(dir, "same_l3out_loopback_and_rtrId.json")}, script.FAIL_O),
-        # # Overlap across different L3Outs - Router ID as loopback (VPC)
-        # ({response_json: read_data(dir, "diff_l3out_rtrId.json")}, script.FAIL_O),
-        # # Overlap across different L3Outs - Explicit loopback (VPC)
-        # ({response_json: read_data(dir, "diff_l3out_loopback.json")}, script.FAIL_O),
-        # # Overlap across different L3Outs - Explicit loopback and Router ID as loopback (VPC)
-        # ({response_json: read_data(dir, "diff_l3out_loopback_and_rtrId.json")}, script.FAIL_O),
+
     ],
 )
 def test_logic(mock_icurl, expected_result):
