@@ -1752,7 +1752,30 @@ def l3out_mtu_check(**kwargs):
                     [l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'], iftype, addr, mtu])
 
     #Adding check for Virtual L3Outs
-    
+    virtual_dn_regex = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)/vlifp-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]-\[vlan-(?P<encap>\d{1,4})\]'
+    virtual_l3out_api = icurl('class', 'l3extVirtualLIfP.json')
+    if virtual_l3out_api:
+        l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')
+        fabricMtu = l2Pols[0]['l2InstPol']['attributes']['fabricMtu']
+        for l3extVirtualLIfP in virtual_l3out_api:
+            virtual_mtu = l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['mtu']
+            virtual_iftype = l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['ifInstT']
+            virtual_addr = l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['addr']
+
+            if virtual_mtu == 'inherit':
+                virtual_mtu += " (%s)" % fabricMtu
+            
+            virtual_dn = re.search(virtual_dn_regex,l3extVirtualLIfP['l3extVirtualLIfP']['attributes']['dn'])
+
+            if virtual_dn:
+                data.append([virtual_dn.group("tenant"), virtual_dn.group("l3out"), virtual_dn.group("lnodep"),
+                             virtual_dn.group("lifp"), virtual_dn.group("pod"), virtual_dn.group("node"),
+                             ("vlan-"+ virtual_dn.group("encap")), virtual_iftype, virtual_addr, virtual_mtu])
+            else:
+                unformatted_data.append(
+                    [l3extVirtualLIfP["l3extVirtualLIfP"]['attributes']['dn'], 
+                     virtual_iftype, virtual_addr, virtual_mtu])
+
     if not data and not unformatted_data:
         result = NA
         msg = 'No L3Out Interfaces found'
