@@ -77,6 +77,7 @@ Items                                         | Faults         | This Script    
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
 [Fabric Port is Down][f19]                    | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
 [Equipment Disk Limits Exceeded][f20]         | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
 
 
 
@@ -100,6 +101,7 @@ Items                                         | Faults         | This Script    
 [f18]: #scalability-faults-related-to-capacity-dashboard
 [f19]: #fabric-port-is-down
 [f20]: #equipment-disk-limits-exceeded
+[f21]: #vmm-inventory-partially-synced
 
 
 ### Configuration Checks
@@ -1498,6 +1500,10 @@ To recover from this fault, try the following action
     uid              : 
     userdom          : all
     ```
+
+### VMM Inventory Partially Synced
+
+The script checks for fault code F0132 with rule comp-ctrlr-operational-issues, which is raised when APIC has partially synchornized inventory with vCenter server. This check is just a notice to customer so that they can check what is happening. The takeaway is that the data that APIC has about the DC is not in sync with the vCenter so some changes could happen in the APIC inventory when the system goes through the upgrade and tries to resync. If users are using pre-provision, EPG deployment would not be determined by the VMM inventory so unexpected inventory changes would not be so likely to cause outages.
 
 ## Configuration Check Details
 
