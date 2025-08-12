@@ -5297,6 +5297,62 @@ def apic_database_size_check(cversion, **kwargs):
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='Shared Services Providers with Preferred Group enabled')
+def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
+    result= PASS
+    headers = ["Shared Service Contract", "Provider in Preferred Group", "PcTag"]
+    data = []
+    recommended_action = 'an EPG in a Contract Preferred Group can consume a shared service contract, but cannot be a provider for a shared service contract.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#preferred_group_shared_service_provider'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    # Configuration becomes faulted after 4.2-6d and 5.1-1h
+    if tversion.older_than("4.2(6d)"):
+        return Result(result=NA)
+    elif tversion.older_than("5.1(1h)"):
+        return Result(result=NA)
+    shrd_contracts_api = 'vzBrCP.json'
+    shrd_contracts_api += '?query-target-filter=and(eq(vzBrCP.scope,"global"))'
+    shrd_contracts = icurl('class', shrd_contracts_api)
+    if not shrd_contracts:
+        return Result(result=NA)
+    list_of_shrd_contracts =[]
+    for shrd_contract in shrd_contracts:
+        list_of_shrd_contracts.append(shrd_contract["vzBrCP"]["attributes"]["dn"])
+    # Because of CSCwb32627 # Configuration only becomes faulted for extEPGs after 6.0(1g), normal epgs permitted.
+    if tversion.older_than("6.0(1g)"):  
+        glbl_epgs_api = 'fvAEPg.json'
+        glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"16"),eq(fvAEPg.prefGrMemb,"include"))'
+        glbl_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
+        glbl_epgs = icurl('class', glbl_epgs_api)
+        if glbl_epgs:
+            for glbl_epg in glbl_epgs:
+                for prov_contract in glbl_epg["fvAEPg"]["children"]:
+                    if prov_contract["fvRsProv"]["attributes"]["tDn"] in list_of_shrd_contracts:
+                        contract = prov_contract["fvRsProv"]["attributes"]["tDn"]
+                        pctag = glbl_epg["fvAEPg"]["attributes"]["pcTag"]
+                        provider = glbl_epg["fvAEPg"]["attributes"]["dn"]
+                        data.append([contract, provider, pctag])
+    # Regardless of version, check extEPGs
+    glbl_ext_epgs_api = 'l3extInstP.json'
+    glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"16"),eq(l3extInstP.prefGrMemb,"include"))'
+    glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
+    glbl_ext_epgs = icurl('class', glbl_ext_epgs_api)
+    if glbl_ext_epgs:
+        for glbl_ext_epg in glbl_ext_epgs:
+            for prov_ext_contract in glbl_ext_epg["l3extInstP"]["children"]:
+                if prov_ext_contract["fvRsProv"]["attributes"]["tDn"] in list_of_shrd_contracts:
+                    contract = prov_ext_contract["fvRsProv"]["attributes"]["tDn"]
+                    pctag = glbl_ext_epg["l3extInstP"]["attributes"]["pcTag"]
+                    provider = glbl_ext_epg["l3extInstP"]["attributes"]["dn"]
+                    data.append([contract, provider, pctag])
+
+    if data:
+        result = FAIL_O
+    
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 def parse_args(args):
@@ -5425,6 +5481,7 @@ def get_checks(api_only, debug_function):
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
+        pg_and_shared_svc_contract_check,
 
         # Bugs
         ep_announce_check,
@@ -5452,7 +5509,6 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
-
     ]
     conn_checks = [
         # General
