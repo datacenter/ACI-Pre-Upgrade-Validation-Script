@@ -4543,6 +4543,9 @@ def fabric_link_redundancy_check(**kwargs):
     leafs = {}
     t2leafs = {}
     for node in fabricNodes:
+        if node["fabricNode"]["attributes"]["nodeType"] == "remote-leaf-wan":
+            # Not applicable to remote leafs, skip
+            continue
         dn = node["fabricNode"]["attributes"]["dn"]
         name = node["fabricNode"]["attributes"]["name"]
         if node["fabricNode"]["attributes"]["role"] == "spine":

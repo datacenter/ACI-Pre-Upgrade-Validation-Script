@@ -57,6 +57,28 @@
     {
         "fabricNode": {
             "attributes": {
+                "dn": "topology/pod-1/node-121",
+                "id": "121",
+                "name": "RL_LF121",
+                "role": "leaf",
+                "nodeType": "remote-leaf-wan"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-122",
+                "id": "122",
+                "name": "RL_LF122",
+                "role": "leaf",
+                "nodeType": "remote-leaf-wan"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
                 "dn": "topology/pod-1/node-1001",
                 "id": "1001",
                 "name": "SP1001",

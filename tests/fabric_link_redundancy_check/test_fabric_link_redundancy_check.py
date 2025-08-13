@@ -46,7 +46,7 @@ lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
             },
             script.FAIL_O,
         ),
-        # PASSING = ALL LEAF SWITCHES ARE MULTI-HOMED
+        # PASSING = ALL LEAF SWITCHES ARE MULTI-HOMED except for RL
         (
             {
                 fabric_nodes_api: read_data(dir, "fabricNode.json"),
