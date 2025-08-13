@@ -35,7 +35,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v3.1.0"
+SCRIPT_VERSION = "v3.1.1"
 # result constants
 DONE = 'DONE'
 PASS = 'PASS'
