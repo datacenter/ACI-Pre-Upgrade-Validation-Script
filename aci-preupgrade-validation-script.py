@@ -5300,6 +5300,39 @@ def apic_database_size_check(cversion, **kwargs):
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='Host Interface Policy policy Set')
+def host_interface_policy_set_speed_check( tversion, **kwargs):
+    result = PASS
+    headers = ["Host Interface Policy", "Set Speed", "Policy Groups associated"]
+    data = []
+    recommended_action = 'Change the speed to "inherit" to avoid issues with interfaces upon stateless reboot'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#host-interface-policy-set-to-auto'
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
+    policy_group_regex = r'uni/infra/funcprof/accportgrp-(?P<policyGroup>.+)'
+    host_interface_policy_api = 'fabricHIfPol.json'
+    host_interface_policy_api += '?query-target-filter=and(eq(fabricHIfPol.speed,"auto"))'
+    host_interface_policy_api += '&rsp-subtree=children&rsp-subtree-class=fabricRtHIfPol'
+    host_interface_policies = icurl('class', host_interface_policy_api)
+    if host_interface_policies:
+        for host_interface_policy in host_interface_policies:
+            if "children" in host_interface_policy["fabricHIfPol"]:
+                for policy_group in host_interface_policy["fabricHIfPol"]["children"]:
+                    pg_match = re.match(policy_group_regex, 
+                                        policy_group["fabricRtHIfPol"]["attributes"]["tDn"])
+                    if pg_match:
+                        policy_group_name = pg_match.group("policyGroup")
+                    else:
+                        policy_group_name = "N/A"
+                    fabricHIfPol = host_interface_policy["fabricHIfPol"]["attributes"]["dn"]
+                    speed = host_interface_policy["fabricHIfPol"]["attributes"]["speed"]
+                    data.append([fabricHIfPol, speed, policy_group_name])
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 def parse_args(args):
@@ -5428,6 +5461,7 @@ def get_checks(api_only, debug_function):
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
+        host_interface_policy_set_speed_check,
 
         # Bugs
         ep_announce_check,
@@ -5455,7 +5489,6 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
-
     ]
     conn_checks = [
         # General
