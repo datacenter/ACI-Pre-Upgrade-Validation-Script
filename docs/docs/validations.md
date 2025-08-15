@@ -188,7 +188,7 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-
+[Auto Firmware Update on Switch Discovery][d28] | CSCwe83941   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -217,7 +217,7 @@ Items                                           | Defect       | This Script    
 [d25]: #observer-database-size
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
-
+[d28]: #auto-firmware-update-on-switch-discovery
 
 ## General Check Details
 
@@ -2588,6 +2588,14 @@ Do not upgrade to any affected ACI software release if this check fails.
 !!! note
     Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
 
+### Auto Firmware Update on Switch Discovery
+
+Due to [CSCwe83941][59] if 'Auto Firmware Update on Switch Discovery' is enabled with the target release of 16.0(3) and later, a new switch commissioned to ACI Fabric could fail discovery.
+
+The download of firmware image fails, causing the switch to become "soft-brick" , the switch needs to be recovered.
+
+Do not upgrade with 'Auto Firmware Update on Switch Discovery' enabled,  to avoid this escenario.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2648,3 +2656,4 @@ Do not upgrade to any affected ACI software release if this check fails.
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
+[59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
