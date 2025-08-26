@@ -4525,23 +4525,23 @@ def consumer_vzany_shared_services_check(**kwargs):
     # Build provider indices and VRF maps
     rs_prov = icurl("class", "fvRsProv.json") or []
     prov_by_contract = defaultdict(list)
-    for r in rs_prov:
-        a = r["fvRsProv"]["attributes"]
-        prov_by_contract[a["tDn"]].append(a["dn"])
+    for rs_prov_entry in rs_prov:
+        prov_attr = rs_prov_entry["fvRsProv"]["attributes"]
+        prov_by_contract[prov_attr["tDn"]].append(prov_attr["dn"])
 
     # EPG -> BD
     epg_to_bd = {}
-    for r in icurl("class", "fvRsBd.json") or []:
-        a = r["fvRsBd"]["attributes"]
-        epg_dn = a["dn"].split("/rsbd")[0]
-        epg_to_bd[epg_dn] = a["tDn"]
+    for fvRsBd_entry in icurl("class", "fvRsBd.json") or []:
+        bd_attr = fvRsBd_entry["fvRsBd"]["attributes"]
+        epg_dn = bd_attr["dn"].split("/rsbd")[0]
+        epg_to_bd[epg_dn] = bd_attr["tDn"]
 
     # BD -> VRF
     bd_to_vrf = {}
-    for r in icurl("class", "fvRsCtx.json") or []:
-        a = r["fvRsCtx"]["attributes"]
-        bd_dn = a["dn"].split("/rsctx")[0]
-        bd_to_vrf[bd_dn] = a["tDn"]
+    for fvRsCtx_entry in icurl("class", "fvRsCtx.json") or []:
+        ctx_attr = fvRsCtx_entry["fvRsCtx"]["attributes"]
+        bd_dn = ctx_attr["dn"].split("/rsctx")[0]
+        bd_to_vrf[bd_dn] = ctx_attr["tDn"]
 
     # EPG -> VRF
     epg_to_vrf = {}
@@ -4566,10 +4566,10 @@ def consumer_vzany_shared_services_check(**kwargs):
 
     # L3Out -> VRF
     l3out_to_vrf = {}
-    for r in icurl("class", "l3extRsEctx.json") or []:
-        a = r["l3extRsEctx"]["attributes"]
-        l3out_dn = a["dn"].split("/rsectx")[0]
-        l3out_to_vrf[l3out_dn] = a["tDn"]
+    for l3extRsEctx_entry in icurl("class", "l3extRsEctx.json") or []:
+        ectx_attr = l3extRsEctx_entry["l3extRsEctx"]["attributes"]
+        l3out_dn = ectx_attr["dn"].split("/rsectx")[0]
+        l3out_to_vrf[l3out_dn] = ectx_attr["tDn"]
 
     def provider_vrf_dn(p_dn, p_type):
         if p_type == "EPG":
@@ -4586,10 +4586,10 @@ def consumer_vzany_shared_services_check(**kwargs):
     seen = set()
     has_hits = False
 
-    for rel in any_cons:
-        a = rel["vzRsAnyToCons"]["attributes"]
-        contract_dn = a["tDn"]
-        any_dn = a["dn"]
+    for vzRsAnyToCons_entry in any_cons:
+        any_cons_attr = vzRsAnyToCons_entry["vzRsAnyToCons"]["attributes"]
+        contract_dn = any_cons_attr["tDn"]
+        any_dn = any_cons_attr["dn"]
         consumer_vrf_dn = extract_consumer_vrf_dn_from_any(any_dn)
         if not consumer_vrf_dn:
             continue
