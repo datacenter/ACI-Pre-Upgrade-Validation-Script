@@ -4485,11 +4485,17 @@ def consumer_vzany_shared_services_check(**kwargs):
     data = []
     recommended_action = (
         "Config contains shared service contract(s) that use vzAny as a consumer.\n"
-        "These contracts will lead to higher TCAM usage due to rule expansion.\n"
-        "To preserve TCAM space, avoid using vzAny as a consumer, or enable policy compression on contract filters.\n"
-        "(note: enabling compression disables stats for these rules)."
+        "For example, a contract from a consumer vzAny (VRF1) to a provider (VRF2) enables "
+        "communication between endpoints in VRF1 and endpoints in the provider in VRF2. "
+        "If this contract just adds permit rules between any to this provider in VRF2, "
+        "it could enable communication from endpoints in VRF2 to endpoints in this provider "
+        "in VRF2 without an explicit contract. "
+        "To prevent this unintended communication, Cisco ACI automatically performs policy "
+        "TCAM rule expansion in the provider VRF. "
+        "To preserve TCAM space, avoid using vzAny as a consumer, or enable policy compression "
+        "on contract filters. (note: enabling compression disables statistics for these rules)."
     )
-    doc_url = ""  # TODO: Add once the link is ready
+    doc_url = "https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html"
 
     # Helpers
     def tn_label_from_dn(dn, tn_pat=r"uni/tn-([^/]+)"):
@@ -4624,17 +4630,17 @@ def consumer_vzany_shared_services_check(**kwargs):
         result = MANUAL
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title="PBR Redirect Rules Compression Impact in 6.1(4)+")
+@check_wrapper(check_title="PBR Redirect Rules Compression Impact when moving to 6.1(4) and above")
 def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
     headers = ["Tenant", "Contract (tn:name)", "Graph (tn:name)", "Filter", "Compression"]
     data = []
     recommended_action = (
         "Config contains contract(s) with a service graph with PBR policy attached, and filter(s) with policy compression enabled.\n"
         "Before 6.1(4), redirect policy rules were not compressed even if policy compression is enabled on filters.\n"
-        "However, redirect rules will be compressed in 6.1(4)+ in such cases, and logs/stats will be disabled for them.\n"
-        "If you rely on stats/logs for these contract rules, consider disabling policy compression on filters before upgrade.\n"
+        "However, redirect rules will be compressed starting 6.1(4) release in such cases, and hit counter statistics won't be available for them.\n"
+        "If you rely on statistics for these contract rules, consider disabling policy compression on filters before upgrade.\n"
     )
-    doc_url = ""  # TODO: Add once the link is ready
+    doc_url = "https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html"
 
     # Target version checks
     if not tversion:
@@ -4804,7 +4810,7 @@ def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
         data.append([tn or "?", ctr_out, graph_out, ", ".join(no_stats_list), "Enabled"])
 
     if not data:
-        return Result(result=PASS, msg="No compressed PBR contracts found for 6.1(4)+ impact")
+        return Result(result=PASS, msg="No compressed PBR contracts found for impact in 6.1(4) and above")
     return Result(result=MANUAL, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 @check_wrapper(check_title='32 and 64-Bit Firmware Image for Switches')
