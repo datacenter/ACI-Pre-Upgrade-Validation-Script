@@ -929,6 +929,11 @@ class AciResult:
         "docUrl", "severity", "ruleStatus", "showValidation", "failureDetails",
     )
 
+    # ruleStatus
+    IN_PROGRESS = "in-progress"
+    PASS = "passed"
+    FAIL = "failed"
+
     def __init__(self, func_name, name, description):
         self.ruleId = func_name
         self.name = name
@@ -938,13 +943,17 @@ class AciResult:
         self.recommended_action = ""
         self.docUrl = ""
         self.severity = "informational"
-        self.ruleStatus = "passed"  # passed|failed
+        self.ruleStatus = AciResult.IN_PROGRESS
         self.showValidation = True
         self.failureDetails = {
             "failType": "",
             "data": [],
             "unformatted_data": [],
         }
+
+    @property
+    def filename(self):
+        return re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId) + '.json'
 
     @staticmethod
     def craftData(column, rows):
@@ -979,8 +988,9 @@ class AciResult:
         elif result in [MANUAL]:
             self.severity = "warning"
 
+        self.ruleStatus = AciResult.PASS
         if result not in [NA, PASS]:
-            self.ruleStatus = "failed"
+            self.ruleStatus = AciResult.FAIL
             self.failureDetails["failType"] = result
             self.failureDetails["data"] = self.craftData(headers, data)
             if unformatted_headers and unformatted_data:
@@ -996,12 +1006,11 @@ class AciResult:
         return {slot: getattr(self, slot) for slot in self.__slots__}
 
     def writeResult(self, path=JSON_DIR):
-        filename = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId) + '.json'
         if not os.path.isdir(path):
             os.mkdir(path)
-        with open(os.path.join(path, filename), "w") as f:
+        with open(os.path.join(path, self.filename), "w") as f:
             json.dump(self.buildResult(), f, indent=2)
-        return "{}/{}".format(path, filename)
+        return "{}/{}".format(path, self.filename)
 
 
 class Result:
@@ -1034,6 +1043,12 @@ def check_wrapper(check_title):
     def decorator(check_func):
         @functools.wraps(check_func)
         def wrapper(index, total_checks, *args, **kwargs):
+            # When init is True, we just initialize the result file and return
+            if kwargs.get("init") is True:
+                synth = AciResult(wrapper.__name__, check_title, "")
+                synth.writeResult()
+                return None
+
             # Print `[Check  1/81] <title>...`
             print_title(check_title, index, total_checks)
 
@@ -5302,6 +5317,7 @@ def apic_database_size_check(cversion, **kwargs):
 
 # ---- Script Execution ----
 
+
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
@@ -5330,9 +5346,13 @@ def initialize():
     logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def prepare(api_only, arg_tversion, arg_cversion, total_checks):
+def prepare(api_only, arg_tversion, arg_cversion, checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+
+    # Create empty result files for all checks
+    for idx, check in enumerate(checks):
+        check(idx + 1, len(checks), init=True)
 
     username = password = None
     if not api_only:
@@ -5359,7 +5379,7 @@ def prepare(api_only, arg_tversion, arg_cversion, total_checks):
         "tversion": str(tversion),
         "sw_cversion": str(sw_cversion),
         "api_only": api_only,
-        "total_checks": total_checks,
+        "total_checks": len(checks),
     }
     with open(META_FILE, "w") as f:
         json.dump(metadata, f, indent=2)
@@ -5530,7 +5550,7 @@ def main(_args=None):
         return
 
     initialize()
-    inputs = prepare(args.api_only, args.tversion, args.cversion, len(checks))
+    inputs = prepare(args.api_only, args.tversion, args.cversion, checks)
     run_checks(checks, inputs)
     wrapup(args.no_cleanup)
 
