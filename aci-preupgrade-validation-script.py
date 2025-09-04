@@ -1734,7 +1734,10 @@ def l3out_mtu_check(**kwargs):
     path_dn_regex = regex_prefix + r'/rspathL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/.*paths-(?P<node>\d{3,4}|\d{3,4}-\d{3,4})/pathep-\[(?P<int>.+)\]\]'
     vlif_dn_regex = regex_prefix + r'/vlifp-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]-\[vlan-(\d{1,4})\]'
     l3extPaths = icurl('class', 'l3extRsPathL3OutAtt.json')  # Regular L3Out
-    l3extVLIfPs = icurl('class', 'l3extVirtualLIfP.json')  # Floating L3Out
+    try:
+        l3extVLIfPs = icurl('class', 'l3extVirtualLIfP.json')  # Floating L3Out
+    except OldVerClassNotFound:
+        l3extVLIfPs = []  # Pre 4.2 did not have this class
     for mo in chain(l3extPaths, l3extVLIfPs):
         if fabricMtu is None:
             l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')

@@ -20,17 +20,28 @@ l2Pols = "uni/fabric/l2pol-default.json"
     "icurl_outputs, expected_result",
     [
         # No Response from neither l3extRsPathL3OutAtt or l3extVirtualLIfP, result is NA
-        ({regular_api: [], l2Pols: [], floating_api: []}, script.NA),
+        ({regular_api: [], floating_api: [], l2Pols: []}, script.NA),
+        # No Response from l3extRsPathL3OutAtt, Version too old for l3extVirtualLIfP, result is NA
+        ({regular_api: [], floating_api: read_data(dir, "l3extVirtualLIfP_unresolved.json"), l2Pols: []}, script.NA),
         # No Response from l3extVirtualLIfP, Reponse from l3extRsPathL3OutAtt result is MANUAL
-        ({regular_api: read_data(dir, "l3extRsPathL3OutAtt.json"), l2Pols: read_data(dir, "l2pol-default.json"), floating_api: []}, script.MANUAL),
+        ({regular_api: read_data(dir, "l3extRsPathL3OutAtt.json"), floating_api: [], l2Pols: read_data(dir, "l2pol-default.json")}, script.MANUAL),
         # No Response from l3extRsPathL3OutAtt, Reponse from l3extVirtualLIfP result is MANUAL
-        ({regular_api: [], l2Pols: read_data(dir, "l2pol-default.json"), floating_api: read_data(dir, "l3extVirtualLIfP.json")}, script.MANUAL),
+        ({regular_api: [], floating_api: read_data(dir, "l3extVirtualLIfP.json"), l2Pols: read_data(dir, "l2pol-default.json")}, script.MANUAL),
         # Response from l3extRsPathL3OutAtt and l3extVirtualLIfP result is MANUAL
         (
             {
                 regular_api: read_data(dir, "l3extRsPathL3OutAtt.json"),
-                l2Pols: read_data(dir, "l2pol-default.json"),
                 floating_api: read_data(dir, "l3extVirtualLIfP.json"),
+                l2Pols: read_data(dir, "l2pol-default.json"),
+            },
+            script.MANUAL,
+        ),
+        # Response from l3extRsPathL3OutAtt, Version too old for l3extVirtualLIfP, result is MANUAL
+        (
+            {
+                regular_api: read_data(dir, "l3extRsPathL3OutAtt.json"),
+                floating_api: read_data(dir, "l3extVirtualLIfP_unresolved.json"),
+                l2Pols: read_data(dir, "l2pol-default.json"),
             },
             script.MANUAL,
         ),
