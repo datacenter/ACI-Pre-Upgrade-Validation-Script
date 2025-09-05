@@ -5340,6 +5340,29 @@ def apic_database_size_check(cversion, **kwargs):
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title='Auto Firmware Update on Switch Discovery')
+def auto_firmware_update_ondiscovery_check(cversion, tversion, **kwargs):
+    result = NA
+    headers = ["Auto firmware Policy Dn", "Switch enforced Version"]
+    data = []
+    recommended_action = 'Disable the Auto Firmware Update on Switch Discovery policy before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#auto-firmware-update-on-switch-discovery'
+    
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if (cversion.older_than("5.2(7a)") and tversion.newer_than("6.0(3a)")) or (cversion.older_than("6.0(3a)") and tversion.newer_than("6.0(3a)")):
+        result = PASS
+        auto_firmware_update_api = 'firmwareRepoP.json'
+        auto_firmware_update_api += '?query-target-filter=eq(firmwareRepoP.enforceBootscriptVersionValidation,"true")'
+        auto_firmware_update = icurl('class', auto_firmware_update_api)
+        if auto_firmware_update:
+            data.append([auto_firmware_update[0]["firmwareRepoP"]["attributes"]["dn"], auto_firmware_update[0]["firmwareRepoP"]["attributes"]["defaultSwitchVersion"]])
+    if data:
+        result = FAIL_O 
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -5500,6 +5523,7 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
+        auto_firmware_update_ondiscovery_check,
 
     ]
     conn_checks = [
