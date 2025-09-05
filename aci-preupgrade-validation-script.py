@@ -1226,7 +1226,7 @@ def print_result(title, result, msg='',
         padding += len(title) + CHECK_LEN
     if padding < len(result):
         # when `msg` is too long (ex. unknown exception), `padding` may get shorter
-        # than what it's padding (`result`), or worth get negative.
+        # than what it's padding (`result`), or worse, may get negative.
         # In such a case, keep one whitespace padding even if the full length gets longer.
         padding = len(result) + 1
     output = '{}{:>{}}'.format(msg, result, padding)
