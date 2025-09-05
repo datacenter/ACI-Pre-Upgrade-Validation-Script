@@ -1215,8 +1215,19 @@ def print_result(title, result, msg='',
                  recommended_action='',
                  doc_url='',
                  adjust_title=False):
-    padding = 120 - len(title) - len(msg)
-    if adjust_title: padding += len(title) + 18
+    FULL_LEN = 138  # length of `[Check XX/YY] <title>... <msg> <RESULT>`
+    CHECK_LEN = 18  # length of `[Check XX/YY] ... `
+    padding = FULL_LEN - CHECK_LEN - len(title) - len(msg)
+    if adjust_title:
+        # adjust padding when the result is on the second line.
+        # 1st: `[Check XX/YY] <title>... `
+        # 2nd: `                         <msg> <RESULT>`
+        padding += len(title) + CHECK_LEN
+    if padding < len(result):
+        # when `msg` is too long (ex. unknown exception), `padding` may get shorter
+        # than what it's padding (`result`), or worth get negative.
+        # In such a case, keep one whitespace padding even if the full length gets longer.
+        padding = len(result) + 1
     output = '{}{:>{}}'.format(msg, result, padding)
     if data:
         data.sort()
@@ -5533,6 +5544,13 @@ def run_checks(checks, inputs):
         except KeyboardInterrupt:
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
+        except Exception as e:
+            prints('')
+            err = 'Error: %s' % e
+            print_title(err)
+            print_result(err, ERROR)
+            summary[ERROR] += 1
+            logging.exception(e)
 
     prints('\n=== Summary Result ===\n')
     res = max(summary_headers, key=len)
