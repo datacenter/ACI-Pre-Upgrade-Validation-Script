@@ -1050,28 +1050,29 @@ def check_wrapper(check_title):
                 synth.writeResult()
                 return None
 
-            # Print `[Check  1/81] <title>...`
-            print_title(check_title, index, total_checks)
-
             try:
+                # Print `[Check  1/81] <title>...`
+                print_title(check_title, index, total_checks)
+
                 # Run check, expecting it to return a `Result` object
                 r = check_func(*args, **kwargs)
+
+                # Print `[Check  1/81] <title>... <msg> <result>\n<failure details>`
+                print_result(title=check_title, **r.as_dict())
             except Exception as e:
-                r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
                 log.exception(e)
-
-            # Print `[Check  1/81] <title>... <result> + <failure details>`
-            print_result(title=check_title, **r.as_dict())
-
-            # Write results in JSON
-            # Using `wrapper.__name__` instead of `check_func.__name` because
-            # both show the original check func name and `wrapper.__name__` can
-            # be dynamically changed inside each check func if needed. (mainly
-            # for test or debugging)
-            synth = AciResult(wrapper.__name__, check_title, "")
-            synth.updateWithResults(**r.as_dict_for_json_result())
-            synth.writeResult()
-            return r.result
+                r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
+                print_result(title=check_title, **r.as_dict())
+            finally:
+                # Write results in JSON
+                # Using `wrapper.__name__` instead of `check_func.__name` because
+                # both show the original check func name and `wrapper.__name__` can
+                # be dynamically changed inside each check func if needed. (mainly
+                # for test or debugging)
+                synth = AciResult(wrapper.__name__, check_title, "")
+                synth.updateWithResults(**r.as_dict_for_json_result())
+                synth.writeResult()
+                return r.result
         return wrapper
     return decorator
 
@@ -1215,8 +1216,19 @@ def print_result(title, result, msg='',
                  recommended_action='',
                  doc_url='',
                  adjust_title=False):
-    padding = 120 - len(title) - len(msg)
-    if adjust_title: padding += len(title) + 18
+    FULL_LEN = 138  # length of `[Check XX/YY] <title>... <msg> --padding-- <RESULT>`
+    CHECK_LEN = 18  # length of `[Check XX/YY] ... `
+    padding = FULL_LEN - CHECK_LEN - len(title) - len(msg)
+    if adjust_title:
+        # adjust padding when the result is on the second line.
+        # 1st: `[Check XX/YY] <title>... `
+        # 2nd: `                         <msg> --padding-- <RESULT>`
+        padding += len(title) + CHECK_LEN
+    if padding < len(result):
+        # when `msg` is too long (ex. unknown exception), `padding` may get shorter
+        # than what it's padding (`result`), or worse, may get negative.
+        # In such a case, keep one whitespace padding even if the full length gets longer.
+        padding = len(result) + 1
     output = '{}{:>{}}'.format(msg, result, padding)
     if data:
         data.sort()
@@ -5533,6 +5545,13 @@ def run_checks(checks, inputs):
         except KeyboardInterrupt:
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
+        except Exception as e:
+            prints('')
+            err = 'Wrapper Error: %s' % e
+            print_title(err)
+            print_result(title=err, result=ERROR)
+            summary[ERROR] += 1
+            logging.exception(e)
 
     prints('\n=== Summary Result ===\n')
     res = max(summary_headers, key=len)
