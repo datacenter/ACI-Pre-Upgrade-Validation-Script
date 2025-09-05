@@ -23,6 +23,7 @@ from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
 from argparse import ArgumentParser
+from itertools import chain
 import functools
 import shutil
 import warnings
@@ -1735,36 +1736,60 @@ def switch_bootflash_usage_check(tversion, **kwargs):
 def l3out_mtu_check(**kwargs):
     result = MANUAL
     msg = ""
-    headers = ["Tenant", "L3Out", "Node Profile", "Logical Interface Profile",
-               "Pod", "Node", "Interface", "Type", "IP Address", "MTU"]
+    headers = ["Tenant", "L3Out", "Node Profile", "Interface Profile",
+               "Pod", "Node", "Interface", "Type", "VLAN", "IP Address", "MTU"]
     data = []
     unformatted_headers = ['L3 DN', "Type", "IP Address", "MTU"]
     unformatted_data = []
     recommended_action = 'Verify that these MTUs match with connected devices'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-mtu"
 
-    dn_regex = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)/rspathL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/.*paths-(?P<nodes>\d{3,4}|\d{3,4}-\d{3,4})/pathep-\[(?P<int>.+)\]\]'
-    response_json = icurl('class', 'l3extRsPathL3OutAtt.json')
-    if response_json:
-        l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')
-        fabricMtu = l2Pols[0]['l2InstPol']['attributes']['fabricMtu']
-        for l3extRsPathL3OutAtt in response_json:
-            mtu = l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['mtu']
-            iftype = l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['ifInstT']
-            addr = l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['addr']
+    fabricMtu = None
+    regex_prefix = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)'
+    path_dn_regex = regex_prefix + r'/rspathL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/.*paths-(?P<node>\d{3,4}|\d{3,4}-\d{3,4})/pathep-\[(?P<int>.+)\]\]'
+    vlif_dn_regex = regex_prefix + r'/vlifp-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]-\[vlan-(\d{1,4})\]'
+    l3extPaths = icurl('class', 'l3extRsPathL3OutAtt.json')  # Regular L3Out
+    try:
+        l3extVLIfPs = icurl('class', 'l3extVirtualLIfP.json')  # Floating L3Out
+    except OldVerClassNotFound:
+        l3extVLIfPs = []  # Pre 4.2 did not have this class
+    for mo in chain(l3extPaths, l3extVLIfPs):
+        if fabricMtu is None:
+            l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')
+            fabricMtu = l2Pols[0]['l2InstPol']['attributes']['fabricMtu']
 
-            if mtu == 'inherit':
-                mtu += " (%s)" % fabricMtu
+        is_floating = True if mo.get('l3extVirtualLIfP') else False
 
-            dn = re.search(dn_regex, l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'])
+        mo_class = 'l3extVirtualLIfP' if is_floating else 'l3extRsPathL3OutAtt'
+        mtu = mo[mo_class]['attributes']['mtu']
+        addr = mo[mo_class]['attributes']['addr']
+        vlan = mo[mo_class]['attributes']['encap']
+        iftype = mo[mo_class]['attributes']['ifInstT']
+        # Differentiate between regular and floating SVI. Both use ext-svi in the object.
+        if is_floating:
+            iftype = "floating svi"
 
-            if dn:
-                data.append([dn.group("tenant"), dn.group("l3out"), dn.group("lnodep"),
-                             dn.group("lifp"), dn.group("pod"), dn.group("nodes"),
-                             dn.group("int"), iftype, addr, mtu])
-            else:
-                unformatted_data.append(
-                    [l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'], iftype, addr, mtu])
+        if mtu == 'inherit':
+            mtu += " (%s)" % fabricMtu
+
+        dn_regex = vlif_dn_regex if is_floating else path_dn_regex
+        dn = re.search(dn_regex, mo[mo_class]['attributes']['dn'])
+        if dn:
+            data.append([
+                dn.group("tenant"),
+                dn.group("l3out"),
+                dn.group("lnodep"),
+                dn.group("lifp"),
+                dn.group("pod"),
+                dn.group("node"),
+                dn.group("int") if not is_floating else '---',
+                iftype,
+                vlan,
+                addr,
+                mtu,
+            ])
+        else:
+            unformatted_data.append([mo[mo_class]['attributes']['dn'], iftype, addr, mtu])
 
     if not data and not unformatted_data:
         result = NA
