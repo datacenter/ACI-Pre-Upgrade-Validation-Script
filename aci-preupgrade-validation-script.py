@@ -4481,23 +4481,29 @@ def vzany_vzany_service_epg_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title="Shared Services with vzAny Consumers")
 def consumer_vzany_shared_services_check(**kwargs):
     result = PASS
-    headers = ["Tenant", "Contract", "Consumer VRF (tn:vrf)", "Provider Type", "Provider VRF (tn:vrf)", "Provider DN"]
+    headers = ["Contract", "Consumer VRF", "Provider DN", "Provider Type", "Provider VRF", "Action"]
     data = []
     recommended_action = (
         "Config contains shared service contract(s) that use vzAny as a consumer.\n"
-        "For example, a contract from a consumer vzAny (VRF1) to a provider (VRF2) enables "
-        "communication between endpoints in VRF1 and endpoints in the provider in VRF2. "
-        "If this contract just adds permit rules between any to this provider in VRF2, "
-        "it could enable communication from endpoints in VRF2 to endpoints in this provider "
-        "in VRF2 without an explicit contract. "
-        "To prevent this unintended communication, Cisco ACI automatically performs policy "
-        "TCAM rule expansion in the provider VRF. "
-        "To preserve TCAM space, avoid using vzAny as a consumer, or enable policy compression "
-        "on contract filters. (note: enabling compression disables statistics for these rules)."
+        "\n"
+        "  For example, a contract from a consumer vzAny (VRF1) to a provider (VRF2) enables\n"
+        "  communication between endpoints in VRF1 and endpoints in the provider in VRF2.\n"
+        "  If this contract just adds permit rules between any to this provider in VRF2,\n"
+        "  it could enable communication from endpoints in VRF2 to endpoints in this provider\n"
+        "  in VRF2 without an explicit contract.\n\n"
+        "  To prevent this unintended communication, Cisco ACI automatically performs policy\n"
+        "  TCAM rule expansion in the provider VRF.\n"
+        "  To preserve TCAM space, avoid using vzAny as a consumer, or enable policy compression\n"
+        "  on contract filters.\n\n"
+        "  Note:\n"
+        "  - Enabling compression disables statistics for these rules.\n"
+        "  - For EPG or External EPG provider: Policy compression is supported starting 5.3(2d) or 6.0(3).\n"
+        "  - For ESG provider with permit action: Policy compression is supported from 6.1(2).\n"
+        "  - For ESG provider with redirect action: Policy compression is not effective before 6.1(4).\n"
+        "    Enabling it on earlier versions will not have any effect."
     )
     doc_url = "https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html"
 
-    # Helpers
     def tn_label_from_dn(dn, tn_pat=r"uni/tn-([^/]+)"):
         m = re.search(tn_pat, dn)
         return m.group(1) if m else dn
@@ -4527,6 +4533,136 @@ def consumer_vzany_shared_services_check(**kwargs):
         parts = any_rel_dn.split("/any/")[0]
         # returns uni/tn-<tn>/ctx-<vrf>
         return parts if "/ctx-" in parts else None
+
+    def resolve_contract_by_name(preferred_tenant, contract_name):
+        candidates = [
+            "uni/tn-{}/brc-{}".format(preferred_tenant, contract_name),
+            "uni/tn-common/brc-{}".format(contract_name),
+        ]
+        for candidate_dn in candidates:
+            if icurl("mo", candidate_dn + ".json"):
+                return candidate_dn
+        return ""
+
+    def resolve_graph_by_name(preferred_tenant, graph_name):
+        candidates = [
+            "uni/tn-{}/AbsGraph-{}".format(preferred_tenant, graph_name),
+            "uni/tn-common/AbsGraph-{}".format(graph_name),
+        ]
+        for candidate_dn in candidates:
+            if icurl("mo", candidate_dn + ".json"):
+                return candidate_dn
+        return ""
+
+    _contract_graphs_cache = {}
+    def get_contract_graph_names(contract_dn):
+        # Collect tnVnsAbsGraphName from vzRsSubjGraphAtt under the contract
+        if contract_dn in _contract_graphs_cache:
+            return _contract_graphs_cache[contract_dn]
+        graph_names = set()
+        try:
+            resp = icurl(
+                "mo",
+                contract_dn + ".json?rsp-subtree=full&rsp-subtree-class=vzSubj,vzRsSubjGraphAtt&rsp-subtree-include=required"
+            ) or []
+            for top_entry in resp:
+                if not top_entry.get("vzBrCP"):
+                    continue
+                for subj_entry in top_entry["vzBrCP"].get("children", []) or []:
+                    if not subj_entry.get("vzSubj"):
+                        continue
+                    for subj_child in subj_entry["vzSubj"].get("children", []) or []:
+                        if not subj_child.get("vzRsSubjGraphAtt"):
+                            continue
+                        graph_name = subj_child["vzRsSubjGraphAtt"]["attributes"].get("tnVnsAbsGraphName")
+                        if graph_name:
+                            graph_names.add(graph_name)
+        except Exception:
+            log.exception("Failed to read graphs for contract %s", contract_dn)
+        _contract_graphs_cache[contract_dn] = graph_names
+        return graph_names
+
+    def has_pbr_redirect(contract_name, graph_name, tenant):
+        # Look for selector entries matching this contract/graph, and ensure redirect policy is attached
+        filter_query = (
+            'vnsLDevCtx.json?query-target-filter='
+            'and(eq(vnsLDevCtx.ctrctNameOrLbl,"{c}"),eq(vnsLDevCtx.graphNameOrLbl,"{g}"))'
+            '&rsp-subtree=full'
+        ).format(c=contract_name, g=graph_name)
+        ldev_ctx_list = icurl("class", filter_query) or []
+        for ldev_ctx_entry in ldev_ctx_list:
+            vns_ctx = ldev_ctx_entry.get("vnsLDevCtx")
+            if not vns_ctx:
+                continue
+            ldev_dn = vns_ctx["attributes"].get("dn", "")
+            # Enforce tenant scope
+            if "/tn-{}/".format(tenant) not in ldev_dn:
+                continue
+            for ldev_child in vns_ctx.get("children", []) or []:
+                if not ldev_child.get("vnsLIfCtx"):
+                    continue
+                for lif_ctx_child in ldev_child["vnsLIfCtx"].get("children", []) or []:
+                    rel = lif_ctx_child.get("vnsRsLIfCtxToSvcRedirectPol")
+                    if not rel:
+                        continue
+                    target_dn = rel["attributes"].get("tDn")
+                    if target_dn and icurl("mo", target_dn + ".json"):
+                        return True
+        return False
+
+    _pbr_contract_cache = {}
+    def is_contract_pbr_enabled(preferred_tenant, contract_dn, any_dn, any_attrs):
+        if contract_dn in _pbr_contract_cache:
+            return _pbr_contract_cache[contract_dn]
+        # Resolve contract
+        m = re.search(r"/brc-([^/]+)", contract_dn or "")
+        contract_name = any_attrs.get("tnVzBrCPName") or (m.group(1) if m else "")
+        if not contract_name:
+            _pbr_contract_cache[contract_dn] = False
+            return False
+
+        resolved_contract_dn = contract_dn if icurl("mo", contract_dn + ".json") else resolve_contract_by_name(preferred_tenant, contract_name)
+        if not resolved_contract_dn:
+            _pbr_contract_cache[contract_dn] = False
+            return False
+
+        # Find graphs attached to this contract; ensure a graph with that name exists; then check for PBR
+        for graph_name in get_contract_graph_names(resolved_contract_dn):
+            graph_dn = resolve_graph_by_name(preferred_tenant, graph_name)
+            if not graph_dn:
+                continue
+            if has_pbr_redirect(contract_name, graph_name, preferred_tenant):
+                _pbr_contract_cache[contract_dn] = True
+                return True
+        _pbr_contract_cache[contract_dn] = False
+        return False
+
+    # Determine effective version (target version if provided, else current)
+    effective_version = kwargs.get("tversion") or kwargs.get("cversion")
+
+    def compression_supported(v, provider_type, pbr_enabled):
+        """
+        Returns True only if compression is supported for this provider type (and PBR state)
+        in the effective version v.
+          - EPG / External EPG: 5.3(2d)+ on 5.x, 6.0(3a)+ on 6.x
+          - ESG (permit/non-PBR): 6.1(2a)+
+          - ESG (redirect/PBR): 6.1(4a)+
+        """
+        if not v:
+            return False
+        if provider_type in ("EPG", "External EPG"):
+            if v.major1 == "5":
+                return not v.older_than("5.3(2d)")
+            if v.major1 == "6":
+                return not v.older_than("6.0(3a)")
+            # Future major releases: assume supported
+            return True
+        if provider_type == "ESG":
+            if pbr_enabled:
+                return not v.older_than("6.1(4a)")
+            else:
+                return not v.older_than("6.1(2a)")
+        return False
 
     # Build provider indices and VRF maps
     rs_prov = icurl("class", "fvRsProv.json") or []
@@ -4590,7 +4726,6 @@ def consumer_vzany_shared_services_check(**kwargs):
     # Walk consumer vzAny relations and find shared-service providers for the same contract
     any_cons = icurl("class", "vzRsAnyToCons.json") or []
     seen = set()
-    has_hits = False
 
     for vzRsAnyToCons_entry in any_cons:
         any_cons_attr = vzRsAnyToCons_entry["vzRsAnyToCons"]["attributes"]
@@ -4601,34 +4736,51 @@ def consumer_vzany_shared_services_check(**kwargs):
             continue
         consumer_vrf_lbl = vrf_tn_name_from_dn(consumer_vrf_dn)
         tn = tn_label_from_dn(contract_dn)
+        pbr_enabled = is_contract_pbr_enabled(tn_label_from_dn(any_dn), contract_dn, any_dn, any_cons_attr)
 
+        # For each provider using this contract
         for prov_rel_dn in prov_by_contract.get(contract_dn, []):
             p_dn = parent_dn(prov_rel_dn)
             p_type = provider_type_from_parent(p_dn)
             p_vrf_dn = provider_vrf_dn(p_dn, p_type)
-            if not p_vrf_dn:
+            # skip non-shared
+            if not p_vrf_dn or p_vrf_dn == consumer_vrf_dn:
                 continue
-            if p_vrf_dn == consumer_vrf_dn:
-                continue  # not shared services
 
             key = (contract_dn, p_dn, consumer_vrf_dn, p_vrf_dn)
             if key in seen:
                 continue
             seen.add(key)
 
-            has_hits = True
+            # skip providers where compression not supported in effective version
+            if not compression_supported(effective_version, p_type, pbr_enabled):
+                continue
+
             data.append([
-                tn,
                 contract_tn_name_from_dn(contract_dn),
                 consumer_vrf_lbl,
+                p_dn,
                 p_type,
                 vrf_tn_name_from_dn(p_vrf_dn),
-                p_dn,
+                "{}".format("Redirect" if pbr_enabled else "Permit")
             ])
 
-    if has_hits:
+    if data:
         result = MANUAL
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    else:
+        result = PASS
+        return Result(result=result,
+                      msg="No vzAny shared-service providers with compression support in this version",
+                      headers=headers,
+                      data=data,
+                      doc_url=doc_url)
+
+    return Result(result=result,
+                  headers=headers,
+                  data=data,
+                  recommended_action=recommended_action,
+                  doc_url=doc_url,
+                  adjust_title=True)
 
 @check_wrapper(check_title="PBR Redirect Rules Compression Impact when moving to 6.1(4) and above")
 def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
@@ -4636,9 +4788,9 @@ def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
     data = []
     recommended_action = (
         "Config contains contract(s) with a service graph with PBR policy attached, and filter(s) with policy compression enabled.\n"
-        "Before 6.1(4), redirect policy rules were not compressed even if policy compression is enabled on filters.\n"
-        "However, redirect rules will be compressed starting 6.1(4) release in such cases, and hit counter statistics won't be available for them.\n"
-        "If you rely on statistics for these contract rules, consider disabling policy compression on filters before upgrade.\n"
+        "  Before 6.1(4), redirect policy rules were not compressed even if policy compression is enabled on filters.\n"
+        "  However, redirect rules will be compressed starting 6.1(4) release in such cases, and hit counter statistics won't be available for them.\n"
+        "  If you rely on statistics for these contract rules, consider disabling policy compression on filters before upgrade.\n"
     )
     doc_url = "https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html"
 
@@ -4646,20 +4798,7 @@ def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    def at_least_614(v):
-        try:
-            if int(v.major1) > 6:
-                return True
-            if v.major1 == "6":
-                if int(v.major2) > 1:
-                    return True
-                if v.major2 == "1" and int(v.maint) >= 4:
-                    return True
-        except Exception:
-            return False
-        return False
-
-    if not (cversion and not at_least_614(cversion) and at_least_614(tversion)):
+    if not (cversion and cversion.older_than("6.1(4a)") and not tversion.older_than("6.1(4a)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     # Helpers
@@ -4667,33 +4806,15 @@ def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
         m = re.search(r"uni/tn-([^/]+)", dn or "")
         return m.group(1) if m else ""
 
-    def mo_exists(dn):
-        if not dn:
-            return False
-        try:
-            mo = icurl("mo", dn + ".json")
-            return bool(mo)
-        except Exception:
-            return False
-
     def resolve_contract_dn(pref_tn, name_or_lbl):
-        # Prefer same-tenant, then common
-        candidates = [
-            "uni/tn-{}/brc-{}".format(pref_tn, name_or_lbl),
-            "uni/tn-common/brc-{}".format(name_or_lbl),
-        ]
-        for dn in candidates:
-            if mo_exists(dn):
+        for dn in ("uni/tn-{}/brc-{}".format(pref_tn, name_or_lbl), "uni/tn-common/brc-{}".format(name_or_lbl)):
+            if icurl("mo", dn + ".json"):
                 return dn
         return ""
 
     def resolve_graph_dn(pref_tn, name_or_lbl):
-        candidates = [
-            "uni/tn-{}/AbsGraph-{}".format(pref_tn, name_or_lbl),
-            "uni/tn-common/AbsGraph-{}".format(name_or_lbl),
-        ]
-        for dn in candidates:
-            if mo_exists(dn):
+        for dn in ("uni/tn-{}/AbsGraph-{}".format(pref_tn, name_or_lbl), "uni/tn-common/AbsGraph-{}".format(name_or_lbl)):
+            if icurl("mo", dn + ".json"):
                 return dn
         return ""
 
@@ -4754,18 +4875,18 @@ def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
             continue
         ldev_attr = ldev["vnsLDevCtx"]["attributes"]
         ldev_dn = ldev_attr.get("dn", "")
-        tn = tn_from_dn(ldev_dn)
+        m_tn = re.search(r"uni/tn-([^/]+)", ldev_dn or "")
+        tn = m_tn.group(1) if m_tn else ""
 
         # vnsLIfCtx should have a vnsRsLIfCtxToSvcRedirectPol child with resolvable tDn
         redir_ok = False
-        redir_tdn = ""
         for ch in ldev["vnsLDevCtx"].get("children", []) or []:
             if not ch.get("vnsLIfCtx"):
                 continue
             for gch in ch["vnsLIfCtx"].get("children", []) or []:
                 if gch.get("vnsRsLIfCtxToSvcRedirectPol"):
-                    redir_tdn = gch["vnsRsLIfCtxToSvcRedirectPol"]["attributes"].get("tDn", "")
-                    if redir_tdn and mo_exists(redir_tdn):
+                    target_dn = gch["vnsRsLIfCtxToSvcRedirectPol"]["attributes"].get("tDn", "")
+                    if target_dn and icurl("mo", target_dn + ".json"):
                         redir_ok = True
                         break
             if redir_ok:
@@ -4810,8 +4931,8 @@ def pbr_redirect_compression_impact_check(cversion, tversion, **kwargs):
         data.append([tn or "?", ctr_out, graph_out, ", ".join(no_stats_list), "Enabled"])
 
     if not data:
-        return Result(result=PASS, msg="No compressed PBR contracts found for impact in 6.1(4) and above")
-    return Result(result=MANUAL, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No compressed PBR contracts found for impact in 6.1(4)", adjust_title=True)
+    return Result(result=MANUAL, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
 
 @check_wrapper(check_title='32 and 64-Bit Firmware Image for Switches')
 def validate_32_64_bit_image_check(cversion, tversion, **kwargs):
@@ -5763,6 +5884,8 @@ def get_checks(api_only, debug_function):
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
+        consumer_vzany_shared_services_check,
+        pbr_redirect_compression_impact_check,
 
         # Bugs
         ep_announce_check,
@@ -5783,8 +5906,6 @@ def get_checks(api_only, debug_function):
         static_route_overlap_check,
         fc_ex_model_check,
         vzany_vzany_service_epg_check,
-        consumer_vzany_shared_services_check,
-        pbr_redirect_compression_impact_check,
         clock_signal_component_failure_check,
         stale_decomissioned_spine_check,
         n9408_model_check,
