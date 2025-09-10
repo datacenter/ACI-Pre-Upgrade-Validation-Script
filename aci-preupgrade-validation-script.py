@@ -4497,7 +4497,7 @@ def consumer_vzany_shared_services_check(**kwargs):
         "  on contract filters.\n\n"
         "  Note:\n"
         "  - Enabling compression disables statistics for these rules.\n"
-        "  - For EPG or External EPG provider: Policy compression is supported starting 5.3(2d) or 6.0(3) with permit action.\n"
+        "  - For EPG or External EPG provider with permit action: Policy compression is supported starting 5.3(2d) or 6.0(3).\n"
         "  - For ESG provider with permit action: Policy compression is supported from 6.1(2).\n"
         "  - For all providers with redirect action: Policy compression is not effective before 6.1(4).\n"
         "    Enabling it on earlier versions will not have any effect."
