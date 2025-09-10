@@ -4530,6 +4530,316 @@ def vzany_vzany_service_epg_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Shared Services with vzAny Consumers")
+def consumer_vzany_shared_services_check(**kwargs):
+    result = PASS
+    headers = ["Contract", "Consumer VRF", "Provider DN", "Provider Type", "Provider VRF", "Action"]
+    data = []
+    recommended_action = (
+        "Config contains shared service contract(s) that use vzAny as a consumer.\n"
+        "\n"
+        "  For example, a contract from a consumer vzAny (VRF1) to a provider (VRF2) enables\n"
+        "  communication between endpoints in VRF1 and endpoints in the provider in VRF2.\n"
+        "  If this contract just adds permit rules between any to this provider in VRF2,\n"
+        "  it could enable communication from endpoints in VRF2 to endpoints in this provider\n"
+        "  in VRF2 without an explicit contract.\n\n"
+        "  To prevent this unintended communication, Cisco ACI automatically performs policy\n"
+        "  TCAM rule expansion in the provider VRF.\n"
+        "  To preserve TCAM space, avoid using vzAny as a consumer, or enable policy compression\n"
+        "  on contract filters.\n\n"
+        "  Note:\n"
+        "  - Enabling compression disables statistics for these rules.\n"
+        "  - For EPG or External EPG provider with permit action: Policy compression is supported starting 5.3(2d) or 6.0(3).\n"
+        "  - For ESG provider with permit action: Policy compression is supported from 6.1(2).\n"
+        "  - For all providers with redirect action: Policy compression is not effective before 6.1(4).\n"
+        "    Enabling it on earlier versions will not have any effect."
+    )
+    doc_url = "https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html"
+
+    def tn_label_from_dn(dn, tn_pat=r"uni/tn-([^/]+)"):
+        m = re.search(tn_pat, dn)
+        return m.group(1) if m else dn
+
+    def vrf_tn_name_from_dn(vrf_dn):
+        m = re.search(r"uni/tn-([^/]+)/ctx-([^/]+)", vrf_dn or "")
+        return "{}:{}".format(m.group(1), m.group(2)) if m else vrf_dn or "?"
+
+    def contract_tn_name_from_dn(c_dn):
+        m = re.search(r"uni/tn-([^/]+)/brc-([^/]+)", c_dn or "")
+        return "{}:{}".format(m.group(1), m.group(2)) if m else c_dn or "?"
+
+    def parent_dn(rel_dn):
+        return rel_dn.rsplit("/", 1)[0]
+
+    def provider_type_from_parent(p_dn):
+        if "/ap-" in p_dn and "/epg-" in p_dn:
+            return "EPG"
+        if "/esg-" in p_dn:
+            return "ESG"
+        if "/out-" in p_dn and "/instP-" in p_dn:
+            return "External EPG"
+        return "Unknown"
+
+    def extract_consumer_vrf_dn_from_any(any_rel_dn):
+        # any_rel_dn: uni/tn-<tn>/ctx-<vrf>/any/rsanyToCons-[...]
+        parts = any_rel_dn.split("/any/")[0]
+        # returns uni/tn-<tn>/ctx-<vrf>
+        return parts if "/ctx-" in parts else None
+
+    def resolve_contract_by_name(preferred_tenant, contract_name):
+        candidates = [
+            "uni/tn-{}/brc-{}".format(preferred_tenant, contract_name),
+            "uni/tn-common/brc-{}".format(contract_name),
+        ]
+        for candidate_dn in candidates:
+            if icurl("mo", candidate_dn + ".json"):
+                return candidate_dn
+        return ""
+
+    def resolve_graph_by_name(preferred_tenant, graph_name):
+        candidates = [
+            "uni/tn-{}/AbsGraph-{}".format(preferred_tenant, graph_name),
+            "uni/tn-common/AbsGraph-{}".format(graph_name),
+        ]
+        for candidate_dn in candidates:
+            if icurl("mo", candidate_dn + ".json"):
+                return candidate_dn
+        return ""
+
+    _contract_graphs_cache = {}
+    def get_contract_graph_names(contract_dn):
+        # Collect tnVnsAbsGraphName from vzRsSubjGraphAtt under the contract
+        if contract_dn in _contract_graphs_cache:
+            return _contract_graphs_cache[contract_dn]
+        graph_names = set()
+        try:
+            resp = icurl(
+                "mo",
+                contract_dn + ".json?rsp-subtree=full&rsp-subtree-class=vzSubj,vzRsSubjGraphAtt&rsp-subtree-include=required"
+            ) or []
+            for top_entry in resp:
+                if not top_entry.get("vzBrCP"):
+                    continue
+                for subj_entry in top_entry["vzBrCP"].get("children", []) or []:
+                    if not subj_entry.get("vzSubj"):
+                        continue
+                    for subj_child in subj_entry["vzSubj"].get("children", []) or []:
+                        if not subj_child.get("vzRsSubjGraphAtt"):
+                            continue
+                        graph_name = subj_child["vzRsSubjGraphAtt"]["attributes"].get("tnVnsAbsGraphName")
+                        if graph_name:
+                            graph_names.add(graph_name)
+        except Exception:
+            log.exception("Failed to read graphs for contract %s", contract_dn)
+        _contract_graphs_cache[contract_dn] = graph_names
+        return graph_names
+
+    def has_pbr_redirect(contract_name, graph_name, tenant):
+        # Look for selector entries matching this contract/graph, and ensure redirect policy is attached
+        filter_query = (
+            'vnsLDevCtx.json?query-target-filter='
+            'and(eq(vnsLDevCtx.ctrctNameOrLbl,"{c}"),eq(vnsLDevCtx.graphNameOrLbl,"{g}"))'
+            '&rsp-subtree=full'
+        ).format(c=contract_name, g=graph_name)
+        ldev_ctx_list = icurl("class", filter_query) or []
+        for ldev_ctx_entry in ldev_ctx_list:
+            vns_ctx = ldev_ctx_entry.get("vnsLDevCtx")
+            if not vns_ctx:
+                continue
+            ldev_dn = vns_ctx["attributes"].get("dn", "")
+            # Enforce tenant scope
+            if "/tn-{}/".format(tenant) not in ldev_dn:
+                continue
+            for ldev_child in vns_ctx.get("children", []) or []:
+                if not ldev_child.get("vnsLIfCtx"):
+                    continue
+                for lif_ctx_child in ldev_child["vnsLIfCtx"].get("children", []) or []:
+                    rel = lif_ctx_child.get("vnsRsLIfCtxToSvcRedirectPol")
+                    if not rel:
+                        continue
+                    target_dn = rel["attributes"].get("tDn")
+                    if target_dn and icurl("mo", target_dn + ".json"):
+                        return True
+        return False
+
+    _pbr_contract_cache = {}
+    def is_contract_pbr_enabled(preferred_tenant, contract_dn, any_dn, any_attrs):
+        if contract_dn in _pbr_contract_cache:
+            return _pbr_contract_cache[contract_dn]
+        # Resolve contract
+        m = re.search(r"/brc-([^/]+)", contract_dn or "")
+        contract_name = any_attrs.get("tnVzBrCPName") or (m.group(1) if m else "")
+        if not contract_name:
+            _pbr_contract_cache[contract_dn] = False
+            return False
+
+        resolved_contract_dn = contract_dn if icurl("mo", contract_dn + ".json") else resolve_contract_by_name(preferred_tenant, contract_name)
+        if not resolved_contract_dn:
+            _pbr_contract_cache[contract_dn] = False
+            return False
+
+        # Find graphs attached to this contract; ensure a graph with that name exists; then check for PBR
+        for graph_name in get_contract_graph_names(resolved_contract_dn):
+            graph_dn = resolve_graph_by_name(preferred_tenant, graph_name)
+            if not graph_dn:
+                continue
+            if has_pbr_redirect(contract_name, graph_name, preferred_tenant):
+                _pbr_contract_cache[contract_dn] = True
+                return True
+        _pbr_contract_cache[contract_dn] = False
+        return False
+
+    # Determine effective version (target version if provided, else current)
+    effective_version = kwargs.get("tversion") or kwargs.get("cversion")
+
+    def compression_supported(v, provider_type, pbr_enabled):
+        """
+        Returns True only if compression is supported for this provider type (and PBR state)
+        in the effective version v.
+          - EPG/External EPG/ESG with redirect action: 6.1(4a)+
+          - EPG/External EPG permit action: 5.3(2d)+ on 5.x, 6.0(3a)+ on 6.x
+          - ESG with permit action: 6.1(2a)+
+        """
+        # False for pre-5.x versions
+        if not v:
+            return False
+        if int(v.major1) < 5:
+            return False
+        # Redirect action
+        if pbr_enabled:
+            return not v.older_than("6.1(4a)")
+        # Permit action
+        else:
+            if provider_type in ("EPG", "External EPG"):
+                if v.major1 == "5":
+                    return not v.older_than("5.3(2d)")
+                elif v.major1 == "6":
+                    return not v.older_than("6.0(3a)")
+                # Future major releases: assume supported
+                return True
+            elif provider_type == "ESG":
+                return not v.older_than("6.1(2a)")
+        return False
+
+    # Build provider indices and VRF maps
+    rs_prov = icurl("class", "fvRsProv.json") or []
+    prov_by_contract = defaultdict(list)
+    for rs_prov_entry in rs_prov:
+        prov_attr = rs_prov_entry["fvRsProv"]["attributes"]
+        prov_by_contract[prov_attr["tDn"]].append(prov_attr["dn"])
+
+    # EPG -> BD
+    epg_to_bd = {}
+    for fvRsBd_entry in icurl("class", "fvRsBd.json") or []:
+        bd_attr = fvRsBd_entry["fvRsBd"]["attributes"]
+        epg_dn = bd_attr["dn"].split("/rsbd")[0]
+        epg_to_bd[epg_dn] = bd_attr["tDn"]
+
+    # BD -> VRF
+    bd_to_vrf = {}
+    for fvRsCtx_entry in icurl("class", "fvRsCtx.json") or []:
+        ctx_attr = fvRsCtx_entry["fvRsCtx"]["attributes"]
+        bd_dn = ctx_attr["dn"].split("/rsctx")[0]
+        bd_to_vrf[bd_dn] = ctx_attr["tDn"]
+
+    # EPG -> VRF
+    epg_to_vrf = {}
+    for epg_dn, bd_dn in epg_to_bd.items():
+        vrf_dn = bd_to_vrf.get(bd_dn)
+        if vrf_dn:
+            epg_to_vrf[epg_dn] = vrf_dn
+
+    # ESG -> VRF (accept either fvRsScope or fvRsCtx as child)
+    esg_to_vrf = {}
+    esgs = icurl("class", "fvESg.json?rsp-subtree=children&rsp-subtree-class=fvRsScope,fvRsCtx&rsp-subtree-include=required") or []
+    for esg in esgs:
+        esg_dn = esg["fvESg"]["attributes"]["dn"]
+        vrf_dn = None
+        for ch in esg["fvESg"].get("children", []):
+            if ch.get("fvRsScope"):
+                vrf_dn = ch["fvRsScope"]["attributes"].get("tDn") or vrf_dn
+            elif ch.get("fvRsCtx"):
+                vrf_dn = ch["fvRsCtx"]["attributes"].get("tDn") or vrf_dn
+        if vrf_dn:
+            esg_to_vrf[esg_dn] = vrf_dn
+
+    # L3Out -> VRF
+    l3out_to_vrf = {}
+    for l3extRsEctx_entry in icurl("class", "l3extRsEctx.json") or []:
+        ectx_attr = l3extRsEctx_entry["l3extRsEctx"]["attributes"]
+        l3out_dn = ectx_attr["dn"].split("/rsectx")[0]
+        l3out_to_vrf[l3out_dn] = ectx_attr["tDn"]
+
+    def provider_vrf_dn(p_dn, p_type):
+        if p_type == "EPG":
+            return epg_to_vrf.get(p_dn)
+        if p_type == "ESG":
+            return esg_to_vrf.get(p_dn)
+        if p_type == "External EPG":
+            l3out_dn = p_dn.split("/instP-")[0]
+            return l3out_to_vrf.get(l3out_dn)
+        return None
+
+    # Walk consumer vzAny relations and find shared-service providers for the same contract
+    any_cons = icurl("class", "vzRsAnyToCons.json") or []
+    seen = set()
+
+    for vzRsAnyToCons_entry in any_cons:
+        any_cons_attr = vzRsAnyToCons_entry["vzRsAnyToCons"]["attributes"]
+        contract_dn = any_cons_attr["tDn"]
+        any_dn = any_cons_attr["dn"]
+        consumer_vrf_dn = extract_consumer_vrf_dn_from_any(any_dn)
+        if not consumer_vrf_dn:
+            continue
+        consumer_vrf_lbl = vrf_tn_name_from_dn(consumer_vrf_dn)
+        tn = tn_label_from_dn(contract_dn)
+        pbr_enabled = is_contract_pbr_enabled(tn_label_from_dn(any_dn), contract_dn, any_dn, any_cons_attr)
+
+        # For each provider using this contract
+        for prov_rel_dn in prov_by_contract.get(contract_dn, []):
+            p_dn = parent_dn(prov_rel_dn)
+            p_type = provider_type_from_parent(p_dn)
+            p_vrf_dn = provider_vrf_dn(p_dn, p_type)
+            # skip non-shared
+            if not p_vrf_dn or p_vrf_dn == consumer_vrf_dn:
+                continue
+
+            key = (contract_dn, p_dn, consumer_vrf_dn, p_vrf_dn)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            # skip providers where compression not supported in effective version
+            if not compression_supported(effective_version, p_type, pbr_enabled):
+                continue
+
+            data.append([
+                contract_tn_name_from_dn(contract_dn),
+                consumer_vrf_lbl,
+                p_dn,
+                p_type,
+                vrf_tn_name_from_dn(p_vrf_dn),
+                "{}".format("Redirect" if pbr_enabled else "Permit")
+            ])
+
+    if data:
+        result = MANUAL
+    else:
+        result = PASS
+        return Result(result=result,
+                      msg="No vzAny shared-service providers with compression support in this version",
+                      headers=headers,
+                      data=data,
+                      doc_url=doc_url)
+
+    return Result(result=result,
+                  headers=headers,
+                  data=data,
+                  recommended_action=recommended_action,
+                  doc_url=doc_url,
+                  adjust_title=True)
+
+
 @check_wrapper(check_title='32 and 64-Bit Firmware Image for Switches')
 def validate_32_64_bit_image_check(cversion, tversion, **kwargs):
     result = PASS
@@ -5485,6 +5795,7 @@ def get_checks(api_only, debug_function):
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
+        consumer_vzany_shared_services_check,
 
         # Bugs
         ep_announce_check,
