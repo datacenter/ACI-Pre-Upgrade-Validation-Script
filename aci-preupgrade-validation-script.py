@@ -4497,9 +4497,9 @@ def consumer_vzany_shared_services_check(**kwargs):
         "  on contract filters.\n\n"
         "  Note:\n"
         "  - Enabling compression disables statistics for these rules.\n"
-        "  - For EPG or External EPG provider: Policy compression is supported starting 5.3(2d) or 6.0(3).\n"
+        "  - For EPG or External EPG provider: Policy compression is supported starting 5.3(2d) or 6.0(3) with permit action.\n"
         "  - For ESG provider with permit action: Policy compression is supported from 6.1(2).\n"
-        "  - For ESG provider with redirect action: Policy compression is not effective before 6.1(4).\n"
+        "  - For all providers with redirect action: Policy compression is not effective before 6.1(4).\n"
         "    Enabling it on earlier versions will not have any effect."
     )
     doc_url = "https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html"
@@ -4644,23 +4644,28 @@ def consumer_vzany_shared_services_check(**kwargs):
         """
         Returns True only if compression is supported for this provider type (and PBR state)
         in the effective version v.
-          - EPG / External EPG: 5.3(2d)+ on 5.x, 6.0(3a)+ on 6.x
-          - ESG (permit/non-PBR): 6.1(2a)+
-          - ESG (redirect/PBR): 6.1(4a)+
+          - EPG/External EPG/ESG with redirect action: 6.1(4a)+
+          - EPG/External EPG permit action: 5.3(2d)+ on 5.x, 6.0(3a)+ on 6.x
+          - ESG with permit action: 6.1(2a)+
         """
+        # False for pre-5.x versions
         if not v:
             return False
-        if provider_type in ("EPG", "External EPG"):
-            if v.major1 == "5":
-                return not v.older_than("5.3(2d)")
-            if v.major1 == "6":
-                return not v.older_than("6.0(3a)")
-            # Future major releases: assume supported
-            return True
-        if provider_type == "ESG":
-            if pbr_enabled:
-                return not v.older_than("6.1(4a)")
-            else:
+        if int(v.major1) < 5:
+            return False
+        # Redirect action
+        if pbr_enabled:
+            return not v.older_than("6.1(4a)")
+        # Permit action
+        else:
+            if provider_type in ("EPG", "External EPG"):
+                if v.major1 == "5":
+                    return not v.older_than("5.3(2d)")
+                elif v.major1 == "6":
+                    return not v.older_than("6.0(3a)")
+                # Future major releases: assume supported
+                return True
+            elif provider_type == "ESG":
                 return not v.older_than("6.1(2a)")
         return False
 
