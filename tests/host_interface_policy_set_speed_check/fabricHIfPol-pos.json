@@ -1,0 +1,103 @@
+[
+    {
+        "fabricHIfPol": {
+            "attributes": {
+                "annotation": "orchestrator:msc",
+                "autoNeg": "on",
+                "childAction": "",
+                "creator": "USER",
+                "descr": "",
+                "dfeDelayMs": "0",
+                "dn": "uni/infra/hintfpol-fernandh_interface",
+                "emiRetrain": "disable",
+                "extMngdBy": "",
+                "fecMode": "inherit",
+                "lcOwn": "local",
+                "linkDebounce": "100",
+                "modTs": "2025-05-07T23:54:47.082+00:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "fernandh_interface",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "portPhyMediaType": "auto",
+                "speed": "auto",
+                "status": "",
+                "uid": "0",
+                "userdom": ":all:"
+            },
+            "children": [
+                {
+                    "fabricRtHIfPol": {
+                        "attributes": {
+                            "childAction": "",
+                            "lcOwn": "local",
+                            "modTs": "2025-05-07T23:54:47.082+00:00",
+                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/accportgrp-fernandh_interface]",
+                            "status": "",
+                            "tCl": "infraAccPortGrp",
+                            "tDn": "uni/infra/funcprof/accportgrp-fernandh_interface"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "fabricHIfPol": {
+            "attributes": {
+                "annotation": "",
+                "autoNeg": "on",
+                "childAction": "",
+                "creator": "USER",
+                "descr": "",
+                "dfeDelayMs": "0",
+                "dn": "uni/infra/hintfpol-AUTO",
+                "emiRetrain": "disable",
+                "extMngdBy": "",
+                "fecMode": "inherit",
+                "lcOwn": "local",
+                "linkDebounce": "100",
+                "modTs": "2025-06-03T23:21:03.594+00:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "AUTO",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "portPhyMediaType": "auto",
+                "speed": "auto",
+                "status": "",
+                "uid": "15374",
+                "userdom": ":all:"
+            },
+            "children": [
+                {
+                    "fabricRtHIfPol": {
+                        "attributes": {
+                            "childAction": "",
+                            "lcOwn": "local",
+                            "modTs": "2025-06-03T23:21:07.485+00:00",
+                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/accportgrp-av_accessB]",
+                            "status": "",
+                            "tCl": "infraAccPortGrp",
+                            "tDn": "uni/infra/funcprof/accportgrp-av_accessB"
+                        }
+                    }
+                },
+                {
+                    "fabricRtHIfPol": {
+                        "attributes": {
+                            "childAction": "",
+                            "lcOwn": "local",
+                            "modTs": "2025-06-05T04:53:53.112+00:00",
+                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/accportgrp-av-access]",
+                            "status": "",
+                            "tCl": "infraAccPortGrp",
+                            "tDn": "uni/infra/funcprof/accportgrp-av-access"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+]

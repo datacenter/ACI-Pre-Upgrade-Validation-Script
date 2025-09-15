@@ -131,6 +131,7 @@ Items                                         | Faults         | This Script    
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Host interface policy set to auto][c24]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 
 [c1]: #vpc-paired-leaf-switches
@@ -156,6 +157,7 @@ Items                                         | Faults         | This Script    
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
+[c24]: #host-interface-policy-set-to-auto
 
 ### Defect Condition Checks
 
@@ -2222,6 +2224,13 @@ As outlined in the [End-of-Sale and End-of-Life Announcement for Cisco Applicati
 If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Guide][56] and complete a domain migration prior to performing the upgrade.
 
 
+### Host interface policy set to auto
+As detailed in the [Cisco Apic Basic Configuration guide][59] a Link level Policy is recommended to have the speed set to "inherit".
+With this value, Cisco Apic determines the speed based on the transceiver inserted.
+
+In case the link speed is set to "auto" , interfaces may not come up after an upgrade (stateless reboot). 
+Changing the speed to "inherit" resolves this situation, which is also a best practice.
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2648,3 +2657,5 @@ Do not upgrade to any affected ACI software release if this check fails.
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
+[59]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/basic-configuration/cisco-apic-basic-configuration-guide-52x/m_provisioning.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
+
