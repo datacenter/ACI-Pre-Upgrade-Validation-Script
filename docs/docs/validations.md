@@ -131,6 +131,7 @@ Items                                         | Faults         | This Script    
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 
 [c1]: #vpc-paired-leaf-switches
@@ -156,6 +157,7 @@ Items                                         | Faults         | This Script    
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
+[c24]: #shared-service-with-vzany-consumer
 
 ### Defect Condition Checks
 
@@ -2222,6 +2224,23 @@ As outlined in the [End-of-Sale and End-of-Life Announcement for Cisco Applicati
 If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Guide][56] and complete a domain migration prior to performing the upgrade.
 
 
+### Shared Service with vzAny Consumer
+For a shared service contract with vzAny as a consumer, policy TCAM space usage may increase depending on the release version and provider type due to a behavior change called "Rule Expansion":
+    - In case of EPG/External EPG provider, 5.3(2d) and later or 6.0(3) and later releases may use more policy TCAM space than previous releases.
+    - In case of ESG provider, 6.1(2) and later releases may use more policy TCAM space than previous releases.
+
+See [Inter-VRF contract with vzAny as the consumer][59] in Cisco ACI Contract Guide for details about Rule Expansion.
+
+If you wish to save TCAM space, you can do so by enabling policy compression directive on contract filters in supported releases. However, note that enabling policy compression directive will result in loss of the statistics capability for these rules.
+
+In case of vzAny consumer contracts:
+   - For EPG or External EPG provider with permit action: TCAM rule expansion in provider VRF is done starting 5.3(2d) or 6.0(3).
+   - For ESG providers: TCAM rule expansion in provider VRF is done starting 6.1(2).
+   - For all providers with redirect action: Policy compression is supported starting 6.1(4) release.
+
+See [Enable Policy Compression in Cisco ACI Contract Guide][60] for details about Policy Compression.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2648,3 +2667,5 @@ Do not upgrade to any affected ACI software release if this check fails.
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
+[59]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
+[60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
