@@ -4507,14 +4507,24 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     # Helper functions
+    _provider_vrf_dn_cache = {}
     def get_provider_vrf_dn(p_dn, vnid_to_vrf_dn):
+        if p_dn in _provider_vrf_dn_cache:
+            return _provider_vrf_dn_cache[p_dn]
+
         mo = icurl("mo", p_dn + ".json") or []
         if not mo:
+            _provider_vrf_dn_cache[p_dn] = None
             return None
+
         top_mo = list(mo[0].values())[0]
         scope = top_mo["attributes"].get("scope")
         if scope and scope in vnid_to_vrf_dn:
-            return vnid_to_vrf_dn[scope]
+            vrf_dn = vnid_to_vrf_dn[scope]
+            _provider_vrf_dn_cache[p_dn] = vrf_dn
+            return vrf_dn
+
+        _provider_vrf_dn_cache[p_dn] = None
         return None
 
     def vrf_tn_name_from_dn(vrf_dn):
@@ -4662,20 +4672,20 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
             elif ch.get("vzRtProv"):
                 p_dn = ch["vzRtProv"]["attributes"].get("tDn")
                 if p_dn:
-                    # Only consider shared service providers
-                    p_vrf_dn = get_provider_vrf_dn(p_dn, vnid_to_vrf_dn)
-                    if not p_vrf_dn or p_vrf_dn == parent_dn(vzany_dn):
-                        continue
+                    c_vrf_dn = parent_dn(vzany_dn)
                     p_class = ch["vzRtProv"]["attributes"].get("tCl")
                     if should_check_pbr and is_contract_pbr_enabled(c_dn):
                         found_pbr = True
-                        providers.add(p_dn)
+                        if get_provider_vrf_dn(p_dn, vnid_to_vrf_dn) != c_vrf_dn:
+                            providers.add(p_dn)
                     elif should_check_epg_expansion and p_class in ("fvAEPg", "l3extInstP"):
                         found_epg_expansion = True
-                        providers.add(p_dn)
+                        if get_provider_vrf_dn(p_dn, vnid_to_vrf_dn) != c_vrf_dn:
+                            providers.add(p_dn)
                     elif should_check_esg_expansion and p_class == "fvESg":
                         found_esg_expansion = True
-                        providers.add(p_dn)
+                        if get_provider_vrf_dn(p_dn, vnid_to_vrf_dn) != c_vrf_dn:
+                            providers.add(p_dn)
         for vzany_dn in consumers:
             for p_dn in providers:
                 global_vzany_to_provider_tuples.append((c_dn, vzany_dn, p_dn))
@@ -4699,7 +4709,7 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
             vrf_tn_name_from_dn(any_dn),
             p_dn,
             p_type,
-            vrf_tn_name_from_dn(p_vrf_dn)
+            vrf_tn_name_from_dn(get_provider_vrf_dn(p_dn, vnid_to_vrf_dn))
         ])
 
     if data:

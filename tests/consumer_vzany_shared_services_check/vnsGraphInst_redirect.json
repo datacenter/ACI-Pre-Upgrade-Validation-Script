@@ -1,0 +1,145 @@
+{
+  "totalCount": "2",
+  "imdata": [
+    {
+      "vnsGraphInst": {
+        "attributes": {
+          "absGraphAnnotation": "",
+          "childAction": "",
+          "configInfo": "",
+          "configIssues": "",
+          "configSt": "applied",
+          "ctrctDn": "uni/tn-vzAny-consumer/brc-vzany-esg-permit",
+          "descr": "",
+          "dn": "uni/tn-vzAny-consumer/GraphInst_C-[uni/tn-vzAny-consumer/brc-vzany-esg-permit]-G-[uni/tn-vzAny-consumer/AbsGraph-no-redirect]-S-[uni]",
+          "graphDn": "uni/tn-vzAny-consumer/AbsGraph-no-redirect",
+          "isCloudRedirect": "no",
+          "lcOwn": "local",
+          "modTs": "2025-09-16T11:24:54.854+00:00",
+          "monPolDn": "uni/tn-common/monepg-default",
+          "name": "",
+          "nameAlias": "",
+          "ownerKey": "",
+          "ownerTag": "",
+          "reqEPgClassIds": "2",
+          "reqEPgVlans": "2",
+          "reqExtInEncs": "0",
+          "reqExtOutEncs": "0",
+          "reqFabInEncs": "0",
+          "reqRevFabInEncs": "0",
+          "scopeDn": "uni",
+          "status": "",
+          "type": "legacy",
+          "usedEPgClassIds": "2",
+          "usedEPgVlans": "2",
+          "usedExtInEncs": "0",
+          "usedExtOutEncs": "0",
+          "usedFabInEncs": "0",
+          "usedRevFabInEncs": "0"
+        },
+        "children": [
+          {
+            "vnsNodeInst": {
+              "attributes": {
+                "childAction": "",
+                "configIssues": "",
+                "configSt": "none",
+                "ctxName": "none",
+                "descr": "",
+                "encap": "unknown",
+                "funcTemplateType": "OTHER",
+                "funcType": "GoTo",
+                "isCopy": "no",
+                "lcOwn": "local",
+                "ldevInst": "",
+                "managed": "no",
+                "modTs": "2025-09-16T11:24:54.854+00:00",
+                "monPolDn": "uni/tn-common/monepg-default",
+                "name": "N1",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "rn": "NodeInst-N1",
+                "routingMode": "unspecified",
+                "sequenceNumber": "0",
+                "shareEncap": "no",
+                "status": "",
+                "unkMacUcastAct": "proxy"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "vnsGraphInst": {
+        "attributes": {
+          "absGraphAnnotation": "",
+          "childAction": "",
+          "configInfo": "",
+          "configIssues": "",
+          "configSt": "applied",
+          "ctrctDn": "uni/tn-vzAny-consumer/brc-vzany-esg-redirect",
+          "descr": "",
+          "dn": "uni/tn-vzAny-consumer/GraphInst_C-[uni/tn-vzAny-consumer/brc-vzany-esg-redirect]-G-[uni/tn-vzAny-consumer/AbsGraph-pbr-graph]-S-[uni]",
+          "graphDn": "uni/tn-vzAny-consumer/AbsGraph-pbr-graph",
+          "isCloudRedirect": "no",
+          "lcOwn": "local",
+          "modTs": "2025-09-16T11:24:54.843+00:00",
+          "monPolDn": "uni/tn-common/monepg-default",
+          "name": "",
+          "nameAlias": "",
+          "ownerKey": "",
+          "ownerTag": "",
+          "reqEPgClassIds": "2",
+          "reqEPgVlans": "2",
+          "reqExtInEncs": "0",
+          "reqExtOutEncs": "0",
+          "reqFabInEncs": "0",
+          "reqRevFabInEncs": "0",
+          "scopeDn": "uni",
+          "status": "",
+          "type": "legacy",
+          "usedEPgClassIds": "2",
+          "usedEPgVlans": "2",
+          "usedExtInEncs": "0",
+          "usedExtOutEncs": "0",
+          "usedFabInEncs": "0",
+          "usedRevFabInEncs": "0"
+        },
+        "children": [
+          {
+            "vnsNodeInst": {
+              "attributes": {
+                "childAction": "",
+                "configIssues": "",
+                "configSt": "none",
+                "ctxName": "none",
+                "descr": "",
+                "encap": "unknown",
+                "funcTemplateType": "OTHER",
+                "funcType": "GoTo",
+                "isCopy": "no",
+                "lcOwn": "local",
+                "ldevInst": "",
+                "managed": "no",
+                "modTs": "2025-09-16T11:24:54.843+00:00",
+                "monPolDn": "uni/tn-common/monepg-default",
+                "name": "N1",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "rn": "NodeInst-N1",
+                "routingMode": "Redirect",
+                "sequenceNumber": "0",
+                "shareEncap": "no",
+                "status": "",
+                "unkMacUcastAct": "proxy"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
