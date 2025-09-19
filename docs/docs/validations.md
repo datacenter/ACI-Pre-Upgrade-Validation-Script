@@ -186,8 +186,7 @@ Items                                           | Defect       | This Script    
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Stale pconsRA Object][d26]                     | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[ISIS DTEPs Byte Size][d26]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -215,8 +214,7 @@ Items                                           | Defect       | This Script    
 [d23]: #pbr-high-scale
 [d24]: #standby-sup-image-sync
 [d25]: #observer-database-size
-[d26]: #stale-pconsra-object
-[d27]: #isis-dteps-byte-size
+[d26]: #isis-dteps-byte-size
 
 
 ## General Check Details
@@ -2564,12 +2562,6 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 
 !!! tip
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
-
-### Stale pconsRA Object
-
-Due to [CSCwp22212][57], the existence of stale pconsRA objects within an ACI fabric can cause the APIC Policymanager process to crash after an upgrade to 6.0(3d) and above. This script looks for instances of stale pconsRA objects and flags them for cleanup when found. 
-
-TAC must be engaged to cleanup these objects, as they require root access.
 
 
 ### ISIS DTEPs Byte Size
