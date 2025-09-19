@@ -23,6 +23,7 @@ from getpass import getpass
 from collections import defaultdict
 from datetime import datetime
 from argparse import ArgumentParser
+from itertools import chain
 import functools
 import shutil
 import warnings
@@ -35,7 +36,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v3.0.0"
+SCRIPT_VERSION = "v3.2.0"
 # result constants
 DONE = 'DONE'
 PASS = 'PASS'
@@ -929,6 +930,11 @@ class AciResult:
         "docUrl", "severity", "ruleStatus", "showValidation", "failureDetails",
     )
 
+    # ruleStatus
+    IN_PROGRESS = "in-progress"
+    PASS = "passed"
+    FAIL = "failed"
+
     def __init__(self, func_name, name, description):
         self.ruleId = func_name
         self.name = name
@@ -938,13 +944,17 @@ class AciResult:
         self.recommended_action = ""
         self.docUrl = ""
         self.severity = "informational"
-        self.ruleStatus = "passed"  # passed|failed
+        self.ruleStatus = AciResult.IN_PROGRESS
         self.showValidation = True
         self.failureDetails = {
             "failType": "",
             "data": [],
             "unformatted_data": [],
         }
+
+    @property
+    def filename(self):
+        return re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId) + '.json'
 
     @staticmethod
     def craftData(column, rows):
@@ -979,8 +989,9 @@ class AciResult:
         elif result in [MANUAL]:
             self.severity = "warning"
 
+        self.ruleStatus = AciResult.PASS
         if result not in [NA, PASS]:
-            self.ruleStatus = "failed"
+            self.ruleStatus = AciResult.FAIL
             self.failureDetails["failType"] = result
             self.failureDetails["data"] = self.craftData(headers, data)
             if unformatted_headers and unformatted_data:
@@ -996,12 +1007,11 @@ class AciResult:
         return {slot: getattr(self, slot) for slot in self.__slots__}
 
     def writeResult(self, path=JSON_DIR):
-        filename = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId) + '.json'
         if not os.path.isdir(path):
             os.mkdir(path)
-        with open(os.path.join(path, filename), "w") as f:
+        with open(os.path.join(path, self.filename), "w") as f:
             json.dump(self.buildResult(), f, indent=2)
-        return "{}/{}".format(path, filename)
+        return "{}/{}".format(path, self.filename)
 
 
 class Result:
@@ -1034,28 +1044,35 @@ def check_wrapper(check_title):
     def decorator(check_func):
         @functools.wraps(check_func)
         def wrapper(index, total_checks, *args, **kwargs):
-            # Print `[Check  1/81] <title>...`
-            print_title(check_title, index, total_checks)
+            # When init is True, we just initialize the result file and return
+            if kwargs.get("init") is True:
+                synth = AciResult(wrapper.__name__, check_title, "")
+                synth.writeResult()
+                return None
 
             try:
+                # Print `[Check  1/81] <title>...`
+                print_title(check_title, index, total_checks)
+
                 # Run check, expecting it to return a `Result` object
                 r = check_func(*args, **kwargs)
+
+                # Print `[Check  1/81] <title>... <msg> <result>\n<failure details>`
+                print_result(title=check_title, **r.as_dict())
             except Exception as e:
-                r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
                 log.exception(e)
-
-            # Print `[Check  1/81] <title>... <result> + <failure details>`
-            print_result(title=check_title, **r.as_dict())
-
-            # Write results in JSON
-            # Using `wrapper.__name__` instead of `check_func.__name` because
-            # both show the original check func name and `wrapper.__name__` can
-            # be dynamically changed inside each check func if needed. (mainly
-            # for test or debugging)
-            synth = AciResult(wrapper.__name__, check_title, "")
-            synth.updateWithResults(**r.as_dict_for_json_result())
-            synth.writeResult()
-            return r.result
+                r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
+                print_result(title=check_title, **r.as_dict())
+            finally:
+                # Write results in JSON
+                # Using `wrapper.__name__` instead of `check_func.__name` because
+                # both show the original check func name and `wrapper.__name__` can
+                # be dynamically changed inside each check func if needed. (mainly
+                # for test or debugging)
+                synth = AciResult(wrapper.__name__, check_title, "")
+                synth.updateWithResults(**r.as_dict_for_json_result())
+                synth.writeResult()
+                return r.result
         return wrapper
     return decorator
 
@@ -1199,8 +1216,19 @@ def print_result(title, result, msg='',
                  recommended_action='',
                  doc_url='',
                  adjust_title=False):
-    padding = 120 - len(title) - len(msg)
-    if adjust_title: padding += len(title) + 18
+    FULL_LEN = 138  # length of `[Check XX/YY] <title>... <msg> --padding-- <RESULT>`
+    CHECK_LEN = 18  # length of `[Check XX/YY] ... `
+    padding = FULL_LEN - CHECK_LEN - len(title) - len(msg)
+    if adjust_title:
+        # adjust padding when the result is on the second line.
+        # 1st: `[Check XX/YY] <title>... `
+        # 2nd: `                         <msg> --padding-- <RESULT>`
+        padding += len(title) + CHECK_LEN
+    if padding < len(result):
+        # when `msg` is too long (ex. unknown exception), `padding` may get shorter
+        # than what it's padding (`result`), or worse, may get negative.
+        # In such a case, keep one whitespace padding even if the full length gets longer.
+        padding = len(result) + 1
     output = '{}{:>{}}'.format(msg, result, padding)
     if data:
         data.sort()
@@ -1720,36 +1748,60 @@ def switch_bootflash_usage_check(tversion, **kwargs):
 def l3out_mtu_check(**kwargs):
     result = MANUAL
     msg = ""
-    headers = ["Tenant", "L3Out", "Node Profile", "Logical Interface Profile",
-               "Pod", "Node", "Interface", "Type", "IP Address", "MTU"]
+    headers = ["Tenant", "L3Out", "Node Profile", "Interface Profile",
+               "Pod", "Node", "Interface", "Type", "VLAN", "IP Address", "MTU"]
     data = []
     unformatted_headers = ['L3 DN', "Type", "IP Address", "MTU"]
     unformatted_data = []
     recommended_action = 'Verify that these MTUs match with connected devices'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#l3out-mtu"
 
-    dn_regex = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)/rspathL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/.*paths-(?P<nodes>\d{3,4}|\d{3,4}-\d{3,4})/pathep-\[(?P<int>.+)\]\]'
-    response_json = icurl('class', 'l3extRsPathL3OutAtt.json')
-    if response_json:
-        l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')
-        fabricMtu = l2Pols[0]['l2InstPol']['attributes']['fabricMtu']
-        for l3extRsPathL3OutAtt in response_json:
-            mtu = l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['mtu']
-            iftype = l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['ifInstT']
-            addr = l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['addr']
+    fabricMtu = None
+    regex_prefix = r'tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^/]+)/lnodep-(?P<lnodep>[^/]+)/lifp-(?P<lifp>[^/]+)'
+    path_dn_regex = regex_prefix + r'/rspathL3OutAtt-\[topology/pod-(?P<pod>[^/]+)/.*paths-(?P<node>\d{3,4}|\d{3,4}-\d{3,4})/pathep-\[(?P<int>.+)\]\]'
+    vlif_dn_regex = regex_prefix + r'/vlifp-\[topology/pod-(?P<pod>[^/]+)/node-(?P<node>\d{3,4})\]-\[vlan-(\d{1,4})\]'
+    l3extPaths = icurl('class', 'l3extRsPathL3OutAtt.json')  # Regular L3Out
+    try:
+        l3extVLIfPs = icurl('class', 'l3extVirtualLIfP.json')  # Floating L3Out
+    except OldVerClassNotFound:
+        l3extVLIfPs = []  # Pre 4.2 did not have this class
+    for mo in chain(l3extPaths, l3extVLIfPs):
+        if fabricMtu is None:
+            l2Pols = icurl('mo', 'uni/fabric/l2pol-default.json')
+            fabricMtu = l2Pols[0]['l2InstPol']['attributes']['fabricMtu']
 
-            if mtu == 'inherit':
-                mtu += " (%s)" % fabricMtu
+        is_floating = True if mo.get('l3extVirtualLIfP') else False
 
-            dn = re.search(dn_regex, l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'])
+        mo_class = 'l3extVirtualLIfP' if is_floating else 'l3extRsPathL3OutAtt'
+        mtu = mo[mo_class]['attributes']['mtu']
+        addr = mo[mo_class]['attributes']['addr']
+        vlan = mo[mo_class]['attributes']['encap']
+        iftype = mo[mo_class]['attributes']['ifInstT']
+        # Differentiate between regular and floating SVI. Both use ext-svi in the object.
+        if is_floating:
+            iftype = "floating svi"
 
-            if dn:
-                data.append([dn.group("tenant"), dn.group("l3out"), dn.group("lnodep"),
-                             dn.group("lifp"), dn.group("pod"), dn.group("nodes"),
-                             dn.group("int"), iftype, addr, mtu])
-            else:
-                unformatted_data.append(
-                    [l3extRsPathL3OutAtt['l3extRsPathL3OutAtt']['attributes']['dn'], iftype, addr, mtu])
+        if mtu == 'inherit':
+            mtu += " (%s)" % fabricMtu
+
+        dn_regex = vlif_dn_regex if is_floating else path_dn_regex
+        dn = re.search(dn_regex, mo[mo_class]['attributes']['dn'])
+        if dn:
+            data.append([
+                dn.group("tenant"),
+                dn.group("l3out"),
+                dn.group("lnodep"),
+                dn.group("lifp"),
+                dn.group("pod"),
+                dn.group("node"),
+                dn.group("int") if not is_floating else '---',
+                iftype,
+                vlan,
+                addr,
+                mtu,
+            ])
+        else:
+            unformatted_data.append([mo[mo_class]['attributes']['dn'], iftype, addr, mtu])
 
     if not data and not unformatted_data:
         result = NA
@@ -4543,6 +4595,9 @@ def fabric_link_redundancy_check(**kwargs):
     leafs = {}
     t2leafs = {}
     for node in fabricNodes:
+        if node["fabricNode"]["attributes"]["nodeType"] == "remote-leaf-wan":
+            # Not applicable to remote leafs, skip
+            continue
         dn = node["fabricNode"]["attributes"]["dn"]
         name = node["fabricNode"]["attributes"]["name"]
         if node["fabricNode"]["attributes"]["role"] == "spine":
@@ -5137,56 +5192,6 @@ def ave_eol_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='Stale pconsRA Objects')
-def stale_pcons_ra_mo_check(cversion, tversion, **kwargs):
-    result = PASS
-    headers = ["Stale pconsRA DN", "Non-Existing DN"]
-    data = []
-    recommended_action = 'Contact Cisco TAC to delete stale pconsRA before upgrading'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-pconsra-object'
-
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-
-    if cversion.older_than("6.0(3d)") and tversion.newer_than("6.0(3c)") and tversion.older_than("6.1(4a)"):
-        pcons_rssubtreedep_api = 'pconsRsSubtreeDep.json?query-target-filter=wcard(pconsRsSubtreeDep.tDn,"/instdn-")'
-        pcons_rssubtreedep_mo = icurl('class', pcons_rssubtreedep_api)
-        pcons_inst_dn_reg = r'registry/class-\d+/instdn-\[(?P<policy_dn>.+?)\]/ra'
-        pcons_ra_dn_reg = r'(?P<pcons_ra_dn>.+?)/p...-\['
-
-        pcons_ra_set = set()
-        policy_dn_set = set()
-
-        for mo in pcons_rssubtreedep_mo:
-            pcons_rssubtreedep_tdn = mo['pconsRsSubtreeDep']['attributes']['tDn']
-            instdn_found = re.search(pcons_inst_dn_reg, pcons_rssubtreedep_tdn)
-            radn_found = re.search(pcons_ra_dn_reg, pcons_rssubtreedep_tdn)
-            if instdn_found and radn_found:
-                pcons_ra_dn = radn_found.group('pcons_ra_dn')
-                policy_dn = instdn_found.group('policy_dn')
-                if pcons_ra_dn not in pcons_ra_set:
-                    pcons_ra_set.add(pcons_ra_dn)
-                if policy_dn not in policy_dn_set:
-                    policy_dn_set.add(policy_dn)
-
-        for policy_dn in policy_dn_set:
-            policy_dn_api = policy_dn + '.json'
-            policy_dn_mo = icurl('mo', policy_dn_api)
-            if not policy_dn_mo:
-                for pcons_ra_dn in pcons_ra_set:
-                    if policy_dn in pcons_ra_dn:
-                        pcons_ra_api = pcons_ra_dn + '.json'
-                        pcons_ra_dn_mo = icurl('mo', pcons_ra_api)
-                        if pcons_ra_dn_mo:
-                            data.append([pcons_ra_dn, policy_dn])
-    else:
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
-
-    if data:
-        result = FAIL_O
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
 @check_wrapper(check_title='ISIS DTEPs Byte Size')
 def isis_database_byte_check(tversion, **kwargs):
     result = PASS
@@ -5328,6 +5333,7 @@ def configpush_shard_check(tversion, **kwargs):
 
 # ---- Script Execution ----
 
+
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
@@ -5356,9 +5362,13 @@ def initialize():
     logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def prepare(api_only, arg_tversion, arg_cversion, total_checks):
+def prepare(api_only, arg_tversion, arg_cversion, checks):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+
+    # Create empty result files for all checks
+    for idx, check in enumerate(checks):
+        check(idx + 1, len(checks), init=True)
 
     username = password = None
     if not api_only:
@@ -5385,7 +5395,7 @@ def prepare(api_only, arg_tversion, arg_cversion, total_checks):
         "tversion": str(tversion),
         "sw_cversion": str(sw_cversion),
         "api_only": api_only,
-        "total_checks": total_checks,
+        "total_checks": len(checks),
     }
     with open(META_FILE, "w") as f:
         json.dump(metadata, f, indent=2)
@@ -5479,7 +5489,6 @@ def get_checks(api_only, debug_function):
         n9408_model_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
-        stale_pcons_ra_mo_check,
         isis_database_byte_check,
         configpush_shard_check,
 
@@ -5515,6 +5524,13 @@ def run_checks(checks, inputs):
         except KeyboardInterrupt:
             prints('\n\n!!! KeyboardInterrupt !!!\n')
             break
+        except Exception as e:
+            prints('')
+            err = 'Wrapper Error: %s' % e
+            print_title(err)
+            print_result(title=err, result=ERROR)
+            summary[ERROR] += 1
+            logging.exception(e)
 
     prints('\n=== Summary Result ===\n')
     res = max(summary_headers, key=len)
@@ -5557,7 +5573,7 @@ def main(_args=None):
         return
 
     initialize()
-    inputs = prepare(args.api_only, args.tversion, args.cversion, len(checks))
+    inputs = prepare(args.api_only, args.tversion, args.cversion, checks)
     run_checks(checks, inputs)
     wrapup(args.no_cleanup)
 
