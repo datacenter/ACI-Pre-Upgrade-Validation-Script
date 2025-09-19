@@ -16,26 +16,26 @@ Tables in this page list the validations supported by the script and compare the
 
 ### General Checks
 
-Items                                                        | This Script        | APIC built-in             
+Items                                                        | This Script        | APIC built-in
 -------------------------------------------------------------|--------------------|---------------------------
-[Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4) 
-[Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4) 
-[Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:        
-[Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4) 
+[Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4)
+[Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4)
+[Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:
+[Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4)
 [Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767
 [APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)
-[APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6) 
-[Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:           
-[NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5) 
-[Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:           
+[APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6)
+[Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:
+[NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5)
+[Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked)
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5)
-[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:          
-[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:          
-[6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:          
-[Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:          
-[APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:          
+[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:
+[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:
+[6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:
+[Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
+[APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -57,27 +57,27 @@ Items                                                        | This Script      
 [g18]: #apic-database-size
 
 ### Fault Checks
-Items                                         | Faults         | This Script       | APIC built-in                 
+Items                                         | Faults         | This Script       | APIC built-in
 ----------------------------------------------|----------------|-------------------|-------------------------------
 [APIC Disk Space Usage][f1]                   | F1527: 80% - 85%<br>F1528: 85% - 90%<br>F1529: 90% or more  | :white_check_mark: | :white_check_mark: 4.2(1)
 [Standby APIC Disk Space Usage][f2]           |                | :white_check_mark: | :white_check_mark: 5.2(3)
 [Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4)
 [APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1)
-[Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1) 
-[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g)            
-[L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)               
-[L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)               
-[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:               
-[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:         
-[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g)         
-[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d)        
-[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d)                      
-[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1)                               
-[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1)                               
-[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4)                  
-[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1)   
-[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign:         
-[Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:                      
+[Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1)
+[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g)
+[L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)
+[L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)
+[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:
+[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g)
+[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d)
+[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d)
+[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1)
+[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1)
+[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4)
+[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1)
+[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign:
+[Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 
 
@@ -106,31 +106,31 @@ Items                                         | Faults         | This Script    
 
 ### Configuration Checks
 
- Items                                                | This Script        | APIC built-in            
+ Items                                                | This Script        | APIC built-in
 ------------------------------------------------------|--------------------|--------------------------
 [VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4)
-[Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:          
-[VNID Mismatch][c3]                                   | :warning:{title="Deprecated"} | :no_entry_sign:           
-[L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:          
-[BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:          
-[L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:          
-[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:          
-[L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:          
-[ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:          
-[BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:          
-[APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:          
-[Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:          
-[OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:          
-[EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:          
-[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:          
-[Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:    
-[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:          
-[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:          
-[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:          
-[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:          
+[Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:
+[VNID Mismatch][c3]                                   | :warning:{title="Deprecated"} | :no_entry_sign:
+[L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:
+[BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:
+[L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign
+[L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:
+[ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:
+[BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:
+[APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:
+[OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:
+[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:
+[Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:
+[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:
+[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:
+[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:
+[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2)
-[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:          
-[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:          
+[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
+[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 
 
 [c1]: #vpc-paired-leaf-switches
@@ -159,25 +159,25 @@ Items                                         | Faults         | This Script    
 
 ### Defect Condition Checks
 
-Items                                           | Defect       | This Script        |  APIC built-in            
+Items                                           | Defect       | This Script        |  APIC built-in
 ------------------------------------------------|--------------|--------------------|---------------------------
-[EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:           
-[Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:           
-[Contract Port 22 Defect][d3]                   | CSCvz65560   | :white_check_mark: | :no_entry_sign:           
-[telemetryStatsServerP Object][d4]              | CSCvt47850   | :white_check_mark: | :no_entry_sign:           
-[Link Level Flow Control][d5]                   | CSCvo27498   | :white_check_mark: | :no_entry_sign:           
-[Internal VLAN Pool][d6]                        | CSCvw33061   | :white_check_mark: | :no_entry_sign:           
-[APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           
-[FabricDomain Name][d8]                         | CSCwf80352   | :white_check_mark: | :no_entry_sign:           
-[Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           
-[SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           
-[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           
-[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           
-[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           
-[Invalid fabricPathEp Targets][d14]             | CSCwh68103   | :white_check_mark: | :no_entry_sign:           
-[LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           
-[Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           
-[L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           
+[EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:
+[Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:
+[Contract Port 22 Defect][d3]                   | CSCvz65560   | :white_check_mark: | :no_entry_sign:
+[telemetryStatsServerP Object][d4]              | CSCvt47850   | :white_check_mark: | :no_entry_sign:
+[Link Level Flow Control][d5]                   | CSCvo27498   | :white_check_mark: | :no_entry_sign:
+[Internal VLAN Pool][d6]                        | CSCvw33061   | :white_check_mark: | :no_entry_sign:
+[APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:
+[FabricDomain Name][d8]                         | CSCwf80352   | :white_check_mark: | :no_entry_sign:
+[Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:
+[SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:
+[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:
+[Invalid fabricPathEp Targets][d14]             | CSCwh68103   | :white_check_mark: | :no_entry_sign:
+[LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:
+[Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:
+[L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:
 [vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:
 [FC/FCOE support for EX switches][d19]          | CSCwm92166   | :white_check_mark: | :no_entry_sign:
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:
