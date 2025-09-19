@@ -2590,9 +2590,9 @@ Do not upgrade to any affected ACI software release if this check fails.
     Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
 
 
-### Policydist configpushShardCont defect
+### Policydist configpushShardCont crash
 
-In ACI, there are internal objects which track the underlying transactions which occur as policies are handled by the Policydist process. One such object is `configpushShardCont` which populated the `headTx` and `tailTx` parameters to mark any potentially stuck transactions.
+In ACI, there are internal objects which track the underlying transactions which occur as policies are handled by the Policydist process. One such object is `configpushShardCont` which populates the `headTx` and `tailTx` parameters to mark any potentially stuck transactions.
 
 Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
 
