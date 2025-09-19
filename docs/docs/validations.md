@@ -4,7 +4,7 @@ Tables in this page list the validations supported by the script and compare the
 
 * **This Script**: The python script provided in [GitHub][0]
 * **APIC built-in**: A validator embedded in the Cisco APIC Upgrade Workflow. This is automatically performed when performing an upgrade or downgrade for the Cisco APIC or switches.
-* <del>**Pre-Upgrade Validator (App)**</del>: The APIC App infra, including the standalone Pre-Upgrade Validation app, was deprecated in ACI version [6.1(2)](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease612).
+* <del>**Pre-Upgrade Validator (App)**</del>: The APIC App infra, including the Pre-Upgrade Validation app, was deprecated in ACI version [6.1(2)](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease612).
 
 !!! info
     The tables in this page assume the **latest version** of the script.
