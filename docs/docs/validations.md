@@ -2229,14 +2229,9 @@ For a shared service contract with vzAny as a consumer, policy TCAM space usage 
     - In case of EPG/External EPG provider, 5.3(2d) and later or 6.0(3) and later releases may use more policy TCAM space than previous releases.
     - In case of ESG provider, 6.1(2) and later releases may use more policy TCAM space than previous releases.
 
-See [Inter-VRF contract with vzAny as the consumer][59] in Cisco ACI Contract Guide for details about Rule Expansion.
+See [Inter-VRF contract with vzAny as the consumer][59] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, it can lead to a disruption of traffic after the upgrade and Rule Expansion even if the traffic was working prior to the upgrade.
 
-If you wish to save TCAM space, you can do so by enabling policy compression directive on contract filters in supported releases. However, note that enabling policy compression directive will result in loss of the statistics capability for these rules.
-
-In case of vzAny consumer contracts:
-   - For EPG or External EPG provider with permit action: TCAM rule expansion in provider VRF is done starting 5.3(2d) or 6.0(3).
-   - For ESG providers: TCAM rule expansion in provider VRF is done starting 6.1(2).
-   - For all providers with redirect action: Policy compression is supported starting 6.1(4) release.
+To avoid TCAM overflow, consider enabling policy compression directive on contract filters. However, note that enabling policy compression directive will result in loss of the statistics capability for these rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
 
 See [Enable Policy Compression in Cisco ACI Contract Guide][60] for details about Policy Compression.
 

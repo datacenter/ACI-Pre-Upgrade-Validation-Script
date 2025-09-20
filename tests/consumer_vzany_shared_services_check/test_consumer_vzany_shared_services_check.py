@@ -11,10 +11,10 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # icurl queries
-fvCtx_query = "fvCtx.json?rsp-subtree=full&rsp-subtree-class=vzAny,vzRsAnyToCons"
-provider_esg_query = "uni/tn-vzAny-consumer/ap-ap1/esg-esg2.json"
-provider_epg_query = "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched.json"
-provider_instp_query = "uni/tn-vzAny-consumer/out-out2/instP-l3instp2.json"
+fvCtx_query = "fvCtx.json?rsp-subtree=full&rsp-subtree-class=vzRsAnyToCons"
+esg_query = "fvESg.json"
+aepg_query = "fvAEPg.json"
+l3instp_query = "l3extInstP.json"
 global_contract_query = (
     'vzBrCP.json?query-target-filter=eq(vzBrCP.scope,"global")'
     '&rsp-subtree=children'
@@ -64,8 +64,9 @@ graph_query = (
             {
                 fvCtx_query: read_data(dir, "fvCtx_consumer_shared.json"),
                 global_contract_query: read_data(dir, "global_contracts_shared.json"),
-                provider_epg_query: read_data(dir, "epg_epg2_unmatched.json"),
-                provider_instp_query: read_data(dir, "instp_l3instp2.json"),
+                aepg_query: read_data(dir, "epg_epg2_unmatched.json"),
+                l3instp_query: read_data(dir, "instp_l3instp2.json"),
+                graph_query: read_data(dir, "vnsGraphInst_redirect.json"),
             },
             "5.2(8f)",
             "5.3(3a)",
@@ -76,8 +77,9 @@ graph_query = (
             {
                 fvCtx_query: read_data(dir, "fvCtx_consumer_same_vrf.json"),
                 global_contract_query: read_data(dir, "global_contracts_same_vrf.json"),
-                provider_epg_query: read_data(dir, "epg_epg2_unmatched.json"),
-                provider_instp_query: read_data(dir, "instp_l3instp2.json"),
+                aepg_query: read_data(dir, "epg_epg2_unmatched.json"),
+                l3instp_query: read_data(dir, "instp_l3instp2.json"),
+                graph_query: read_data(dir, "vnsGraphInst_redirect.json"),
             },
             "5.2(8f)",
             "5.3(3a)",
@@ -89,9 +91,9 @@ graph_query = (
                 fvCtx_query: read_data(dir, "fvCtx_consumer_shared.json"),
                 global_contract_query: read_data(dir, "global_contracts_shared.json"),
                 graph_query: read_data(dir, "vnsGraphInst_redirect.json"),
-                provider_epg_query: read_data(dir, "epg_epg2_unmatched.json"),
-                provider_instp_query: read_data(dir, "instp_l3instp2.json"),
-                provider_esg_query: read_data(dir, "esg_esg2.json"),
+                aepg_query: read_data(dir, "epg_epg2_unmatched.json"),
+                l3instp_query: read_data(dir, "instp_l3instp2.json"),
+                esg_query: read_data(dir, "esg_esg2.json"),
             },
             "5.0(2h)",
             "6.1(4b)",
@@ -106,6 +108,56 @@ graph_query = (
             "5.2(8f)",
             "5.4(3a)",
             script.PASS,
+        ),
+        # 8. 5.2(8f) -> 6.0(2h) (no new rule expansion versions hit) -> NA
+        (
+            {
+                fvCtx_query: read_data(dir, "fvCtx_consumer_shared.json"),
+                global_contract_query: read_data(dir, "global_contracts_shared.json"),
+                aepg_query: read_data(dir, "epg_epg2_unmatched.json"),
+                l3instp_query: read_data(dir, "instp_l3instp2.json"),
+            },
+            "5.2(8f)",
+            "6.0(2h)",
+            script.NA,
+        ),
+        # 9. 6.0(2h) -> 6.0(5a) (EPG expansion boundary crossed, but only ESG providers present) -> PASS
+        (
+            {
+                fvCtx_query: read_data(dir, "fvCtx_consumer_shared.json"),
+                global_contract_query: read_data(dir, "global_contracts_esg_only.json"),
+                esg_query: read_data(dir, "esg_esg2.json"),
+                graph_query: read_data(dir, "vnsGraphInst_redirect.json"),
+            },
+            "6.0(2h)",
+            "6.0(5a)",
+            script.PASS,
+        ),
+        # 10. 6.0(5a) -> 6.1(2g) (ESG expansion boundary crossed, but only EPG/InstP providers present) -> PASS
+        (
+            {
+                fvCtx_query: read_data(dir, "fvCtx_consumer_shared.json"),
+                global_contract_query: read_data(dir, "global_contracts_epg_only.json"),
+                aepg_query: read_data(dir, "epg_epg2_unmatched.json"),
+                l3instp_query: read_data(dir, "instp_l3instp2.json"),
+                graph_query: read_data(dir, "vnsGraphInst_redirect.json"),
+            },
+            "6.0(5a)",
+            "6.1(2g)",
+            script.PASS,
+        ),
+        # 11. 6.1(2g) -> 6.1(4h) (no new expansion; already past ESG threshold) -> NA
+        (
+            {
+                fvCtx_query: read_data(dir, "fvCtx_consumer_shared.json"),
+                global_contract_query: read_data(dir, "global_contracts_shared.json"),
+                aepg_query: read_data(dir, "epg_epg2_unmatched.json"),
+                l3instp_query: read_data(dir, "instp_l3instp2.json"),
+                esg_query: read_data(dir, "esg_esg2.json"),
+            },
+            "6.1(2g)",
+            "6.1(4h)",
+            script.NA,
         ),
     ],
 )
