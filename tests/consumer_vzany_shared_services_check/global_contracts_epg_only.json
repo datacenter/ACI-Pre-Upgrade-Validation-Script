@@ -1,0 +1,31 @@
+[
+  {
+    "vzBrCP": {
+      "attributes": {
+        "dn": "uni/tn-vzAny-consumer/brc-contract-epg",
+        "scope": "global",
+        "name": "contract-epg"
+      },
+      "children": [
+        {
+          "vzRtAnyToCons": {
+            "attributes": {
+              "dn": "uni/tn-vzAny-consumer/brc-contract-epg/rtanyToCons-[uni/tn-vzAny-consumer/ctx-vrf1/any]",
+              "tDn": "uni/tn-vzAny-consumer/ctx-vrf1/any",
+              "tCl": "vzAny"
+            }
+          }
+        },
+        {
+          "vzRtProv": {
+            "attributes": {
+              "dn": "uni/tn-vzAny-consumer/brc-contract-epg/rtprov-[uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched]",
+              "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched",
+              "tCl": "fvAEPg"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

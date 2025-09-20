@@ -106,31 +106,32 @@ Items                                         | Faults         | This Script    
 
 ### Configuration Checks
 
- Items                                                | This Script        | APIC built-in
-------------------------------------------------------|--------------------|--------------------------
-[VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4)
-[Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:
-[VNID Mismatch][c3]                                   | :warning:{title="Deprecated"} | :no_entry_sign:
-[L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:
-[BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:
-[L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign
-[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign
-[L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:
-[ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:
-[BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:
-[APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:
-[Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:
-[OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:
-[EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:
-[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:
-[Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:
-[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:
-[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:
-[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:
-[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:
-[Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2)
-[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
-[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
+ Items                                                | This Script        | APIC built-in             | Pre-Upgrade Validator (App)
+------------------------------------------------------|--------------------|---------------------------|-------------------------------
+[VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
+[Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[VNID Mismatch][c3] (deprecated)                      | :warning:          | :no_entry_sign:           | :no_entry_sign:
+[L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
+[APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
+[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
+[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+[Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
 
 
 [c1]: #vpc-paired-leaf-switches
@@ -156,6 +157,7 @@ Items                                         | Faults         | This Script    
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
+[c24]: #shared-service-with-vzany-consumer
 
 ### Defect Condition Checks
 
@@ -2207,6 +2209,18 @@ As outlined in the [End-of-Sale and End-of-Life Announcement for Cisco Applicati
 If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Guide][56] and complete a domain migration prior to performing the upgrade.
 
 
+### Shared Service with vzAny Consumer
+For a shared service contract with vzAny as a consumer, policy TCAM space usage may increase depending on the release version and provider type due to a behavior change called "Rule Expansion":
+    - In case of EPG/External EPG provider, 5.3(2d) and later or 6.0(3) and later releases may use more policy TCAM space than previous releases.
+    - In case of ESG provider, 6.1(2) and later releases may use more policy TCAM space than previous releases.
+
+See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, it can lead to a disruption of traffic after the upgrade and Rule Expansion even if the traffic was working prior to the upgrade.
+
+To avoid TCAM overflow, consider enabling policy compression directive on contract filters. However, note that enabling policy compression directive will result in loss of the statistics capability for these rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
+
+See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2649,3 +2663,5 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
+[60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
+[61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
