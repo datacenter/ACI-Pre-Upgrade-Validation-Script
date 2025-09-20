@@ -2,9 +2,11 @@ import pytest
 import importlib
 import logging
 import json
+import os
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 AciVersion = script.AciVersion
+AciResult = script.AciResult
 
 
 @pytest.fixture(autouse=True)
@@ -133,7 +135,7 @@ outputs = {
             "ave_eol_check",
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(4d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
-        # veresions are switch syntax
+        # versions are switch syntax
         # The version `get_target_version()` is ignored.
         (
             {
@@ -147,7 +149,7 @@ outputs = {
             "ave_eol_check",
             {"username": "admin", "password": "mypassword", "cversion": AciVersion("6.0(4d)"), "tversion": AciVersion("6.1(4a)"), "sw_cversion": AciVersion("6.0(9d)"), "vpc_node_ids": ["101", "102"]},
         ),
-        # veresions are switch or APIC syntax
+        # versions are switch or APIC syntax
         # The version `get_target_version()` is ignored.
         (
             {
@@ -164,14 +166,30 @@ outputs = {
     ],
 )
 def test_prepare(mock_icurl, api_only, arg_tversion, arg_cversion, debug_function, expected_result):
+    script.initialize()
     checks = script.get_checks(api_only, debug_function)
-    inputs = script.prepare(api_only, arg_tversion, arg_cversion, len(checks))
+    inputs = script.prepare(api_only, arg_tversion, arg_cversion, checks)
     for key, value in expected_result.items():
-        if "version" in key:
+        if "version" in key:  # cversion or tversion
             assert isinstance(inputs[key], AciVersion)
             assert str(inputs[key]) == str(value)
         else:
             assert inputs[key] == value
+
+    result_files = os.listdir(script.JSON_DIR)
+    # Result files should be created for all checks
+    assert len(result_files) == len(checks)
+    for check in checks:
+        # Rule name is known only through the wrapper `check_wrapper`.
+        # Rule name content should be checked via another unit test.
+        # Use AciResult class here just to get the filename from `check.__name__`.
+        ar = AciResult(check.__name__, "unknown_name", "")
+        file_path = os.path.join(script.JSON_DIR, ar.filename)
+        assert os.path.exists(file_path), "Missing result file: {}".format(file_path)
+        with open(file_path, "r") as f:
+            result = json.load(f)
+        assert result["ruleId"] == check.__name__
+        assert result["ruleStatus"] == AciResult.IN_PROGRESS
 
     with open(script.META_FILE, "r") as f:
         meta = json.load(f)
@@ -191,13 +209,13 @@ def test_prepare(mock_icurl, api_only, arg_tversion, arg_cversion, debug_functio
 def test_tversion_invald():
     with pytest.raises(SystemExit):
         with pytest.raises(ValueError):
-            script.prepare(False, "invalid_version", "6.0(1a)", 1)
+            script.prepare(False, "invalid_version", "6.0(1a)", [])
 
 
 def test_cversion_invald():
     with pytest.raises(SystemExit):
         with pytest.raises(ValueError):
-            script.prepare(False, "6.0(1a)", "invalid_version", 1)
+            script.prepare(False, "6.0(1a)", "invalid_version", [])
 
 
 @pytest.mark.parametrize(
@@ -264,7 +282,46 @@ def test_prepare_exception(capsys, caplog, mock_icurl, api_only, arg_tversion, a
     with pytest.raises(SystemExit):
         with pytest.raises(Exception):
             checks = script.get_checks(api_only, debug_function)
-            script.prepare(api_only, arg_tversion, arg_cversion, len(checks))
+            script.prepare(api_only, arg_tversion, arg_cversion, checks)
     captured = capsys.readouterr()
     print(captured.out)
     assert captured.out.endswith(expected_result)
+
+
+# Unit test focusing only on the result file creation
+def test_prepare_initial_result_files(mock_icurl, icurl_outputs):
+    # Provide required API outputs used inside prepare()
+    icurl_outputs.update({
+        "firmwareCtrlrRunning.json": outputs["cversion"],
+        "firmwareRunning.json": outputs["switch_version"],
+        "fabricNodePEp.json": outputs["vpc_nodes"],
+    })
+
+    # Create two simple checks with known titles
+    @script.check_wrapper(check_title="Prepare Check A")
+    def prep_check_a(**kwargs):
+        return script.Result(result=script.PASS)
+
+    @script.check_wrapper(check_title="Prepare Check B")
+    def prep_check_b(**kwargs):
+        return script.Result(result=script.PASS)
+
+    checks = [prep_check_a, prep_check_b]
+
+    # Run prepare which should only initialize result files
+    script.prepare(api_only=False, arg_tversion=None, arg_cversion=None, checks=checks)
+
+    # Verify result files and contents
+    expected = {
+        "prep_check_a": "Prepare Check A",
+        "prep_check_b": "Prepare Check B",
+    }
+    for func_name, title in expected.items():
+        ar = AciResult(func_name, title, "")
+        file_path = os.path.join(script.JSON_DIR, ar.filename)
+        assert os.path.exists(file_path), "Missing result file: {}".format(file_path)
+        with open(file_path, "r") as f:
+            data = json.load(f)
+        assert data["ruleId"] == func_name
+        assert data["name"] == title
+        assert data["ruleStatus"] == AciResult.IN_PROGRESS
