@@ -6007,6 +6007,25 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+
+@check_wrapper(check_title='APIC 6.2.1 Upgrade Warning')
+def controller_621_pre_warning(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Current version", "Target Version", "Warning"]
+    data = []
+    recommended_action = ''
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#controller-621-pre-warning'
+
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if cversion.older_than("6.2(1a)") \
+       and (tversion.same_as("6.2(1a)") or tversion.newer_than("6.2(1a)")):
+        result = MANUAL
+        data.append([cversion, tversion, "Downgrade from 6.2.1 to pre 6.2.1 is not supported."])
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6168,6 +6187,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        controller_621_pre_warning,
 
     ]
     ssh_checks = [

@@ -36,6 +36,7 @@ Items                                                        | This Script      
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
+[Controller 6.2.1 Pre Warning][g19]                          | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -55,6 +56,7 @@ Items                                                        | This Script      
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
+[g19]: #controller-621-pre-warning
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -494,6 +496,16 @@ For current version is 6.1(3f):
 
 In either scenario, contact TAC to collect a database dump of the flagged DME(s) and shard(s) for further analysis.
 
+### Controller 6.2.1 Pre Warning
+
+APIC version 6.2.1 introduces significant limitations that must be considered before upgrading:
+
+**Downgrade Limitations**: Downgrading from APIC 6.2.1 to any pre-6.2.1 version is not supported and will fail. Once you upgrade to 6.2.1, the policy based downgrade process cannot be used to revert to earlier versions.
+
+**Recovery Process**: If you need to move from 6.2.1 to a pre-6.2.1 version, you must perform a clean installation of the desired pre-6.2.1 version followed by an ID recovery process. This involves:
+
+1. Performing a clean install of the target pre-6.2.1 APIC version
+2. Executing the ID recovery procedure to restore the APIC configuration and cluster membership
 
 ## Fault Check Details
 
