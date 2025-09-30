@@ -4530,6 +4530,230 @@ def vzany_vzany_service_epg_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Shared Services with vzAny Consumers")
+def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
+    headers = ["Contract(Tn:Contract)", "Consumer VRF(Tn:VRF)", "Provider VRF(Tn:VRF)", "Provider DN", "Provider Type"]
+    data = []
+    recommended_action = (
+        "Policy TCAM entries used by these contracts may increase after the upgrade.\n"
+        "\tThis may cause overflow of the TCAM space and some contracts may stop working after the upgrade.\n"
+        "\tTo avoid such a risk, refer to the provided document and consider enabling Policy Compression as needed."
+    )
+    recommended_action_for_pbr = (  # added only when it matters (PBR present and tver is pre-6.1.4)
+        "\n\tNote that Policy Compression for contracts with PBR (Policy Based Redirection) is not supported prior to 6.1(4). "
+        "Change the target version to a newer one if it is required."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#shared-service-with-vzany-consumer"
+
+    # Ignore if target version is missing or older than 5.3(2d)
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if tversion.older_than("5.3(2d)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    # Check if we cross any version lines where additional rule expansion may happen
+    should_check_epg_expansion = False
+    should_check_esg_expansion = False
+    should_check_pbr = False
+
+    # Rule expansion for EPG/External EPG providers with vzAny consumers
+    # For upgrades from pre-5.3(2d) to 5.3(2d)+ except for 6.0(1) and 6.0(2)
+    if cversion.older_than("5.3(2d)") and (
+        (tversion.major1 == "5" and not tversion.older_than("5.3(2d)"))
+        or tversion.newer_than("6.0(3a)")
+    ):
+        should_check_epg_expansion = True
+    # For upgrades from 6.0(1)/6.0(2) to 6.0(3) or newer release
+    if cversion.newer_than("6.0(1a)") and cversion.older_than("6.0(3a)") and tversion.newer_than("6.0(3a)"):
+        should_check_epg_expansion = True
+
+    # Rule expansion for ESG providers with vzAny consumers
+    if cversion.older_than("6.1(2a)") and tversion.newer_than("6.1(2a)"):
+        should_check_esg_expansion = True
+
+    # Look for PBR enabled contracts that undergo rule expansion since enabling
+    # compression on them will have no effect in pre-6.1(4) releases
+    if tversion.older_than("6.1(4a)"):
+        should_check_pbr = True
+
+    # If no expansion, upgrade path is unaffected
+    if not (should_check_epg_expansion or should_check_esg_expansion):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    # Helper functions
+    def vrf_tn_name_from_dn(vrf_dn):
+        m = re.search(r"uni/tn-([^/]+)/ctx-([^/]+)", vrf_dn or "")
+        return "{}:{}".format(m.group(1), m.group(2)) if m else vrf_dn or "?"
+
+    def contract_tn_name_from_dn(c_dn):
+        m = re.search(r"uni/tn-([^/]+)/brc-([^/]+)", c_dn or "")
+        return "{}:{}".format(m.group(1), m.group(2)) if m else c_dn or "?"
+
+    def provider_class_from_parent(p_dn, pretty=False):
+        if "/ap-" in p_dn and "/epg-" in p_dn:
+            return "EPG" if pretty else "fvAEPg"
+        if "/ap-" in p_dn and "/esg-" in p_dn:
+            return "ESG" if pretty else "fvESg"
+        if "/out-" in p_dn and "/instP-" in p_dn:
+            return "External EPG" if pretty else "l3extInstP"
+        return "Unknown"
+
+    # Resolve provider VRF VNID.
+    # Performs at most one query per provider class (EPG, External EPG, ESG)
+    # and caches all results. Subsequent lookups are O(1).
+    _provider_dn_to_vrf_vnid = {}
+    _queried = {"fvAEPg": False, "l3extInstP": False, "fvESg": False}
+
+    def get_provider_vrf_vnid(p_dn):
+        if p_dn in _provider_dn_to_vrf_vnid:
+            return _provider_dn_to_vrf_vnid[p_dn]
+
+        p_classname = provider_class_from_parent(p_dn)
+
+        if p_classname == "Unknown":
+            _provider_dn_to_vrf_vnid[p_dn] = None
+        elif not _queried.get(p_classname):
+            for mo in icurl("class", p_classname + ".json") or []:
+                attr = mo.get(p_classname, {}).get("attributes", {})
+                dn = attr.get("dn")
+                vnid = attr.get("scope")
+                _provider_dn_to_vrf_vnid[dn] = vnid
+            _queried[p_classname] = True
+
+        return _provider_dn_to_vrf_vnid[p_dn]
+
+    _pbr_enabled_contracts = set()
+
+    def populate_pbr_enabled_contracts():
+        # Query all applied service graph instances, inspect node instances
+        # for routingMode=Redirect. Any contract DN (ctrctDn) with a redirect
+        # node is considered PBR-enabled.
+        # Relevant only if we are crossing 6.1(4) version in upgrade path.
+        graph_api = (
+            "vnsGraphInst.json?"
+            "query-target-filter=eq(vnsGraphInst.configSt,\"applied\")"
+            "&rsp-subtree=children&rsp-subtree-class=vnsNodeInst&rsp-subtree-include=required"
+        )
+        graph_insts = icurl("class", graph_api) or []
+        if not graph_insts:
+            return
+        for gi in graph_insts:
+            gi_mo = gi.get("vnsGraphInst")
+            if not gi_mo:
+                continue
+            ctrct_dn = gi_mo["attributes"].get("ctrctDn")
+            if not ctrct_dn:
+                continue
+            redirect = False
+            for child in gi_mo.get("children", []) or []:
+                node_inst = child.get("vnsNodeInst")
+                if not node_inst:
+                    continue
+                if node_inst["attributes"].get("routingMode") == "Redirect":
+                    redirect = True
+                    break
+            if redirect:
+                _pbr_enabled_contracts.add(ctrct_dn)
+
+    def is_contract_pbr_enabled(contract_dn):
+        return contract_dn in _pbr_enabled_contracts
+
+    # Gather all VRF VNIDs and look for vzAny consumers
+    all_vrfs = icurl("class", "fvCtx.json?rsp-subtree=full&rsp-subtree-class=vzRsAnyToCons") or []
+    vnid_to_vrf_dn = {}
+    contract_to_vzany_cons_vnids = defaultdict(list)
+    for vrf_entry in all_vrfs:
+        fvctx = vrf_entry.get("fvCtx", {})
+        attr = fvctx.get("attributes", {})
+        vrf_dn = attr.get("dn")
+        vrf_vnid = attr.get("scope")
+        if vrf_dn and vrf_vnid:
+            vnid_to_vrf_dn[vrf_vnid] = vrf_dn
+        for child in fvctx.get("children", []) or []:
+            vzany = child.get("vzAny")
+            if not vzany:
+                continue
+            for vzany_child in vzany.get("children", []) or []:
+                if vzany_child.get("vzRsAnyToCons"):
+                    contract_dn = vzany_child["vzRsAnyToCons"]["attributes"]["tDn"]
+                    contract_to_vzany_cons_vnids[contract_dn].append(vrf_vnid)
+
+    # Return if there are no vzAny consumers
+    if not contract_to_vzany_cons_vnids:
+        return Result(result=PASS, msg="No vzAny consumers")
+
+    # Look for contracts with global scope
+    global_contract_api = (
+        'vzBrCP.json?query-target-filter=eq(vzBrCP.scope,"global")'
+        '&rsp-subtree=children'
+        '&rsp-subtree-class=vzRtProv'
+        '&rsp-subtree-include=required'
+    )
+    global_contracts = icurl("class", global_contract_api) or []
+
+    if not global_contracts:
+        return Result(result=PASS, msg="No contracts with global scope")
+
+    if should_check_pbr:
+        populate_pbr_enabled_contracts()
+
+    # Go through contract relations
+    found_pbr = False
+    for entry in global_contracts:
+        brc = entry.get("vzBrCP")
+        if not brc:
+            continue
+        contract_dn = brc["attributes"]["dn"]
+        # Check consumers (vzAny)
+        c_vrf_vnids = contract_to_vzany_cons_vnids.get(contract_dn)
+        if not c_vrf_vnids:
+            continue  # No vzAny consumers for this contract. Skip.
+        # Check providers ("fvAEPg", "l3extInstP", "fvESg")
+        providers = set()
+        for ch in (brc.get("children") or []):
+            if ch.get("vzRtProv"):
+                p_dn = ch["vzRtProv"]["attributes"].get("tDn")
+                p_cl = ch["vzRtProv"]["attributes"].get("tCl")
+                if p_dn:
+                    if should_check_epg_expansion and p_cl in ("fvAEPg", "l3extInstP"):
+                        providers.add(p_dn)
+                    elif should_check_esg_expansion and p_cl == "fvESg":
+                        providers.add(p_dn)
+        # Populate data with cons/prov of contract affected by rule expansion
+        for c_vrf_vnid in c_vrf_vnids:
+            for p_dn in providers:
+                p_vrf_vnid = get_provider_vrf_vnid(p_dn)
+                if not p_vrf_vnid or p_vrf_vnid == c_vrf_vnid:
+                    continue  # global contract but used within the same VRF. Skip.
+                contract_name = contract_tn_name_from_dn(contract_dn)
+                if should_check_pbr and is_contract_pbr_enabled(contract_dn):
+                    contract_name += " [PBR]"
+                    found_pbr = True
+                data.append([
+                    contract_name,
+                    vrf_tn_name_from_dn(vnid_to_vrf_dn[c_vrf_vnid]),
+                    vrf_tn_name_from_dn(vnid_to_vrf_dn[p_vrf_vnid]),
+                    p_dn,
+                    provider_class_from_parent(p_dn, pretty=True),
+                ])
+
+    if found_pbr:
+        recommended_action += recommended_action_for_pbr
+
+    if data:
+        return Result(result=MANUAL,
+                      headers=headers,
+                      data=data,
+                      recommended_action=recommended_action,
+                      doc_url=doc_url)
+    else:
+        return Result(result=PASS,
+                      msg="No shared-service vzAny consumers affected by rule expansion",
+                      headers=headers,
+                      data=data,
+                      doc_url=doc_url)
+
+
 @check_wrapper(check_title='32 and 64-Bit Firmware Image for Switches')
 def validate_32_64_bit_image_check(cversion, tversion, **kwargs):
     result = PASS
@@ -5464,6 +5688,7 @@ def get_checks(api_only, debug_function):
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
+        consumer_vzany_shared_services_check,
 
         # Bugs
         ep_announce_check,

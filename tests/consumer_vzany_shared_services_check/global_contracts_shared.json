@@ -1,0 +1,116 @@
+{
+  "totalCount": "9",
+  "imdata": [
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-esg-permit",
+          "name": "vzany-esg-permit",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } },
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2b" } } },
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg1" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-esg-permit-no-stats",
+          "name": "vzany-esg-permit-no-stats",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-epg-no-stats",
+          "name": "vzany-epg-no-stats",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-esg-redirect",
+          "name": "vzany-esg-redirect",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-epg",
+          "name": "vzany-epg",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-instp",
+          "name": "vzany-instp",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-instp-no-stats",
+          "name": "vzany-instp-no-stats",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-esg-redirect-no-stats",
+          "name": "vzany-esg-redirect-no-stats",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-epg-instp",
+          "name": "vzany-epg-instp",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } },
+          { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
+        ]
+      }
+    }
+  ]
+}
