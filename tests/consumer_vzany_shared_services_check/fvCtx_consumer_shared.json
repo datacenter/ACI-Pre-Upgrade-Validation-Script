@@ -19,7 +19,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-esg-redirect-no-stats",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-esg-redirect-no-stats"
                     }
                   }
@@ -27,7 +26,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-epg",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-epg"
                     }
                   }
@@ -35,7 +33,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-epg-no-stats",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-epg-no-stats"
                     }
                   }
@@ -43,7 +40,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-instp-no-stats",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-instp-no-stats"
                     }
                   }
@@ -51,7 +47,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-esg-permit",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-esg-permit"
                     }
                   }
@@ -59,7 +54,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-esg-redirect",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-esg-redirect"
                     }
                   }
@@ -67,7 +61,6 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-esg-permit-no-stats",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-esg-permit-no-stats"
                     }
                   }
@@ -75,8 +68,21 @@
                 {
                   "vzRsAnyToCons": {
                     "attributes": {
-                      "dn": "uni/tn-vzAny-consumer/ctx-v1/any/rsanyToCons-vzany-instp",
                       "tDn": "uni/tn-vzAny-consumer/brc-vzany-instp"
+                    }
+                  }
+                },
+                {
+                  "vzRsAnyToCons": {
+                    "attributes": {
+                      "tDn": "uni/tn-vzAny-consumer/brc-vzany-epg-instp"
+                    }
+                  }
+                },
+                {
+                  "vzRsAnyToCons": {
+                    "attributes": {
+                      "tDn": "uni/tn-vzAny-consumer/brc-vzany-cons-only"
                     }
                   }
                 }

@@ -8,18 +8,8 @@
       },
       "children": [
         {
-          "vzRtAnyToCons": {
-            "attributes": {
-              "dn": "uni/tn-vzAny-consumer/brc-contract-esg/rtanyToCons-[uni/tn-vzAny-consumer/ctx-vrf1/any]",
-              "tDn": "uni/tn-vzAny-consumer/ctx-vrf1/any",
-              "tCl": "vzAny"
-            }
-          }
-        },
-        {
           "vzRtProv": {
             "attributes": {
-              "dn": "uni/tn-vzAny-consumer/brc-contract-esg/rtprov-[uni/tn-vzAny-consumer/ap-ap1/esg-esg2]",
               "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2",
               "tCl": "fvESg"
             }

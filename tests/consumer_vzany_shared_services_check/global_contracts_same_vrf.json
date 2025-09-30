@@ -9,7 +9,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
         ]
       }
@@ -22,7 +21,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
         ]
       }
@@ -35,7 +33,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } }
         ]
       }
@@ -48,7 +45,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
         ]
       }
@@ -61,7 +57,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } }
         ]
       }
@@ -74,7 +69,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
         ]
       }
@@ -87,7 +81,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
         ]
       }
@@ -100,7 +93,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v2/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
         ]
       }

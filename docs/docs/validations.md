@@ -2210,13 +2210,14 @@ If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Gui
 
 
 ### Shared Service with vzAny Consumer
-For a shared service contract with vzAny as a consumer, policy TCAM space usage may increase depending on the release version and provider type due to a behavior change called "Rule Expansion":
-    - In case of EPG/External EPG provider, 5.3(2d) and later or 6.0(3) and later releases may use more policy TCAM space than previous releases.
-    - In case of ESG provider, 6.1(2) and later releases may use more policy TCAM space than previous releases.
+A shared service (VRF Route Leaking) contract with vzAny as a consumer may use more policy TCAM space after an upgrade depending on the release version and provider type due to a behavior change called "Rule Expansion":
 
-See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, it can lead to a disruption of traffic after the upgrade and Rule Expansion even if the traffic was working prior to the upgrade.
+* In the case of EPG/External EPG providers, 5.3(2d) and later or 6.0(3) and later releases may use more policy TCAM space than releases older than 5.3(2d) or 6.0(3).
+* In the case of ESG providers, 6.1(2) and later releases may use more policy TCAM space than releases older than 6.1(2).
 
-To avoid TCAM overflow, consider enabling policy compression directive on contract filters. However, note that enabling policy compression directive will result in loss of the statistics capability for these rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
+When Rule Expansion takes place after an upgrade, the increase in the TCAM space may result in TCAM overflow which can lead to traffic disruption because contracts that used to work may stop working.
+
+See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, consider enabling the policy compression directive on contract filters to mitigate the increase of TCAM usage. However, note that enabling the policy compression directive will result in loss of the statistics capability for those rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
 
 See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
 

@@ -1,5 +1,5 @@
 {
-  "totalCount": "8",
+  "totalCount": "9",
   "imdata": [
     {
       "vzBrCP": {
@@ -9,8 +9,9 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
-            { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } },
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2b" } } },
+          { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg1" } } }
         ]
       }
     },
@@ -22,7 +23,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
         ]
       }
@@ -35,7 +35,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } }
         ]
       }
@@ -48,7 +47,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
         ]
       }
@@ -61,7 +59,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } }
         ]
       }
@@ -74,7 +71,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
         ]
       }
@@ -87,7 +83,6 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
         ]
       }
@@ -100,8 +95,20 @@
           "scope": "global"
         },
         "children": [
-          { "vzRtAnyToCons": { "attributes": { "tDn": "uni/tn-vzAny-consumer/ctx-v1/any" } } },
           { "vzRtProv": { "attributes": { "tCl": "fvESg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2" } } }
+        ]
+      }
+    },
+    {
+      "vzBrCP": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/brc-vzany-epg-instp",
+          "name": "vzany-epg-instp",
+          "scope": "global"
+        },
+        "children": [
+          { "vzRtProv": { "attributes": { "tCl": "fvAEPg", "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched" } } },
+          { "vzRtProv": { "attributes": { "tCl": "l3extInstP", "tDn": "uni/tn-vzAny-consumer/out-out2/instP-l3instp2" } } }
         ]
       }
     }

@@ -4532,23 +4532,16 @@ def vzany_vzany_service_epg_check(cversion, tversion, **kwargs):
 
 @check_wrapper(check_title="Shared Services with vzAny Consumers")
 def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
-    result = PASS
-    headers = ["Contract", "Consumer vzAny VRF", "Provider DN", "Provider Type", "Provider VRF"]
+    headers = ["Contract(Tn:Contract)", "Consumer VRF(Tn:VRF)", "Provider VRF(Tn:VRF)", "Provider DN", "Provider Type"]
     data = []
     recommended_action = (
-        "Config contains shared service contract(s) that use vzAny as a consumer.\n"
-        "\n"
-        "  For example, a contract from a consumer vzAny (VRF1) to a provider (VRF2) enables\n"
-        "  communication between endpoints in VRF1 and endpoints in the provider in VRF2.\n"
-        "  If this contract just adds permit rules between any to this provider in VRF2,\n"
-        "  it could enable communication from endpoints in VRF2 to endpoints in this provider\n"
-        "  in VRF2 without an explicit contract.\n\n"
-        "  To prevent this unintended communication, Cisco ACI automatically performs policy\n"
-        "  TCAM rule expansion in the provider VRF.\n"
-        "  To preserve TCAM space, avoid using vzAny as a consumer, or enable policy compression\n"
-        "  on contract filters.\n\n"
-        "  Note:\n"
-        "  - Enabling compression disables statistics for these rules.\n"
+        "Policy TCAM entries used by these contracts may increase after the upgrade.\n"
+        "\tThis may cause overflow of the TCAM space and some contracts may stop working after the upgrade.\n"
+        "\tTo avoid such a risk, refer to the provided document and consider enabling Policy Compression as needed."
+    )
+    recommended_action_for_pbr = (  # added only when it matters (PBR present and tver is pre-6.1.4)
+        "\n\tNote that Policy Compression for contracts with PBR (Policy Based Redirection) is not supported prior to 6.1(4). "
+        "Change the target version to a newer one if it is required."
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#shared-service-with-vzany-consumer"
 
@@ -4556,6 +4549,35 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
     if tversion.older_than("5.3(2d)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    # Check if we cross any version lines where additional rule expansion may happen
+    should_check_epg_expansion = False
+    should_check_esg_expansion = False
+    should_check_pbr = False
+
+    # Rule expansion for EPG/External EPG providers with vzAny consumers
+    # For upgrades from pre-5.3(2d) to 5.3(2d)+ except for 6.0(1) and 6.0(2)
+    if cversion.older_than("5.3(2d)") and (
+        (tversion.major1 == "5" and not tversion.older_than("5.3(2d)"))
+        or tversion.newer_than("6.0(3a)")
+    ):
+        should_check_epg_expansion = True
+    # For upgrades from 6.0(1)/6.0(2) to 6.0(3) or newer release
+    if cversion.newer_than("6.0(1a)") and cversion.older_than("6.0(3a)") and tversion.newer_than("6.0(3a)"):
+        should_check_epg_expansion = True
+
+    # Rule expansion for ESG providers with vzAny consumers
+    if cversion.older_than("6.1(2a)") and tversion.newer_than("6.1(2a)"):
+        should_check_esg_expansion = True
+
+    # Look for PBR enabled contracts that undergo rule expansion since enabling
+    # compression on them will have no effect in pre-6.1(4) releases
+    if tversion.older_than("6.1(4a)"):
+        should_check_pbr = True
+
+    # If no expansion, upgrade path is unaffected
+    if not (should_check_epg_expansion or should_check_esg_expansion):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     # Helper functions
@@ -4567,64 +4589,41 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
         m = re.search(r"uni/tn-([^/]+)/brc-([^/]+)", c_dn or "")
         return "{}:{}".format(m.group(1), m.group(2)) if m else c_dn or "?"
 
-    def parent_dn(rel_dn):
-        return rel_dn.rsplit("/", 1)[0]
-
-    def provider_type_from_parent(p_dn):
+    def provider_class_from_parent(p_dn, pretty=False):
         if "/ap-" in p_dn and "/epg-" in p_dn:
-            return "EPG"
-        if "/esg-" in p_dn:
-            return "ESG"
+            return "EPG" if pretty else "fvAEPg"
+        if "/ap-" in p_dn and "/esg-" in p_dn:
+            return "ESG" if pretty else "fvESg"
         if "/out-" in p_dn and "/instP-" in p_dn:
-            return "External EPG"
+            return "External EPG" if pretty else "l3extInstP"
         return "Unknown"
 
-    # Resolve provider VRF DN.
+    # Resolve provider VRF VNID.
     # Performs at most one query per provider class (EPG, External EPG, ESG)
     # and caches all results. Subsequent lookups are O(1).
-    _provider_vrf_dn_cache = {}
-    _epg_provider_queried = False
-    _instp_provider_queried = False
-    _esg_provider_queried = False
+    _provider_dn_to_vrf_vnid = {}
+    _queried = {"fvAEPg": False, "l3extInstP": False, "fvESg": False}
 
-    def get_provider_vrf_dn(p_dn, vnid_to_vrf_dn):
-        nonlocal _epg_provider_queried, _instp_provider_queried, _esg_provider_queried
+    def get_provider_vrf_vnid(p_dn):
+        if p_dn in _provider_dn_to_vrf_vnid:
+            return _provider_dn_to_vrf_vnid[p_dn]
 
-        if p_dn in _provider_vrf_dn_cache:
-            return _provider_vrf_dn_cache[p_dn]
+        p_classname = provider_class_from_parent(p_dn)
 
-        p_type = provider_type_from_parent(p_dn)
+        if p_classname == "Unknown":
+            _provider_dn_to_vrf_vnid[p_dn] = None
+        elif not _queried.get(p_classname):
+            for mo in icurl("class", p_classname + ".json") or []:
+                attr = mo.get(p_classname, {}).get("attributes", {})
+                dn = attr.get("dn")
+                vnid = attr.get("scope")
+                _provider_dn_to_vrf_vnid[dn] = vnid
+            _queried[p_classname] = True
 
-        if p_type == "EPG" and not _epg_provider_queried:
-            for mo in icurl("class", "fvAEPg.json") or []:
-                a = mo.get("fvAEPg", {}).get("attributes", {})
-                scope = a.get("scope")
-                if scope and scope in vnid_to_vrf_dn:
-                    _provider_vrf_dn_cache[a.get("dn")] = vnid_to_vrf_dn[scope]
-            _epg_provider_queried = True
+        return _provider_dn_to_vrf_vnid[p_dn]
 
-        elif p_type == "External EPG" and not _instp_provider_queried:
-            for mo in icurl("class", "l3extInstP.json") or []:
-                a = mo.get("l3extInstP", {}).get("attributes", {})
-                scope = a.get("scope")
-                if scope and scope in vnid_to_vrf_dn:
-                    _provider_vrf_dn_cache[a.get("dn")] = vnid_to_vrf_dn[scope]
-            _instp_provider_queried = True
+    _pbr_enabled_contracts = set()
 
-        elif p_type == "ESG" and not _esg_provider_queried:
-            for mo in icurl("class", "fvESg.json") or []:
-                a = mo.get("fvESg", {}).get("attributes", {})
-                scope = a.get("scope")
-                if scope and scope in vnid_to_vrf_dn:
-                    _provider_vrf_dn_cache[a.get("dn")] = vnid_to_vrf_dn[scope]
-            _esg_provider_queried = True
-
-        elif p_type == "Unknown":
-            _provider_vrf_dn_cache[p_dn] = None
-
-        return _provider_vrf_dn_cache[p_dn]
-
-    pbr_enabled_contracts = set()
     def populate_pbr_enabled_contracts():
         # Query all applied service graph instances, inspect node instances
         # for routingMode=Redirect. Any contract DN (ctrctDn) with a redirect
@@ -4654,68 +4653,40 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
                     redirect = True
                     break
             if redirect:
-                pbr_enabled_contracts.add(ctrct_dn)
+                _pbr_enabled_contracts.add(ctrct_dn)
 
     def is_contract_pbr_enabled(contract_dn):
-        return contract_dn in pbr_enabled_contracts
+        return contract_dn in _pbr_enabled_contracts
 
-    # Check if we cross any version lines where additional rule expansion may happen
-    should_check_epg_expansion = False
-    should_check_esg_expansion = False
-    should_check_pbr = False
-
-    # Rule expansion for EPG/External EPG providers with vzAny consumers
-    # For upgrades from pre-5.3(2d) to 5.3(2d) or from pre-5.3(2d) to 6.0(3) and newer release
-    if cversion.older_than("5.3(2d)") and not tversion.older_than("5.3(2d)"):
-        if int(tversion.major1) < 6:
-            should_check_epg_expansion = True;
-        elif int(tversion.major1) > 5 and tversion.newer_than("6.0(3a)"):
-            should_check_epg_expansion = True;
-
-    # For upgrades from 6.0(1)/6.0(2) to 6.0(3) or newer release
-    if cversion.newer_than("6.0(1a)") and cversion.older_than("6.0(3a)") and tversion.newer_than("6.0(3a)"):
-        should_check_epg_expansion = True;
-
-    # Rule expansion for ESG providers with vzAny consumers
-    if (cversion.older_than("6.1(2a)") and tversion.newer_than("6.1(2a)")):
-        should_check_esg_expansion = True;
-
-    # Look for PBR enabled contracts that undergo rule expansion since enabling
-    # compression on them will have no effect in pre-6.1(4) releases
-    if (tversion.older_than("6.1(4a)")):
-        should_check_pbr = True;
-
-    # If all are False, upgrade path is unaffected by rule expansion
-    if not (should_check_epg_expansion or should_check_esg_expansion):
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
-
-    # Gather VRF VNIDs and look for vzAny consumers
+    # Gather all VRF VNIDs and look for vzAny consumers
     all_vrfs = icurl("class", "fvCtx.json?rsp-subtree=full&rsp-subtree-class=vzRsAnyToCons") or []
     vnid_to_vrf_dn = {}
-    any_cons = []
+    contract_to_vzany_cons_vnids = defaultdict(list)
     for vrf_entry in all_vrfs:
         fvctx = vrf_entry.get("fvCtx", {})
         attr = fvctx.get("attributes", {})
         vrf_dn = attr.get("dn")
-        if vrf_dn:
-            vnid_to_vrf_dn[attr.get("scope")] = vrf_dn
+        vrf_vnid = attr.get("scope")
+        if vrf_dn and vrf_vnid:
+            vnid_to_vrf_dn[vrf_vnid] = vrf_dn
         for child in fvctx.get("children", []) or []:
             vzany = child.get("vzAny")
             if not vzany:
                 continue
             for vzany_child in vzany.get("children", []) or []:
                 if vzany_child.get("vzRsAnyToCons"):
-                    any_cons.append(vzany_child)
+                    contract_dn = vzany_child["vzRsAnyToCons"]["attributes"]["tDn"]
+                    contract_to_vzany_cons_vnids[contract_dn].append(vrf_vnid)
 
     # Return if there are no vzAny consumers
-    if not any_cons:
+    if not contract_to_vzany_cons_vnids:
         return Result(result=PASS, msg="No vzAny consumers")
 
     # Look for contracts with global scope
     global_contract_api = (
         'vzBrCP.json?query-target-filter=eq(vzBrCP.scope,"global")'
         '&rsp-subtree=children'
-        '&rsp-subtree-class=vzRtAnyToCons,vzRtProv'
+        '&rsp-subtree-class=vzRtProv'
         '&rsp-subtree-include=required'
     )
     global_contracts = icurl("class", global_contract_api) or []
@@ -4726,81 +4697,61 @@ def consumer_vzany_shared_services_check(cversion, tversion, **kwargs):
     if should_check_pbr:
         populate_pbr_enabled_contracts()
 
-    # Global contracts with vzAny consumers exist
-    # Populate [(contract_dn, vzany_dn, provider_dn)] using global_contracts
-    global_vzany_to_provider_tuples = []
-    found_epg_expansion = False;
-    found_esg_expansion = False;
-    found_pbr = False;
-
+    # Go through contract relations
+    found_pbr = False
     for entry in global_contracts:
         brc = entry.get("vzBrCP")
         if not brc:
             continue
-        c_dn = brc["attributes"]["dn"]
-        consumers = set()
+        contract_dn = brc["attributes"]["dn"]
+        # Check consumers (vzAny)
+        c_vrf_vnids = contract_to_vzany_cons_vnids.get(contract_dn)
+        if not c_vrf_vnids:
+            continue  # No vzAny consumers for this contract. Skip.
+        # Check providers ("fvAEPg", "l3extInstP", "fvESg")
         providers = set()
         for ch in (brc.get("children") or []):
-            if ch.get("vzRtAnyToCons"):
-                vzany_dn = ch["vzRtAnyToCons"]["attributes"].get("tDn")
-                if vzany_dn:
-                    consumers.add(vzany_dn)
-            elif ch.get("vzRtProv"):
+            if ch.get("vzRtProv"):
                 p_dn = ch["vzRtProv"]["attributes"].get("tDn")
+                p_cl = ch["vzRtProv"]["attributes"].get("tCl")
                 if p_dn:
-                    p_class = provider_type_from_parent(p_dn)
-                    if should_check_epg_expansion and p_class in ("EPG", "External EPG"):
+                    if should_check_epg_expansion and p_cl in ("fvAEPg", "l3extInstP"):
                         providers.add(p_dn)
-                    elif should_check_esg_expansion and p_class == "ESG":
+                    elif should_check_esg_expansion and p_cl == "fvESg":
                         providers.add(p_dn)
-        for vzany_dn in consumers:
+        # Populate data with cons/prov of contract affected by rule expansion
+        for c_vrf_vnid in c_vrf_vnids:
             for p_dn in providers:
-                c_vrf_dn = parent_dn(vzany_dn)
-                p_vrf_dn = get_provider_vrf_dn(p_dn, vnid_to_vrf_dn)
-                if p_vrf_dn and p_vrf_dn != c_vrf_dn:
-                    global_vzany_to_provider_tuples.append((c_dn, vzany_dn, p_dn))
-                    if provider_type_from_parent(p_dn) in {"EPG", "External EPG"}:
-                        found_epg_expansion = True;
-                    elif provider_type_from_parent(p_dn) in {"ESG"}:
-                        found_esg_expansion = True;
-                    if should_check_pbr and is_contract_pbr_enabled(c_dn):
-                        found_pbr = True
+                p_vrf_vnid = get_provider_vrf_vnid(p_dn)
+                if not p_vrf_vnid or p_vrf_vnid == c_vrf_vnid:
+                    continue  # global contract but used within the same VRF. Skip.
+                contract_name = contract_tn_name_from_dn(contract_dn)
+                if should_check_pbr and is_contract_pbr_enabled(contract_dn):
+                    contract_name += " [PBR]"
+                    found_pbr = True
+                data.append([
+                    contract_name,
+                    vrf_tn_name_from_dn(vnid_to_vrf_dn[c_vrf_vnid]),
+                    vrf_tn_name_from_dn(vnid_to_vrf_dn[p_vrf_vnid]),
+                    p_dn,
+                    provider_class_from_parent(p_dn, pretty=True),
+                ])
 
-    # Suggest recommended_action based on populated entries
-    if found_epg_expansion:
-        recommended_action += ("  - For EPG or External EPG provider with permit action: TCAM rule expansion in provider VRF is done starting 5.3(2d) or 6.0(3) release.\n")
-    if found_esg_expansion:
-        recommended_action += ("  - For ESG provider with permit action: TCAM rule expansion in provider VRF is done starting 6.1(2) release.\n")
     if found_pbr:
-        recommended_action += ("  - For all providers with redirect action: Policy compression is not effective before 6.1(4) release.\n")
-        recommended_action += ("    Enabling it on earlier versions will not have any effect.\n")
-
-    # Walk through each tuple to check if it should be added to data
-    for contract_dn, any_dn, p_dn in global_vzany_to_provider_tuples:
-        if should_check_pbr:
-            pbr_enabled = is_contract_pbr_enabled(contract_dn)
-        p_type = provider_type_from_parent(p_dn)
-        data.append([
-            contract_tn_name_from_dn(contract_dn) + (" [Redirect]" if should_check_pbr and pbr_enabled else ""),
-            vrf_tn_name_from_dn(parent_dn(any_dn)),
-            p_dn,
-            p_type,
-            vrf_tn_name_from_dn(get_provider_vrf_dn(p_dn, vnid_to_vrf_dn))
-        ])
+        recommended_action += recommended_action_for_pbr
 
     if data:
         return Result(result=MANUAL,
-                    headers=headers,
-                    data=data,
-                    recommended_action=recommended_action,
-                    doc_url=doc_url)
+                      headers=headers,
+                      data=data,
+                      recommended_action=recommended_action,
+                      doc_url=doc_url)
     else:
         return Result(result=PASS,
                       msg="No shared-service vzAny consumers affected by rule expansion",
                       headers=headers,
                       data=data,
                       doc_url=doc_url)
-
 
 
 @check_wrapper(check_title='32 and 64-Bit Firmware Image for Switches')

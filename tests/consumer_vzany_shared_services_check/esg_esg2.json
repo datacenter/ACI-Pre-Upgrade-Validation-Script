@@ -6,5 +6,21 @@
         "scope": "2850816"
       }
     }
+  },
+  {
+    "fvESg": {
+      "attributes": {
+        "dn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg2b",
+        "scope": "2850816"
+      }
+    }
+  },
+  {
+    "fvESg": {
+      "attributes": {
+        "dn": "uni/tn-vzAny-consumer/ap-ap1/esg-esg1",
+        "scope": "2916352"
+      }
+    }
   }
 ]
