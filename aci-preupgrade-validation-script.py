@@ -995,6 +995,7 @@ class AciResult:
             if not self.reason:
                 self.reason = "See Failure Details"
             self.failureDetails["failType"] = result
+            self.failureDetails["header"] = headers
             self.failureDetails["data"] = self.craftData(headers, data)
             if unformatted_headers and unformatted_data:
                 self.failureDetails["unformatted_data"] = self.craftData(unformatted_headers, unformatted_data)
