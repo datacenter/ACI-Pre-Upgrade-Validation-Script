@@ -918,11 +918,11 @@ def is_firstver_gt_secondver(first_ver, second_ver):
 
 class AciResult:
     """
-    APIC uses an object called `AciResult` to store the results of
-    each rule/check in the pre-upgrade validation which is run during the upgrade
+    APIC uses an object called `syntheticMaintPValidate` to store the results of
+    each rule/check in the pre-upgrade validation which runs during the upgrade
     workflow in the APIC GUI. When this script is invoked during the workflow, it
     is expected to write the results of each rule/check to a JSON file (one per rule)
-    in a specific format.
+    in a specific format compliant with `syntheticMaintPValidate`.
     """
     # Expected keys in the JSON file
     __slots__ = (
@@ -992,6 +992,8 @@ class AciResult:
         self.ruleStatus = AciResult.PASS
         if result not in [NA, PASS]:
             self.ruleStatus = AciResult.FAIL
+            if not self.reason:
+                self.reason = "See Failure Details"
             self.failureDetails["failType"] = result
             self.failureDetails["data"] = self.craftData(headers, data)
             if unformatted_headers and unformatted_data:

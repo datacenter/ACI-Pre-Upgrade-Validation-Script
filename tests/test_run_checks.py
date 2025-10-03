@@ -158,12 +158,15 @@ TOTAL                       : 10
                 # reason
                 if result == script.ERROR:
                     assert data["reason"].endswith(err_msg)
-                elif others.get("unformatted_data"):
-                    assert data["reason"] == others.get("msg", "") + (
-                        "\n"
-                        "Parse failure occurred, the provided data may not be complete. "
-                        "Please contact Cisco TAC to identify the missing data."
-                    )
+                elif result not in [script.PASS, script.NA]:
+                    msg = others.get("msg", "See Failure Details")
+                    if others.get("unformatted_data"):
+                        msg += (
+                            "\n"
+                            "Parse failure occurred, the provided data may not be complete. "
+                            "Please contact Cisco TAC to identify the missing data."
+                        )
+                    assert data["reason"] == msg
                 else:
                     assert data["reason"] == others.get("msg", "")
                 # failureDetails.failType
