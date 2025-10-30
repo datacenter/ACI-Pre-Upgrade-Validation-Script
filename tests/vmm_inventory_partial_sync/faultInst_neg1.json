@@ -4,7 +4,7 @@
             "attributes": {
                 "cause": "operational-issues",
                 "code": "F0132",
-                "changeSet": "remoteOperIssues (Old: event-channel-down,partial-inv, New: partial-inv)",
+                "changeSet": "remoteOperIssues (Old: , New: event-channel-down)",
                 "descr": "Operational issues detected for VMM controller: 10.38.166.119 with name HAM_ACI_DR in datacenter  UKDR_VDI in domain: UKDRISVC32 due to error: Received partial inventory in the last inventory sync. Please look for Faults under VM and Host and fix them via VCenter, then manually re-trigger inventory sync on APIC",
                 "dn": "comp/prov-VMware/ctrlr-[UKDRISVC32]-HAM_ACI_DR/fault-F0132",
                 "rule": "comp-ctrlr-operational-issues"

@@ -20,6 +20,10 @@ f0132_api += '?query-target-filter=eq(faultInst.code,"F0132")'
             script.PASS,
         ),
         (
+            {f0132_api: read_data(dir, "faultInst_neg1.json")},
+            script.PASS,
+        ),
+        (
             {f0132_api: read_data(dir, "faultInst_pos.json")},
             script.MANUAL,
         )

@@ -5222,7 +5222,8 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         fc = faultInst['faultInst']['attributes']['code']
         dn = faultInst['faultInst']['attributes']['dn']
         desc = faultInst['faultInst']['attributes']['descr']
-        if dn and desc:
+        change_set = faultInst['faultInst']['attributes']['changeSet']
+        if dn and desc and "partial-inv" in change_set:
             data.append([fc, dn, recommended_action])
             
     if data:
@@ -5333,6 +5334,7 @@ def get_checks(api_only, debug_function):
         scalability_faults_check,
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
+        apic_vmm_inventory_sync_faults_check,
 
         # Configurations
         vpc_paired_switches_check,
