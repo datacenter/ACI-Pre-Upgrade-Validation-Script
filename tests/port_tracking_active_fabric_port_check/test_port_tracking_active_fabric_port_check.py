@@ -45,5 +45,5 @@ infra_port_track_pol_api = 'uni/infra/trackEqptFabP-default.json'
 
 def test_logic(mock_icurl, tversion, expected_result):
     tversion = script.AciVersion(tversion) if tversion else None
-    result = script.port_tracking_minimal_uplink_check(1, 1, tversion)
+    result = script.port_tracking_active_fabric_port_check(1, 1, tversion)
     assert result == expected_result
