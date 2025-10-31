@@ -2607,7 +2607,7 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 ### Port Tracking Active Fabric Port Zero
 
-Due to CSCwp91797[61], if port-tracking feature is on and "number of active fabric ports that triggers port tracking" is zero, vPC member may be showing down post upgrade, the interface status become "initializing" by CLI "show interface e1/xx" 
+Due to [CSCwp91797][62], if port-tracking feature is on and "number of active fabric ports that triggers port tracking" is zero, vPC member may be showing down post upgrade, the interface status become "initializing" by CLI "show interface e1/xx" 
 
 This defect is only applicable to 6.0(9d), change port-tracking "number of active fabric ports that triggers port tracking" to 1 before upgrade can avoid this issue.
 
