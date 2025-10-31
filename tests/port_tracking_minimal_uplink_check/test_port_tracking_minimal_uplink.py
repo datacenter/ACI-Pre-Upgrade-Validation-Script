@@ -8,18 +8,36 @@ log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 infra_port_track_pol_api = 'uni/infra/trackEqptFabP-default.json'
 @pytest.mark.parametrize(
-    "icurl_outputs, expected_result",
-    [
+    "icurl_outputs, tversion, expected_result",
+    [   
+        # tversion not given 
+        (
+            {infra_port_track_pol_api: []},
+            None,
+            script.MANUAL,
+        ),
+        # tversion is not hit
+        (
+            {infra_port_track_pol_api: []},
+            "6.0(9e)",
+            script.NA,
+        ),
+        #adminSt is off.
         (
             {infra_port_track_pol_api: read_data(dir, "infraPortTrackPol_neg.json")},
+            "6.0(9d)",
             script.PASS,
         ),
+        #adminSt is on, but minlinks is not zero.
         (
             {infra_port_track_pol_api: read_data(dir, "infraPortTrackPol_neg1.json")},
+            "6.0(9d)",
             script.PASS,
         ),
+        #adminSt is on, and minlinks is zero.
         (
             {infra_port_track_pol_api: read_data(dir, "infraPortTrackPol_pos.json")},
+            "6.0(9d)",
             script.FAIL_O,
         )
     ],

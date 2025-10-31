@@ -5561,10 +5561,10 @@ def configpush_shard_check(tversion, **kwargs):
 @check_wrapper(check_title='Port Tracking Minimal Uplink Zero')
 def port_tracking_minimal_uplink_check(tversion, **kwargs):
     result = NA
-    headers = ["Port Tracking Minimal Uplink"]
+    headers = ["Port Tracking Minimal Link"]
     data = []
-    recommended_action = 'Increase Port Tracking Uplink to 1 before upgrade'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#port-tracking-minimal-uplink-zero'
+    recommended_action = 'Increase Port Tracking Minimal Link to 1 before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#port-tracking-minimal-link-zero'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING) 
