@@ -5561,7 +5561,7 @@ def configpush_shard_check(tversion, **kwargs):
 @check_wrapper(check_title='Port Tracking Minimal Uplink Zero')
 def port_tracking_active_fabric_port_check(tversion, **kwargs):
     result = NA
-    headers = ["Port Tracking Active Fabric Ports"]
+    headers = ["Admin State", "Port Tracking Active Fabric Ports"]
     data = []
     recommended_action = 'Increase Port Tracking Active Fabric Ports to 1 before upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#port-tracking-active-fabric-port-zero'
@@ -5577,7 +5577,7 @@ def port_tracking_active_fabric_port_check(tversion, **kwargs):
             admin_st = port_tracking_mo[0]['infraPortTrackPol']['attributes']['adminSt']
             minimal_uplink = port_tracking_mo[0]['infraPortTrackPol']['attributes']['minlinks']
             if admin_st == "on" and minimal_uplink == "0":
-                data.append([minimal_uplink])
+                data.append([admin_st,minimal_uplink])
     else:
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     if data:
