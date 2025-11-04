@@ -2545,7 +2545,7 @@ def switch_ssd_check(**kwargs):
     }
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-ssd-health"
 
-    cs_regex = r'model \(New: (?P<model>\w+)\),'
+    cs_regex = r"model:(?P<model>\w+),"
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F3073"),eq(faultInst.code,"F3074"))')
     for faultInst in faultInsts:

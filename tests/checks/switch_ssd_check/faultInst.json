@@ -1,0 +1,28 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "cause": "equipment-flash-worn-out",
+        "changeSet": "acc:read-write, cap:244198, deltape:0, descr:flash, gbb:0, id:1, lba:0, lifetime:155, majorAlarm:yes, mfgTm:2025-11-03T04:22:06.834+00:00, minorAlarm:no, model:Micron_M550_MTFDDAT256MAY, operSt:ok, peCycles:4285, readErr:39, rev:MU03, ser:14270C7D9F13, tbw:336.453735, type:flash, vendor:Micron, warning:no, wlc:0",
+        "code": "F3073",
+        "descr": "SSD has reached 90% lifetime endurance limit. Please replace Switch/Supervisor  with ID 0 as soon as possible",
+        "dn": "topology/pod-1/node-205/sys/ch/supslot-1/sup/flash/fault-F3073",
+        "rule": "eqpt-flash-flash-worn-out",
+        "subject": "flash-worn-out"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "cause": "equipment-flash-warning",
+        "changeSet": "acc:read-write, cap:61057, deltape:23, descr:flash, gbb:0, id:1, lba:0, lifetime:85, majorAlarm:no, mfgTm:2020-09-22T02:21:45.675+00:00, minorAlarm:yes, model:Micron_M600_MTFDDAT064MBF, operSt:ok, peCycles:4290, readErr:0, rev:MC04, ser:MSA20400892, tbw:21.279228, type:flash, vendor:Micron, warning:yes, wlc:0",
+        "code": "F3074",
+        "descr": "SSD has reached 80% lifetime and is nearing its endurance limit. Please plan for Switch/Supervisor replacement soon",
+        "dn": "topology/pod-1/node-101/sys/ch/supslot-1/sup/flash/fault-F3074",
+        "rule": "eqpt-flash-flash-minor-alarm",
+        "subject": "flash-minor-alarm"
+      }
+    }
+  }
+]
