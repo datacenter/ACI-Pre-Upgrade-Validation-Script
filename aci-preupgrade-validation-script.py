@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # SPDX-License-Identifier: Apache-2.0
 #
 # Copyright 2021 Cisco Systems, Inc. and its affiliates
@@ -20,10 +21,11 @@ from six import iteritems, text_type
 from six.moves import input
 from textwrap import TextWrapper
 from getpass import getpass
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime
 from argparse import ArgumentParser
 from itertools import chain
+import threading
 import functools
 import shutil
 import warnings
@@ -36,7 +38,8 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v3.2.0"
+SCRIPT_VERSION = "v3.4.12"
+DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
 PASS = 'PASS'
@@ -64,11 +67,11 @@ tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
 BUNDLE_NAME = 'preupgrade_validator_%s%s.tgz' % (ts, tz)
 DIR = 'preupgrade_validator_logs/'
-JSON_DIR = DIR + 'json_results/'
-META_FILE = DIR + 'meta.json'
-RESULT_FILE = DIR + 'preupgrade_validator_%s%s.txt' % (ts, tz)
-SUMMARY_FILE = DIR + 'summary.json'
-LOG_FILE = DIR + 'preupgrade_validator_debug.log'
+JSON_DIR = os.path.join(DIR, 'json_results/')
+META_FILE = os.path.join(DIR, 'meta.json')
+RESULT_FILE = os.path.join(DIR, 'preupgrade_validator_%s%s.txt' % (ts, tz))
+SUMMARY_FILE = os.path.join(DIR, 'summary.json')
+LOG_FILE = os.path.join(DIR, 'preupgrade_validator_debug.log')
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 log = logging.getLogger()
@@ -916,6 +919,286 @@ def is_firstver_gt_secondver(first_ver, second_ver):
     return result
 
 
+class CustomThread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super(CustomThread, self).__init__(*args, **kwargs)
+        self.exception = None
+
+    def start(self, timeout=5.0):
+        """Thread.start() with timeout to wait for the thread start event.
+
+        This method overrides `_started.wait()` at the end with a timeout to
+        prevent the issue explained below.
+        When MemoryError occurs during _start_new_thread(_bootstrap(), ()),
+        this method (start()) could get stuck forever at _started.wait(), which
+        is a threading.Event(), because _bootstrap() is supposed to trigger
+        _started.set() which may never happen because it appears some exceptions
+        are not raised to be captured by try/except in this method.
+        This was observed when the script was used inside a container with a
+        restricted memory allocation and resulted in the script to get stuck
+        and not being able to start remaining threads.
+
+        Args:
+            timeout (float): How long we wait for the thread start event.
+                             5.0 sec by default.
+        """
+        _active_limbo_lock = threading._active_limbo_lock
+        _limbo = threading._limbo
+        _start_new_thread = threading._start_new_thread
+
+        # Python2 uses name mangling
+        if hasattr(self, "_Thread__initialized"):
+            self._initialized = self._Thread__initialized
+        if hasattr(self, "_Thread__started"):
+            self._started = self._Thread__started
+        if hasattr(self, "_Thread__bootstrap"):
+            self._bootstrap = self._Thread__bootstrap
+
+        if not self._initialized:
+            raise RuntimeError("thread.__init__() not called")
+
+        if self._started.is_set():
+            raise RuntimeError("threads can only be started once")
+
+        with _active_limbo_lock:
+            _limbo[self] = self
+        try:
+            _start_new_thread(self._bootstrap, ())
+        except Exception:
+            with _active_limbo_lock:
+                del _limbo[self]
+            raise
+        self._started.wait(timeout)
+        # When self._started was not set within the time limit, handle it
+        # in the same way as when `_start_new_thread()` correctly captures
+        # the exception due to OOM.
+        if not self._started.is_set():
+            with _active_limbo_lock:
+                del _limbo[self]
+            raise RuntimeError("can't start new thread")
+
+    def run(self):
+        # Python2 uses name mangling
+        if hasattr(self, "_Thread__target"):
+            self._target = self._Thread__target
+        if hasattr(self, "_Thread__args"):
+            self._args = self._Thread__args
+        if hasattr(self, "_Thread__kwargs"):
+            self._kwargs = self._Thread__kwargs
+
+        try:
+            if self._target is not None:
+                self._target(*self._args, **self._kwargs)
+        except Exception as e:
+            # Exceptions inside a thread should be captured in the thread, that
+            # is in the `check_wrapper`.
+            # If it's not caught inside the thread, notify the main thread.
+            self.exception = e
+        finally:
+            del self._target, self._args, self._kwargs
+
+
+class ThreadManager:
+    """A class managing all threads to run individual checks.
+
+    This class starts and monitors the status of all threads for check
+    functions decorated with check_wrapper(). This stops monitoring when all
+    threads completed or when timeout expired.
+    On a memory constrained setup, it may take time to start each thread. Some
+    thread/check may complete before other threads get started. To monitor the
+    progress correctly from the beginning, the monitoring is also done in a
+    thread while the main thread is starting all threads for each check.
+    """
+    def __init__(
+        self,
+        funcs,
+        common_kwargs,
+        monitor_interval=0.5,  # sec
+        monitor_timeout=600,  # sec
+        callback_on_monitoring=None,
+        callback_on_start_failure=None,
+        callback_on_timeout=None,
+    ):
+        self.funcs = funcs
+        self.threads = None
+        self.common_kwargs = common_kwargs
+
+        # Not using `thread.join(timeout)` because it waits for each thread sequentially,
+        # which means the program may wait for "timeout * num of threads" at worst case.
+        self.timeout_event = threading.Event()
+        self.monitor_interval = monitor_interval
+        self.monitor_timeout = monitor_timeout
+        self._monitor = self._generate_thread(target=self._monitor_progress)
+
+        # Number of threads that were processed by `_start_thread()`, including
+        # both success and failure to start.
+        self._processed_threads_count = 0
+
+        # Custom callbacks
+        self._cb_on_monitoring = callback_on_monitoring
+        self._cb_on_start_failure = callback_on_start_failure
+        self._cb_on_start_failure_exception = None
+        self._cb_on_timeout = callback_on_timeout
+
+    def start(self):
+        if self._monitor.is_alive():
+            raise RuntimeError("Threading on going. Cannot start again.")
+
+        self.threads = [
+            self._generate_thread(target=func, kwargs=self.common_kwargs)
+            for func in self.funcs
+        ]
+
+        self._monitor.start()
+
+        for thread in self.threads:
+            self._start_thread(thread)
+
+    def join(self):
+        self._monitor.join()
+        # If the thread had an exception that was not captured and handled correctly,
+        # re-raise it in the main thread to notify the script executor about it.
+        if self._monitor.exception:
+            raise self._monitor.exception
+        for thread in self.threads:
+            if thread.exception:
+                raise thread.exception
+        # Exception in the callback means failure to update the result as error. Need to
+        # re-raise it in the main thread to notify the script excutor about the risk of
+        # some check results left with in-progress forever.
+        if self._cb_on_start_failure_exception:
+            raise self._cb_on_start_failure_exception
+
+    def is_timeout(self):
+        return self.timeout_event.is_set()
+
+    def _generate_thread(self, target, args=(), kwargs=None):
+        if kwargs is None:
+            kwargs = {}
+        thread = CustomThread(
+            target=target, name=target.__name__, args=args, kwargs=kwargs
+        )
+        thread.daemon = True
+        return thread
+
+    def _start_thread(self, thread):
+        """ Start a thread. When failed due to OOM, retry again after an interval.
+        Until one of the following conditions are met, we don't move on.
+          - successfuly started the thread
+          - exceeded the queue timeout and gave up on this thread
+          - failed to start the thread for an unknown reason
+        """
+        queue_timeout = 10  # sec
+        queue_interval = 1  # sec
+        time_elapsed = 0  # sec
+        thread_started = False
+        while not self.is_timeout():
+            try:
+                log.info("({}) Starting thread.".format(thread.name))
+                thread.start()
+                thread_started = True
+                break
+            except RuntimeError as e:
+                if str(e) != "can't start new thread":
+                    log.error("({}) Unexpected error to start a thread.".format(thread.name), exc_info=True)
+                    break
+
+                log_msg = "({}) Not enough memory to start a new thread. ".format(thread.name)
+                if time_elapsed >= queue_timeout:
+                    log.error(log_msg + "No queue time left. Give up.")
+                    break
+                else:
+                    log.info(log_msg + "Try again in {} second...".format(queue_interval))
+                    time.sleep(queue_interval)
+                    time_elapsed += queue_interval
+                    continue
+            except Exception:
+                log.error("({}) Unexpected error to start a thread.".format(thread.name), exc_info=True)
+                break
+
+        # Custom cleanup callback for a thread that couldn't start.
+        if not thread_started and not thread.is_alive():
+            log.error("({}) Failed to start thread.".format(thread.name))
+            if self._cb_on_start_failure is not None:
+                try:
+                    self._cb_on_start_failure(thread.name)
+                except Exception as e:
+                    log.error("({}) Failed to update the result as error.".format(thread.name), exc_info=True)
+                    self._cb_on_start_failure_exception = e
+
+        self._processed_threads_count += 1
+
+    def _monitor_progress(self):
+        """Executed in a separate monitor thread"""
+        total = len(self.threads)
+        time_elapsed = 0  # sec
+        while True:
+            alive_count = sum(thread.is_alive() for thread in self.threads)
+            done = self._processed_threads_count - alive_count
+
+            # Custom monitor callback
+            if self._cb_on_monitoring is not None:
+                self._cb_on_monitoring(done, total)
+
+            if done == total:
+                break
+
+            time.sleep(self.monitor_interval)
+            time_elapsed += self.monitor_interval
+            if time_elapsed > self.monitor_timeout:
+                log.error("Timeout. Stop monitoring threads.")
+                self.timeout_event.set()
+                break
+
+        # Custom timeout callback per thread
+        if self.is_timeout() and self._cb_on_timeout is not None:
+            for thread in self.threads:
+                if thread.is_alive():
+                    self._cb_on_timeout(thread.name)
+
+
+class ResultManager:
+    def __init__(self):
+        self.titles = {}  # {check_id: check_title}
+        self.results = {}  # {check_id: Result}
+
+    def _update_aci_result(self, check_id, check_title, result_obj=None):
+        aci_result = AciResult(check_id, check_title, result_obj)
+        filepath = self.get_result_filepath(check_id)
+        write_jsonfile(filepath, aci_result.as_dict())
+        return filepath
+
+    def init_result(self, check_id, check_title):
+        self.titles[check_id] = check_title
+        filepath = self._update_aci_result(check_id, check_title)
+        log.info("Initialized in {}".format(filepath))
+
+    def update_result(self, check_id, result_obj):
+        check_title = self.titles.get(check_id)
+        if not check_title:
+            log.error("Check {} is not initialized. Failed to update.".format(check_id))
+            return None
+        self.results[check_id] = result_obj
+        filepath = self._update_aci_result(check_id, check_title, result_obj)
+        log.info("Finalized result in {}".format(filepath))
+
+    def get_summary(self):
+        summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
+        summary = OrderedDict([(key, 0) for key in summary_headers])
+        summary["TOTAL"] = len(self.results)
+
+        for result in self.results.values():
+            summary[result.result] += 1
+
+        return summary
+
+    def get_result_filepath(self, check_id):
+        """filename should be only alphabet, number and underscore"""
+        filename = re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', check_id) + '.json'
+        filepath = os.path.join(JSON_DIR, filename)
+        return filepath
+
+
 class AciResult:
     """
     APIC uses an object called `syntheticMaintPValidate` to store the results of
@@ -935,10 +1218,10 @@ class AciResult:
     PASS = "passed"
     FAIL = "failed"
 
-    def __init__(self, func_name, name, description):
+    def __init__(self, func_name, name, result_obj=None):
         self.ruleId = func_name
         self.name = name
-        self.description = description
+        self.description = ""
         self.reason = ""
         self.sub_reason = ""
         self.recommended_action = ""
@@ -948,16 +1231,20 @@ class AciResult:
         self.showValidation = True
         self.failureDetails = {
             "failType": "",
+            "header": [],
             "data": [],
+            "unformatted_header": [],
             "unformatted_data": [],
         }
-
-    @property
-    def filename(self):
-        return re.sub(r'[^a-zA-Z0-9_]+|\s+', '_', self.ruleId) + '.json'
+        if result_obj:
+            self.update_with_results(result_obj)
 
     @staticmethod
-    def craftData(column, rows):
+    def convert_data(column, rows):
+        """Convert data from `Result` data format to `AciResult` data format.
+            Result - {header: [h1, h2,,,], data: [[d11, d21,,,], [d21, d22,,,],,,]}
+            AciResult - [{h1: d11, h2: d21,,,}, {h1: d21, h2: d22,,,},,,]
+        """
         if not (isinstance(rows, list) and isinstance(column, list)):
             raise TypeError("Rows and column must be lists.")
         data = []
@@ -966,62 +1253,58 @@ class AciResult:
             r_len = len(rows[row_entry])
             if r_len != c_len:
                 raise ValueError("Row length ({}), data: {} does not match column length ({}).".format(r_len, rows[row_entry], c_len))
-            entry = {}
+            entry = OrderedDict()
             for col_pos in range(c_len):
                 entry[column[col_pos]] = str(rows[row_entry][col_pos])
             data.append(entry)
         return data
 
-    def updateWithResults(self, result, recommended_action, msg, doc_url, headers, data, unformatted_headers, unformatted_data):
-        self.reason = msg
-        self.recommended_action = recommended_action
-        self.docUrl = doc_url
+    def update_with_results(self, result_obj):
+        self.recommended_action = result_obj.recommended_action
+        self.docUrl = result_obj.doc_url
 
-        # Show validation
-        if result in [NA, POST]:
-            self.showValidation = False
+        result = result_obj.result
+
+        # Show validatio
+        self.showValidation = result not in (NA, POST)
 
         # Severity
-        if result in [FAIL_O, FAIL_UF]:
-            self.severity = "critical"
-        elif result in [ERROR]:
-            self.severity = "major"
-        elif result in [MANUAL]:
-            self.severity = "warning"
+        severity_map = {FAIL_O: "critical", FAIL_UF: "critical", ERROR: "major", MANUAL: "warning"}
+        self.severity = severity_map.get(result, "informational")
 
-        self.ruleStatus = AciResult.PASS
-        if result not in [NA, PASS]:
-            self.ruleStatus = AciResult.FAIL
-            if not self.reason:
-                self.reason = "See Failure Details"
+        # ruleStatus
+        self.ruleStatus = AciResult.PASS if result in (NA, PASS) else AciResult.FAIL
+
+        # reason
+        self.reason = result_obj.msg
+        if not self.reason and self.ruleStatus == AciResult.FAIL:
+            self.reason = "See Failure Details."
+
+        # failureDetails
+        if self.ruleStatus == AciResult.FAIL:
             self.failureDetails["failType"] = result
-            self.failureDetails["header"] = headers
-            self.failureDetails["data"] = self.craftData(headers, data)
-            if unformatted_headers and unformatted_data:
-                self.failureDetails["unformatted_data"] = self.craftData(unformatted_headers, unformatted_data)
-                if self.reason:
-                    self.reason += "\n"
-                self.reason += (
-                    "Parse failure occurred, the provided data may not be complete. "
-                    "Please contact Cisco TAC to identify the missing data."
+            self.failureDetails["header"] = result_obj.headers
+            self.failureDetails["data"] = self.convert_data(result_obj.headers, result_obj.data)
+            if result_obj.unformatted_headers and result_obj.unformatted_data:
+                self.failureDetails["unformatted_header"] = result_obj.unformatted_headers
+                self.failureDetails["unformatted_data"] = self.convert_data(
+                    result_obj.unformatted_headers, result_obj.unformatted_data
+                )
+                self.recommended_action += (
+                    "\n "
+                    "Note that the provided data in the Failure Details is not complete"
+                    " due to an issue in parsing data. Contact Cisco TAC for the full details."
                 )
 
-    def buildResult(self):
+    def as_dict(self):
         return {slot: getattr(self, slot) for slot in self.__slots__}
-
-    def writeResult(self, path=JSON_DIR):
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        with open(os.path.join(path, self.filename), "w") as f:
-            json.dump(self.buildResult(), f, indent=2)
-        return "{}/{}".format(path, self.filename)
 
 
 class Result:
     """Class to hold the result of a check."""
-    __slots__ = ("result", "msg", "headers", "data", "unformatted_headers", "unformatted_data", "recommended_action", "doc_url", "adjust_title")
+    __slots__ = ("result", "msg", "headers", "data", "unformatted_headers", "unformatted_data", "recommended_action", "doc_url")
 
-    def __init__(self, result=PASS, msg="", headers=None, data=None, unformatted_headers=None, unformatted_data=None, recommended_action="", doc_url="", adjust_title=False):
+    def __init__(self, result=PASS, msg="", headers=None, data=None, unformatted_headers=None, unformatted_data=None, recommended_action="", doc_url=""):
         self.result = result
         self.msg = msg
         self.headers = headers if headers is not None else []
@@ -1030,52 +1313,54 @@ class Result:
         self.unformatted_data = unformatted_data if unformatted_data is not None else []
         self.recommended_action = recommended_action
         self.doc_url = doc_url
-        self.adjust_title = adjust_title
 
     def as_dict(self):
         return {slot: getattr(self, slot) for slot in self.__slots__}
 
-    def as_dict_for_json_result(self):
-        return {slot: getattr(self, slot) for slot in self.__slots__ if slot != "adjust_title"}
-
 
 def check_wrapper(check_title):
-    """
-    Decorator to wrap a check function to handle the printing of title and results,
-    and to write the results in a file in a JSON format.
+    """Decorator to wrap a check function with initializer and finalizer from `CheckManager`.
+
+    The goal is for each check function to focus only on the check logic itself and return
+    `Result` object. The rest such as initializing the result, printing the result to stdout,
+    writing the result in a file in JSON etc. are handled through this wrapper and CheckManager.
     """
     def decorator(check_func):
         @functools.wraps(check_func)
-        def wrapper(index, total_checks, *args, **kwargs):
-            # When init is True, we just initialize the result file and return
-            if kwargs.get("init") is True:
-                synth = AciResult(wrapper.__name__, check_title, "")
-                synth.writeResult()
-                return None
-
-            try:
-                # Print `[Check  1/81] <title>...`
-                print_title(check_title, index, total_checks)
-
-                # Run check, expecting it to return a `Result` object
-                r = check_func(*args, **kwargs)
-
-                # Print `[Check  1/81] <title>... <msg> <result>\n<failure details>`
-                print_result(title=check_title, **r.as_dict())
-            except Exception as e:
-                log.exception(e)
-                r = Result(result=ERROR, msg='Unexpected Error: {}'.format(e))
-                print_result(title=check_title, **r.as_dict())
-            finally:
-                # Write results in JSON
+        def wrapper(*args, **kwargs):
+            # Initialization
+            initialize_check = kwargs.pop("initialize_check", None)
+            if initialize_check:
                 # Using `wrapper.__name__` instead of `check_func.__name` because
                 # both show the original check func name and `wrapper.__name__` can
                 # be dynamically changed inside each check func if needed. (mainly
                 # for test or debugging)
-                synth = AciResult(wrapper.__name__, check_title, "")
-                synth.updateWithResults(**r.as_dict_for_json_result())
-                synth.writeResult()
-                return r.result
+                initialize_check(wrapper.__name__, check_title)
+                return None
+
+            log.info("Start {}".format(wrapper.__name__))
+            # Real Run (executed inside a thread)
+            # When `finalize_check` failed even in `except`, there is nothing we can
+            # do because it is usually because of system level issues like filesystem
+            # being full. In such a case, we cannot even update the result of the check
+            # as `failed` from `in-progress`. To inform the script executor and prevent it
+            # from indefinitely waiting, we let the exception to go up to the top (`main()`)
+            # and abort the script immediately.
+            finalize_check = kwargs.pop("finalize_check")
+            try:
+                r = check_func(*args, **kwargs)
+                finalize_check(wrapper.__name__, r)
+            except MemoryError:
+                msg = "Not enough memory to complete this check."
+                r = Result(result=ERROR, msg=msg)
+                log.error(msg, exc_info=True)
+                finalize_check(wrapper.__name__, r)
+            except Exception as e:
+                msg = "Unexpected Error: {}".format(e)
+                r = Result(result=ERROR, msg=msg)
+                log.error(msg, exc_info=True)
+                finalize_check(wrapper.__name__, r)
+            return r
         return wrapper
     return decorator
 
@@ -1201,38 +1486,40 @@ def get_row(widths, values, spad="  ", lpad=""):
 def prints(objects, sep=' ', end='\n'):
     with open(RESULT_FILE, 'a') as f:
         print(objects, sep=sep, end=end, file=sys.stdout)
+        if end == "\r":
+            end = "\n"  # easier to read with \n in a log file
         print(objects, sep=sep, end=end, file=f)
         sys.stdout.flush()
         f.flush()
 
 
-def print_title(title, index=None, total=None):
-    if index and total:
-        prints('[Check{:3}/{}] {}... '.format(index, total, title), end='')
+def print_progress(done, total, bar_length=100):
+    if not total:
+        progress = 1.0
     else:
-        prints('{:14}{}... '.format('', title), end='')
+        progress = done / float(total)
+    filled = int(bar_length * progress)
+    bar = "█" * filled + "-" * (bar_length - filled)
+    prints("Progress: |{}| {}/{} checks completed".format(bar, done, total), end="\r")
 
 
-def print_result(title, result, msg='',
+def print_result(index, total, title,
+                 result, msg='',
                  headers=None, data=None,
                  unformatted_headers=None, unformatted_data=None,
                  recommended_action='',
-                 doc_url='',
-                 adjust_title=False):
-    FULL_LEN = 138  # length of `[Check XX/YY] <title>... <msg> --padding-- <RESULT>`
-    CHECK_LEN = 18  # length of `[Check XX/YY] ... `
-    padding = FULL_LEN - CHECK_LEN - len(title) - len(msg)
-    if adjust_title:
-        # adjust padding when the result is on the second line.
-        # 1st: `[Check XX/YY] <title>... `
-        # 2nd: `                         <msg> --padding-- <RESULT>`
-        padding += len(title) + CHECK_LEN
+                 doc_url=''):
+    """Print `[Check XX/YY] <title>... <msg> --padding-- <result>` + some data"""
+    idx_len = len(str(total)) + 1
+    output = "[Check{:{}}/{}] {}... {}".format(index, idx_len, total, title, msg)
+    FULL_LEN = 138  # length of `[Check XX/YY] <title>... <msg> --padding-- <result>`
+    padding = FULL_LEN - len(output)
     if padding < len(result):
         # when `msg` is too long (ex. unknown exception), `padding` may get shorter
         # than what it's padding (`result`), or worse, may get negative.
         # In such a case, keep one whitespace padding even if the full length gets longer.
         padding = len(result) + 1
-    output = '{}{:>{}}'.format(msg, result, padding)
+    output += "{:>{}}".format(result, padding)
     if data:
         data.sort()
         output += '\n' + format_table(headers, data)
@@ -1247,6 +1534,27 @@ def print_result(title, result, msg='',
             output += '\n  Reference Document: %s' % doc_url
         output += '\n' * 2
     prints(output)
+
+
+def write_jsonfile(filepath, content):
+    with open(filepath, 'w') as f:
+        json.dump(content, f, indent=2)
+
+
+def write_script_metadata(api_only, timeout, total_checks, common_data):
+    metadata = {
+        "name": "PreupgradeCheck",
+        "method": "standalone script",
+        "datetime": ts + tz,
+        "script_version": str(SCRIPT_VERSION),
+        "cversion": str(common_data["cversion"]),
+        "tversion": str(common_data["tversion"]),
+        "sw_cversion": str(common_data["sw_cversion"]),
+        "api_only": api_only,
+        "timeout": timeout,
+        "total_checks": total_checks,
+    }
+    write_jsonfile(META_FILE, metadata)
 
 
 def _icurl_error_handler(imdata):
@@ -1295,7 +1603,7 @@ def run_cmd(cmd, splitlines=True):
     """
     Run a shell command.
     :param cmd: Command to run, can be a string or a list.
-    :param splitlines: If True, splits the output into a list of lines. 
+    :param splitlines: If True, splits the output into a list of lines.
                        If False, returns the raw text output as a single string.
     Returns the output of the command.
     """
@@ -1426,6 +1734,32 @@ def get_switch_version():
     else:
         prints("No Switches Detected! Join switches to the fabric then re-run this script.\n")
         return None
+
+
+def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
+    username = password = None
+    if not api_only:
+        username, password = get_credentials()
+
+    try:
+        cversion = get_current_version(arg_cversion)
+        tversion = get_target_version(arg_tversion)
+        sw_cversion = get_switch_version()
+        vpc_nodes = get_vpc_nodes()
+    except Exception as e:
+        prints('\n\nError: %s' % e)
+        prints("Initial query failed. Ensure APICs are healthy. Ending script run.")
+        log.exception(e)
+        sys.exit(1)
+
+    return {
+        'username': username,
+        'password': password,
+        'cversion': cversion,
+        'tversion': tversion,
+        'sw_cversion': sw_cversion,
+        'vpc_node_ids': vpc_nodes,
+    }
 
 
 @check_wrapper(check_title="APIC Cluster Status")
@@ -2253,14 +2587,12 @@ def apic_ssd_check(cversion, username, password, **kwargs):
     has_error = False
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
     faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
-    adjust_title = False
     if len(faultInsts) == 0 and (cversion.older_than("4.2(7f)") or cversion.older_than("5.2(1g)")):
         controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
         if not controller:
             return Result(result=ERROR, msg="topSystem response empty. Is the cluster healthy?", doc_url=doc_url)
 
         print('')
-        adjust_title = True
         report_other = False
         checked_apics = {}
         for apic in controller:
@@ -2269,8 +2601,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
             checked_apics[attr['address']] = 1
             pod_id = attr['podId']
             node_id = attr['id']
-            node_title = 'Checking %s...' % attr['name']
-            print_title(node_title)
             try:
                 c = Connection(attr['address'])
                 c.username = username
@@ -2279,7 +2609,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 c.connect()
             except Exception as e:
                 data.append([attr['id'], attr['name'], '-', '-', str(e)])
-                print_result(node_title, ERROR)
                 has_error = True
                 continue
             try:
@@ -2287,7 +2616,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                     'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
             except Exception as e:
                 data.append([attr['id'], attr['name'], '-', '-', str(e)])
-                print_result(node_title, ERROR)
                 has_error = True
                 continue
 
@@ -2297,11 +2625,9 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 if int(wearout) < 5:
                     data.append([pod_id, node_id, "Solid State Disk", wearout, recommended_action])
                     report_other = True
-                    print_result(node_title, DONE)
                     continue
                 if report_other:
                     data.append([pod_id, node_id, "Solid State Disk", wearout, "No Action Required"])
-            print_result(node_title, DONE)
     else:
         headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
         for faultInst in faultInsts:
@@ -2324,7 +2650,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
         unformatted_headers=unformatted_headers,
         unformatted_data=unformatted_data,
         doc_url=doc_url,
-        adjust_title=adjust_title,
     )
 
 
@@ -2922,14 +3247,11 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
     md5_names = []
 
     has_error = False
-    prints('')
     nodes_response_json = icurl('class', 'topSystem.json')
     for node in nodes_response_json:
         if node['topSystem']['attributes']['role'] != "controller":
             continue
         apic_name = node['topSystem']['attributes']['name']
-        node_title = 'Checking %s...' % apic_name
-        print_title(node_title)
         try:
             c = Connection(node['topSystem']['attributes']['address'])
             c.username = username
@@ -2938,7 +3260,6 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
             c.connect()
         except Exception as e:
             data.append([apic_name, '-', '-', str(e)])
-            print_result(node_title, ERROR)
             has_error = True
             continue
 
@@ -2948,12 +3269,10 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
         except Exception as e:
             data.append([apic_name, '-', '-',
                          'ls command via ssh failed due to:{}'.format(str(e))])
-            print_result(node_title, ERROR)
             has_error = True
             continue
         if "No such file or directory" in c.output:
             data.append([apic_name, str(tversion), '-', 'image not found'])
-            print_result(node_title, FAIL_UF)
             continue
 
         try:
@@ -2962,12 +3281,10 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
         except Exception as e:
             data.append([apic_name, str(tversion), '-',
                          'failed to check md5sum via ssh due to:{}'.format(str(e))])
-            print_result(node_title, ERROR)
             has_error = True
             continue
         if "No such file or directory" in c.output:
             data.append([apic_name, str(tversion), '-', 'md5sum file not found'])
-            print_result(node_title, FAIL_UF)
             continue
         for line in c.output.split("\n"):
             words = line.split()
@@ -2980,11 +3297,9 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
                 break
         else:
             data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file'])
-            print_result(node_title, ERROR)
             has_error = True
             continue
 
-        print_result(node_title, DONE)
     if len(set(md5s)) > 1:
         for name, md5 in zip(md5_names, md5s):
             data.append([name, str(tversion), md5, 'md5sum do not match on all APICs'])
@@ -2992,7 +3307,7 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
         result = ERROR
     elif not data:
         result = PASS
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # Connection Based Check
@@ -5349,11 +5664,8 @@ def observer_db_size_check(username, password, **kwargs):
         return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
 
     has_error = False
-    prints('')
     for apic in controllers:
         attr = apic['topSystem']['attributes']
-        node_title = 'Checking %s...' % attr['name']
-        print_title(node_title)
         try:
             c = Connection(attr['address'])
             c.username = username
@@ -5362,7 +5674,6 @@ def observer_db_size_check(username, password, **kwargs):
             c.connect()
         except Exception as e:
             data.append([attr['id'], attr['name'], str(e)])
-            print_result(node_title, ERROR)
             has_error = True
             continue
         try:
@@ -5370,7 +5681,6 @@ def observer_db_size_check(username, password, **kwargs):
             c.cmd(cmd)
             if "No such file or directory" in c.output:
                 data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
-                print_result(node_title, ERROR)
                 has_error = True
                 continue
             dbstats = c.output.split("\n")
@@ -5381,17 +5691,15 @@ def observer_db_size_check(username, password, **kwargs):
                     file_size = size_match.group("size")
                     file_name = "/data2/dbstats/" + size_match.group("file")
                     data.append([attr['id'], file_name, file_size])
-            print_result(node_title, DONE)
         except Exception as e:
             data.append([attr['id'], attr['name'], str(e)])
-            print_result(node_title, ERROR)
             has_error = True
             continue
     if has_error:
         result = ERROR
     elif data:
         result = FAIL_UF
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url, adjust_title=True)
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 @check_wrapper(check_title='AVE End-of-Life')
@@ -5539,7 +5847,7 @@ def configpush_shard_check(tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#policydist-configpushshardcont-crash'
 
     if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING) 
+        return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.older_than("6.1(4a)"):
         result = PASS
@@ -5570,11 +5878,12 @@ def parse_args(args):
     parser.add_argument("-n", "--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
     parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
     parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
+    parser.add_argument("--timeout", action="store", nargs="?", type=int, const=-1, default=DEFAULT_TIMEOUT, help="Show default script timeout (sec) or overwrite it when a number is provided (e.g. --timeout 1200).")
     parsed_args = parser.parse_args(args)
     return parsed_args
 
 
-def initialize():
+def init_system():
     """
     Initialize the script environment, create necessary directories and set up log.
     Not required for some options such as `--version` or `--total-checks`.
@@ -5585,51 +5894,49 @@ def initialize():
     log.info("Creating directories %s and %s", DIR, JSON_DIR)
     os.mkdir(DIR)
     os.mkdir(JSON_DIR)
-    fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)20s:%(lineno)-4d] %(message)s'.format(tz)
+    fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)s:%(lineno)-4d(%(threadName)s)] %(message)s'.format(tz)
     logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def prepare(api_only, arg_tversion, arg_cversion, checks):
-    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
-    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+def wrapup_system(no_cleanup):
+    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
+    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
+    prints("""
+    Pre-Upgrade Check Complete.
+    Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
 
-    # Create empty result files for all checks
-    for idx, check in enumerate(checks):
-        check(idx + 1, len(checks), init=True)
+    Result output and debug info saved to below bundle for later reference.
+    Attach this bundle to Cisco TAC SRs opened to address the flagged checks.
 
-    username = password = None
-    if not api_only:
-        username, password = get_credentials()
-    try:
-        cversion = get_current_version(arg_cversion)
-        tversion = get_target_version(arg_tversion)
-        vpc_nodes = get_vpc_nodes()
-        sw_cversion = get_switch_version()
-    except Exception as e:
-        prints('\n\nError: %s' % e)
-        prints("Initial query failed. Ensure APICs are healthy. Ending script run.")
-        log.exception(e)
-        sys.exit()
-    inputs = {'username': username, 'password': password,
-              'cversion': cversion, 'tversion': tversion,
-              'vpc_node_ids': vpc_nodes, 'sw_cversion': sw_cversion}
-    metadata = {
-        "name": "PreupgradeCheck",
-        "method": "standalone script",
-        "datetime": ts + tz,
-        "script_version": str(SCRIPT_VERSION),
-        "cversion": str(cversion),
-        "tversion": str(tversion),
-        "sw_cversion": str(sw_cversion),
-        "api_only": api_only,
-        "total_checks": len(checks),
-    }
-    with open(META_FILE, "w") as f:
-        json.dump(metadata, f, indent=2)
-    return inputs
+      Result Bundle: {bundle}
+""".format(bundle=bundle_loc))
+    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
+
+    # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
+    if not no_cleanup and os.path.isdir(DIR):
+        log.info('Cleaning up temporary files and directories...')
+        shutil.rmtree(DIR)
 
 
-def get_checks(api_only, debug_function):
+class CheckManager:
+    """Central managing point of all checks.
+    Highlevel flows:
+        1. Initialize checks
+            Through `intialize_check()` in the decorator `check_wrapper` for
+            each check, this does two things:
+            1. get the mapping of check_title to check_id which is a check function name.
+            2. write empty `AciResult` of each check into a JSON result file.
+            which is automatically done via decorator `check_wrapper`.
+        2. Run checks in thread
+            Monitor the progress with timeout
+        3. Finalize check results
+            When checks completed within the time limit (`self.monitor_timeout`),
+            `finalize_check()` is called through `check_wrapper`.
+            This does two things:
+            1. get the mapping of `Result` to check_id
+            2. update the JSON result file with the new `AciResult`
+        4. Print the result to stdout
+    """
     api_checks = [
         # General Checks
         target_version_compatibility_check,
@@ -5721,10 +6028,9 @@ def get_checks(api_only, debug_function):
         configpush_shard_check,
 
     ]
-    conn_checks = [
+    ssh_checks = [
         # General
         apic_version_md5_check,
-        apic_database_size_check,
 
         # Faults
         standby_apic_disk_space_check,
@@ -5732,62 +6038,97 @@ def get_checks(api_only, debug_function):
 
         # Bugs
         observer_db_size_check,
-        apic_ca_cert_validation,
-
     ]
-    if debug_function:
-        return [check for check in api_checks + conn_checks if check.__name__ == debug_function]
-    if api_only:
-        return api_checks
-    return conn_checks + api_checks
+    cli_checks = [
+        # General
+        apic_database_size_check,
 
+        # Bugs
+        apic_ca_cert_validation,
+    ]
 
-def run_checks(checks, inputs):
-    summary_headers = [PASS, FAIL_O, FAIL_UF, MANUAL, POST, NA, ERROR, 'TOTAL']
-    summary = {key: 0 if key != 'TOTAL' else len(checks) for key in summary_headers}
-    for idx, check in enumerate(checks):
-        try:
-            r = check(idx + 1, len(checks), **inputs)
-            summary[r] += 1
-        except KeyboardInterrupt:
-            prints('\n\n!!! KeyboardInterrupt !!!\n')
-            break
-        except Exception as e:
-            prints('')
-            err = 'Wrapper Error: %s' % e
-            print_title(err)
-            print_result(title=err, result=ERROR)
-            summary[ERROR] += 1
-            logging.exception(e)
+    def __init__(self, api_only=False, debug_function="", timeout=600, monitor_interval=0.5):
+        self.api_only = api_only
+        self.debug_function = debug_function
+        self.monitor_interval = monitor_interval  # sec
+        self.monitor_timeout = timeout  # sec
+        self.timeout_event = None
 
-    prints('\n=== Summary Result ===\n')
-    res = max(summary_headers, key=len)
-    max_header_len = len(res)
-    for key in summary_headers:
-        prints('{:{}} : {:2}'.format(key, max_header_len, summary[key]))
+        self.check_funcs = self.get_check_funcs()
 
-    with open(SUMMARY_FILE, 'w') as f:
-        json.dump(summary, f, indent=2)
+        self.rm = ResultManager()
 
+    @property
+    def total_checks(self):
+        return len(self.check_funcs)
 
-def wrapup(no_cleanup):
-    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
-    prints("""
-    Pre-Upgrade Check Complete.
-    Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
+    @property
+    def check_ids(self):
+        return [check_func.__name__ for check_func in self.check_funcs]
 
-    Result output and debug info saved to below bundle for later reference.
-    Attach this bundle to Cisco TAC SRs opened to address the flagged checks.
+    def get_check_funcs(self):
+        all_checks = [] + self.api_checks  # must be a new list to avoid changing api_checks
+        if not self.api_only:
+            all_checks += self.ssh_checks + self.cli_checks
+        if self.debug_function:
+            return [check for check in all_checks if check.__name__ == self.debug_function]
+        return all_checks
 
-      Result Bundle: {bundle}
-    """.format(bundle=bundle_loc))
-    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
+    def get_check_title(self, check_id):
+        title = self.rm.titles.get(check_id, "")
+        if not title:
+            log.error("Failed to find title for {}".format(check_id))
+        return title
 
-    # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
-    if not no_cleanup and os.path.isdir(DIR):
-        log.info('Cleaning up temporary files and directories...')
-        shutil.rmtree(DIR)
+    def get_check_result(self, check_id):
+        result_obj = self.rm.results.get(check_id)
+        if not result_obj:
+            log.error("Failed to find result for {}".format(check_id))
+        return result_obj
+
+    def get_result_summary(self):
+        return self.rm.get_summary()
+
+    def initialize_check(self, check_id, check_title):
+        self.rm.init_result(check_id, check_title)
+
+    def finalize_check(self, check_id, result_obj):
+        # We do not update the result from here in the case of timeout.
+        if self.timeout_event and self.timeout_event.is_set():
+            return None
+        if not isinstance(result_obj, Result):
+            raise TypeError("The result of {} is not a `Result` object".format(check_id))
+            return None
+        self.rm.update_result(check_id, result_obj)
+
+    def finalize_check_on_thread_failure(self, check_id):
+        """Update the result of a check that couldn't start as ERROR"""
+        r = Result(result=ERROR, msg="Skipped due to a failure in starting a thread for this check.")
+        self.rm.update_result(check_id, r)
+
+    def finalize_check_on_thread_timeout(self, check_id):
+        """Update the result of a check that couldn't finish in time as ERROR"""
+        msg = "Timeout. Unable to finish in time ({} sec).".format(self.monitor_timeout)
+        r = Result(result=ERROR, msg=msg)
+        self.rm.update_result(check_id, r)
+
+    def initialize_checks(self):
+        for check_func in self.check_funcs:
+            check_func(initialize_check=self.initialize_check)
+
+    def run_checks(self, common_data):
+        tm = ThreadManager(
+            funcs=self.check_funcs,
+            common_kwargs=dict({"finalize_check": self.finalize_check}, **common_data),
+            monitor_interval=self.monitor_interval,
+            monitor_timeout=self.monitor_timeout,
+            callback_on_monitoring=print_progress,
+            callback_on_start_failure=self.finalize_check_on_thread_failure,
+            callback_on_timeout=self.finalize_check_on_thread_timeout,
+        )
+        self.timeout_event = tm.timeout_event
+        tm.start()
+        tm.join()
 
 
 def main(_args=None):
@@ -5795,16 +6136,63 @@ def main(_args=None):
     if args.version:
         print(SCRIPT_VERSION)
         return
-    checks = get_checks(args.api_only, args.debug_function)
-    if args.total_checks:
-        print("Total Number of Checks: {}".format(len(checks)))
+
+    if args.timeout == -1:
+        print("Timeout(sec): {}".format(DEFAULT_TIMEOUT))
         return
 
-    initialize()
-    inputs = prepare(args.api_only, args.tversion, args.cversion, checks)
-    run_checks(checks, inputs)
-    wrapup(args.no_cleanup)
+    cm = CheckManager(args.api_only, args.debug_function, args.timeout)
+
+    if args.total_checks:
+        print("Total Number of Checks: {}".format(cm.total_checks))
+        return
+
+    init_system()
+
+    # Initialize checks with empty results
+    cm.initialize_checks()
+
+    prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
+    prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
+
+    common_data = query_common_data(args.api_only, args.cversion, args.tversion)
+    write_script_metadata(args.api_only, args.timeout, cm.total_checks, common_data)
+
+    cm.run_checks(common_data)
+
+    # Print result reports
+    prints("\n")
+    if cm.timeout_event.is_set():
+        prints("Timeout !!! Abort and printing the results...\n")
+
+    prints("\n=== Check Result (failed only) ===\n")
+
+    # Print result of each failed check
+    for index, check_id in enumerate(cm.check_ids):
+        result_obj = cm.get_check_result(check_id)
+        if not result_obj or result_obj.result in (NA, PASS):
+            continue
+        check_title = cm.get_check_title(check_id)
+        print_result(index + 1, cm.total_checks, check_title, **result_obj.as_dict())
+
+    # Print summary
+    summary = cm.get_result_summary()
+    prints('\n=== Summary Result ===\n')
+    longest_header = max(summary.keys(), key=len)
+    max_header_len = len(longest_header)
+    for key in summary:
+        prints('{:{}} : {:2}'.format(key, max_header_len, summary[key]))
+
+    write_jsonfile(SUMMARY_FILE, summary)
+
+    wrapup_system(args.no_cleanup)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        msg = "Abort due to unexpected error - {}".format(e)
+        prints(msg)
+        log.error(msg, exc_info=True)
+        sys.exit(1)
