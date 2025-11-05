@@ -18,6 +18,13 @@ eqptSpCmnBlk = 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
+        # Affected versions. No Sups found
+        (
+            {eqptSpCmnBlk: []},
+            "5.2(1g)",
+            "5.2(8e)",
+            script.MANUAL,
+        ),
         # Affected Sups and on 5.2. VRM and FPGA Concern
         (
             {eqptSpCmnBlk: read_data(dir, "eqptSpCmnBlk_POS.json")},

@@ -4045,7 +4045,7 @@ def sup_hwrev_check(cversion, tversion, **kwargs):
         sup_re = r'/.+(?P<supslot>supslot-\d+)'
         sups = icurl('class', 'eqptSpCmnBlk.json?&query-target-filter=wcard(eqptSpromSupBlk.dn,"sup")')
         if not sups:
-            return Result(result=ERROR, msg='No sups found. This is unlikely.')
+            return Result(result=MANUAL, msg='No sups found. This is unlikely. Check switch health.')
 
         for sup in sups:
             prtNum = sup['eqptSpCmnBlk']['attributes']['prtNum']
