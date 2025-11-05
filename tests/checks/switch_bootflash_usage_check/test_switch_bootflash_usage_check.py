@@ -25,6 +25,14 @@ download_sts += ',eq(maintUpgJob.desiredVersion,"n9000-16.0(2h)"))'
     [
         (
             {
+                partitions: [],
+                download_sts: [],
+            },
+            "6.0(2h)",
+            script.MANUAL,
+        ),
+        (
+            {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
                 download_sts: read_data(dir, "maintUpgJob_not_downloaded.json"),
             },

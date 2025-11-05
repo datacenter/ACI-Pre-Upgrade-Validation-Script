@@ -2050,7 +2050,7 @@ def switch_bootflash_usage_check(tversion, **kwargs):
 
     partitions = icurl('class', partitions_api)
     if not partitions:
-        return Result(result=ERROR, msg='bootflash objects not found', doc_url=doc_url)
+        return Result(result=MANUAL, msg='bootflash objects not found. Check switch health.', doc_url=doc_url)
 
     predownloaded_nodes = []
     try:
