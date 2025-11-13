@@ -1,0 +1,15 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "dn": "topology/pod-1/node-101",
+                "fabricSt": "active",
+                "id": "101",
+                "model": "N9K-C93180YC-FX3",
+                "name": "a1-leaf1",
+                "role": "leaf"
+            }
+        }
+    }
+]

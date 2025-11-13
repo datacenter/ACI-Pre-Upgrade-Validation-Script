@@ -1,0 +1,18 @@
+[
+        {
+            "procMemUsage": {
+                "attributes": {
+                    "Free": "14581752",
+                    "Modname": "sup",
+                    "Total": "32535444",
+                    "Used": "17953692",
+                    "childAction": "",
+                    "dn": "topology/pod-1/node-101/sys/procmem/memusage-sup",
+                    "memAlert": "normal",
+                    "modTs": "never",
+                    "monPolDn": "uni/fabric/monfab-cskid-monitoring-pol",
+                    "status": ""
+                }
+            }
+        }
+    ]

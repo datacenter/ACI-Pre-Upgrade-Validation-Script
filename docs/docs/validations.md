@@ -188,6 +188,7 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
+[N9K-C93180YC-FX3 Sup Memory][d28]              | CSCwm42741   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
 
 
 [d1]: #ep-announce-compatibility
@@ -217,6 +218,7 @@ Items                                           | Defect       | This Script    
 [d25]: #observer-database-size
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
+[d28]: #n9k-c93180yc-fx3-sup-memory
 
 
 ## General Check Details
@@ -2589,6 +2591,13 @@ Do not upgrade to any affected ACI software release if this check fails.
     Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
 
 
+### N9K-C93180YC-FX3 Sup Memory
+
+A 'N9K-C93180YC-FX3' Switch device running in ACI mode requires a minimum of 32GB RAM to operate normally. If less than 32GB memory is installed, the ACI device can have unpredictable behavior. 
+
+Due to [CSCwm42741][59], starting at 6.0(9d) a F4680 fault will be raised if a Switch is detected with less than 32GB memory. Previous versions do not alert of this situation.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2648,3 +2657,4 @@ Do not upgrade to any affected ACI software release if this check fails.
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
+[59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741

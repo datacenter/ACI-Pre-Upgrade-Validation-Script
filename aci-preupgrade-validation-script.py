@@ -5231,6 +5231,35 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='N9K-C93180YC-FX3 Sup Memory')
+def n9k_c93108yc_fx3_mem_check(tversion, **kwargs):
+    result = PASS
+    headers = ["NodeId", "Name", "Memory Detected (GB)"]
+    data = []
+    recommended_action = 'Review the Memory Installed in your N9K-C93180YC-FX3 Switches'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    leaf_api = 'fabricNode.json'
+    leaf_api +='?query-target-filter=eq(fabricNode.model,"N9K-C93180YC-FX3")'
+    ycfx3_switches = icurl('class', leaf_api)
+    if ycfx3_switches:
+        procMemUsage_api = 'procMemUsage.json'
+        ycfx3_memory_mos = icurl('class', procMemUsage_api)
+        for ycfx3_switch in ycfx3_switches:
+            switch_dn = ycfx3_switch['fabricNode']['attributes']['dn']
+            for memory_mo in ycfx3_memory_mos:
+                if ( switch_dn in memory_mo['procMemUsage']['attributes']['dn'] 
+                and int(memory_mo['procMemUsage']['attributes']['Total']) <= 32000000):
+                    result = FAIL_O
+                    memory_in_gb = int(memory_mo['procMemUsage']['attributes']['Total']) /1048576
+                    node_id = ycfx3_switch['fabricNode']['attributes']['id']
+                    node_name = ycfx3_switch['fabricNode']['attributes']['name']
+                    data.append([node_id, node_name, round(memory_in_gb,2)])
+    else:
+        return Result(result=NA)                 
+                    
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
@@ -5455,6 +5484,7 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         stale_pcons_ra_mo_check,
         isis_database_byte_check,
+        n9k_c93108yc_fx3_mem_check,
 
     ]
     conn_checks = [
