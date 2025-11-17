@@ -184,7 +184,205 @@ _icurl_outputs = {
     ],
 }
 
-output_error = [{"error": {"attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}}}]
+_icurl_outputs_old = {
+    # fabricNode.version in older versions like 3.2 shows an invalid version like "A"
+    # for controller and empty for active switches.
+    "fabricNode.json": [
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.1",
+                    "dn": "topology/pod-1/node-1",
+                    "fabricSt": "commissioned",
+                    "id": "1",
+                    "model": "APIC-SERVER-L2",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "apic1",
+                    "nodeType": "unspecified",
+                    "role": "controller",
+                    "version": "A",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.2",
+                    "dn": "topology/pod-1/node-2",
+                    "fabricSt": "commissioned",
+                    "id": "2",
+                    "model": "APIC-SERVER-L2",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "apic2",
+                    "nodeType": "unspecified",
+                    "role": "controller",
+                    "version": "A",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.3",
+                    "dn": "topology/pod-2/node-3",
+                    "fabricSt": "commissioned",
+                    "id": "3",
+                    "model": "APIC-SERVER-L2",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "apic3",
+                    "nodeType": "unspecified",
+                    "role": "controller",
+                    "version": "A",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.101",
+                    "dn": "topology/pod-1/node-101",
+                    "fabricSt": "active",
+                    "id": "101",
+                    "model": "N9K-C93180YC-FX",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "leaf101",
+                    "nodeType": "unspecified",
+                    "role": "leaf",
+                    "version": "",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.102",
+                    "dn": "topology/pod-1/node-102",
+                    "fabricSt": "active",
+                    "id": "102",
+                    "model": "N9K-C93180YC-FX",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "leaf102",
+                    "nodeType": "unspecified",
+                    "role": "leaf",
+                    "version": "",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.111",
+                    "dn": "topology/pod-1/node-1001",
+                    "fabricSt": "active",
+                    "id": "1001",
+                    "model": "N9K-C9504",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "spine1001",
+                    "nodeType": "unspecified",
+                    "role": "spine",
+                    "version": "",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.201",
+                    "dn": "topology/pod-2/node-201",
+                    "fabricSt": "active",
+                    "id": "201",
+                    "model": "N9K-C93180YC-FX3",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "leaf201",
+                    "nodeType": "unspecified",
+                    "role": "leaf",
+                    "version": "",
+                }
+            }
+        },
+        {
+            "fabricNode": {
+                "attributes": {
+                    "address": "10.0.0.211",
+                    "dn": "topology/pod-2/node-2001",
+                    "fabricSt": "active",
+                    "id": "2001",
+                    "model": "N9K-C9504",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "name": "spine2001",
+                    "nodeType": "unspecified",
+                    "role": "spine",
+                    "version": "",
+                }
+            }
+        },
+    ],
+    "fabricNodePEp.json": _icurl_outputs["fabricNodePEp.json"],
+    "topology/pod-1/node-1/sys/ctrlrfwstatuscont/ctrlrrunning.json": [
+        {
+            "firmwareCtrlrRunning": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1/sys/ctrlrfwstatuscont/ctrlrrunning",
+                    "type": "controller",
+                    "version": "3.2(7f)"
+                }
+            }
+        }
+    ],
+    "firmwareRunning.json": [
+        {
+            "firmwareRunning": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-101/sys/fwstatuscont/running",
+                    "peVer": "3.1(2u)",
+                    "type": "switch",
+                    "version": "n9000-13.1(2u)"
+                }
+            }
+        },
+        {
+            "firmwareRunning": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-102/sys/fwstatuscont/running",
+                    "peVer": "3.2(7f)",
+                    "type": "switch",
+                    "version": "n9000-13.2(7f)"
+                }
+            }
+        },
+        {
+            "firmwareRunning": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1001/sys/fwstatuscont/running",
+                    "peVer": "3.2(7f)",
+                    "type": "switch",
+                    "version": "n9000-13.2(7f)"
+                }
+            }
+        },
+        {
+            "firmwareRunning": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-201/sys/fwstatuscont/running",
+                    "peVer": "3.2(7f)",
+                    "type": "switch",
+                    "version": "n9000-13.2(7f)"
+                }
+            }
+        },
+        {
+            "firmwareRunning": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-2001/sys/fwstatuscont/running",
+                    "peVer": "3.2(7f)",
+                    "type": "switch",
+                    "version": "n9000-13.2(7f)"
+                }
+            }
+        },
+
+    ],
+}
 
 
 @pytest.fixture(scope="function")
@@ -213,8 +411,27 @@ def fake_args(request):
         pytest.param(
             _icurl_outputs,
             {},
-            {},
+            {
+                "cversion": AciVersion("6.1(1a)"),
+                "sw_cversion": AciVersion("6.0(9d)"),
+                "tversion": AciVersion("6.2(1a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
+            },
             id="default_no_args",
+        ),
+        # Default, no argparse arguments, old ACI version
+        pytest.param(
+            _icurl_outputs_old,
+            {},
+            {
+                "cversion": AciVersion("3.2(7f)"),
+                "sw_cversion": AciVersion("3.1(2u)"),
+                "tversion": AciVersion("6.2(1a)"),
+                "fabric_nodes": _icurl_outputs_old["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
+            },
+            id="default_no_args_old_aci",
         ),
         # `api_only` is True.
         # No `get_credentials()`, no username nor password
@@ -223,7 +440,15 @@ def fake_args(request):
             {
                 "api_only": True,
             },
-            {"username": None, "password": None},
+            {
+                "username": None,
+                "password": None,
+                "cversion": AciVersion("6.1(1a)"),
+                "sw_cversion": AciVersion("6.0(9d)"),
+                "tversion": AciVersion("6.2(1a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
+            },
             id="api_only",
         ),
         # `arg_tversion` is provided (i.e. -t 6.1(4a))
@@ -233,7 +458,11 @@ def fake_args(request):
                 "tversion": "6.1(4a)",
             },
             {
+                "cversion": AciVersion("6.1(1a)"),
+                "sw_cversion": AciVersion("6.0(9d)"),
                 "tversion": AciVersion("6.1(4a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
             },
             id="tversion",
         ),
@@ -248,6 +477,8 @@ def fake_args(request):
                 "cversion": AciVersion("6.0(8d)"),
                 "sw_cversion": AciVersion("6.0(8d)"),
                 "tversion": AciVersion("6.1(4a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
             },
             id="cversion_tversion",
         ),
@@ -262,6 +493,8 @@ def fake_args(request):
                 "cversion": AciVersion("6.0(4d)"),
                 "sw_cversion": AciVersion("6.0(4d)"),
                 "tversion": AciVersion("6.1(4a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
             },
             id="cversion_tversion_with_switch_version_syntax",
         ),
@@ -276,6 +509,8 @@ def fake_args(request):
                 "cversion": AciVersion("6.0(1a)"),
                 "sw_cversion": AciVersion("6.0(1a)"),
                 "tversion": AciVersion("6.2(1a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
             },
             id="cversion_tversion_with_apic_image_name_syntax",
         ),
@@ -290,6 +525,8 @@ def fake_args(request):
                 "cversion": AciVersion("6.0(1a)"),
                 "sw_cversion": AciVersion("6.0(1a)"),
                 "tversion": AciVersion("6.2(1a)"),
+                "fabric_nodes": _icurl_outputs["fabricNode.json"],
+                "vpc_node_ids": ["101", "102"],
             },
             id="cversion_tversion_with_switch_image_name_syntax",
         ),
@@ -363,14 +600,17 @@ Parsing failure of ACI version `invalid_version`
         # `get_fabric_nodes()` failure
         (
             {
-                "fabricNode.json": output_error,
+                "fabricNode.json": [{"error": {"attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}}}],
                 "fabricNodePEp.json": _icurl_outputs["fabricNodePEp.json"],
             },
             "Gathering Node Information...\n\n",
         ),
         # `get_vpc_nodes()` failure
         (
-            {"fabricNode.json": _icurl_outputs["fabricNode.json"], "fabricNodePEp.json": output_error},
+            {
+                "fabricNode.json": _icurl_outputs["fabricNode.json"],
+                "fabricNodePEp.json": [{"error": {"attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}}}],
+            },
             "Collecting VPC Node IDs...",
         ),
     ],

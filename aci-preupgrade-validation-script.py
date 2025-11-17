@@ -1697,18 +1697,38 @@ def get_current_versions(fabric_nodes, arg_cversion):
             sys.exit(1)
         return current_version, current_version
 
+    apic1_dn = ""
     apic_version = ""  # There can be only one APIC version
     switch_versions = set()
     for node in fabric_nodes:
         version = node["fabricNode"]["attributes"]["version"]
-        if not version:
+        if not version:  # inactive nodes show empty version
             continue
         if node["fabricNode"]["attributes"]["role"] == "controller":
-            apic_version = AciVersion(version)
+            apic_version = version
+            if node["fabricNode"]["attributes"]["id"] == "1":
+                apic1_dn = node["fabricNode"]["attributes"]["dn"]
         else:
             switch_versions.add(version)
 
+    # fabricNode.version in older versions like 3.2 shows an invalid version like "A"
+    # which cannot be parsed by AciVersion. In that case, query the firmware class.
+    is_old_version = False
+    try:
+        apic_version = AciVersion(apic_version)
+    except ValueError:
+        is_old_version = True
+        apic1_firmware = icurl('mo', apic1_dn + "/sys/ctrlrfwstatuscont/ctrlrrunning.json")
+        apic1_version = apic1_firmware[0]['firmwareCtrlrRunning']['attributes']['version']
+        apic_version = AciVersion(apic1_version)
+
     prints("Current APIC Version...{}".format(apic_version))
+
+    if is_old_version:
+        prints("Checking Switch Version ...")
+        firmwares = icurl('class', 'firmwareRunning.json')
+        for firmware in firmwares:
+            switch_versions.add(firmware['firmwareRunning']['attributes']['peVer'])
 
     msg = "Lowest Switch Version...{}"
     if not switch_versions:
