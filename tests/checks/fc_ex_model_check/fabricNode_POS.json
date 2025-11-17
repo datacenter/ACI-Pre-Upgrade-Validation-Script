@@ -1,26 +1,122 @@
 [
-    {
-        "fabricNode": {
-            "attributes": {
-                "dn": "topology/pod-1/node-101",
-                "model": "N9K-C93180YC-EX"
-            }
-        }
-    },
-    {
-        "fabricNode": {
-            "attributes": {
-                "dn": "topology/pod-1/node-102",
-                "model": "N9K-C93108TC-EX"
-            }
-        }
-    },
-    {
-        "fabricNode": {
-            "attributes": {
-                "dn": "topology/pod-1/node-103",
-                "model": "N9K-C93108LC-EX"
-            }
-        }
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.1",
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "commissioned",
+        "id": "1",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "apic1",
+        "nodeType": "unspecified",
+        "role": "controller"
+      }
     }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.2",
+        "dn": "topology/pod-1/node-2",
+        "fabricSt": "commissioned",
+        "id": "2",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "apic2",
+        "nodeType": "unspecified",
+        "role": "controller"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.3",
+        "dn": "topology/pod-2/node-3",
+        "fabricSt": "commissioned",
+        "id": "3",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "apic3",
+        "nodeType": "unspecified",
+        "role": "controller"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.101",
+        "dn": "topology/pod-1/node-101",
+        "fabricSt": "active",
+        "id": "101",
+        "model": "N9K-C93180YC-EX",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf101",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.102",
+        "dn": "topology/pod-1/node-102",
+        "fabricSt": "active",
+        "id": "102",
+        "model": "N9K-C93108TC-EX",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf102",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.103",
+        "dn": "topology/pod-1/node-103",
+        "fabricSt": "active",
+        "id": "103",
+        "model": "N9K-C93108LC-EX",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf103",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.104",
+        "dn": "topology/pod-1/node-104",
+        "fabricSt": "active",
+        "id": "104",
+        "model": "N9K-C93180YC-FX",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf104",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.201",
+        "dn": "topology/pod-1/node-201",
+        "fabricSt": "active",
+        "id": "201",
+        "model": "N9K-C9504",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "spine201",
+        "nodeType": "unspecified",
+        "role": "spine"
+      }
+    }
+  }
 ]

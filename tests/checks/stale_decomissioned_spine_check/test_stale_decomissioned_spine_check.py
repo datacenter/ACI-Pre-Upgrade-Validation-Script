@@ -12,55 +12,46 @@ dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "stale_decomissioned_spine_check"
 
 # icurl queries
-decomissioned_api = 'fabricRsDecommissionNode.json'
-
-active_spine_api = 'topSystem.json'
-active_spine_api += '?query-target-filter=eq(topSystem.role,"spine")'
+decomissioned_api = "fabricRsDecommissionNode.json"
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, tversion, expected_result",
+    "icurl_outputs, tversion, expected_result, expected_data",
     [
         # TVERSION not supplied
         (
-            {
-                active_spine_api: read_data(dir, "topSystem.json"),
-                decomissioned_api: read_data(dir,"fabricRsDecommissionNode_NEG.json")
-            },
+            {decomissioned_api: read_data(dir, "fabricRsDecommissionNode_POS.json")},
             None,
             script.MANUAL,
+            [],
         ),
         # No decom objects
         (
-            {
-                active_spine_api: read_data(dir, "topSystem.json"),
-                decomissioned_api: read_data(dir,"fabricRsDecommissionNode_NEG.json")
-            },
+            {decomissioned_api: []},
             "5.2(5e)",
             script.PASS,
+            [],
         ),
         # Spine has stale decom object, and going to affected version
         (
-            {
-                active_spine_api: read_data(dir, "topSystem.json"),
-                decomissioned_api: read_data(dir,"fabricRsDecommissionNode_POS.json")
-            },
+            {decomissioned_api: read_data(dir, "fabricRsDecommissionNode_POS.json")},
             "5.2(6a)",
             script.FAIL_O,
+            [["106", "spine2", "active"]],
         ),
         # Fixed Target Version
         (
-            {
-                active_spine_api: read_data(dir, "topSystem.json"),
-                decomissioned_api: read_data(dir,"fabricRsDecommissionNode_POS.json")
-            },
+            {decomissioned_api: read_data(dir, "fabricRsDecommissionNode_POS.json")},
             "6.0(4a)",
             script.PASS,
+            [],
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, tversion, expected_result):
+def test_logic(run_check, mock_icurl, tversion, expected_result, expected_data):
     result = run_check(
         tversion=script.AciVersion(tversion) if tversion else None,
+        fabric_nodes=read_data(dir, "fabricNode.json"),
     )
     assert result.result == expected_result
+    assert result.data == expected_data

@@ -2,24 +2,75 @@
   {
     "fabricNode": {
       "attributes": {
-        "dn": "topology/pod-1/node-102",
-        "fabricSt": "active",
-        "id": "101",
-        "model": "N9K-C93108TC-FX3P",
+        "address": "10.0.0.1",
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "commissioned",
+        "id": "1",
+        "model": "APIC-SERVER-L2",
         "monPolDn": "uni/fabric/monfab-default",
-        "name": "leaf101"
+        "name": "apic1",
+        "nodeType": "unspecified",
+        "role": "controller"
       }
     }
   },
   {
     "fabricNode": {
       "attributes": {
-        "dn": "topology/pod-1/node-102",
+        "address": "10.0.0.101",
+        "dn": "topology/pod-1/node-101",
         "fabricSt": "active",
-        "id": "102",
+        "id": "101",
+        "model": "N9K-C93180YC-FX",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf101",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.113",
+        "dn": "topology/pod-2/node-113",
+        "fabricSt": "active",
+        "id": "113",
         "model": "N9K-C93108TC-FX3P",
         "monPolDn": "uni/fabric/monfab-default",
-        "name": "leaf102"
+        "name": "leaf113",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.114",
+        "dn": "topology/pod-2/node-114",
+        "fabricSt": "active",
+        "id": "114",
+        "model": "N9K-C93108TC-FX3P",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "leaf114",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.201",
+        "dn": "topology/pod-1/node-201",
+        "fabricSt": "active",
+        "id": "201",
+        "model": "N9K-C9504",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "spine201",
+        "nodeType": "unspecified",
+        "role": "spine"
       }
     }
   }

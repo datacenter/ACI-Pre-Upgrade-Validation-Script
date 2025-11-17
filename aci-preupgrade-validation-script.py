@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v3.4.13"
+SCRIPT_VERSION = "v3.4.14"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -1633,27 +1633,6 @@ def get_credentials():
     return usr, pwd
 
 
-def get_current_version(arg_cversion):
-    """ Returns: AciVersion instance """
-    if arg_cversion:
-        prints("Current APIC version is overridden to %s" % arg_cversion)
-        try:
-            current_version = AciVersion(arg_cversion)
-        except ValueError as e:
-            prints(e)
-            sys.exit(1)
-        return current_version
-    prints("Checking current APIC version...", end='')
-    firmwares = icurl('class', 'firmwareCtrlrRunning.json')
-    for firmware in firmwares:
-        if 'node-1' in firmware['firmwareCtrlrRunning']['attributes']['dn']:
-            apic1_version = firmware['firmwareCtrlrRunning']['attributes']['version']
-            break
-    current_version = AciVersion(apic1_version)
-    prints('%s\n' % current_version)
-    return current_version
-
-
 def get_target_version(arg_tversion):
     """ Returns: AciVersion instance """
     if arg_tversion:
@@ -1696,6 +1675,55 @@ def get_target_version(arg_tversion):
         return None
 
 
+def get_fabric_nodes():
+    """Returns list of fabricNode objects.
+
+    Using fabricNode instead of topSystem because topSystem times out when the
+    node is inactive.
+    """
+    prints("Gathering Node Information...\n")
+    fabricNodes = icurl('class', 'fabricNode.json')
+    return fabricNodes
+
+
+def get_current_versions(fabric_nodes, arg_cversion):
+    """ Returns: AciVersion instances of APIC and lowest switch """
+    if arg_cversion:
+        prints("Current version is overridden to %s" % arg_cversion)
+        try:
+            current_version = AciVersion(arg_cversion)
+        except ValueError as e:
+            prints(e)
+            sys.exit(1)
+        return current_version, current_version
+
+    apic_version = ""  # There can be only one APIC version
+    switch_versions = set()
+    for node in fabric_nodes:
+        version = node["fabricNode"]["attributes"]["version"]
+        if not version:
+            continue
+        if node["fabricNode"]["attributes"]["role"] == "controller":
+            apic_version = AciVersion(version)
+        else:
+            switch_versions.add(version)
+
+    prints("Current APIC Version...{}".format(apic_version))
+
+    msg = "Lowest Switch Version...{}"
+    if not switch_versions:
+        prints(msg.format("Not Found! Join switches to the fabric then re-run this script.\n"))
+        return apic_version, None
+
+    lowest_sw_ver = AciVersion(switch_versions.pop())
+    for sw_version in switch_versions:
+        sw_version = AciVersion(sw_version)
+        if lowest_sw_ver.newer_than(sw_version):
+            lowest_sw_ver = sw_version
+    prints(msg.format(lowest_sw_ver) + "\n")
+    return apic_version, lowest_sw_ver
+
+
 def get_vpc_nodes():
     """ Returns list of VPC Node IDs; ['101', '102', etc...] """
     prints("Collecting VPC Node IDs...", end='')
@@ -1714,37 +1742,15 @@ def get_vpc_nodes():
     return vpc_nodes
 
 
-def get_switch_version():
-    """ Returns lowest switch version as AciVersion instance """
-    prints("Gathering Lowest Switch Version from Firmware Repository...", end='')
-    firmwares = icurl('class', 'firmwareRunning.json')
-    versions = set()
-
-    for firmware in firmwares:
-        versions.add(firmware['firmwareRunning']['attributes']['peVer'])
-
-    if versions:
-        lowest_sw_ver = AciVersion(versions.pop())
-        for version in versions:
-            version = AciVersion(version)
-            if lowest_sw_ver.newer_than(str(version)):
-                lowest_sw_ver = version
-        prints('%s\n' % lowest_sw_ver)
-        return lowest_sw_ver
-    else:
-        prints("No Switches Detected! Join switches to the fabric then re-run this script.\n")
-        return None
-
-
 def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
     username = password = None
     if not api_only:
         username, password = get_credentials()
 
     try:
-        cversion = get_current_version(arg_cversion)
+        fabric_nodes = get_fabric_nodes()
+        cversion, sw_cversion = get_current_versions(fabric_nodes, arg_cversion)
         tversion = get_target_version(arg_tversion)
-        sw_cversion = get_switch_version()
         vpc_nodes = get_vpc_nodes()
     except Exception as e:
         prints('\n\nError: %s' % e)
@@ -1758,6 +1764,7 @@ def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
         'cversion': cversion,
         'tversion': tversion,
         'sw_cversion': sw_cversion,
+        'fabric_nodes': fabric_nodes,
         'vpc_node_ids': vpc_nodes,
     }
 
@@ -1797,29 +1804,30 @@ def apic_cluster_health_check(cversion, **kwargs):
 
 
 @check_wrapper(check_title="Switch Fabric Membership Status")
-def switch_status_check(**kwargs):
+def switch_status_check(fabric_nodes, **kwargs):
     result = FAIL_UF
     msg = ''
     headers = ['Pod-ID', 'Node-ID', 'State']
     data = []
-    recommended_action = 'Bring this node back to "active"'
+    recommended_action = 'Bring these nodes back to "active"'
     # fabricNode.fabricSt shows `disabled` for both Decommissioned and Maintenance (GIR).
     # fabricRsDecommissionNode.debug==yes is required to show `disabled (Maintenance)`.
-    fabricNodes = icurl('class', 'fabricNode.json?&query-target-filter=ne(fabricNode.role,"controller")')
     girNodes = icurl('class',
                      'fabricRsDecommissionNode.json?&query-target-filter=eq(fabricRsDecommissionNode.debug,"yes")')
-    for fabricNode in fabricNodes:
-        state = fabricNode['fabricNode']['attributes']['fabricSt']
+    for fabric_node in fabric_nodes:
+        if fabric_node['fabricNode']['attributes']['role'] == "controller":
+            continue
+        state = fabric_node['fabricNode']['attributes']['fabricSt']
         if state == 'active':
             continue
-        dn = re.search(node_regex, fabricNode['fabricNode']['attributes']['dn'])
+        dn = re.search(node_regex, fabric_node['fabricNode']['attributes']['dn'])
         pod_id = dn.group("pod")
         node_id = dn.group("node")
         for gir in girNodes:
             if node_id == gir['fabricRsDecommissionNode']['attributes']['targetId']:
                 state = state + ' (Maintenance)'
         data.append([pod_id, node_id, state])
-    if not fabricNodes:
+    if not fabric_nodes:
         result = MANUAL
         msg = 'Switch fabricNode not found!'
     elif not data:
@@ -1853,14 +1861,13 @@ def maintp_grp_crossing_4_0_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title="NTP Status")
-def ntp_status_check(**kargs):
+def ntp_status_check(fabric_nodes, **kargs):
     result = FAIL_UF
     headers = ["Pod-ID", "Node-ID"]
     data = []
     recommended_action = 'Not Synchronized. Check NTP config and NTP server reachability.'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ntp-status"
-    fabricNodes = icurl('class', 'fabricNode.json')
-    nodes = [fn['fabricNode']['attributes']['id'] for fn in fabricNodes]
+    nodes = [fn['fabricNode']['attributes']['id'] for fn in fabric_nodes]
     apicNTPs = icurl('class', 'datetimeNtpq.json')
     switchNTPs = icurl('class', 'datetimeClkPol.json')
     for apicNTP in apicNTPs:
@@ -1873,7 +1880,7 @@ def ntp_status_check(**kargs):
             dn = re.search(node_regex, switchNTP['datetimeClkPol']['attributes']['dn'])
             if dn and dn.group('node') in nodes:
                 nodes.remove(dn.group('node'))
-    for fn in fabricNodes:
+    for fn in fabric_nodes:
         if fn['fabricNode']['attributes']['id'] in nodes:
             dn = re.search(node_regex, fn['fabricNode']['attributes']['dn'])
             data.append([dn.group('pod'), dn.group('node')])
@@ -1925,7 +1932,7 @@ def features_to_disable_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title="Switch Upgrade Group Guidelines")
-def switch_group_guideline_check(**kwargs):
+def switch_group_guideline_check(fabric_nodes, **kwargs):
     result = FAIL_O
     headers = ['Group Name', 'Pod-ID', 'Node-IDs', 'Failure Reason']
     data = []
@@ -1944,8 +1951,7 @@ def switch_group_guideline_check(**kwargs):
     reason_vpc = 'Both leaf nodes in the same vPC pair are in the same group.'
 
     nodes = {}
-    fabricNodes = icurl('class', 'fabricNode.json')
-    for fn in fabricNodes:
+    for fn in fabric_nodes:
         attr = fn['fabricNode']['attributes']
         nodes[attr['dn']] = {'role': attr['role'], 'nodeType': attr['nodeType']}
 
@@ -2024,6 +2030,7 @@ def switch_group_guideline_check(**kwargs):
                         'pod': vpc_peer['fabricNodePEp']['attributes']['podId']
                     })
             if len(m_vpc_peers) > 1:
+                m_vpc_peers.sort(key=lambda d: d['node'])
                 data.append([m_name, m_vpc_peers[0]['pod'],
                              ','.join(x['node'] for x in m_vpc_peers),
                              reason_vpc])
@@ -2575,32 +2582,66 @@ def switch_ssd_check(**kwargs):
 
 # Connection Based Check
 @check_wrapper(check_title="APIC SSD Health")
-def apic_ssd_check(cversion, username, password, **kwargs):
+def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
     result = FAIL_UF
     headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
-    unformatted_headers = ["Fault", "Fault DN", "% lifetime remaining", "Recommended Action"]
+    unformatted_headers = ["Fault DN", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
     recommended_action = "Contact TAC for replacement"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-ssd-health"
 
-    has_error = False
     dn_regex = node_regex + r'/.+p-\[(?P<storage>.+)\]-f'
-    faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2731")')
-    if len(faultInsts) == 0 and (cversion.older_than("4.2(7f)") or cversion.older_than("5.2(1g)")):
-        controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-        if not controller:
-            return Result(result=ERROR, msg="topSystem response empty. Is the cluster healthy?", doc_url=doc_url)
+    threshold = {"F2731": "<5% (Fault F2731)", "F2732": "<1% (Fault F2732)"}
+    # Not checking F0101 because if APIC SSD is not operaitonal, the given APIC
+    # does not work at all and APIC clustering should be broken.
+    faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F2731"),eq(faultInst.code,"F2732"))')
+    for faultInst in faultInsts:
+        code = faultInst["faultInst"]["attributes"]["code"]
+        lifetime_remaining = threshold.get(code, "unknown")
+        dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+        if dn_array:
+            data.append([
+                dn_array.group("pod"),
+                dn_array.group("node"),
+                dn_array.group("storage"),
+                lifetime_remaining,
+                recommended_action,
+            ])
+        else:
+            unformatted_data.append([
+                faultInst['faultInst']['attributes']['dn'],
+                lifetime_remaining,
+                recommended_action,
+            ])
 
-        print('')
+    # Versions older than 4.2(7f) or 5.x - 5.2(1g) may fail to raise F273x.
+    # Check logs for those just in case.
+    has_error = False
+    if (
+        len(faultInsts) == 0
+        and (
+            cversion.older_than("4.2(7f)")
+            or (cversion.major1 == "5" and cversion.older_than("5.2(1g)"))
+        )
+    ):
+        apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+        if not apics:
+            return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+
         report_other = False
         checked_apics = {}
-        for apic in controller:
-            attr = apic['topSystem']['attributes']
+        for apic in apics:
+            attr = apic['fabricNode']['attributes']
             if attr['address'] in checked_apics: continue
             checked_apics[attr['address']] = 1
-            pod_id = attr['podId']
-            node_id = attr['id']
+            dn = re.search(node_regex, attr['dn'])
+            if dn:
+                pod_id = dn.group('pod')
+                node_id = dn.group('node')
+            else:
+                pod_id = "--"
+                node_id = attr['id']
             try:
                 c = Connection(attr['address'])
                 c.username = username
@@ -2608,14 +2649,13 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                 c.log = LOG_FILE
                 c.connect()
             except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', str(e)])
+                data.append([pod_id, node_id, '-', '-', str(e)])
                 has_error = True
                 continue
             try:
-                c.cmd(
-                    'grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
+                c.cmd('grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
             except Exception as e:
-                data.append([attr['id'], attr['name'], '-', '-', str(e)])
+                data.append([pod_id, node_id, '-', '-', str(e)])
                 has_error = True
                 continue
 
@@ -2628,17 +2668,6 @@ def apic_ssd_check(cversion, username, password, **kwargs):
                     continue
                 if report_other:
                     data.append([pod_id, node_id, "Solid State Disk", wearout, "No Action Required"])
-    else:
-        headers = ["Fault", "Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
-        for faultInst in faultInsts:
-            dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-            lifetime_remaining = "<5%"
-            if dn_array:
-                data.append(['F2731', dn_array.group("pod"), dn_array.group("node"), dn_array.group("storage"),
-                             lifetime_remaining, recommended_action])
-            else:
-                unformatted_data.append(
-                    ['F2731', faultInst['faultInst']['attributes']['dn'], lifetime_remaining, recommended_action])
     if has_error:
         result = ERROR
     elif not data and not unformatted_data:
@@ -3220,7 +3249,7 @@ def lldp_with_infra_vlan_mismatch_check(**kwargs):
 
 # Connection Based Check
 @check_wrapper(check_title="APIC Target version image and MD5 hash")
-def apic_version_md5_check(tversion, username, password, **kwargs):
+def apic_version_md5_check(tversion, username, password, fabric_nodes, **kwargs):
     result = FAIL_UF
     headers = ['APIC', 'Firmware', 'md5sum', 'Failure']
     data = []
@@ -3246,14 +3275,15 @@ def apic_version_md5_check(tversion, username, password, **kwargs):
     md5s = []
     md5_names = []
 
+    apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    if not apics:
+        return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+
     has_error = False
-    nodes_response_json = icurl('class', 'topSystem.json')
-    for node in nodes_response_json:
-        if node['topSystem']['attributes']['role'] != "controller":
-            continue
-        apic_name = node['topSystem']['attributes']['name']
+    for apic in apics:
+        apic_name = apic['fabricNode']['attributes']['name']
         try:
-            c = Connection(node['topSystem']['attributes']['address'])
+            c = Connection(apic['fabricNode']['attributes']['address'])
             c.username = username
             c.password = password
             c.log = LOG_FILE
@@ -3367,7 +3397,7 @@ def standby_apic_disk_space_check(**kwargs):
 
 
 @check_wrapper(check_title="Remote Leaf Compatibility")
-def r_leaf_compatibility_check(tversion, **kwargs):
+def r_leaf_compatibility_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ['Target Version', 'Remote Leaf', 'Direct Traffic Forwarding']
     data = []
@@ -3380,7 +3410,7 @@ def r_leaf_compatibility_check(tversion, **kwargs):
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    remote_leafs = icurl('class', 'fabricNode.json?&query-target-filter=eq(fabricNode.nodeType,"remote-leaf-wan")')
+    remote_leafs = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["nodeType"] == "remote-leaf-wan"]
     if not remote_leafs:
         return Result(result=NA, msg="No Remote Leaf Found")
 
@@ -3497,20 +3527,19 @@ def vmm_controller_adj_check(**kwargs):
 
 
 @check_wrapper(check_title="VPC-paired Leaf switches")
-def vpc_paired_switches_check(vpc_node_ids, **kwargs):
+def vpc_paired_switches_check(vpc_node_ids, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node ID", "Node Name"]
     data = []
     recommended_action = 'Determine if dataplane redundancy is available if these nodes go down.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vpc-paired-leaf-switches'
 
-    top_system = icurl('class', 'topSystem.json')
-    for node in top_system:
-        node_id = node['topSystem']['attributes']['id']
-        role = node['topSystem']['attributes']['role']
+    for node in fabric_nodes:
+        node_id = node['fabricNode']['attributes']['id']
+        role = node['fabricNode']['attributes']['role']
         if role == 'leaf' and (node_id not in vpc_node_ids):
             result = MANUAL
-            name = node['topSystem']['attributes']['name']
+            name = node['fabricNode']['attributes']['name']
             data.append([node_id, name])
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
@@ -3738,7 +3767,7 @@ def target_version_compatibility_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title="Gen 1 switch compatibility")
-def gen1_switch_compatibility_check(tversion, **kwargs):
+def gen1_switch_compatibility_check(tversion, fabric_nodes, **kwargs):
     result = FAIL_UF
     headers = ["Target Version", "Node ID", "Model", "Warning"]
     gen1_models = ["N9K-C9336PQ", "N9K-X9736PQ", "N9K-C9504-FM", "N9K-C9508-FM", "N9K-C9516-FM", "N9K-C9372PX-E",
@@ -3746,13 +3775,12 @@ def gen1_switch_compatibility_check(tversion, **kwargs):
                    "N9K-C93128TX"]
     data = []
     recommended_action = 'Select supported target version or upgrade hardware'
-    doc_url = 'http://cs.co/9001ydKCV'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-switch-hardware-gen1'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
     if tversion.newer_than("5.0(1a)"):
-        fabric_node = icurl('class', 'fabricNode.json')
-        for node in fabric_node:
+        for node in fabric_nodes:
             if node['fabricNode']['attributes']['model'] in gen1_models:
                 data.append([str(tversion), node['fabricNode']['attributes']['id'],
                             node['fabricNode']['attributes']['model'], 'Not supported on 5.x+'])
@@ -3993,22 +4021,26 @@ def apic_ca_cert_validation(**kwargs):
 
 
 @check_wrapper(check_title="FabricDomain Name")
-def fabricdomain_name_check(cversion, tversion, **kwargs):
+def fabricdomain_name_check(cversion, tversion, fabric_nodes, **kwargs):
     result = FAIL_O
     headers = ["FabricDomain", "Reason"]
     data = []
     recommended_action = "Do not upgrade to 6.0(2)"
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf80352'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fabricdomain-name'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     if tversion.same_as("6.0(2h)"):
-        controller = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-        if not controller:
-            return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
+        apic1 = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["id"] == "1"]
+        if not apic1:
+            return Result(result=ERROR, msg='No fabricNode of APIC 1. Is the cluster healthy?')
 
-        fabricDomain = controller[0]['topSystem']['attributes']['fabricDomain']
+        # Using topSystem because fabricTopology.fabricDomain is not yet available prior to 5.2(6e).
+        apic1_topsys = icurl("mo", "/".join([apic1[0]["fabricNode"]["attributes"]["dn"], "sys.json"]))
+        if not apic1_topsys:
+            return Result(result=ERROR, msg='No topSystem of APIC 1. Is the cluster healthy?')
+        fabricDomain = apic1_topsys[0]['topSystem']['attributes']['fabricDomain']
         if re.search(r'#|;', fabricDomain):
             data.append([fabricDomain, "Contains a special character"])
 
@@ -4154,25 +4186,28 @@ def oob_mgmt_security_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title="Mini ACI Upgrade to 6.0(2)+")
-def mini_aci_6_0_2_check(cversion, tversion, **kwargs):
+def mini_aci_6_0_2_check(cversion, tversion, fabric_nodes, **kwargs):
     result = FAIL_UF
-    headers = ["Pod ID", "Node ID", "APIC Type", "Failure Reason"]
+    headers = ["Node ID", "Node Name", "APIC Type"]
     data = []
     recommended_action = "All virtual APICs must be removed from the cluster prior to upgrading to 6.0(2)+."
-    doc_url = 'Upgrading Mini ACI - http://cs.co/9009bBTQB'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#mini-aci-upgrade-to-602-or-later'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    if cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)"):
-        topSystem = icurl('class', 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")')
-        if not topSystem:
-            return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
-        for controller in topSystem:
-            if controller['topSystem']['attributes']['nodeType'] == "virtual":
-                pod_id = controller["topSystem"]["attributes"]["podId"]
-                node_id = controller['topSystem']['attributes']['id']
-                data.append([pod_id, node_id, "virtual", "Virtual APIC must be removed prior to upgrade to 6.0(2)+"])
+    if not (cversion.older_than("6.0(2a)") and tversion.newer_than("6.0(2a)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    if not apics:
+        return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+
+    for apic in apics:
+        if apic['fabricNode']['attributes']['nodeType'] == "virtual":
+            node_id = apic['fabricNode']['attributes']['id']
+            node_name = apic['fabricNode']['attributes']['name']
+            data.append([node_id, node_name, "virtual"])
 
     if not data:
         result = PASS
@@ -4443,7 +4478,7 @@ def fabric_dpp_check(tversion, **kwargs):
 
 
 @check_wrapper(check_title='N9K-C93108TC-FX3P/FX3H Interface Down')
-def n9k_c93108tc_fx3p_interface_down_check(tversion, **kwargs):
+def n9k_c93108tc_fx3p_interface_down_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node ID", "Node Name", "Product ID"]
     data = []
@@ -4458,12 +4493,9 @@ def n9k_c93108tc_fx3p_interface_down_check(tversion, **kwargs):
         or tversion.same_as("5.3(1d)")
         or (tversion.major1 == "6" and tversion.older_than("6.0(4a)"))
     ):
-        api = 'fabricNode.json'
-        api += '?query-target-filter=or('
-        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3P"),'
-        api += 'eq(fabricNode.model,"N9K-C93108TC-FX3H"))'
-        nodes = icurl('class', api)
-        for node in nodes:
+        for node in fabric_nodes:
+            if node["fabricNode"]["attributes"]["model"] not in ["N9K-C93108TC-FX3P", "N9K-C93108TC-FX3H"]:
+                continue
             nodeid = node["fabricNode"]["attributes"]["id"]
             name = node["fabricNode"]["attributes"]["name"]
             pid = node["fabricNode"]["attributes"]["model"]
@@ -5117,7 +5149,7 @@ def validate_32_64_bit_image_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title='Fabric Link Redundancy')
-def fabric_link_redundancy_check(**kwargs):
+def fabric_link_redundancy_check(fabric_nodes, **kwargs):
     result = PASS
     headers = ["Leaf Name", "Fabric Link Adjacencies", "Problem"]
     data = []
@@ -5126,19 +5158,17 @@ def fabric_link_redundancy_check(**kwargs):
     t1_recommended_action = "Connect the tier 2 leaf switch(es) to multiple tier1 leaf switches for redundancy"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fabric-link-redundancy"
 
-    fabric_nodes_api = 'fabricNode.json'
-    fabric_nodes_api += '?query-target-filter=and(or(eq(fabricNode.role,"leaf"),eq(fabricNode.role,"spine")),eq(fabricNode.fabricSt,"active"))'
-
     lldp_adj_api = 'lldpAdjEp.json'
     lldp_adj_api += '?query-target-filter=wcard(lldpAdjEp.sysDesc,"topology/pod")'
 
-    fabricNodes = icurl("class", fabric_nodes_api)
     spines = {}
     leafs = {}
     t2leafs = {}
-    for node in fabricNodes:
+    for node in fabric_nodes:
         if node["fabricNode"]["attributes"]["nodeType"] == "remote-leaf-wan":
             # Not applicable to remote leafs, skip
+            continue
+        if node["fabricNode"]["attributes"]["fabricSt"] != "active":
             continue
         dn = node["fabricNode"]["attributes"]["dn"]
         name = node["fabricNode"]["attributes"]["name"]
@@ -5253,7 +5283,7 @@ def out_of_service_ports_check(**kwargs):
 
 
 @check_wrapper(check_title='FC/FCOE support removed for -EX platforms')
-def fc_ex_model_check(tversion, **kwargs):
+def fc_ex_model_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["FC/FCOE Node ID", "Model"]
     data = []
@@ -5261,8 +5291,6 @@ def fc_ex_model_check(tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fcfcoe-support-for-ex-switches'
 
     fcEntity_api = "fcEntity.json"
-    fabricNode_api = 'fabricNode.json'
-    fabricNode_api += '?query-target-filter=wcard(fabricNode.model,".*EX")'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
@@ -5270,13 +5298,11 @@ def fc_ex_model_check(tversion, **kwargs):
     if (tversion.newer_than("6.0(7a)") and tversion.older_than("6.0(9c)")) or tversion.same_as("6.1(1f)"):
         fcEntitys = icurl('class', fcEntity_api)
         fc_nodes = []
-        if fcEntitys:
-            for fcEntity in fcEntitys:
-                fc_nodes.append(fcEntity['fcEntity']['attributes']['dn'].split('/sys')[0])
+        for fcEntity in fcEntitys:
+            fc_nodes.append(fcEntity['fcEntity']['attributes']['dn'].split('/sys')[0])
 
         if fc_nodes:
-            fabricNodes = icurl('class', fabricNode_api)
-            for node in fabricNodes:
+            for node in fabric_nodes:
                 node_dn = node['fabricNode']['attributes']['dn']
                 if node_dn in fc_nodes:
                     model = node['fabricNode']['attributes']['model']
@@ -5355,7 +5381,7 @@ def clock_signal_component_failure_check(**kwargs):
 
 
 @check_wrapper(check_title='Stale Decomissioned Spine')
-def stale_decomissioned_spine_check(tversion, **kwargs):
+def stale_decomissioned_spine_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Susceptible Spine Node Id", "Spine Name", "Current Node State"]
     data = []
@@ -5363,8 +5389,6 @@ def stale_decomissioned_spine_check(tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-decommissioned-spine'
 
     decomissioned_api = 'fabricRsDecommissionNode.json'
-    active_spine_api = 'topSystem.json'
-    active_spine_api += '?query-target-filter=eq(topSystem.role,"spine")'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
@@ -5374,13 +5398,16 @@ def stale_decomissioned_spine_check(tversion, **kwargs):
         if decomissioned_switches:
             decommissioned_node_ids = [node['fabricRsDecommissionNode']['attributes']['targetId'] for node in decomissioned_switches]
 
-            active_spine_mo = icurl('class', active_spine_api)
-            for spine in active_spine_mo:
-                node_id = spine['topSystem']['attributes']['id']
-                name = spine['topSystem']['attributes']['name']
-                state = spine['topSystem']['attributes']['state']
+            for node in fabric_nodes:
+                if node["fabricNode"]["attributes"]["role"] != "spine":
+                    continue
+                if node["fabricNode"]["attributes"]["fabricSt"] != "active":
+                    continue
+                node_id = node["fabricNode"]["attributes"]["id"]
+                name = node["fabricNode"]["attributes"]["name"]
+                fabricSt = node["fabricNode"]["attributes"]["fabricSt"]
                 if node_id in decommissioned_node_ids:
-                    data.append([node_id, name, state])
+                    data.append([node_id, name, fabricSt])
     if data:
         result = FAIL_O
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
@@ -5649,23 +5676,20 @@ def service_bd_forceful_routing_check(cversion, tversion, **kwargs):
 
 # Connection Base Check
 @check_wrapper(check_title='Observer Database Size')
-def observer_db_size_check(username, password, **kwargs):
+def observer_db_size_check(username, password, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node", "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
 
-    topSystem_api = 'topSystem.json'
-    topSystem_api += '?query-target-filter=eq(topSystem.role,"controller")'
-
-    controllers = icurl('class', topSystem_api)
-    if not controllers:
-        return Result(result=ERROR, msg='topSystem response empty. Is the cluster healthy?')
+    apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    if not apics:
+        return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
 
     has_error = False
-    for apic in controllers:
-        attr = apic['topSystem']['attributes']
+    for apic in apics:
+        attr = apic['fabricNode']['attributes']
         try:
             c = Connection(attr['address'])
             c.username = username

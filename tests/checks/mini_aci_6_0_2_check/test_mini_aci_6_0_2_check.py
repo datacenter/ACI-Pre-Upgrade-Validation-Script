@@ -11,60 +11,65 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 test_function = "mini_aci_6_0_2_check"
 
-# icurl queries
-topSystems = 'topSystem.json?query-target-filter=wcard(topSystem.role,"controller")'
-
 
 @pytest.mark.parametrize(
-    "icurl_outputs, cversion, tversion, expected_result",
+    "cversion, tversion, fabric_nodes, expected_result, expected_data",
     [
+        # tversion missing
         (
-            {topSystems: read_data(dir, "topSystem_controller_neg.json")},
+            "5.2(3a)",
+            None,
+            read_data(dir, "fabricNode_mini_aci.json"),
+            script.MANUAL,
+            [],
+        ),
+        # Version Not Affected (not crossing 6.0.2)
+        (
             "3.2(1a)",
             "5.2(6a)",
-            script.PASS,
+            read_data(dir, "fabricNode_mini_aci.json"),
+            script.NA,
+            [],
         ),
+        # Version Not Affected (not crossing 6.0.2)
         (
-            {topSystems: read_data(dir, "topSystem_controller_neg.json")},
             "6.0(2e)",
             "6.0(5d)",
-            script.PASS,
+            read_data(dir, "fabricNode_mini_aci.json"),
+            script.NA,
+            [],
         ),
+        # Version Affected, Not mini ACI
         (
-            {topSystems: read_data(dir, "topSystem_controller_neg.json")},
             "5.2(3a)",
             "6.0(3d)",
+            read_data(dir, "fabricNode_all_phys_apic.json"),
             script.PASS,
+            [],
         ),
+        # Version Affected, mini ACI
         (
-            {topSystems: read_data(dir, "topSystem_controller_pos.json")},
-            "4.1(1a)",
-            "5.2(7f)",
-            script.PASS,
-        ),
-        (
-            {topSystems: read_data(dir, "topSystem_controller_pos.json")},
             "4.2(2a)",
             "6.0(2c)",
+            read_data(dir, "fabricNode_mini_aci.json"),
             script.FAIL_UF,
+            [["2", "apic2", "virtual"], ["3", "apic3", "virtual"]],
         ),
+        # Version Affected, mini ACI
         (
-            {topSystems: read_data(dir, "topSystem_controller_pos.json")},
             "6.0(1a)",
             "6.0(2c)",
+            read_data(dir, "fabricNode_mini_aci.json"),
             script.FAIL_UF,
-        ),
-        (
-            {topSystems: read_data(dir, "topSystem_controller_pos.json")},
-            "6.0(2c)",
-            "6.0(5c)",
-            script.PASS,
+            [["2", "apic2", "virtual"], ["3", "apic3", "virtual"]],
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
+def test_logic(run_check, cversion, tversion, fabric_nodes, expected_result, expected_data):
     result = run_check(
         cversion=script.AciVersion(cversion),
         tversion=script.AciVersion(tversion) if tversion else None,
+        fabric_nodes=fabric_nodes,
     )
     assert result.result == expected_result
+    assert result.data == expected_data

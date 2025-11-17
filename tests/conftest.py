@@ -131,6 +131,136 @@ def expected_common_data(request):
         "tversion": script.AciVersion("6.2(1a)"),
         "sw_cversion": script.AciVersion("6.0(9d)"),
         "vpc_node_ids": ["101", "102"],
+        "fabric_nodes": [
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.1",
+                        "dn": "topology/pod-1/node-1",
+                        "fabricSt": "commissioned",
+                        "id": "1",
+                        "model": "APIC-SERVER-L2",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "apic1",
+                        "nodeType": "unspecified",
+                        "role": "controller",
+                        "version": "6.1(1a)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.2",
+                        "dn": "topology/pod-1/node-2",
+                        "fabricSt": "commissioned",
+                        "id": "2",
+                        "model": "APIC-SERVER-L2",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "apic2",
+                        "nodeType": "unspecified",
+                        "role": "controller",
+                        "version": "6.1(1a)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.3",
+                        "dn": "topology/pod-2/node-3",
+                        "fabricSt": "commissioned",
+                        "id": "3",
+                        "model": "APIC-SERVER-L2",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "apic3",
+                        "nodeType": "unspecified",
+                        "role": "controller",
+                        "version": "6.1(1a)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.101",
+                        "dn": "topology/pod-1/node-101",
+                        "fabricSt": "active",
+                        "id": "101",
+                        "model": "N9K-C93180YC-FX",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "leaf101",
+                        "nodeType": "unspecified",
+                        "role": "leaf",
+                        "version": "n9000-16.1(1a)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.102",
+                        "dn": "topology/pod-1/node-102",
+                        "fabricSt": "active",
+                        "id": "102",
+                        "model": "N9K-C93180YC-FX",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "leaf102",
+                        "nodeType": "unspecified",
+                        "role": "leaf",
+                        "version": "n9000-16.1(1a)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.111",
+                        "dn": "topology/pod-1/node-1001",
+                        "fabricSt": "active",
+                        "id": "1001",
+                        "model": "N9K-C9504",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "spine1001",
+                        "nodeType": "unspecified",
+                        "role": "spine",
+                        "version": "n9000-16.1(1a)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.201",
+                        "dn": "topology/pod-2/node-201",
+                        "fabricSt": "active",
+                        "id": "201",
+                        "model": "N9K-C93180YC-FX3",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "leaf201",
+                        "nodeType": "unspecified",
+                        "role": "leaf",
+                        "version": "n9000-16.0(9d)",
+                    }
+                }
+            },
+            {
+                "fabricNode": {
+                    "attributes": {
+                        "address": "10.0.0.211",
+                        "dn": "topology/pod-2/node-2001",
+                        "fabricSt": "active",
+                        "id": "2001",
+                        "model": "N9K-C9504",
+                        "monPolDn": "uni/fabric/monfab-default",
+                        "name": "spine2001",
+                        "nodeType": "unspecified",
+                        "role": "spine",
+                        "version": "n9000-16.1(1a)",
+                    }
+                }
+            },
+        ],
     }
     param = getattr(request, "param", {})
     for key in data:
@@ -332,6 +462,7 @@ def check_factory():
 
         _check.__name__ = check_id  # Set the function name for the check
         return _check
+
     return _check_factory
 
 

@@ -1,0 +1,62 @@
+[
+  {
+    "lldpCtrlrAdjEp": {
+      "attributes": {
+        "apicMode": "active",
+        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/1]/ctrlradj",
+        "id": "1",
+        "portRole": "active"
+      }
+    }
+  },
+  {
+    "lldpCtrlrAdjEp": {
+      "attributes": {
+        "apicMode": "active",
+        "dn": "topology/pod-1/node-101/sys/lldp/inst/if-[eth1/2]/ctrlradj",
+        "id": "2",
+        "portRole": "active"
+      }
+    }
+  },
+  {
+    "lldpCtrlrAdjEp": {
+      "attributes": {
+        "apicMode": "active",
+        "dn": "topology/pod-1/node-102/sys/lldp/inst/if-[eth1/2]/ctrlradj",
+        "id": "2",
+        "portRole": "backup"
+      }
+    }
+  },
+  {
+    "lldpCtrlrAdjEp": {
+      "attributes": {
+        "apicMode": "active",
+        "dn": "topology/pod-1/node-102/sys/lldp/inst/if-[eth1/1]/ctrlradj",
+        "id": "1",
+        "portRole": "backup"
+      }
+    }
+  },
+  {
+    "lldpCtrlrAdjEp": {
+      "attributes": {
+        "apicMode": "active",
+        "dn": "topology/pod-2/node-201/sys/lldp/inst/if-[eth1/3]/ctrlradj",
+        "id": "3",
+        "portRole": "active"
+      }
+    }
+  },
+  {
+    "lldpCtrlrAdjEp": {
+      "attributes": {
+        "apicMode": "active",
+        "dn": "topology/pod-2/node-202/sys/lldp/inst/if-[eth1/3]/ctrlradj",
+        "id": "3",
+        "portRole": "active"
+      }
+    }
+  }
+]
