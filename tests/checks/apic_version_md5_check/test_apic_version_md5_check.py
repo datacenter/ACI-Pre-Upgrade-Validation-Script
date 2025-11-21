@@ -13,6 +13,7 @@ test_function = "apic_version_md5_check"
 
 
 api_firmware = "fwrepo/fw-aci-apic-dk9.6.0.5h.json"
+api_infraWiNode = "topology/pod-1/node-1/infraWiNode.json"
 
 apic_ips = [
     node["fabricNode"]["attributes"]["address"]
@@ -62,7 +63,7 @@ f2-apic1#
             "6.0(5h)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
-            [["All", "6.0(5h)", "d5afca58fce2018495d068c000000000", "Target image is corrupted"]],
+            [["All", "-", "6.0(5h)", "d5afca58fce2018495d068c000000000", "Target image is corrupted"]],
         ),
         # No fabricNode for APICs
         (
@@ -83,9 +84,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.ERROR,
             [
-                ["apic1", "-", "-", "Simulated exception at connect()"],
-                ["apic2", "-", "-", "Simulated exception at connect()"],
-                ["apic3", "-", "-", "Simulated exception at connect()"],
+                ["1", "apic1", "-", "-", "Simulated exception at connect()"],
+                ["2", "apic2", "-", "-", "Simulated exception at connect()"],
+                ["3", "apic3", "-", "-", "Simulated exception at connect()"],
             ],
         ),
         # Exception failure at the ls command
@@ -106,9 +107,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.ERROR,
             [
-                ["apic1", "-", "-", "ls command via ssh failed due to:Simulated exception at `ls` command"],
-                ["apic2", "-", "-", "ls command via ssh failed due to:Simulated exception at `ls` command"],
-                ["apic3", "-", "-", "ls command via ssh failed due to:Simulated exception at `ls` command"],
+                ["1", "apic1", "-", "-", "ls command via ssh failed due to:Simulated exception at `ls` command"],
+                ["2", "apic2", "-", "-", "ls command via ssh failed due to:Simulated exception at `ls` command"],
+                ["3", "apic3", "-", "-", "ls command via ssh failed due to:Simulated exception at `ls` command"],
             ],
         ),
         # No such file output from the ls command
@@ -129,9 +130,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
             [
-                ["apic1", "6.0(5h)", "-", "image not found"],
-                ["apic2", "6.0(5h)", "-", "image not found"],
-                ["apic3", "6.0(5h)", "-", "image not found"],
+                ["1", "apic1", "6.0(5h)", "-", "image not found"],
+                ["2", "apic2", "6.0(5h)", "-", "image not found"],
+                ["3", "apic3", "6.0(5h)", "-", "image not found"],
             ],
         ),
         # Exception failure at the cat command
@@ -157,9 +158,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.ERROR,
             [
-                ["apic1", "6.0(5h)", "-", "failed to check md5sum via ssh due to:Simulated exception at `cat` command"],
-                ["apic2", "6.0(5h)", "-", "failed to check md5sum via ssh due to:Simulated exception at `cat` command"],
-                ["apic3", "6.0(5h)", "-", "failed to check md5sum via ssh due to:Simulated exception at `cat` command"],
+                ["1", "apic1", "6.0(5h)", "-", "failed to check md5sum via ssh due to:Simulated exception at `cat` command"],
+                ["2", "apic2", "6.0(5h)", "-", "failed to check md5sum via ssh due to:Simulated exception at `cat` command"],
+                ["3", "apic3", "6.0(5h)", "-", "failed to check md5sum via ssh due to:Simulated exception at `cat` command"],
             ],
         ),
         # No such file output from the cat command
@@ -185,9 +186,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
             [
-                ["apic1", "6.0(5h)", "-", "md5sum file not found"],
-                ["apic2", "6.0(5h)", "-", "md5sum file not found"],
-                ["apic3", "6.0(5h)", "-", "md5sum file not found"],
+                ["1", "apic1", "6.0(5h)", "-", "md5sum file not found"],
+                ["2", "apic2", "6.0(5h)", "-", "md5sum file not found"],
+                ["3", "apic3", "6.0(5h)", "-", "md5sum file not found"],
             ],
         ),
         # Unexpected output from the cat command
@@ -213,9 +214,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.ERROR,
             [
-                ["apic1", "6.0(5h)", "-", "unexpected output when checking md5sum file"],
-                ["apic2", "6.0(5h)", "-", "unexpected output when checking md5sum file"],
-                ["apic3", "6.0(5h)", "-", "unexpected output when checking md5sum file"],
+                ["1", "apic1", "6.0(5h)", "-", "unexpected output when checking md5sum file"],
+                ["2", "apic2", "6.0(5h)", "-", "unexpected output when checking md5sum file"],
+                ["3", "apic3", "6.0(5h)", "-", "unexpected output when checking md5sum file"],
             ],
         ),
         # Failure because md5sum on each APIC do not match
@@ -264,9 +265,9 @@ f2-apic1#
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
             [
-                ["apic1", "6.0(5h)", "d5afca58fce2018495d068c44eb4a547", "md5sum do not match on all APICs"],
-                ["apic2", "6.0(5h)", "d5afca58fce2018495d068c000000000", "md5sum do not match on all APICs"],
-                ["apic3", "6.0(5h)", "d5afca58fce2018495d068c44eb4a547", "md5sum do not match on all APICs"],
+                ["1", "apic1", "6.0(5h)", "d5afca58fce2018495d068c44eb4a547", "md5sum do not match on all APICs"],
+                ["2", "apic2", "6.0(5h)", "d5afca58fce2018495d068c000000000", "md5sum do not match on all APICs"],
+                ["3", "apic3", "6.0(5h)", "d5afca58fce2018495d068c44eb4a547", "md5sum do not match on all APICs"],
             ],
         ),
         # Pass
@@ -290,6 +291,33 @@ f2-apic1#
             },
             "6.0(5h)",
             read_data(dir, "fabricNode.json"),
+            script.PASS,
+            [],
+        ),
+        # Pass (pre-4.0 with infraWiNode)
+        (
+            {
+                api_firmware: read_data(dir, "firmwareFirmware_6.0.5h.json"),
+                api_infraWiNode: read_data(dir, "infraWiNode_apic1.json"),
+            },
+            False,
+            {
+                apic_ip: [
+                    {
+                        "cmd": ls_cmd,
+                        "output": "\n".join([ls_cmd, ls_output]),
+                        "exception": None,
+                    },
+                    {
+                        "cmd": cat_cmd,
+                        "output": "\n".join([cat_cmd, cat_output]),
+                        "exception": None,
+                    },
+                ]
+                for apic_ip in apic_ips
+            },
+            "6.0(5h)",
+            read_data(dir, "fabricNode_old.json"),
             script.PASS,
             [],
         ),

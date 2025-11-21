@@ -2604,7 +2604,7 @@ def switch_ssd_check(**kwargs):
 @check_wrapper(check_title="APIC SSD Health")
 def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
     result = FAIL_UF
-    headers = ["Pod", "Node", "Storage Unit", "% lifetime remaining", "Recommended Action"]
+    headers = ["APIC ID", "APIC Name", "Storage Unit", "% lifetime remaining", "Recommended Action"]
     data = []
     unformatted_headers = ["Fault DN", "% lifetime remaining", "Recommended Action"]
     unformatted_data = []
@@ -2619,12 +2619,17 @@ def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
     for faultInst in faultInsts:
         code = faultInst["faultInst"]["attributes"]["code"]
         lifetime_remaining = threshold.get(code, "unknown")
-        dn_array = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-        if dn_array:
+        dn_match = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+        if dn_match:
+            apic_name = "-"
+            for node in fabric_nodes:
+                if node["fabricNode"]["attributes"]["id"] == dn_match.group("node"):
+                    apic_name = node["fabricNode"]["attributes"]["name"]
+                    break
             data.append([
-                dn_array.group("pod"),
-                dn_array.group("node"),
-                dn_array.group("storage"),
+                dn_match.group("node"),
+                apic_name,
+                dn_match.group("storage"),
                 lifetime_remaining,
                 recommended_action,
             ])
@@ -2648,34 +2653,36 @@ def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
         apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
         if not apics:
             return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+        # `fabricNode` in pre-4.0 does not have `address`
+        if not apics[0]["fabricNode"]["attributes"].get("address"):
+            apic1 = [apic for apic in apics if apic["fabricNode"]["attributes"]["id"] == "1"][0]
+            apic1_dn = apic1["fabricNode"]["attributes"]["dn"]
+            apics = icurl("class", "{}/infraWiNode.json".format(apic1_dn))
 
         report_other = False
-        checked_apics = {}
         for apic in apics:
-            attr = apic['fabricNode']['attributes']
-            if attr['address'] in checked_apics: continue
-            checked_apics[attr['address']] = 1
-            dn = re.search(node_regex, attr['dn'])
-            if dn:
-                pod_id = dn.group('pod')
-                node_id = dn.group('node')
+            if apic.get("fabricNode"):
+                apic_id = apic["fabricNode"]["attributes"]["id"]
+                apic_name = apic["fabricNode"]["attributes"]["name"]
+                apic_addr = apic["fabricNode"]["attributes"]["address"]
             else:
-                pod_id = "--"
-                node_id = attr['id']
+                apic_id = apic["infraWiNode"]["attributes"]["id"]
+                apic_name = apic["infraWiNode"]["attributes"]["nodeName"]
+                apic_addr = apic["infraWiNode"]["attributes"]["addr"]
             try:
-                c = Connection(attr['address'])
+                c = Connection(apic_addr)
                 c.username = username
                 c.password = password
                 c.log = LOG_FILE
                 c.connect()
             except Exception as e:
-                data.append([pod_id, node_id, '-', '-', str(e)])
+                data.append([apic_id, apic_name, '-', '-', str(e)])
                 has_error = True
                 continue
             try:
                 c.cmd('grep -oE "SSD Wearout Indicator is [0-9]+"  /var/log/dme/log/svc_ifc_ae.bin.log | tail -1')
             except Exception as e:
-                data.append([pod_id, node_id, '-', '-', str(e)])
+                data.append([apic_id, apic_name, '-', '-', str(e)])
                 has_error = True
                 continue
 
@@ -2683,11 +2690,11 @@ def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
             if wearout_ind is not None:
                 wearout = wearout_ind.group('wearout')
                 if int(wearout) < 5:
-                    data.append([pod_id, node_id, "Solid State Disk", wearout, recommended_action])
+                    data.append([apic_id, apic_name, "Solid State Disk", wearout, recommended_action])
                     report_other = True
                     continue
                 if report_other:
-                    data.append([pod_id, node_id, "Solid State Disk", wearout, "No Action Required"])
+                    data.append([apic_id, apic_name, "Solid State Disk", wearout, "No Action Required"])
     if has_error:
         result = ERROR
     elif not data and not unformatted_data:
@@ -3271,7 +3278,7 @@ def lldp_with_infra_vlan_mismatch_check(**kwargs):
 @check_wrapper(check_title="APIC Target version image and MD5 hash")
 def apic_version_md5_check(tversion, username, password, fabric_nodes, **kwargs):
     result = FAIL_UF
-    headers = ['APIC', 'Firmware', 'md5sum', 'Failure']
+    headers = ["APIC ID", "APIC Name", "Firmware", "md5sum", "Failure"]
     data = []
     recommended_action = 'Delete the firmware from APIC and re-download'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-target-version-image-and-md5-hash"
@@ -3286,7 +3293,7 @@ def apic_version_md5_check(tversion, username, password, fabric_nodes, **kwargs)
             desc = fm_mo["firmwareFirmware"]['attributes']["description"]
             md5 = fm_mo["firmwareFirmware"]['attributes']["checksum"]
             if "Image signing verification failed" in desc:
-                data.append(["All", str(tversion), md5, 'Target image is corrupted'])
+                data.append(["All", "-", str(tversion), md5, 'Target image is corrupted'])
                 image_validaton = False
 
     if not image_validaton:
@@ -3298,18 +3305,30 @@ def apic_version_md5_check(tversion, username, password, fabric_nodes, **kwargs)
     apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
     if not apics:
         return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+    # `fabricNode` in pre-4.0 does not have `address`
+    if not apics[0]["fabricNode"]["attributes"].get("address"):
+        apic1 = [apic for apic in apics if apic["fabricNode"]["attributes"]["id"] == "1"][0]
+        apic1_dn = apic1["fabricNode"]["attributes"]["dn"]
+        apics = icurl("class", "{}/infraWiNode.json".format(apic1_dn))
 
     has_error = False
     for apic in apics:
-        apic_name = apic['fabricNode']['attributes']['name']
+        if apic.get("fabricNode"):
+            apic_id = apic["fabricNode"]["attributes"]["id"]
+            apic_name = apic["fabricNode"]["attributes"]["name"]
+            apic_addr = apic["fabricNode"]["attributes"]["address"]
+        else:
+            apic_id = apic["infraWiNode"]["attributes"]["id"]
+            apic_name = apic["infraWiNode"]["attributes"]["nodeName"]
+            apic_addr = apic["infraWiNode"]["attributes"]["addr"]
         try:
-            c = Connection(apic['fabricNode']['attributes']['address'])
+            c = Connection(apic_addr)
             c.username = username
             c.password = password
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([apic_name, '-', '-', str(e)])
+            data.append([apic_id, apic_name, '-', '-', str(e)])
             has_error = True
             continue
 
@@ -3317,24 +3336,24 @@ def apic_version_md5_check(tversion, username, password, fabric_nodes, **kwargs)
             c.cmd("ls -aslh /firmware/fwrepos/fwrepo/aci-apic-dk9.%s.bin" %
                   tversion.dot_version)
         except Exception as e:
-            data.append([apic_name, '-', '-',
+            data.append([apic_id, apic_name, '-', '-',
                          'ls command via ssh failed due to:{}'.format(str(e))])
             has_error = True
             continue
         if "No such file or directory" in c.output:
-            data.append([apic_name, str(tversion), '-', 'image not found'])
+            data.append([apic_id, apic_name, str(tversion), '-', 'image not found'])
             continue
 
         try:
             c.cmd("cat /firmware/fwrepos/fwrepo/md5sum/aci-apic-dk9.%s.bin" %
                   tversion.dot_version)
         except Exception as e:
-            data.append([apic_name, str(tversion), '-',
+            data.append([apic_id, apic_name, str(tversion), '-',
                          'failed to check md5sum via ssh due to:{}'.format(str(e))])
             has_error = True
             continue
         if "No such file or directory" in c.output:
-            data.append([apic_name, str(tversion), '-', 'md5sum file not found'])
+            data.append([apic_id, apic_name, str(tversion), '-', 'md5sum file not found'])
             continue
         for line in c.output.split("\n"):
             words = line.split()
@@ -3343,16 +3362,16 @@ def apic_version_md5_check(tversion, username, password, fabric_nodes, **kwargs)
                     words[1].startswith("/var/run/mgmt/fwrepos/fwrepo/aci-apic")
             ):
                 md5s.append(words[0])
-                md5_names.append(apic_name)
+                md5_names.append([apic_id, apic_name])
                 break
         else:
-            data.append([apic_name, str(tversion), '-', 'unexpected output when checking md5sum file'])
+            data.append([apic_id, apic_name, str(tversion), '-', 'unexpected output when checking md5sum file'])
             has_error = True
             continue
 
     if len(set(md5s)) > 1:
-        for name, md5 in zip(md5_names, md5s):
-            data.append([name, str(tversion), md5, 'md5sum do not match on all APICs'])
+        for id_name, md5 in zip(md5_names, md5s):
+            data.append([id_name[0], id_name[1], str(tversion), md5, 'md5sum do not match on all APICs'])
     if has_error:
         result = ERROR
     elif not data:
@@ -5698,7 +5717,7 @@ def service_bd_forceful_routing_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title='Observer Database Size')
 def observer_db_size_check(username, password, fabric_nodes, **kwargs):
     result = PASS
-    headers = ["Node", "File Location", "Size (GB)"]
+    headers = ["APIC ID", "APIC Name", "File Location", "Size (GB)"]
     data = []
     recommended_action = 'Contact TAC to analyze and truncate large DB files'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#observer-database-size'
@@ -5706,25 +5725,37 @@ def observer_db_size_check(username, password, fabric_nodes, **kwargs):
     apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
     if not apics:
         return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+    # `fabricNode` in pre-4.0 does not have `address`
+    if not apics[0]["fabricNode"]["attributes"].get("address"):
+        apic1 = [apic for apic in apics if apic["fabricNode"]["attributes"]["id"] == "1"][0]
+        apic1_dn = apic1["fabricNode"]["attributes"]["dn"]
+        apics = icurl("class", "{}/infraWiNode.json".format(apic1_dn))
 
     has_error = False
     for apic in apics:
-        attr = apic['fabricNode']['attributes']
+        if apic.get("fabricNode"):
+            apic_id = apic["fabricNode"]["attributes"]["id"]
+            apic_name = apic["fabricNode"]["attributes"]["name"]
+            apic_addr = apic["fabricNode"]["attributes"]["address"]
+        else:
+            apic_id = apic["infraWiNode"]["attributes"]["id"]
+            apic_name = apic["infraWiNode"]["attributes"]["nodeName"]
+            apic_addr = apic["infraWiNode"]["attributes"]["addr"]
         try:
-            c = Connection(attr['address'])
+            c = Connection(apic_addr)
             c.username = username
             c.password = password
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([attr['id'], attr['name'], str(e)])
+            data.append([apic_id, apic_name, "-", str(e)])
             has_error = True
             continue
         try:
             cmd = r"ls -lh /data2/dbstats | awk '{print $5, $9}'"
             c.cmd(cmd)
             if "No such file or directory" in c.output:
-                data.append([attr['id'], '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
+                data.append([apic_id, apic_name, '/data2/dbstats/ not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
                 has_error = True
                 continue
             dbstats = c.output.split("\n")
@@ -5734,9 +5765,9 @@ def observer_db_size_check(username, password, fabric_nodes, **kwargs):
                 if size_match:
                     file_size = size_match.group("size")
                     file_name = "/data2/dbstats/" + size_match.group("file")
-                    data.append([attr['id'], file_name, file_size])
+                    data.append([apic_id, apic_name, file_name, file_size])
         except Exception as e:
-            data.append([attr['id'], attr['name'], str(e)])
+            data.append([apic_id, apic_name, "-", str(e)])
             has_error = True
             continue
     if has_error:

@@ -13,6 +13,7 @@ test_function = "apic_ssd_check"
 
 
 faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F2731"),eq(faultInst.code,"F2732"))'
+infraWiNode = "topology/pod-1/node-1/infraWiNode.json"
 
 apic_ips = [
     node["fabricNode"]["attributes"]["address"]
@@ -36,7 +37,7 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             "4.2(7w)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
-            [["2", "3", "/dev/sdb", "<5% (Fault F2731)", "Contact TAC for replacement"]],
+            [["3", "apic3", "/dev/sdb", "<5% (Fault F2731)", "Contact TAC for replacement"]],
         ),
         (
             {faultInst: read_data(dir, "fault_F2731.json")},
@@ -45,7 +46,7 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             "5.2(1h)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
-            [["2", "3", "/dev/sdb", "<5% (Fault F2731)", "Contact TAC for replacement"]],
+            [["3", "apic3", "/dev/sdb", "<5% (Fault F2731)", "Contact TAC for replacement"]],
         ),
         # New Versions, F273x are effective and NOT raised
         (
@@ -74,7 +75,7 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             "4.2(6o)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
-            [["2", "3", "/dev/sdb", "<5% (Fault F2731)", "Contact TAC for replacement"]],
+            [["3", "apic3", "/dev/sdb", "<5% (Fault F2731)", "Contact TAC for replacement"]],
         ),
 
         # --- Old Versions, no F273x was raised. ---
@@ -98,9 +99,9 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             read_data(dir, "fabricNode.json"),
             script.ERROR,
             [
-                ["1", "1", "-", "-", "Simulated exception at connect()"],
-                ["1", "2", "-", "-", "Simulated exception at connect()"],
-                ["2", "3", "-", "-", "Simulated exception at connect()"],
+                ["1", "apic1", "-", "-", "Simulated exception at connect()"],
+                ["2", "apic2", "-", "-", "Simulated exception at connect()"],
+                ["3", "apic3", "-", "-", "Simulated exception at connect()"],
             ],
         ),
         # Exception failure at the grep command
@@ -121,9 +122,9 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             read_data(dir, "fabricNode.json"),
             script.ERROR,
             [
-                ["1", "1", "-", "-", "Simulated exception at `grep` command"],
-                ["1", "2", "-", "-", "Simulated exception at `grep` command"],
-                ["2", "3", "-", "-", "Simulated exception at `grep` command"],
+                ["1", "apic1", "-", "-", "Simulated exception at `grep` command"],
+                ["2", "apic2", "-", "-", "Simulated exception at `grep` command"],
+                ["3", "apic3", "-", "-", "Simulated exception at `grep` command"],
             ],
         ),
         # SSD Wearout Indicator is less than 5
@@ -157,9 +158,9 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
             [
-                ["1", "1", "Solid State Disk", "4", "Contact TAC for replacement"],
-                ["1", "2", "Solid State Disk", "5", "No Action Required"],
-                ["2", "3", "Solid State Disk", "4", "Contact TAC for replacement"],
+                ["1", "apic1", "Solid State Disk", "4", "Contact TAC for replacement"],
+                ["2", "apic2", "Solid State Disk", "5", "No Action Required"],
+                ["3", "apic3", "Solid State Disk", "4", "Contact TAC for replacement"],
             ],
         ),
         # Pass
@@ -178,6 +179,25 @@ grep_output_no_hit = "5504||2023-01-11T22:11:26.851446656+00:00||ifc_ae||DBG4||f
             },
             "4.2(6o)",
             read_data(dir, "fabricNode.json"),
+            script.PASS,
+            [],
+        ),
+        # Pass (pre-4.0 with infraWiNode)
+        (
+            {faultInst: [], infraWiNode: read_data(dir, "infraWiNode_apic1.json")},
+            False,
+            {
+                apic_ip: [
+                    {
+                        "cmd": grep_cmd,
+                        "output": "\n".join([grep_cmd, grep_output_no_hit]),
+                        "exception": None,
+                    },
+                ]
+                for apic_ip in apic_ips
+            },
+            "4.2(6o)",
+            read_data(dir, "fabricNode_old.json"),
             script.PASS,
             [],
         ),
