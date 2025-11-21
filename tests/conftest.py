@@ -93,8 +93,7 @@ def mock_icurl(monkeypatch, icurl_outputs):
     def _mock_icurl(apitype, query, page=0, page_size=100000):
         output = icurl_outputs.get(query)
         if output is None:
-            log.error("Query `%s` not found in test data", query)
-            data = {"totalCount": "0", "imdata": []}
+            raise KeyError("Query `{}` not found in test data".format(query))
         elif isinstance(output, list):
             # icurl_outputs option 1 - output is imdata which is empty
             if not output:
