@@ -35,7 +35,7 @@ def mock_get_target_version(monkeypatch):
 
     def _mock_get_target_version(arg_tversion):
         if arg_tversion:
-            script.prints("Target APIC version is overridden to %s" % arg_tversion)
+            script.prints("Target APIC version is overridden to %s\n" % arg_tversion)
             try:
                 target_version = AciVersion(arg_tversion)
             except ValueError as e:
@@ -573,7 +573,9 @@ def test_tversion_invald(capsys, mock_icurl):
 Gathering Node Information...
 
 Current version is overridden to 6.0(1a)
+
 Target APIC version is overridden to invalid_version
+
 Parsing failure of ACI version `invalid_version`
 """
     assert captured.out.endswith(expected_output), "captured.out is:\n{}".format(captured.out)
@@ -589,6 +591,7 @@ def test_cversion_invald(capsys, mock_icurl):
 Gathering Node Information...
 
 Current version is overridden to invalid_version
+
 Parsing failure of ACI version `invalid_version`
 """
     assert captured.out.endswith(expected_output), "captured.out is:\n{}".format(captured.out)
