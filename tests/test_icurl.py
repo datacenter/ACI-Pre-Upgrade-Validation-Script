@@ -4,11 +4,11 @@ import importlib
 script = importlib.import_module("aci-preupgrade-validation-script")
 
 
-# We raise IOError instead of TimeoutError prior to py3.3 as it's not available
+# TimeoutError is only from py3.3
 try:
-    TimeoutError = TimeoutError
+    TimeoutError
 except NameError:
-    TimeoutError = IOError
+    TimeoutError = script.TimeoutError
 
 
 # icurl queries

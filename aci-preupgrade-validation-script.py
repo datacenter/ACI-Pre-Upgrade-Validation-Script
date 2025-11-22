@@ -77,6 +77,14 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 log = logging.getLogger()
 
 
+# TimeoutError is only from py3.3
+try:
+    TimeoutError
+except NameError:
+    class TimeoutError(Exception):
+        pass
+
+
 class OldVerClassNotFound(Exception):
     """ Later versions of ACI can have class properties not found in older versions """
     pass
@@ -1566,11 +1574,7 @@ def _icurl_error_handler(imdata):
         elif "not found" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "Unable to deliver the message, Resolve timeout" in imdata[0]['error']['attributes']['text']:
-            msg = "API Query Timeout. APIC may be too busy. Try again later."
-            try:
-                raise TimeoutError(msg)  # only from py3.3
-            except NameError:
-                raise IOError(msg)
+            raise TimeoutError("API Timeout. APIC may be too busy. Try again later.")
         else:
             raise Exception('API call failed! Check debug log')
 
@@ -1597,8 +1601,11 @@ def icurl(apitype, query, page_size=100000):
     page = 0
     while total_cnt > len(total_imdata):
         data = _icurl(apitype, query, page, page_size)
-        if not data['imdata']:
-            break
+        # API queries may return empty even when totalCount is > 1 and the given page number
+        # should contain entries. This may happen when there are too many queries
+        # such as multiple same queries at the same time.
+        if int(data['totalCount']) > 1 and not data['imdata']:
+            raise Exception("API response empty with totalCount:{}. APIC may be too busy. Try again later.".format(data["totalCount"]))
         total_imdata += data['imdata']
         total_cnt = int(data['totalCount'])
         page += 1
@@ -1642,7 +1649,7 @@ def get_credentials():
 def get_target_version(arg_tversion):
     """ Returns: AciVersion instance """
     if arg_tversion:
-        prints("Target APIC version is overridden to %s" % arg_tversion)
+        prints("Target APIC version is overridden to %s\n" % arg_tversion)
         try:
             target_version = AciVersion(arg_tversion)
         except ValueError as e:
@@ -1695,7 +1702,7 @@ def get_fabric_nodes():
 def get_current_versions(fabric_nodes, arg_cversion):
     """ Returns: AciVersion instances of APIC and lowest switch """
     if arg_cversion:
-        prints("Current version is overridden to %s" % arg_cversion)
+        prints("Current version is overridden to %s\n" % arg_cversion)
         try:
             current_version = AciVersion(arg_cversion)
         except ValueError as e:
