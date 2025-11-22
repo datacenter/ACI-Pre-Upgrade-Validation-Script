@@ -1732,6 +1732,9 @@ def get_current_versions(fabric_nodes, arg_cversion):
     except ValueError:
         is_old_version = True
         apic1_firmware = icurl('mo', apic1_dn + "/sys/ctrlrfwstatuscont/ctrlrrunning.json")
+        if not apic1_firmware:
+            prints("Unable to find current APIC version.")
+            sys.exit(1)
         apic1_version = apic1_firmware[0]['firmwareCtrlrRunning']['attributes']['version']
         apic_version = AciVersion(apic1_version)
 
