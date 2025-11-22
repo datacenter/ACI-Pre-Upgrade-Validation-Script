@@ -3,6 +3,14 @@ import importlib
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 
+
+# We raise IOError instead of TimeoutError prior to py3.3 as it's not available
+try:
+    TimeoutError = TimeoutError
+except NameError:
+    TimeoutError = IOError
+
+
 # icurl queries
 fabricNodePEps = "fabricNodePEp.json"
 
@@ -133,6 +141,34 @@ def test_icurl(mock_icurl, apitype, query, expected_result):
                 }
             ],
             script.OldVerClassNotFound,
+        ),
+        # Query timeout (90 sec) - pre-4.1
+        (
+            [
+                {
+                    "error": {
+                        "attributes": {
+                            "code": "503",
+                            "text": "Unable to deliver the message, Resolve timeout from (type/num/svc/shard) =  apic:1:7:1,  apic:1:7:32,  apic:1:7:31,  apic:1:7:30,  apic:1:7:13,  apic:1:7:12,  apic:1:7:11,  apic:1:7:10,  apic:1:7:9,  apic:1:7:8,  apic:1:7:7,  apic:1:7:3,  apic:1:7:14,  apic:1:7:15,  apic:1:7:16,  apic:1:7:17,  apic:1:7:18,  apic:1:7:19,  apic:1:7:20,  apic:1:7:21,  apic:1:7:22,  apic:1:7:23,  apic:1:7:24,  apic:1:7:25,  apic:1:7:26,  apic:1:7:27,  apic:1:7:28,  apic:1:7:29",
+                        }
+                    }
+                }
+            ],
+            TimeoutError,
+        ),
+        # Query timeout (90 sec) - from-4.1
+        (
+            [
+                {
+                    "error": {
+                        "attributes": {
+                            "code": "503",
+                            "text": "Unable to deliver the message, Resolve timeout",
+                        }
+                    }
+                }
+            ],
+            TimeoutError,
         ),
     ],
 )

@@ -1565,6 +1565,12 @@ def _icurl_error_handler(imdata):
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
+        elif "Unable to deliver the message, Resolve timeout" in imdata[0]['error']['attributes']['text']:
+            msg = "API Query Timeout. APIC may be too busy. Try again later."
+            try:
+                raise TimeoutError(msg)  # only from py3.3
+            except NameError:
+                raise IOError(msg)
         else:
             raise Exception('API call failed! Check debug log')
 
