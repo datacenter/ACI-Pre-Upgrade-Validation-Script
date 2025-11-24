@@ -17,13 +17,22 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, expected_result",
+    "icurl_outputs, cversion, expected_result",
     [
         (
             {
                 infraWiNode: read_data(dir, "infraWiNode_10_0_0_0__16.json"),
                 apContainerPol: [],
             },
+            "6.1(2b)",
+            script.NA,
+        ),
+        (
+            {
+                infraWiNode: read_data(dir, "infraWiNode_10_0_0_0__16.json"),
+                apContainerPol: [],
+            },
+            "5.3(2b)",
             script.PASS,
         ),
         (
@@ -31,6 +40,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_10_0_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_1__16.json"),
             },
+            "5.3(2b)",
             script.PASS,
         ),
         (
@@ -38,6 +48,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_10_0_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_10_0_0_1__16.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -45,6 +56,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_10_0_x_0__24_remote_apic.json"),
                 apContainerPol: [],
             },
+            "5.3(2b)",
             script.PASS,
         ),
         (
@@ -52,6 +64,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_10_0_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_1__16.json"),
             },
+            "5.3(2b)",
             script.PASS,
         ),
         (
@@ -59,6 +72,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_10_0_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_10_0_0_1__16.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         # This scenario is the most likely one where, prior to the upgrade,
@@ -70,6 +84,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_0_0__16.json"),
                 apContainerPol: [],
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -77,6 +92,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_1__16.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -84,6 +100,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_10__16.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -91,6 +108,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_1__17.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -98,6 +116,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_16_0_1__15.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -105,6 +124,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_0_0__16.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_18_0_1__16.json"),
             },
+            "5.3(2b)",
             script.PASS,
         ),
         (
@@ -112,6 +132,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_x_0__24_remote_apic.json"),
                 apContainerPol: [],
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -119,6 +140,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_1__16.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -126,6 +148,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_10__16.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -133,6 +156,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_17_0_1__17.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -140,6 +164,7 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_16_0_1__15.json"),
             },
+            "5.3(2b)",
             script.FAIL_UF,
         ),
         (
@@ -147,10 +172,13 @@ apContainerPol = "pluginPolContr/ContainerPol.json"
                 infraWiNode: read_data(dir, "infraWiNode_172_17_x_0__24_remote_apic.json"),
                 apContainerPol: read_data(dir, "apContainerPol_172_18_0_1__16.json"),
             },
+            "5.3(2b)",
             script.PASS,
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, expected_result):
-    result = run_check()
+def test_logic(run_check, mock_icurl, cversion, expected_result):
+    result = run_check(
+        cversion=script.AciVersion(cversion),
+    )
     assert result.result == expected_result

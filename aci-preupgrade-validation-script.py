@@ -1601,10 +1601,10 @@ def icurl(apitype, query, page_size=100000):
     page = 0
     while total_cnt > len(total_imdata):
         data = _icurl(apitype, query, page, page_size)
-        # API queries may return empty even when totalCount is > 1 and the given page number
+        # API queries may return empty even when totalCount is > 0 and the given page number
         # should contain entries. This may happen when there are too many queries
         # such as multiple same queries at the same time.
-        if int(data['totalCount']) > 1 and not data['imdata']:
+        if int(data['totalCount']) > 0 and not data['imdata']:
             raise Exception("API response empty with totalCount:{}. APIC may be too busy. Try again later.".format(data["totalCount"]))
         total_imdata += data['imdata']
         total_cnt = int(data['totalCount'])
@@ -3749,12 +3749,17 @@ def bgp_golf_route_target_type_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title="APIC Container Bridge IP Overlap with APIC TEP")
-def docker0_subnet_overlap_check(**kwargs):
+def docker0_subnet_overlap_check(cversion, **kwargs):
     result = PASS
     headers = ["Container Bridge IP", "APIC TEP"]
     data = []
     recommended_action = 'Change the container bridge IP via "Apps > Settings" on the APIC GUI'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-container-bridge-ip-overlap-with-apic-tep"
+
+    # AppCenter was deprecated in 6.1.2.
+    # Due to a bug the deprecated object returns totalCount:1 with empty data instead of totalCount:0.
+    if cversion.newer_than("6.1(2a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     containerPols = icurl('mo', 'pluginPolContr/ContainerPol.json')
     if not containerPols:
