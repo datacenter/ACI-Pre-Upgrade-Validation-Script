@@ -5237,7 +5237,7 @@ def n9k_c93108yc_fx3_mem_check(tversion, **kwargs):
     headers = ["NodeId", "Name", "Memory Detected (GB)"]
     data = []
     recommended_action = 'Review the Memory Installed in your N9K-C93180YC-FX3 Switches'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#isis-dteps-byte-size'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c93180yc-fx3-sup-memory'
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
     leaf_api = 'fabricNode.json'
