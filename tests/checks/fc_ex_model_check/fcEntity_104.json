@@ -1,0 +1,10 @@
+[
+  {
+    "fcEntity": {
+      "attributes": {
+        "adminSt": "enabled",
+        "dn": "topology/pod-1/node-104/sys/fc"
+      }
+    }
+  }
+]

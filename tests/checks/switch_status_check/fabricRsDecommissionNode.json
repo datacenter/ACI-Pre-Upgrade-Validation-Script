@@ -1,0 +1,12 @@
+[
+  {
+    "fabricRsDecommissionNode": {
+      "attributes": {
+        "dn": "uni/fabric/outofsvc/rsdecommissionNode-[topology/pod-1/node-112]",
+        "debug": "yes",
+        "tDn": "topology/pod-1/node-112", 
+        "targetId": "112"
+      }
+    }
+  }
+]
