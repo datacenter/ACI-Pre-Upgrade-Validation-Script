@@ -5962,6 +5962,33 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='Port Tracking Minimal Uplink Zero')
+def port_tracking_active_fabric_port_check(tversion, **kwargs):
+    result = NA
+    headers = ["Admin State", "Port Tracking Active Fabric Ports"]
+    data = []
+    recommended_action = 'Increase Port Tracking Active Fabric Ports to 1 before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#port-tracking-active-fabric-port-zero'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING) 
+
+    if tversion.same_as("6.0(9d)"):
+        result = PASS
+        port_tracking_api = 'uni/infra/trackEqptFabP-default.json'
+        port_tracking_mo = icurl('mo', port_tracking_api)
+        if port_tracking_mo:
+            admin_st = port_tracking_mo[0]['infraPortTrackPol']['attributes']['adminSt']
+            minimal_uplink = port_tracking_mo[0]['infraPortTrackPol']['attributes']['minlinks']
+            if admin_st == "on" and minimal_uplink == "0":
+                data.append([admin_st,minimal_uplink])
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6122,6 +6149,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        port_tracking_active_fabric_port_check,        
 
     ]
     ssh_checks = [
