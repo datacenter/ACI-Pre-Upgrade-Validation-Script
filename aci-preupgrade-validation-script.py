@@ -5962,6 +5962,61 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='active_node pres.Listener mo object check')
+def active_node_presListener_mo_object_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Missing Node ID", "Node Status"]
+    data = []
+    fabric_leaf_ids = []
+    preslistener_leaf_ids = []
+    recommended_action = 'PresListener objects should be configured for all fabric leaf active nodes before upgrade and target version with the fix for CSCwn81692,version > 6.1(3)'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#active_node_presListener_mo_object_check'
+
+    url1= 'presListener.json?query-target-filter=wcard(presListener.dn,"4307")'
+    url2='fabricNode.json?query-target-filter=and(wcard(fabricNode.role,"leaf"),wcard(fabricNode.fabricSt,"active"))'
+
+    presListeners = icurl('class', url1 )
+    fabric_leaf_data= icurl('class', url2)
+
+    node_regex = r"uni/infra/nodecfgcont/node-(?P<node>\d+)"
+    class_regex = r"resregistry/resregistry-(?P<registry>\d+)/class-(?P<class>\d+)"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    # Only run check if target version < 6.1(3f)
+    if tversion and  tversion.older_than("6.1(3f)"):
+  
+        if fabric_leaf_data :
+            for leaf in fabric_leaf_data:
+                leaf_id = leaf['fabricNode']['attributes']['id']
+                fabric_leaf_ids.append(leaf_id)
+                
+        if presListeners :
+            for presListener_mo in presListeners:
+                dn = presListener_mo['presListener']['attributes']['dn']
+                node_match = re.search(node_regex, dn)
+                class_match = re.search(class_regex, dn)
+
+                if class_match and class_match.group("class") == "4307" and node_match:
+                    node = node_match.group("node")
+                    class_id = class_match.group("class")
+                    preslistener_leaf_ids.append(node)
+
+        missing_nodes = set(fabric_leaf_ids) - set(preslistener_leaf_ids)
+       
+        if missing_nodes:
+            for node_id in sorted(missing_nodes):
+                data.append([node_id, "active"])
+            log.warning("Alert ! Some Leaf Nodes missing in PresListener Object \n\n Missing Nodes: {}".format(missing_nodes ))
+            result = FAIL_O
+            return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+        if not fabric_leaf_ids:
+            return Result(result=FAIL_UF, msg="Could not retrieve any leaf node data")
+        return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
 # ---- Script Execution ----
 
 
@@ -6122,6 +6177,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        active_node_presListener_mo_object_check
 
     ]
     ssh_checks = [
