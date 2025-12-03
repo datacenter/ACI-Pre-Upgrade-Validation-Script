@@ -2609,15 +2609,15 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 ### active_node_presListener_mo_object_check
 
-RCA: 
-After the leaf upgrade to 6.0.6c, infraAccPortP and infraAccBndlGrp failed to program the interfaces.
-This happened due to the "pres.Listener" missing object in the APIC after the apic upgrade 6.0.6c.
+RCA:
+After upgrading the leaf to an affected version, interface configurations are not pushed because the "pres.Listener" object is missing in the APIC.
+This occurs due to an incomplete/faulty APIC upgrade.
 
-IMPACT : 
-After the leaf upgrade or when the leaf clean-reloaded, if the "pres.Listener" is missing in the APIC, the leaf ports will not program, and the port status will be kept out of service and infraAccPortP and infraAccBndlGrp will be failed to program the interfaces.
+IMPACT:
+If "pres.Listener" is missing after a leaf upgrade or clean reload, leaf ports remain out of service, and infraAccPortP and infraAccBndlGrp cannot program interfaces.
 
-Suggestion: 
-This check will verify the all active node object presence in pres.Listener list with class 4307 and alert if targeting an affected version. If alerted, the recommended action is to target a version that has the fix for [CSCwn81692][62].
+Suggestion:
+Verify that all active leaf node objects are present in the "pres.Listener" list (class 4307) and alert if the affected version is detected. If an alert is raised, upgrade to a version that includes the fix for [CSCwn81692][62].
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
