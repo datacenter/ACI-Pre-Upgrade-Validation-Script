@@ -191,6 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Bootx Service failure log & firmware/tmp directory checks][d29]  | CSCwn37676  | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #bootx_service_failure_log_and_firmware_tmp_directory_checks
 
 
 ## General Check Details
@@ -2604,6 +2606,21 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Bootx Service failure log & firmware/tmp directory checks
+
+Due to [CSCwn37676][62], ACI runs on releases 6.0(2) through 6.0(8) or 6.1(1) through 6.1(2) , upgrading to any target version with a high number of files in the `/firmware/tmp/` directory (1000 or more) or the presence of fatal errors in `/var/log/bootx/logs/` can cause the bootx service to fail, resulting in upgrade failures.
+
+The script performs two validations on each APIC:
+
+1. Checks if `/firmware/tmp/` directory contains 1000 or more files
+2. Searches for "fatal" errors in `/var/log/bootx/logs/`
+
+!!! warning
+    If this check fails, verify the bootx service status on the affected APIC(s) by running `systemctl status bootx`. If the service is not running, the APIC is already experiencing the issue and must be resolved before proceeding with the upgrade.
+
+!!! tip
+    Certain high churn logging configurations have been found to cause excessive files in `/firmware/tmp/while on non-fixed versions. If this check identifies issues, work with Cisco TAC to clean up excess files and resolve any bootx service failures before attempting the upgrade.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2666,3 +2683,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn37676

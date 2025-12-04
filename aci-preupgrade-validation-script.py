@@ -5962,6 +5962,111 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title = 'Bootx Service failure log & firmware/tmp directory checks')
+def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
+    result = PASS
+    headers = ["Pod", "Node", "File Count", "Fatal Errors Found", "Status"]
+    data = []
+    recommended_action = 'Contact Cisco TAC to investigate all flagged high file and log counts'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bootx_service_failure_log_and_firmware_tmp_directory_checks'
+
+    if not cversion:
+        return Result(result=MANUAL, msg="Current version not provided")
+
+    
+    affected = False
+    if (not cversion.older_than("6.0(2f)") and not cversion.newer_than("6.0(8f)")) or \
+       (not cversion.older_than("6.1(1f)") and not cversion.newer_than("6.1(2f)")):
+        affected = True
+
+    if not affected:
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+
+    
+    controller = icurl('class', 'infraWiNode.json?query-target-filter=and(wcard(infraWiNode.dn,"topology/pod-1/node-1"))')
+    if not controller:
+        return Result(result=ERROR, msg="infraWiNode response empty. Is the cluster healthy?", doc_url=doc_url)
+
+    print('')
+    checked_apics = {}
+    has_error = False
+    nodes_file_count_result = []
+    nodes_fatal_errors_result = []
+
+    for apic in controller:
+        attr = apic['infraWiNode']['attributes']
+        if attr['addr'] in checked_apics:
+            continue
+        checked_apics[attr['addr']] = 1
+        pod_id = attr['podId']
+        node_id = attr['id']
+        node_name = attr['name']
+        node_title = 'Checking %s...' % node_name
+        
+        try:
+            c = Connection(attr['addr'])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([pod_id, node_id, '-', '-', 'ERROR: %s' % str(e)])
+            has_error = True
+            continue
+        
+        try:
+            # Check if /firmware/tmp directory exists and count files
+            c.cmd('[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0')
+            file_count = 0
+            for line in c.output.strip().split('\n'):
+                line = line.strip()
+                if line.isdigit():
+                    file_count = int(line)
+                    break
+            
+            # Check for fatal errors in bootx logs
+            c.cmd('[ -d /var/log/bootx/logs ] && grep -Ri "fatal" /var/log/bootx/logs/* 2>/dev/null | wc -l || echo 0')
+            fatal_count = 0
+            for line in c.output.strip().split('\n'):
+                line = line.strip()
+                if line.isdigit():
+                    fatal_count = int(line)
+                    break
+            
+            # Determine status
+            if file_count >= 1000:
+                status = 'FAIL - High file count'
+                data.append([pod_id, node_id, str(file_count), str(fatal_count), status])
+                result = FAIL_UF
+                nodes_file_count_result.append(result)
+            elif fatal_count > 0:
+                status = 'WARNING - Fatal errors found'
+                data.append([pod_id, node_id, str(file_count), str(fatal_count), status])
+                if result == PASS:
+                    result = MANUAL
+                nodes_fatal_errors_result.append(result)
+                
+        except Exception as e:
+            data.append([pod_id, node_id, '-', '-', 'ERROR: %s' % str(e)])
+            has_error = True
+            continue
+    
+    if FAIL_UF in nodes_file_count_result:
+        result = FAIL_UF
+    if MANUAL in nodes_fatal_errors_result:
+        result = MANUAL
+    if has_error and result == PASS:
+        result = ERROR
+    
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
+
 # ---- Script Execution ----
 
 
@@ -6049,6 +6154,7 @@ class CheckManager:
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
+        bootx_firmware_tmp_check,
 
         # Faults
         apic_disk_space_faults_check,
