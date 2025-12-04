@@ -5969,14 +5969,14 @@ def active_node_presListener_mo_object_check(tversion, **kwargs):
     data = []
     fabric_leaf_ids = []
     preslistener_leaf_ids = []
-    recommended_action = 'PresListener objects should be configured for all fabric leaf active nodes before upgrade and target version with the fix for CSCwn81692,version > 6.1(3)'
+    recommended_action = 'Contact Cisco TAC to investigate missing leaf nodes from class-4307 preslisteners objects'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#active_node_presListener_mo_object_check'
 
-    url1= 'presListener.json?query-target-filter=wcard(presListener.dn,"4307")'
-    url2='fabricNode.json?query-target-filter=and(wcard(fabricNode.role,"leaf"),wcard(fabricNode.fabricSt,"active"))'
+    presListener_node_objects = 'presListener.json?query-target-filter=wcard(presListener.dn,"4307")'
+    fabric_leaf_node_objects = 'fabricNode.json?query-target-filter=and(wcard(fabricNode.role,"leaf"),wcard(fabricNode.fabricSt,"active"))'
 
-    presListeners = icurl('class', url1 )
-    fabric_leaf_data= icurl('class', url2)
+    presListeners_object_data = icurl('class', presListener_node_objects)
+    fabric_leaf_object_data = icurl('class', fabric_leaf_node_objects)
 
     node_regex = r"uni/infra/nodecfgcont/node-(?P<node>\d+)"
     class_regex = r"resregistry/resregistry-(?P<registry>\d+)/class-(?P<class>\d+)"
@@ -5985,15 +5985,15 @@ def active_node_presListener_mo_object_check(tversion, **kwargs):
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     # Only run check if target version < 6.1(3f)
-    if tversion and  tversion.older_than("6.1(3f)"):
+    if tversion and tversion.older_than("6.1(3f)"):
   
-        if fabric_leaf_data :
-            for leaf in fabric_leaf_data:
+        if fabric_leaf_object_data:
+            for leaf in fabric_leaf_object_data:
                 leaf_id = leaf['fabricNode']['attributes']['id']
                 fabric_leaf_ids.append(leaf_id)
                 
-        if presListeners :
-            for presListener_mo in presListeners:
+        if presListeners_object_data:
+            for presListener_mo in presListeners_object_data:
                 dn = presListener_mo['presListener']['attributes']['dn']
                 node_match = re.search(node_regex, dn)
                 class_match = re.search(class_regex, dn)
@@ -6008,9 +6008,8 @@ def active_node_presListener_mo_object_check(tversion, **kwargs):
         if missing_nodes:
             for node_id in sorted(missing_nodes):
                 data.append([node_id, "active"])
-            log.warning("Alert ! Some Leaf Nodes missing in PresListener Object \n\n Missing Nodes: {}".format(missing_nodes ))
             result = FAIL_O
-            return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+            return Result(result=result,msg="PresListener Object Missing Nodes: {}".format(missing_nodes ), headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
         if not fabric_leaf_ids:
             return Result(result=FAIL_UF, msg="Could not retrieve any leaf node data")
         return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
