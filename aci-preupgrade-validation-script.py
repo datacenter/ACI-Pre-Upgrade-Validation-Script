@@ -5995,9 +5995,9 @@ def HW_changes_bit_check(tversion, username, password, fabric_nodes, **kwargs):
     try:
         ifconfig_lines = run_cmd("ifconfig | grep 255.255.255.255", splitlines=True)
         for line in ifconfig_lines:
-            m = re.search(r'inet\s+([0-9\.]+)\s+netmask\s+255\.255\.255\.255', line)
-            if m:
-                apic_ip = m.group(1)
+            match = re.search(r'inet\s+([0-9\.]+)\s+netmask\s+255\.255\.255\.255', line)
+            if match:
+                apic_ip = match.group(1)
                 break
     except Exception as e:
         return Result(result=ERROR, msg="Failed to get APIC IP: {}".format(e))
