@@ -1503,7 +1503,13 @@ To recover from this fault, try the following action
 
 ### VMM Inventory Partially Synced
 
-The script checks for fault code F0132 with rule comp-ctrlr-operational-issues, which is raised when APIC has partially synchornized inventory with vCenter server. This check is just a notice to customer so that they can check what is happening. The takeaway is that the data that APIC has about the DC is not in sync with the vCenter so some changes could happen in the APIC inventory when the system goes through the upgrade and tries to resync. If users are using pre-provision, EPG deployment would not be determined by the VMM inventory so unexpected inventory changes would not be so likely to cause outages.
+This script checks for fault code F0132 with rule comp-ctrlr-operational-issues and change set `partial-inv`. This fault is raised when APICs report a partially synchronized inventory with vCenter servers.
+
+EPGs using the `immediate` or `on-demand` resolution immediacy (this is typical) rely on the VMM Inventory to determine VLAN programming. If the known inventory changes during an upgrade and the APIC is reporting its last sync to be partial, a VMM inventory resync response with inventory changes could result in VLANs being unexpectedly removed.
+
+EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inventory for VLAN deployment and so unexpected inventory changes will not change vlan programmings.
+
+This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
 
 ## Configuration Check Details
 

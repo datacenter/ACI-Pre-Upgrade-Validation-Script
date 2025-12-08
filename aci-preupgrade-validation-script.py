@@ -5208,28 +5208,43 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
 @check_wrapper(check_title='APIC VMM inventory sync fault (F0132)')
 def apic_vmm_inventory_sync_faults_check(**kwargs):
     result = PASS
-    headers = ['Fault', 'DN', 'Recommended Action']
+    headers = ['Fault', 'VMM Domain', 'Controller']
     data = []
+    unformatted_headers = ["Fault", "Fault DN"]
+    unformatted_data = []
     recommended_action = "Please look for Faults under VM and Host and fix them via VCenter, then manually re-trigger inventory sync on APIC"
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vmm-inventory-partially-synced'
-   
-    faultInsts = icurl('class','faultInst.json?query-target-filter=eq(faultInst.code,"F0132")')
+    # need to pull out domain and controller form this dn: comp/prov-VMware/ctrlr-[MY_DOMAIN]-MY_CONTROLLER/fault-F0132"
+    vmm_regex = r'comp/prov-VMware/ctrlr-\[(?P<domain>.+?)\]-(?P<controller>.+?)/fault-F0132'
+    faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F0132")')
 
     for faultInst in faultInsts:
         fc = faultInst['faultInst']['attributes']['code']
         dn = faultInst['faultInst']['attributes']['dn']
         desc = faultInst['faultInst']['attributes']['descr']
         change_set = faultInst['faultInst']['attributes']['changeSet']
-        if dn and desc and "partial-inv" in change_set:
-            data.append([fc, dn, recommended_action])
-            
-    if data:
+
+        dn_array = re.search(vmm_regex, dn)
+        if dn_array and "partial-inv" in change_set:
+            data.append([fc, dn_array.group("domain"), dn_array.group("controller")])
+        elif "partial-inv" in change_set:
+            unformatted_data.append([fc, dn])
+
+    if data or unformatted_data:
         result = MANUAL
-    
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url)
 
 # ---- Script Execution ----
 

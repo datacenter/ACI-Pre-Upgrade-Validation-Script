@@ -26,6 +26,10 @@ f0132_api += '?query-target-filter=eq(faultInst.code,"F0132")'
         (
             {f0132_api: read_data(dir, "faultInst_pos.json")},
             script.MANUAL,
+        ),
+        (
+            {f0132_api: read_data(dir, "faultInst_pos2.json")},
+            script.MANUAL,
         )
     ],
 )
