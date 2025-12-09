@@ -1,0 +1,38 @@
+[
+  {
+    "bgpRRNodePEp": {
+      "attributes": {
+        "dn": "uni/fabric/bgpInstP-default/rr/node-1001",
+        "id": "1001",
+        "podId": "1"
+      }
+    }
+  },
+  {
+    "bgpRRNodePEp": {
+      "attributes": {
+        "dn": "uni/fabric/bgpInstP-default/rr/node-1002",
+        "id": "1002",
+        "podId": "1"
+      }
+    }
+  },
+  {
+    "bgpRRNodePEp": {
+      "attributes": {
+        "dn": "uni/fabric/bgpInstP-default/rr/node-2001",
+        "id": "2001",
+        "podId": "2"
+      }
+    }
+  },
+  {
+    "bgpRRNodePEp": {
+      "attributes": {
+        "dn": "uni/fabric/bgpInstP-default/rr/node-2002",
+        "id": "2002",
+        "podId": "2"
+      }
+    }
+  }
+]

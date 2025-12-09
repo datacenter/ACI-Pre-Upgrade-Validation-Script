@@ -1,0 +1,50 @@
+[
+  {
+    "l3extRsNodeL3OutAtt": {
+      "attributes": {
+        "dn": "uni/tn-infra/out-multipodL3Out/lnodep-LNodeP_121/rsnodeL3OutAtt-[topology/pod-1/node-121]",
+        "tDn": "topology/pod-1/node-121"
+      }
+    }
+  },
+  {
+    "l3extRsNodeL3OutAtt": {
+      "attributes": {
+        "dn": "uni/tn-infra/out-multipodL3Out/lnodep-LNodeP_122/rsnodeL3OutAtt-[topology/pod-1/node-122]",
+        "tDn": "topology/pod-1/node-122"
+      }
+    }
+  },
+  {
+    "l3extRsNodeL3OutAtt": {
+      "attributes": {
+        "dn": "uni/tn-infra/out-multipodL3Out/lnodep-LNodeP_1003/rsnodeL3OutAtt-[topology/pod-1/node-1003]",
+        "tDn": "topology/pod-1/node-1003"
+      }
+    }
+  },
+  {
+    "l3extRsNodeL3OutAtt": {
+      "attributes": {
+        "dn": "uni/tn-infra/out-multipodL3Out/lnodep-LNodeP_1004/rsnodeL3OutAtt-[topology/pod-1/node-1004]",
+        "tDn": "topology/pod-1/node-1004"
+      }
+    }
+  },
+  {
+    "l3extRsNodeL3OutAtt": {
+      "attributes": {
+        "dn": "uni/tn-infra/out-multipodL3Out/lnodep-LNodeP_2001/rsnodeL3OutAtt-[topology/pod-2/node-2001]",
+        "tDn": "topology/pod-2/node-2001"
+      }
+    }
+  },
+  {
+    "l3extRsNodeL3OutAtt": {
+      "attributes": {
+        "dn": "uni/tn-infra/out-multipodL3Out/lnodep-node-2002-profile/rsnodeL3OutAtt-[topology/pod-2/node-2002]",
+        "tDn": "topology/pod-2/node-2002"
+      }
+    }
+  }
+]

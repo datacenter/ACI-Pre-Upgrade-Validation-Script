@@ -1,0 +1,13 @@
+[
+  {
+    "topSystem": {
+      "attributes": {
+        "address": "10.0.0.1",
+        "fabricId": "1",
+        "id": "1",
+        "fabricDomain": "fabric;4",
+        "role": "controller"
+      }
+    }
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "dn": "topology/pod-1/node-101",
+        "fabricSt": "active",
+        "id": "101",
+        "model": "N9K-C9372TX-E",
+        "name": "Leaf-101",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "dn": "topology/pod-1/node-102",
+        "fabricSt": "active",
+        "id": "102",
+        "model": "N9K-C9372TX-E",
+        "name": "Leaf-102",
+        "nodeType": "unspecified",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "dn": "topology/pod-1/node-1001",
+        "fabricSt": "active",
+        "id": "1001",
+        "model": "N9K-C9332PQ",
+        "name": "Spine-1001",
+        "nodeType": "unspecified",
+        "role": "spine"
+      }
+    }
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "infraWiNode": {
+      "attributes": {
+        "addr": "10.0.0.1",
+        "adminSt": "in-service",
+        "apicMode": "active",
+        "cntrlSbstState": "approved",
+        "dn": "topology/pod-1/node-1/av/node-1",
+        "failoverStatus": "idle",
+        "health": "fully-fit",
+        "id": "1",
+        "mbSn": "FCH1234ABCD",
+        "name": "",
+        "nodeName": "apic1",
+        "operSt": "available",
+        "podId": "0",
+        "targetMbSn": ""
+      }
+    }
+  },
+  {
+    "infraWiNode": {
+      "attributes": {
+        "addr": "10.0.0.2",
+        "adminSt": "in-service",
+        "apicMode": "active",
+        "cntrlSbstState": "approved",
+        "dn": "topology/pod-1/node-1/av/node-2",
+        "failoverStatus": "idle",
+        "health": "fully-fit",
+        "id": "2",
+        "mbSn": "FCH1235ABCD",
+        "name": "",
+        "nodeName": "apic2",
+        "operSt": "available",
+        "podId": "0",
+        "targetMbSn": ""
+      }
+    }
+  },
+  {
+    "infraWiNode": {
+      "attributes": {
+        "addr": "10.0.0.3",
+        "adminSt": "in-service",
+        "apicMode": "active",
+        "cntrlSbstState": "approved",
+        "dn": "topology/pod-1/node-1/av/node-3",
+        "failoverStatus": "idle",
+        "health": "fully-fit",
+        "id": "3",
+        "mbSn": "FCH1236ABCD",
+        "name": "",
+        "nodeName": "apic3",
+        "operSt": "available",
+        "podId": "1",
+        "targetMbSn": ""
+      }
+    }
+  }
+]
