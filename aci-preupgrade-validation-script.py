@@ -151,7 +151,7 @@ class Connection(object):
         self._term_len = 0  # terminal length for cisco devices
         self._login = False  # set to true at first successful login
         self._log = None  # private variable for tracking logfile state
-        self.bind_ip = None  # optional source IP to bind for SSH (e.g., APIC OoB)
+        self.bind_ip = None  # optional source IP to bind for SSH
 
     def __connected(self):
         # determine if a connection is already open
@@ -6063,11 +6063,7 @@ def HW_changes_bit_check(tversion, username, password, fabric_nodes, **kwargs):
     elif not data:
         result = PASS
 
-    return Result(result=result,
-                  headers=headers,
-                  data=data,
-                  recommended_action=recommended_action,
-                  doc_url=doc_url)
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
 
