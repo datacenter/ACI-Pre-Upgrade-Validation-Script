@@ -5962,6 +5962,7 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
 @check_wrapper(check_title='APIC VMM inventory sync fault (F0132)')
 def apic_vmm_inventory_sync_faults_check(**kwargs):
     result = PASS
