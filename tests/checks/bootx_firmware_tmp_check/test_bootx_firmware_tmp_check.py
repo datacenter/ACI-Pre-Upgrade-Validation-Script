@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
 # API query for controllers
-infraWiNode_api = 'infraWiNode.json?query-target-filter=and(wcard(infraWiNode.dn,"topology/pod-1/node-1"))'
+fabricNode_api = 'fabricNode.json?query-target-filter=and(eq(fabricNode.role,"controller"))'
 
 # Commands that will be executed via SSH
 ls_firmware_tmp_cmd = '[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0'
@@ -23,42 +23,42 @@ test_function = "bootx_firmware_tmp_check"
     [
         # Test 1: Version not provided (cversion is None)
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             None,
             script.MANUAL,
         ),
         # Test 2: Version not affected (below 6.0(2f))
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(1a)",
             script.PASS,
         ),
         # Test 3: Version not affected (above 6.0(8f))
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(9a)",
             script.PASS,
         ),
         # Test 4: Version not affected (between 6.0(8f) and 6.1(1f))
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(9h)",
             script.PASS,
         ),
         # Test 5: Version not affected (above 6.1(2f))
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.1(3a)",
             script.PASS,
         ),
         # Test 6: Affected version 6.0(2f), no issues found
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "0\napic1#", "exception": None},
@@ -78,7 +78,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 7: Affected version 6.0(5a), file count >= 1000 on one APIC
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "1500\napic1#", "exception": None},
@@ -98,7 +98,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 8: Affected version 6.0(8f), fatal errors found on one APIC
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "50\napic1#", "exception": None},
@@ -118,7 +118,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 9: Affected version 6.1(1f), both high file count and fatal errors
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "2000\napic1#", "exception": None},
@@ -138,7 +138,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 10: Affected version 6.1(2f), multiple APICs with issues
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "1200\napic1#", "exception": None},
@@ -158,7 +158,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 11: Affected version, file count exactly 1000 (boundary test)
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "1000\napic1#", "exception": None},
@@ -178,7 +178,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 12: Affected version, file count just below 1000 (boundary test)
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "999\napic1#", "exception": None},
@@ -198,7 +198,7 @@ test_function = "bootx_firmware_tmp_check"
         ),
         # Test 13: Affected version, only fatal errors (no high file count)
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "10\napic1#", "exception": None},
@@ -229,7 +229,7 @@ def test_logic(run_check, mock_icurl, mock_conn, cversion, expected_result):
     [
         # Test 14: SSH connection failure on one APIC
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             True,
             "6.0(5a)",
@@ -237,7 +237,7 @@ def test_logic(run_check, mock_icurl, mock_conn, cversion, expected_result):
         ),
         # Test 15: SSH command execution error on one APIC
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "", "exception": Exception("Command failed")},
@@ -268,14 +268,14 @@ def test_connection_errors(run_check, mock_icurl, mock_conn, cversion, expected_
     [
         # Test 16: Empty topSystem response (unhealthy cluster)
         (
-            {infraWiNode_api: []},
+            {fabricNode_api: []},
             {},
             "6.0(5a)",
             script.ERROR,
         ),
         # Test 17: Non-numeric output from commands (edge case)
         (
-            {infraWiNode_api: read_data(dir, "infraWiNode.json")},
+            {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
                 "10.0.0.1": [
                     {"cmd": ls_firmware_tmp_cmd, "output": "error\napic1#", "exception": None},

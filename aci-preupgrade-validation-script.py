@@ -5965,7 +5965,7 @@ def configpush_shard_check(tversion, **kwargs):
 @check_wrapper(check_title = 'Bootx Service failure log & firmware/tmp directory checks')
 def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
     result = PASS
-    headers = ["Pod", "Node", "File Count", "Fatal Errors Found", "Status"]
+    headers = ["Node", "File Count", "Fatal Errors Found", "Status"]
     data = []
     recommended_action = 'Contact Cisco TAC to investigate all flagged high file and log counts'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bootx_service_failure_log_and_firmware_tmp_directory_checks'
@@ -5975,17 +5975,16 @@ def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
 
     
     affected = False
-    if (not cversion.older_than("6.0(2f)") and not cversion.newer_than("6.0(8f)")) or \
-       (not cversion.older_than("6.1(1f)") and not cversion.newer_than("6.1(2f)")):
+    if (not cversion.older_than("6.0(2h)") and not cversion.newer_than("6.0(8h)")) or \
+       (not cversion.older_than("6.1(1f)") and not cversion.newer_than("6.1(2g)")):
         affected = True
 
     if not affected:
         return Result(result=PASS, msg=VER_NOT_AFFECTED)
 
-    
-    controller = icurl('class', 'infraWiNode.json?query-target-filter=and(wcard(infraWiNode.dn,"topology/pod-1/node-1"))')
+    controller = icurl('class', 'fabricNode.json?query-target-filter=and(eq(fabricNode.role,"controller"))')
     if not controller:
-        return Result(result=ERROR, msg="infraWiNode response empty. Is the cluster healthy?", doc_url=doc_url)
+        return Result(result=ERROR, msg="Fabric node response empty. Is the cluster healthy?", doc_url=doc_url)
 
     print('')
     checked_apics = {}
@@ -5994,23 +5993,22 @@ def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
     nodes_fatal_errors_result = []
 
     for apic in controller:
-        attr = apic['infraWiNode']['attributes']
-        if attr['addr'] in checked_apics:
+        attr = apic['fabricNode']['attributes']
+        if attr['address'] in checked_apics:
             continue
-        checked_apics[attr['addr']] = 1
-        pod_id = attr['podId']
+        checked_apics[attr['address']] = 1
         node_id = attr['id']
         node_name = attr['name']
         node_title = 'Checking %s...' % node_name
         
         try:
-            c = Connection(attr['addr'])
+            c = Connection(attr['address'])
             c.username = username
             c.password = password
             c.log = LOG_FILE
             c.connect()
         except Exception as e:
-            data.append([pod_id, node_id, '-', '-', 'ERROR: %s' % str(e)])
+            data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
             has_error = True
             continue
         
@@ -6036,18 +6034,18 @@ def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
             # Determine status
             if file_count >= 1000:
                 status = 'FAIL - High file count'
-                data.append([pod_id, node_id, str(file_count), str(fatal_count), status])
+                data.append([node_id, str(file_count), str(fatal_count), status])
                 result = FAIL_UF
                 nodes_file_count_result.append(result)
             elif fatal_count > 0:
                 status = 'WARNING - Fatal errors found'
-                data.append([pod_id, node_id, str(file_count), str(fatal_count), status])
+                data.append([node_id, str(file_count), str(fatal_count), status])
                 if result == PASS:
                     result = MANUAL
                 nodes_fatal_errors_result.append(result)
                 
         except Exception as e:
-            data.append([pod_id, node_id, '-', '-', 'ERROR: %s' % str(e)])
+            data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
             has_error = True
             continue
     
