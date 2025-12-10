@@ -78,7 +78,7 @@ Items                                         | Faults         | This Script    
 [HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1)
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign:
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
-[Equipment Disk Limits Exceeded][f20]         | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
+[Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 
 
@@ -101,7 +101,7 @@ Items                                         | Faults         | This Script    
 [f17]: #hw-programming-failure
 [f18]: #scalability-faults-related-to-capacity-dashboard
 [f19]: #fabric-port-status
-[f20]: #equipment-disk-limits-exceeded
+[f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
 
 ### Configuration Checks
