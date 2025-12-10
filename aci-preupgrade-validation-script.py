@@ -1805,6 +1805,10 @@ def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
     }
 
 
+
+    
+
+
 @check_wrapper(check_title="APIC Cluster Status")
 def apic_cluster_health_check(cversion, **kwargs):
     result = FAIL_UF
@@ -5963,7 +5967,7 @@ def configpush_shard_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 @check_wrapper(check_title='active_node pres.Listener mo object check')
-def active_node_presListener_mo_object_check(tversion, **kwargs):
+def active_node_presListener_mo_object_check(tversion,fabric_nodes, **kwargs):
     result = PASS
     headers = ["Missing Node ID", "Node Status"]
     data = []
@@ -5973,11 +5977,9 @@ def active_node_presListener_mo_object_check(tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#active_node_presListener_mo_object_check'
 
     presListener_node_objects = 'presListener.json?query-target-filter=wcard(presListener.dn,"4307")'
-    fabric_leaf_node_objects = 'fabricNode.json?query-target-filter=and(wcard(fabricNode.role,"leaf"),wcard(fabricNode.fabricSt,"active"))'
-
+   
     presListeners_object_data = icurl('class', presListener_node_objects)
-    fabric_leaf_object_data = icurl('class', fabric_leaf_node_objects)
-
+  
     node_regex = r"uni/infra/nodecfgcont/node-(?P<node>\d+)"
     class_regex = r"resregistry/resregistry-(?P<registry>\d+)/class-(?P<class>\d+)"
 
@@ -5987,8 +5989,9 @@ def active_node_presListener_mo_object_check(tversion, **kwargs):
     # Only run check if target version < 6.1(3f)
     if tversion and tversion.older_than("6.1(3f)"):
   
-        if fabric_leaf_object_data:
-            for leaf in fabric_leaf_object_data:
+        if fabric_nodes:
+            fabric_active_leaf_nodes = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "leaf" and node["fabricNode"]["attributes"]["fabricSt"] == "active"]
+            for leaf in fabric_active_leaf_nodes:
                 leaf_id = leaf['fabricNode']['attributes']['id']
                 fabric_leaf_ids.append(leaf_id)
                 

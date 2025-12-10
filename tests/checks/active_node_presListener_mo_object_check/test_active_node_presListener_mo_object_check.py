@@ -16,88 +16,88 @@ presListener = 'presListener.json?query-target-filter=wcard(presListener.dn,"430
 fabricNode = 'fabricNode.json?query-target-filter=and(wcard(fabricNode.role,"leaf"),wcard(fabricNode.fabricSt,"active"))'
 
 @pytest.mark.parametrize(
-    "icurl_outputs, tversion,expected_result",
+    "icurl_outputs, tversion,fabric_nodes,expected_result",
     [
-        #Check pass case
+        #CASE 1: Check pass case with all nodes present
         (
             {
                 presListener: read_data(
                     dir, "presListener.json"
-                ),
-                fabricNode: read_data(
-                    dir, "fabricNode.json"
-                ),
+                )
             },
             "6.1(2f)",
+            read_data(
+                dir, "fabricNode.json"
+            ),
             script.PASS,
         ),
-        #Check with missing nodes
+        #CASE 2: Check with missing nodes in presListener mo
         (
             {
                 presListener: read_data(
                     dir, "presListener_missing_node.json"
-                ),
-                fabricNode: read_data(
-                    dir, "fabricNode.json"
-                ),
+                )
             },
             "6.1(2f)",
+            read_data(
+                dir, "fabricNode.json"
+            ),
             script.FAIL_O
         ),
-        #Check with missing nodes on affected version
+        #CASE 3: Check with missing nodes in presListener mo on affected version
         (
             {
                 presListener: read_data(
                     dir, "presListener_missing_node.json"
-                ),
-                fabricNode: read_data(
-                    dir, "fabricNode.json"
-                ),
+                )
             },
             "5.2(8h)",
+            read_data(
+                dir, "fabricNode.json"
+            ),
             script.FAIL_O,
         ),
-        #Check with empty responses for latest version
+        #CASE 4: Check with empty responses  of fabric node and presListener mo for latest version
         (
             {
                 presListener: read_data(
                     dir, "presListener_empty.json"
-                ),
-                fabricNode: read_data(
-                    dir, "fabricNode_empty.json"
-                ),
+                )
             },
             "6.1(3h)",
+            read_data(
+                dir, "fabricNode_empty.json"
+            ),
             script.NA,
         ),
-        #Check with empty responses for affected version
+        #CASE 5: Check with empty responses of fabric node and presListener mo for affected version
         (
             {
                 presListener: read_data(
                     dir, "presListener_empty.json"
-                ),
-                fabricNode: read_data(
-                    dir, "fabricNode_empty.json"
                 ),
             },
             "5.2(8h)",
+            read_data(
+                dir, "fabricNode_empty.json"
+            ),
             script.FAIL_UF,
         ),
-        # tversion not given
+        #CASE 6: tversion not given
         (
             {
                 presListener: read_data(
                     dir, "presListener_missing_node.json"
-                ),
-                fabricNode: read_data(
-                    dir, "fabricNode.json"
-                ),
+                )
             },
             None,
+            read_data(
+                dir, "fabricNode.json"
+            ),
             script.MANUAL,
         ),
     ],
 )
-def test_logic(run_check,mock_icurl, tversion, expected_result):
-    result = run_check(tversion=script.AciVersion(tversion) if tversion else None)
+def test_logic(run_check,mock_icurl, tversion,fabric_nodes, expected_result):
+    result = run_check(tversion=script.AciVersion(tversion) if tversion else None, fabric_nodes=fabric_nodes)
     assert result.result == expected_result
