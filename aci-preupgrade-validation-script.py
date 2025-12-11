@@ -5963,7 +5963,7 @@ def configpush_shard_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 @check_wrapper(check_title = 'Bootx Service failure log & firmware/tmp directory checks')
-def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
+def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwargs):
     result = PASS
     headers = ["Node", "File Count", "Fatal Errors Found", "Status"]
     data = []
@@ -5982,9 +5982,13 @@ def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
     if not affected:
         return Result(result=PASS, msg=VER_NOT_AFFECTED)
 
-    controller = icurl('class', 'fabricNode.json?query-target-filter=and(eq(fabricNode.role,"controller"))')
-    if not controller:
+    if not fabric_nodes:
         return Result(result=ERROR, msg="Fabric node response empty. Is the cluster healthy?", doc_url=doc_url)
+
+    # Filter for controller nodes only
+    controller = [node for node in fabric_nodes if node['fabricNode']['attributes']['role'] == 'controller']
+    if not controller:
+        return Result(result=ERROR, msg="No controller nodes found. Is the cluster healthy?", doc_url=doc_url)
 
     print('')
     checked_apics = {}
@@ -6056,13 +6060,7 @@ def bootx_firmware_tmp_check(cversion, username, password, **kwargs):
     if has_error and result == PASS:
         result = ERROR
     
-    return Result(
-        result=result,
-        headers=headers,
-        data=data,
-        recommended_action=recommended_action,
-        doc_url=doc_url,
-    )
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----

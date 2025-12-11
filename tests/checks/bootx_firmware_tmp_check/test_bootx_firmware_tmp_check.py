@@ -9,8 +9,8 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-# API query for controllers
-fabricNode_api = 'fabricNode.json?query-target-filter=and(eq(fabricNode.role,"controller"))'
+# API query for fabricNode (get_fabric_nodes() uses 'fabricNode.json' without filter)
+fabricNode_api = 'fabricNode.json'
 
 # Commands that will be executed via SSH
 ls_firmware_tmp_cmd = '[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0'
@@ -218,9 +218,10 @@ test_function = "bootx_firmware_tmp_check"
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, mock_conn, cversion, expected_result):
+def test_logic(run_check, mock_icurl, mock_conn, icurl_outputs, cversion, expected_result):
     cver = script.AciVersion(cversion) if cversion else None
-    result = run_check(cversion=cver, username="admin", password="password")
+    fabric_nodes = icurl_outputs.get(fabricNode_api, [])
+    result = run_check(fabric_nodes=fabric_nodes, cversion=cver, username="admin", password="password")
     assert result.result == expected_result
 
 
@@ -257,9 +258,10 @@ def test_logic(run_check, mock_icurl, mock_conn, cversion, expected_result):
         ),
     ],
 )
-def test_connection_errors(run_check, mock_icurl, mock_conn, cversion, expected_result):
+def test_connection_errors(run_check, mock_icurl, mock_conn, icurl_outputs, cversion, expected_result):
     cver = script.AciVersion(cversion) if cversion else None
-    result = run_check(cversion=cver, username="admin", password="password")
+    fabric_nodes = icurl_outputs.get(fabricNode_api, [])
+    result = run_check(fabric_nodes=fabric_nodes, cversion=cver, username="admin", password="password")
     assert result.result == expected_result
 
 
@@ -295,7 +297,8 @@ def test_connection_errors(run_check, mock_icurl, mock_conn, cversion, expected_
         ),
     ],
 )
-def test_edge_cases(run_check, mock_icurl, mock_conn, cversion, expected_result):
+def test_edge_cases(run_check, mock_icurl, mock_conn, icurl_outputs, cversion, expected_result):
     cver = script.AciVersion(cversion) if cversion else None
-    result = run_check(cversion=cver, username="admin", password="password")
+    fabric_nodes = icurl_outputs.get(fabricNode_api, [])
+    result = run_check(fabric_nodes=fabric_nodes, cversion=cver, username="admin", password="password")
     assert result.result == expected_result
