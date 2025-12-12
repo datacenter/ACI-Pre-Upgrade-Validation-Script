@@ -1,20 +1,43 @@
-[
-  {
-    "commCipher": {
-      "attributes": {
-        "dn": "sys/comm/https/cipher-ECDHE-RSA-AES256-GCM-SHA384",
-        "id": "ECDHE-RSA-AES256-GCM-SHA384",
-        "state": "disabled"
-      }
-    }
-  },
-  {
-    "commCipher": {
-      "attributes": {
-        "dn": "sys/comm/https/cipher-DHE-RSA-AES256-SHA",
-        "id": "DHE-RSA-AES256-SHA",
-        "state": "disabled"
-      }
-    }
-  }
-]
+{
+    "totalCount": "2",
+    "imdata": [
+        {
+            "commCipher": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "configurable": "yes",
+                    "dn": "uni/fabric/comm-default/https/cph-ECDHE-RSA-AES256-SHA384",
+                    "extMngdBy": "",
+                    "id": "ECDHE-RSA-AES256-SHA384",
+                    "lcOwn": "local",
+                    "modTs": "2025-12-09T12:07:57.857+00:00",
+                    "state": "disabled",
+                    "status": "",
+                    "uid": "0",
+                    "userdom": "all",
+                    "weak": "yes"
+                }
+            }
+        },
+        {
+            "commCipher": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "configurable": "yes",
+                    "dn": "uni/fabric/comm-default/https/cph-ECDHE-RSA-AES128-SHA256",
+                    "extMngdBy": "",
+                    "id": "ECDHE-RSA-AES128-SHA256",
+                    "lcOwn": "local",
+                    "modTs": "2025-12-09T12:07:57.857+00:00",
+                    "state": "disabled",
+                    "status": "",
+                    "uid": "0",
+                    "userdom": "all",
+                    "weak": "yes"
+                }
+            }
+        }
+    ]
+}
