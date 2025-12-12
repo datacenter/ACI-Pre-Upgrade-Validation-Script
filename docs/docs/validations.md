@@ -191,8 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
-[Disabled Cipher Configuration][d29]            | CSCwf26626   |
-:white_check_mark: |
+[Disabled Cipher Configuration][d29]            | CSCwf26626   | :white_check_mark: |
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
