@@ -26,12 +26,14 @@
   {
     "fabricNode": {
       "attributes": {
-        "dn": "topology/pod-1/node-101",
+        "dn": "topology/pod-1/node-3",
+        "address": "10.0.0.3",
         "fabricSt": "active",
-        "id": "101",
-        "name": "leaf101",
-        "role": "leaf"
+        "id": "3",
+        "name": "apic3",
+        "role": "controller"
       }
     }
   }
 ]
+
