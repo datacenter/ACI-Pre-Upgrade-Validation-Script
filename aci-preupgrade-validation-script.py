@@ -5991,9 +5991,7 @@ def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwarg
         return Result(result=ERROR, msg="No controller nodes found. Is the cluster healthy?", doc_url=doc_url)
 
     checked_apics = {}
-    has_error = False
-    nodes_file_count_result = []
-    nodes_fatal_errors_result = []
+    has_error = False   
 
     for apic in controller:
         attr = apic['fabricNode']['attributes']
@@ -6001,7 +5999,6 @@ def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwarg
             continue
         checked_apics[attr['address']] = 1
         node_id = attr['id']
-        node_name = attr['name']
         
         try:
             c = Connection(attr['address'])
@@ -6036,25 +6033,19 @@ def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwarg
             # Determine status
             if file_count >= 1000:
                 status = 'FAIL - High file count'
-                data.append([node_id, str(file_count), str(fatal_count), status])
+                data.append([node_id, str(file_count),"-", status])
                 result = FAIL_UF
-                nodes_file_count_result.append(result)
-            elif fatal_count > 0:
-                status = 'WARNING - Fatal errors found'
-                data.append([node_id, str(file_count), str(fatal_count), status])
-                if result == PASS:
-                    result = MANUAL
-                nodes_fatal_errors_result.append(result)
+
+            if fatal_count > 0:
+                status = 'FAIL - Fatal errors found'
+                data.append([node_id, "-", str(fatal_count), status])
+                result = FAIL_UF
                 
         except Exception as e:
             data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
             has_error = True
             continue
     
-    if FAIL_UF in nodes_file_count_result:
-        result = FAIL_UF
-    if MANUAL in nodes_fatal_errors_result:
-        result = MANUAL
     if has_error and result == PASS:
         result = ERROR
     

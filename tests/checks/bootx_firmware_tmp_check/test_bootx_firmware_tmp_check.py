@@ -28,35 +28,35 @@ test_function = "bootx_firmware_tmp_check"
             None,
             script.MANUAL,
         ),
-        # Test 2: Version not affected (below 6.0(2f))
+        # Test 2: Version not affected (below 6.0(2h))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(1a)",
             script.PASS,
         ),
-        # Test 3: Version not affected (above 6.0(8f))
+        # Test 3: Version not affected (above 6.0(8h))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(9a)",
             script.PASS,
         ),
-        # Test 4: Version not affected (between 6.0(8f) and 6.1(1f))
+        # Test 4: Version not affected (between 6.0(8h) and 6.1(1f))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(9h)",
             script.PASS,
         ),
-        # Test 5: Version not affected (above 6.1(2f))
+        # Test 5: Version not affected (above 6.1(2g))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.1(3a)",
             script.PASS,
         ),
-        # Test 6: Affected version 6.0(2f), no issues found
+        # Test 6: Version not affected 6.0(2f) (below 6.0(2h)), no issues found
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -76,7 +76,7 @@ test_function = "bootx_firmware_tmp_check"
             "6.0(2f)",
             script.PASS,
         ),
-        # Test 7: Affected version 6.0(5a), file count >= 1000 on one APIC
+        # Test 7: Affected version 6.0(5a) (within 6.0(2h) to 6.0(8h)), file count >= 1000 on one APIC
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -96,7 +96,7 @@ test_function = "bootx_firmware_tmp_check"
             "6.0(5a)",
             script.FAIL_UF,
         ),
-        # Test 8: Affected version 6.0(8f), fatal errors found on one APIC
+        # Test 8: Affected version 6.0(8f) (within 6.0(2h) to 6.0(8h)), fatal errors found on one APIC
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -114,9 +114,9 @@ test_function = "bootx_firmware_tmp_check"
                 ],
             },
             "6.0(8f)",
-            script.MANUAL,
+            script.FAIL_UF,
         ),
-        # Test 9: Affected version 6.1(1f), both high file count and fatal errors
+        # Test 9: Affected version 6.1(1f) (within 6.1(1f) to 6.1(2g)), both high file count and fatal errors
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -136,7 +136,7 @@ test_function = "bootx_firmware_tmp_check"
             "6.1(1f)",
             script.FAIL_UF,
         ),
-        # Test 10: Affected version 6.1(2f), multiple APICs with issues
+        # Test 10: Affected version 6.1(2f) (within 6.1(1f) to 6.1(2g)), multiple APICs with issues
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -156,7 +156,7 @@ test_function = "bootx_firmware_tmp_check"
             "6.1(2f)",
             script.FAIL_UF,
         ),
-        # Test 11: Affected version, file count exactly 1000 (boundary test)
+        # Test 11: Affected version 6.0(3a) (within 6.0(2h) to 6.0(8h)), file count exactly 1000 (boundary test)
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -176,7 +176,7 @@ test_function = "bootx_firmware_tmp_check"
             "6.0(3a)",
             script.FAIL_UF,
         ),
-        # Test 12: Affected version, file count just below 1000 (boundary test)
+        # Test 12: Affected version 6.0(4a) (within 6.0(2h) to 6.0(8h)), file count just below 1000 (boundary test)
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -196,7 +196,7 @@ test_function = "bootx_firmware_tmp_check"
             "6.0(4a)",
             script.PASS,
         ),
-        # Test 13: Affected version, only fatal errors (no high file count)
+        # Test 13: Affected version 6.1(2a) (within 6.1(1f) to 6.1(2g)), only fatal errors (no high file count)
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -214,7 +214,7 @@ test_function = "bootx_firmware_tmp_check"
                 ],
             },
             "6.1(2a)",
-            script.MANUAL,
+            script.FAIL_UF,
         ),
     ],
 )
@@ -228,7 +228,7 @@ def test_logic(run_check, mock_icurl, mock_conn, icurl_outputs, cversion, expect
 @pytest.mark.parametrize(
     "icurl_outputs, conn_cmds, conn_failure, cversion, expected_result",
     [
-        # Test 14: SSH connection failure on one APIC
+        # Test 14: Affected version 6.0(5a) (within 6.0(2h) to 6.0(8h)), SSH connection failure on one APIC
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
@@ -236,7 +236,7 @@ def test_logic(run_check, mock_icurl, mock_conn, icurl_outputs, cversion, expect
             "6.0(5a)",
             script.ERROR,
         ),
-        # Test 15: SSH command execution error on one APIC
+        # Test 15: Affected version 6.0(7a) (within 6.0(2h) to 6.0(8h)), SSH command execution error on one APIC
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
@@ -268,14 +268,14 @@ def test_connection_errors(run_check, mock_icurl, mock_conn, icurl_outputs, cver
 @pytest.mark.parametrize(
     "icurl_outputs, conn_cmds, cversion, expected_result",
     [
-        # Test 16: Empty topSystem response (unhealthy cluster)
+        # Test 16: Affected version 6.0(5a) (within 6.0(2h) to 6.0(8h)), Empty fabricNode response (unhealthy cluster)
         (
             {fabricNode_api: []},
             {},
             "6.0(5a)",
             script.ERROR,
         ),
-        # Test 17: Non-numeric output from commands (edge case)
+        # Test 17: Affected version 6.0(6a) (within 6.0(2h) to 6.0(8h)), Non-numeric output from commands (edge case)
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {
