@@ -5962,6 +5962,98 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title="Disabled Cipher Configuration")
+def disabled_cipher_check(tversion, username, password, fabric_nodes, **kwargs):
+    headers = ["APIC", "Disabled Cipher Count", "Nginx Log Check Status"]
+    data = []
+    recommended_action = "Re-enable the disabled ciphers or contact Cisco TAC for guidance on cipher configuration"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#disabled-cipher-configuration"
+
+    # Check 1: Verify target version is 6.0.2
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if not (tversion.same_as("6.0(2a)") or tversion.same_as("6.0(2h)") or tversion.same_as("6.0(2j)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    # Check 2: Query for disabled ciphers
+    cipher_api = "commCipher.json?query-target-filter=and(or(wcard(commCipher.id,\"ECDHE-RSA\"),wcard(commCipher.id,\"DHE-RSA\"),wcard(commCipher.id,\"TLS_AES_256\")),eq(commCipher.state,\"disabled\"))"
+    try:
+        disabled_ciphers = icurl("class", cipher_api)
+        disabled_cipher_count = len(disabled_ciphers)
+    except Exception as e:
+        log.error("Failed to query disabled ciphers: %s", str(e))
+        return Result(result=ERROR, msg="Failed to query disabled ciphers: {}".format(str(e)), doc_url=doc_url)
+
+    if disabled_cipher_count == 0:
+        return Result(result=PASS, msg="No disabled ciphers found", doc_url=doc_url)
+
+    # Check 3: SSH to all APICs and check nginx logs
+    controllers = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    
+    if not controllers:
+        return Result(result=ERROR, msg="No controllers found in fabricNode. Is the cluster healthy?", doc_url=doc_url)
+
+    prints("")
+    
+    for apic in controllers:
+        attr = apic["fabricNode"]["attributes"]
+        apic_name = attr["name"]
+        node_title = "Checking %s..." % apic_name
+        prints(node_title, end=" ")
+        
+        try:
+            c = Connection(attr["address"])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            log.error("Connection failed to %s: %s", apic_name, str(e))
+            data.append([apic_name, str(disabled_cipher_count), "Connection Error: {}".format(str(e))])
+            prints(ERROR)
+            continue
+        
+        try:
+            cmd = "zgrep \"Failed to write nginxproxy conf file\" /var/log/dme/log/nginx.bin.war* 2>/dev/null | head -20"
+            c.cmd(cmd, timeout=35)
+            
+            if "Failed to write nginxproxy conf file" in c.output:
+                data.append([apic_name, str(disabled_cipher_count), "FOUND"])
+            else:
+                data.append([apic_name, str(disabled_cipher_count), "Not found in nginx logs"])
+            
+            prints(DONE)
+        except pexpect.TIMEOUT:
+            log.warning("Command timeout on %s", apic_name)
+            data.append([apic_name, str(disabled_cipher_count), "Command Timeout"])
+            prints(ERROR)
+        except pexpect.EOF:
+            log.warning("Connection closed unexpectedly on %s", apic_name)
+            data.append([apic_name, str(disabled_cipher_count), "Connection Closed"])
+            prints(ERROR)
+        except Exception as e:
+            log.exception("Error checking nginx logs on %s", apic_name)
+            data.append([apic_name, str(disabled_cipher_count), "Error: {}".format(str(e))])
+            prints(ERROR)
+        finally:
+            try:
+                c.close()
+            except Exception:
+                pass
+
+    # Determine final result based on priority: FAIL_O > ERROR > PASS
+    if not data:
+        return Result(result=ERROR, msg="Unable to check nginx logs on any APIC", headers=headers, data=[], doc_url=doc_url)
+    
+    if any("FOUND" in row[2] for row in data):
+        result = FAIL_O
+    elif any("Error" in row[2] or "Timeout" in row[2] or "Closed" in row[2] for row in data):
+        result = ERROR
+    else:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6122,6 +6214,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        disabled_cipher_check,
 
     ]
     ssh_checks = [
@@ -6266,7 +6359,7 @@ def main(_args=None):
     # Print result of each failed check
     for index, check_id in enumerate(cm.check_ids):
         result_obj = cm.get_check_result(check_id)
-        if not result_obj or result_obj.result in (NA, PASS):
+        if not result_obj or result_obj.result in (NA,PASS):
             continue
         check_title = cm.get_check_title(check_id)
         print_result(index + 1, cm.total_checks, check_title, **result_obj.as_dict())

@@ -1,0 +1,20 @@
+[
+  {
+    "commCipher": {
+      "attributes": {
+        "dn": "sys/comm/https/cipher-ECDHE-RSA-AES256-GCM-SHA384",
+        "id": "ECDHE-RSA-AES256-GCM-SHA384",
+        "state": "disabled"
+      }
+    }
+  },
+  {
+    "commCipher": {
+      "attributes": {
+        "dn": "sys/comm/https/cipher-DHE-RSA-AES256-SHA",
+        "id": "DHE-RSA-AES256-SHA",
+        "state": "disabled"
+      }
+    }
+  }
+]
