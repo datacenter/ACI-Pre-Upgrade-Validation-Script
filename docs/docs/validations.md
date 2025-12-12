@@ -191,7 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
-[Bootx Service failure log & firmware/tmp directory checks][d29]  | CSCwn37676  | :white_check_mark: | :no_entry_sign:
+[Bootx Service failure checks][d29]             | CSCwn37676   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -221,7 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-[d29]: #bootx_service_failure_log_and_firmware_tmp_directory_checks
+[d29]: #bootx-service-failure-checks
 
 
 ## General Check Details
@@ -2606,9 +2606,9 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
-### Bootx Service failure log & firmware/tmp directory checks
+### Bootx Service failure checks
 
-Due to [CSCwn37676][62], ACI runs on releases 6.0(2) through 6.0(8) or 6.1(1) through 6.1(2) , upgrading to any target version with a high number of files in the `/firmware/tmp/` directory (1000 or more) or the presence of fatal errors in `/var/log/bootx/logs/` can cause the bootx service to fail, resulting in upgrade failures.
+Due to [CSCwn37676][62], ACI runs on releases 6.0(2h) through 6.0(8h) or 6.1(1f) through 6.1(2g) , upgrading to any target version with a high number of files in the `/firmware/tmp/` directory (1000 or more) or the presence of fatal errors in `/var/log/bootx/logs/` can cause the bootx service to fail, resulting in upgrade failures.
 
 The script performs two validations on each APIC:
 

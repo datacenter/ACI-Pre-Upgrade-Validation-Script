@@ -5962,7 +5962,7 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title = 'Bootx Service failure log & firmware/tmp directory checks')
+@check_wrapper(check_title = 'Bootx Service failure checks')
 def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwargs):
     result = PASS
     headers = ["Node", "File Count", "Fatal Errors Found", "Status"]
@@ -5990,7 +5990,6 @@ def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwarg
     if not controller:
         return Result(result=ERROR, msg="No controller nodes found. Is the cluster healthy?", doc_url=doc_url)
 
-    print('')
     checked_apics = {}
     has_error = False
     nodes_file_count_result = []
@@ -6003,7 +6002,6 @@ def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwarg
         checked_apics[attr['address']] = 1
         node_id = attr['id']
         node_name = attr['name']
-        node_title = 'Checking %s...' % node_name
         
         try:
             c = Connection(attr['address'])
