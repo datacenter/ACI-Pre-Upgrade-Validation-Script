@@ -6018,10 +6018,32 @@ def disabled_cipher_check(tversion, username, password, fabric_nodes, **kwargs):
             cmd = "zgrep \"Failed to write nginxproxy conf file\" /var/log/dme/log/nginx.bin.war* 2>/dev/null | head -20"
             c.cmd(cmd, timeout=35)
             
-            if "Failed to write nginxproxy conf file" in c.output:
+            # Log raw output for debugging
+            log.debug("APIC %s raw output: %s", apic_name, repr(c.output))
+            
+            # Check if output contains actual error messages
+            # If zgrep finds matches, the output will have error messages before the prompt
+            # If zgrep finds nothing, the output will only have the command echo and prompt
+            # Look for lines between command and prompt that contain the error message
+            lines = c.output.split("\n")
+            found_error = False
+            
+            for line in lines:
+                # Skip the command echo line and prompt line
+                if "zgrep" in line or line.strip().endswith("#"):
+                    continue
+                # If this line contains the error message and it's not empty, we found it
+                if line.strip() and "Failed to write nginxproxy conf file" in line:
+                    found_error = True
+                    log.debug("APIC %s found error line: %s", apic_name, repr(line))
+                    break
+            
+            if found_error:
                 data.append([apic_name, str(disabled_cipher_count), "FOUND"])
+                log.debug("APIC %s: Nginx error FOUND in logs", apic_name)
             else:
                 data.append([apic_name, str(disabled_cipher_count), "Not found in nginx logs"])
+                log.debug("APIC %s: Nginx error NOT found in logs (only prompt returned)", apic_name)
             
             prints(DONE)
         except pexpect.TIMEOUT:
