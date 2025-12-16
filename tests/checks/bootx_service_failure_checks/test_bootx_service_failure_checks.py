@@ -16,7 +16,7 @@ fabricNode_api = 'fabricNode.json'
 ls_firmware_tmp_cmd = '[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0'
 grep_fatal_bootx_cmd = '[ -d /var/log/bootx/logs ] && grep -Ri "fatal" /var/log/bootx/logs/* 2>/dev/null | wc -l || echo 0'
 
-test_function = "bootx_firmware_tmp_check"
+test_function = "bootx_service_failure_checks"
 
 @pytest.mark.parametrize(
     "icurl_outputs, conn_cmds, cversion, expected_result",

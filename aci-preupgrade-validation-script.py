@@ -5963,7 +5963,7 @@ def configpush_shard_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 @check_wrapper(check_title = 'Bootx Service failure checks')
-def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwargs):
+def bootx_service_failure_checks(fabric_nodes, cversion, username, password, **kwargs):
     result = PASS
     headers = ["Node", "File Count", "Fatal Errors Found", "Status"]
     data = []
@@ -6045,7 +6045,7 @@ def bootx_firmware_tmp_check(fabric_nodes, cversion, username, password, **kwarg
             data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
             has_error = True
             continue
-    
+    c.close()        
     if has_error and result == PASS:
         result = ERROR
     
@@ -6139,7 +6139,7 @@ class CheckManager:
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
-        bootx_firmware_tmp_check,
+        bootx_service_failure_checks,
 
         # Faults
         apic_disk_space_faults_check,
