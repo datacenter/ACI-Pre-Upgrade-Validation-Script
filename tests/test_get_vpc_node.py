@@ -7,38 +7,10 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 fabricNodePEps = "fabricNodePEp.json"
 
 data = [
-    {
-        "fabricNodePEp": {
-            "attributes": {
-                "dn": "uni/fabric/protpol/expgep-101-103/nodepep-101",
-                "id": "101"
-            }
-        }
-    },
-    {
-        "fabricNodePEp": {
-            "attributes": {
-                "dn": "uni/fabric/protpol/expgep-204-206/nodepep-206",
-                "id": "206"
-            }
-        }
-    },
-    {
-        "fabricNodePEp": {
-            "attributes": {
-                "dn": "uni/fabric/protpol/expgep-101-103/nodepep-103",
-                "id": "103"
-            }
-        }
-    },
-    {
-        "fabricNodePEp": {
-            "attributes": {
-                "dn": "uni/fabric/protpol/expgep-204-206/nodepep-204",
-                "id": "204"
-            }
-        }
-    }
+    {"fabricNodePEp": {"attributes": {"dn": "uni/fabric/protpol/expgep-101-103/nodepep-101", "id": "101"}}},
+    {"fabricNodePEp": {"attributes": {"dn": "uni/fabric/protpol/expgep-204-206/nodepep-206", "id": "206"}}},
+    {"fabricNodePEp": {"attributes": {"dn": "uni/fabric/protpol/expgep-101-103/nodepep-103", "id": "103"}}},
+    {"fabricNodePEp": {"attributes": {"dn": "uni/fabric/protpol/expgep-204-206/nodepep-204", "id": "204"}}},
 ]
 
 data2 = [
@@ -68,8 +40,15 @@ data2 = [
             {fabricNodePEps: data2},
             ["101", "102", "103", "104", "105", "106"],
             "Collecting VPC Node IDs...101, 102, 103, 104, ... (and 2 more)\n\n",
-        )
-    ]
+        ),
+        # CSCws30568: expected for fabricNodePEp to return non-zero totalCount
+        # incorrectly for an empty response.
+        (
+            {fabricNodePEps: {"totalCount": "8", "imdata": []}},
+            [],
+            "Collecting VPC Node IDs...\n\n",
+        ),
+    ],
 )
 def test_get_vpc_nodes(capsys, mock_icurl, expected_result, expected_stdout):
     vpc_nodes = script.get_vpc_nodes()
