@@ -8,6 +8,8 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
+test_function = "apic_downgrade_compat_warning_check"
+
 
 @pytest.mark.parametrize(
     "cversion, tversion, expected_result",
@@ -22,11 +24,9 @@ dir = os.path.dirname(os.path.abspath(__file__))
         ("6.2(1a)", "6.2(2c)", script.NA),
     ],
 )
-def test_logic(mock_icurl, cversion, tversion, expected_result):
-    result = script.apic_downgrade_compat_warning_check(
-        1,
-        1,
-        script.AciVersion(cversion) if cversion else None,
-        script.AciVersion(tversion) if tversion else None,
+def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
+    result = run_check(
+        cversion=script.AciVersion(cversion) if cversion else None,
+        tversion=script.AciVersion(tversion) if tversion else None,
     )
-    assert result == expected_result
+    assert result.result == expected_result
