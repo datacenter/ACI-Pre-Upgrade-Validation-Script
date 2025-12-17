@@ -22,9 +22,9 @@ node_names = [
     for mo in fabricNode
 ]
 
-ifconfig_cmd = "ifconfig | grep 255.255.255.255"
+hostname_cmd = "bash -c \"hostname\""
 
-ifconfig_output = "inet 10.0.0.1  netmask 255.255.255.255  broadcast 0.0.0.0"
+hostname_output = "ifav42-ifc5"
 
 hw_changes_bit_cmd = "vsh -c 'show sprom cpu-info' | grep \"HW Changes Bits\""
 
@@ -52,7 +52,7 @@ leaf12#"""
             [],
             False,
             {},
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             None,
             script.MANUAL,
         ),
@@ -62,7 +62,7 @@ leaf12#"""
             read_data(dir, "FabricNodes_matching.json"),
             True,
             {},
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.ERROR,
         ),
@@ -72,7 +72,7 @@ leaf12#"""
             [],
             False,
             {},
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.PASS,
         ),
@@ -91,7 +91,7 @@ leaf12#"""
                 ]
                 for node_name in node_names
             },
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.FAIL_O,
         ),
@@ -110,7 +110,7 @@ leaf12#"""
                 ]
                 for node_name in node_names
             },
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.PASS,
         ),
@@ -149,7 +149,7 @@ leaf12#"""
                     }
                 ]
             },
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.FAIL_O,
         ),
@@ -168,7 +168,7 @@ leaf12#"""
                 ]
                 for node_name in node_names
             },
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.ERROR,
         ),
@@ -207,7 +207,7 @@ leaf12#"""
                     }
                 ]
             },
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.FAIL_O,
         ),
@@ -226,17 +226,17 @@ leaf12#"""
                 ]
                 for node_name in node_names
             },
-            {ifconfig_cmd: {"splitlines": True, "output": ifconfig_output}},
+            {hostname_cmd: {"splitlines": True, "output": hostname_output}},
             "14.2(5a)",
             script.ERROR,
         ),
 
-        # ERROR when APIC IP cannot be determined (empty ifconfig output)
+        # ERROR when APIC hostname cannot be determined (empty ifconfig output)
         (
             read_data(dir, "FabricNodes_matching.json"),
             False,
             {},
-            {ifconfig_cmd: {"splitlines": True, "output": ""}},
+            {hostname_cmd: {"splitlines": True, "output": ""}},
             "14.2(5a)",
             script.ERROR,
         ),

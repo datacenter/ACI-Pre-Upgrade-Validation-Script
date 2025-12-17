@@ -5990,20 +5990,22 @@ def HW_changes_bit_check(tversion, username, password, fabric_nodes, **kwargs):
         return Result(result=PASS, msg="No switch models found")
 
     # Discover APIC IP (bind source)
-    apic_ip = None
-
     try:
-        ifconfig_lines = run_cmd("ifconfig | grep 255.255.255.255", splitlines=True)
-        for line in ifconfig_lines:
-            match = re.search(r'inet\s+([0-9\.]+)\s+netmask\s+255\.255\.255\.255', line)
-            if match:
-                apic_ip = match.group(1)
-                break
+        apic_hostname = run_cmd("bash -c \"hostname\"", splitlines=True)[0].strip()
+        if not apic_hostname:
+            return Result(result=ERROR, msg="Could not determine APIC hostname")
+
+        apic_ip = next(
+            (node["fabricNode"]["attributes"].get("address")
+             for node in fabric_nodes
+             if node["fabricNode"]["attributes"]["name"] == apic_hostname),
+            None
+        )
     except Exception as e:
         return Result(result=ERROR, msg="Failed to get APIC IP: {}".format(e))
 
     if not apic_ip:
-        return Result(result=ERROR, msg="Could not determine APIC IP from ifconfig output")
+        return Result(result=ERROR, msg="Could not determine APIC IP from fabricNode attributes")
 
     hw_bits_re = re.compile(r"HW Changes Bits\s*:\s*(0x[0-9a-fA-F]+)")
     has_error = False
