@@ -6008,20 +6008,20 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
-@check_wrapper(check_title='APIC 6.2.1 Upgrade Warning')
-def controller_621_pre_warning(cversion, tversion, **kwargs):
-    result = PASS
+@check_wrapper(check_title='APIC downgrade compatibility when crossing 6.2 release')
+def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
+    result = NA
     headers = ["Current version", "Target Version", "Warning"]
     data = []
-    recommended_action = ''
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#controller-621-pre-warning'
+    recommended_action = 'No action required. Just be aware of the downgrade limitation after the upgrade.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-downgrade-compatibility-when-crossing-62-release'
 
     if not tversion or not cversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
     if cversion.older_than("6.2(1a)") \
        and (tversion.same_as("6.2(1a)") or tversion.newer_than("6.2(1a)")):
         result = MANUAL
-        data.append([cversion, tversion, "Downgrade from 6.2.1 to pre 6.2.1 is not supported."])
+        data.append([cversion, tversion, "Downgrading APIC from 6.2(1)+ to pre-6.2(1) will not be supported."])
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
@@ -6113,6 +6113,7 @@ class CheckManager:
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
+        apic_downgrade_compat_warning_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -6187,7 +6188,6 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
-        controller_621_pre_warning,
 
     ]
     ssh_checks = [
