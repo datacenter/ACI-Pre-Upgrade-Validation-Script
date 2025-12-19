@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.0.0"
+SCRIPT_VERSION = "v4.0.1"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -1767,7 +1767,15 @@ def get_vpc_nodes():
     """ Returns list of VPC Node IDs; ['101', '102', etc...] """
     prints("Collecting VPC Node IDs...", end='')
     vpc_nodes = []
-    prot_pols = icurl('class', 'fabricNodePEp.json')
+    try:
+        prot_pols = icurl('class', 'fabricNodePEp.json')
+    except Exception as e:
+        # CSCws30568: expected for fabricNodePEp to return non-zero totalCount
+        # incorrectly for an empty response.
+        if str(e).startswith("API response empty with totalCount:"):
+            prot_pols = []
+        else:
+            raise e
     for vpc_node in prot_pols:
         vpc_nodes.append(vpc_node['fabricNodePEp']['attributes']['id'])
     vpc_nodes.sort()
