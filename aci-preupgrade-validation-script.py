@@ -6033,19 +6033,10 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
         if exception_macs:
             prints("Found {} exception MACs, checking presListener entries...".format(len(exception_macs)))
             presListener_response = icurl('class', presListener_api)
-            if len(presListener_response) ==0:
-                prints("No presListener entries found for exception MACs.")
-                result = FAIL_UF
-                data.append([len(exception_macs), 0])
-            elif len(presListener_response) < 32:
+            if len(presListener_response) >= 0 and len(presListener_response) < 32:
                 prints("Insufficient presListener entries ({} found) for {} exception MACs.".format(len(presListener_response), len(exception_macs)))
                 result = FAIL_O
                 data.append([len(exception_macs), len(presListener_response)])
-        
-        elif not exception_macs:
-            result = PASS
-            prints("No exception MACs found, skipping check.")
-            data.append([0, "Check not performed since exception MAC list is empty"])
             
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

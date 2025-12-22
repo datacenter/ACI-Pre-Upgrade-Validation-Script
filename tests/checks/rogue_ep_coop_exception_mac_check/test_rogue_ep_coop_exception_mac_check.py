@@ -127,7 +127,7 @@ presListener_api += '?query-target-filter=and(wcard(presListener.dn,"exceptcont"
              presListener_api: []},
             "6.1(2f)",
             "5.2(8g)",
-            script.FAIL_UF,
+            script.FAIL_O,
         ),
     ],
     ids=[
