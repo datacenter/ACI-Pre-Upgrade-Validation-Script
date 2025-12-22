@@ -6027,6 +6027,42 @@ def active_node_presListener_mo_object_check(tversion,fabric_nodes, **kwargs):
     else:
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
+@check_wrapper(check_title='APIC VMM inventory sync fault (F0132)')
+def apic_vmm_inventory_sync_faults_check(**kwargs):
+    result = PASS
+    headers = ['Fault', 'VMM Domain', 'Controller']
+    data = []
+    unformatted_headers = ["Fault", "Fault DN"]
+    unformatted_data = []
+    recommended_action = "Please look for Faults under VM and Host and fix them via VCenter, then manually re-trigger inventory sync on APIC"
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vmm-inventory-partially-synced'
+    vmm_regex = r'comp/prov-VMware/ctrlr-\[(?P<domain>.+?)\]-(?P<controller>.+?)/fault-F0132'
+    faultInsts = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F0132")')
+
+    for faultInst in faultInsts:
+        fc = faultInst['faultInst']['attributes']['code']
+        dn = faultInst['faultInst']['attributes']['dn']
+        desc = faultInst['faultInst']['attributes']['descr']
+        change_set = faultInst['faultInst']['attributes']['changeSet']
+
+        dn_array = re.search(vmm_regex, dn)
+        if dn_array and "partial-inv" in change_set:
+            data.append([fc, dn_array.group("domain"), dn_array.group("controller")])
+        elif "partial-inv" in change_set:
+            unformatted_data.append([fc, dn])
+
+    if data or unformatted_data:
+        result = MANUAL
+
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url)
+  
 # ---- Script Execution ----
 
 
@@ -6134,6 +6170,7 @@ class CheckManager:
         scalability_faults_check,
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
+        apic_vmm_inventory_sync_faults_check,
 
         # Configurations
         vpc_paired_switches_check,
