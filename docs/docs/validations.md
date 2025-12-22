@@ -68,7 +68,7 @@ Items                                         | Faults         | This Script    
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:
-[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
+[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign:
 [L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g)
 [BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d)
 [BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d)
@@ -79,7 +79,7 @@ Items                                         | Faults         | This Script    
 [Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign:
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
-
+[VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 
 
 [f1]: #apic-disk-space-usage
@@ -102,7 +102,7 @@ Items                                         | Faults         | This Script    
 [f18]: #scalability-faults-related-to-capacity-dashboard
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
-
+[f21]: #vmm-inventory-partially-synced
 
 ### Configuration Checks
 
@@ -1507,6 +1507,16 @@ To recover from this fault, try the following action
     uid              : 
     userdom          : all
     ```
+
+### VMM Inventory Partially Synced
+
+This script checks for fault code F0132 with rule comp-ctrlr-operational-issues and change set `partial-inv`. This fault is raised when APICs report a partially synchronized inventory with vCenter servers.
+
+EPGs using the `immediate` or `on-demand` resolution immediacy (this is typical) rely on the VMM Inventory to determine VLAN programming. If the known inventory changes during an upgrade and the APIC is reporting its last sync to be partial, a VMM inventory resync response with inventory changes could result in VLANs being unexpectedly removed.
+
+EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inventory for VLAN deployment and so unexpected inventory changes will not change vlan programmings.
+
+This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
 
 ## Configuration Check Details
 
