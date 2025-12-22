@@ -1,0 +1,24 @@
+[
+  {
+    
+    "fabricNode": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-104",
+                    "fabricSt": "active",
+                    "id": "104",
+                    "role": "leaf"
+                }
+            }
+},
+{
+   "fabricNode": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-105",
+                    "fabricSt": "active",
+                    "id": "105",
+                    "role": "leaf"
+                }
+            } 
+}
+
+]
