@@ -6017,82 +6017,78 @@ def bootx_service_failure_checks(fabric_nodes, cversion, username, password, **k
 
     if not cversion:
         return Result(result=MANUAL, msg="Current version not provided")
-
     
-    affected = False
-    if (not cversion.older_than("6.0(2h)") and not cversion.newer_than("6.0(8h)")) or \
-       (not cversion.older_than("6.1(1f)") and not cversion.newer_than("6.1(2g)")):
-        affected = True
-
-    if not affected:
-        return Result(result=PASS, msg=VER_NOT_AFFECTED)
-
     if not fabric_nodes:
         return Result(result=ERROR, msg="Fabric node response empty. Is the cluster healthy?", doc_url=doc_url)
 
-    # Filter for controller nodes only
-    controller = [node for node in fabric_nodes if node['fabricNode']['attributes']['role'] == 'controller']
-    if not controller:
-        return Result(result=ERROR, msg="No controller nodes found. Is the cluster healthy?", doc_url=doc_url)
+    if (not cversion.older_than("6.0(2h)") and not cversion.newer_than("6.0(8h)")) or \
+       (not cversion.older_than("6.1(1f)") and not cversion.newer_than("6.1(2g)")):
 
-    checked_apics = {}
-    has_error = False   
+        # Filter for controller nodes only
+        controller = [node for node in fabric_nodes if node['fabricNode']['attributes']['role'] == 'controller']
+        if not controller:
+            return Result(result=ERROR, msg="No controller nodes found. Is the cluster healthy?", doc_url=doc_url)
 
-    for apic in controller:
-        attr = apic['fabricNode']['attributes']
-        if attr['address'] in checked_apics:
-            continue
-        checked_apics[attr['address']] = 1
-        node_id = attr['id']
-        
-        try:
-            c = Connection(attr['address'])
-            c.username = username
-            c.password = password
-            c.log = LOG_FILE
-            c.connect()
-        except Exception as e:
-            data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
-            has_error = True
-            continue
-        
-        try:
-            # Check if /firmware/tmp directory exists and count files
-            c.cmd('[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0')
-            file_count = 0
-            for line in c.output.strip().split('\n'):
-                line = line.strip()
-                if line.isdigit():
-                    file_count = int(line)
-                    break
+        checked_apics = {}
+        has_error = False   
+
+        for apic in controller:
+            attr = apic['fabricNode']['attributes']
+            if attr['address'] in checked_apics:
+                continue
+            checked_apics[attr['address']] = 1
+            node_id = attr['id']
             
-            # Check for fatal errors in bootx logs
-            c.cmd('[ -d /var/log/bootx/logs ] && grep -Ri "fatal" /var/log/bootx/logs/* 2>/dev/null | wc -l || echo 0')
-            fatal_count = 0
-            for line in c.output.strip().split('\n'):
-                line = line.strip()
-                if line.isdigit():
-                    fatal_count = int(line)
-                    break
+            try:
+                c = Connection(attr['address'])
+                c.username = username
+                c.password = password
+                c.log = LOG_FILE
+                c.connect()
+            except Exception as e:
+                data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
+                has_error = True
+                continue
             
-            # Determine status
-            if file_count >= 1000:
-                status = 'FAIL - High file count'
-                data.append([node_id, str(file_count),"-", status])
-                result = FAIL_UF
-
-            if fatal_count > 0:
-                status = 'FAIL - Fatal errors found'
-                data.append([node_id, "-", str(fatal_count), status])
-                result = FAIL_UF
+            try:
+                # Check if /firmware/tmp directory exists and count files
+                c.cmd('[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0')
+                file_count = 0
+                for line in c.output.strip().split('\n'):
+                    line = line.strip()
+                    if line.isdigit():
+                        file_count = int(line)
+                        break
                 
-        except Exception as e:
-            data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
-            has_error = True
-            continue
-    c.close()        
-    if has_error and result == PASS:
-        result = ERROR
+                # Check for fatal errors in bootx logs
+                c.cmd('[ -d /var/log/bootx/logs ] && grep -Ri "fatal" /var/log/bootx/logs/* 2>/dev/null | wc -l || echo 0')
+                fatal_count = 0
+                for line in c.output.strip().split('\n'):
+                    line = line.strip()
+                    if line.isdigit():
+                        fatal_count = int(line)
+                        break
+                
+                # Determine status
+                if file_count >= 1000:
+                    status = 'FAIL - High file count'
+                    data.append([node_id, str(file_count),"-", status])
+                    result = FAIL_UF
+
+                if fatal_count > 0:
+                    status = 'FAIL - Fatal errors found'
+                    data.append([node_id, "-", str(fatal_count), status])
+                    result = FAIL_UF
+                    
+            except Exception as e:
+                data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
+                has_error = True
+                continue
+        c.close()        
+        if has_error and result == PASS:
+            result = ERROR
+    else:
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
     
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
