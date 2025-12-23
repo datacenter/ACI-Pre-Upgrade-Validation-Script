@@ -80,7 +80,7 @@ Items                                         | Faults         | This Script    
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
-
+[Switch SSD read alone][f22]                  | F2421: switch-ssd-read-alone-issue | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -103,6 +103,7 @@ Items                                         | Faults         | This Script    
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
+[f22]: #switch_ssd_diag_test_check
 
 ### Configuration Checks
 
@@ -1515,6 +1516,48 @@ EPGs using the `immediate` or `on-demand` resolution immediacy (this is typical)
 EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inventory for VLAN deployment and so unexpected inventory changes will not change vlan programmings.
 
 This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
+
+### Switch SSD Diag Test Check
+
+This checks for Switch(es) SSD diag test result and fault code F2421 on APIC. This fault is raised when switch SSD becomes Read Only.
+
+!!! example "Fault Example F2421"
+From the APIC CLI:
+    ```
+    apic1# moquery -c faultInst -f 'fault.Inst.code=="F2421"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F2421
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : equipment-diags-failed
+    changeSet        : firstExecFailTs (New: 2025-11-27T10:26:33.000+00:00), lastExecFailQual (New: Failed to verify contents written to file), lastExecFailTs (New: 2025-11-27T10:26:33.000+00:00), lastExecTs (New: 2025-11-27T10:26:33.000+00:00), nextExecTs (New: 2025-11-27T10:26:33.000+00:00), numExec (New: 3), numExecFail (New: 1), operSt (New: fail), operStQual (New: Failed to verify contents written to file)
+    childAction      :
+    created          : 2025-11-27T10:26:33.081+00:00
+    delegated        : no
+    descr            : Diagnostics test failed. reason:Failed to verify contents written to file
+    dn               : topology/pod-1/node-102/sys/diag/rule-ssd-acc-trig-forever/subj-[topology/pod-1/node-102/sys/ch/supslot-1/sup]
+    domain           : infra
+    extMngdBy        : undefined
+    highestSeverity  : critical
+    lastTransition   : 2025-11-27T10:26:33.081+00:00
+    lc               : soaking
+    modTs            : never
+    occur            : 1
+    origSeverity     : critical
+    prevSeverity     : critical
+    rn               : fault-F2421
+    rule             : eqptdiag-subj-oper-st-failed
+    severity         : critical
+    status           :
+    subject          : oper-state-failed
+    title            :
+    type             : operational
+    uid              :
+    userdom          : all
+    ```
 
 ## Configuration Check Details
 
