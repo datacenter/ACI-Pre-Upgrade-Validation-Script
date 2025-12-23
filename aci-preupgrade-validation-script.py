@@ -6007,6 +6007,156 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+@check_wrapper(check_title="Switch SSD Diagnostic Test Validation")
+def switch_ssd_diag_test_check(username, password, fabric_nodes, **kwargs):
+    result = PASS
+    recommended_action = "Contact Cisco TAC to investigate SSD diagnostic test failures."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch_ssd_diag_test_check"
+    
+    headers = ["Node Name", "Error Code", "Total Failures", "Fault Code"]
+    data = []
+    
+    # Get APIC's own IP address (bind source for SSH)
+    try:
+        apic_hostname = run_cmd("bash -c \"hostname\"", splitlines=True)[0].strip()
+        if not apic_hostname:
+            return Result(result=ERROR, msg="Could not determine APIC hostname")
+        
+        apic_ip = next(
+            (node["fabricNode"]["attributes"].get("address")
+             for node in fabric_nodes
+             if node["fabricNode"]["attributes"]["name"] == apic_hostname),
+            None
+        )
+    except Exception as e:
+        return Result(result=ERROR, msg="Failed to get APIC IP: {}".format(e))
+    
+    if not apic_ip:
+        return Result(result=ERROR, msg="Could not determine APIC IP address from fabric nodes")
+    
+
+    # Filter active switches only (exclude controllers/APICs)
+    switches = [
+        node for node in fabric_nodes
+        if node["fabricNode"]["attributes"].get("role") != "controller"
+        and node["fabricNode"]["attributes"].get("fabricSt") == "active"
+    ]
+    
+    if not switches:
+        return Result(result=NA, msg="No active switches found in fabric")
+
+    # Check F2421 fault for SSD issues
+    fault_per_node = {}
+    try:
+        F2421_faults = icurl('class', 'faultInst.json?query-target-filter=eq(faultInst.code,"F2421")')
+        for fault in F2421_faults:
+            fault_dn = fault["faultInst"]["attributes"]["dn"]
+            node_match = re.search(node_regex, fault_dn)
+            if node_match:
+                node_id = node_match.group("node")
+                fault_per_node[node_id] = True
+    except Exception as e:
+        return Result(result=ERROR, msg="Failed to retrieve F2421 faults: {}".format(e))
+    
+    # SSH to each switch and run diagnostic test command
+    for switch in switches:
+        attr = switch["fabricNode"]["attributes"]
+        node_id = attr.get("id")
+        node_name = attr.get("name")
+        
+        try:
+            # Create SSH connection with APIC IP binding
+            c = Connection(node_name)
+            c.username = username
+            c.password = password
+            c.bind_ip = apic_ip  # Route traffic through APIC inband IP
+            c.connect()
+            
+            # Execute diagnostic test command
+            c.cmd("show diagnostic result module 1 test 24 detail", timeout=60)
+            output = c.output
+            c.close()
+            
+            # Parse output for Error code
+            # Looking for: "Error code ------------------> DIAG TEST SUCCESS" or "DIAG TEST FAIL"
+            error_code = None
+            total_failures = None
+            total_run_count = None
+            
+            # Extract Error code
+            error_match = re.search(r'Error\s+code\s+[-]+>\s+(.+)', output, re.IGNORECASE)
+            if error_match:
+                error_code = error_match.group(1).strip()
+            
+            # Extract Total run count
+            run_match = re.search(r'Total\s+run\s+count\s+[-]+>\s+(\d+)', output, re.IGNORECASE)
+            if run_match:
+                total_run_count = int(run_match.group(1).strip())
+
+            # Extract Total failure count
+            failure_match = re.search(r'Total\s+failure\s+count\s+[-]+>\s+(\d+)', output, re.IGNORECASE)
+            if failure_match:
+                total_failures = int(failure_match.group(1).strip())
+            
+            # Check if test failed based on Error code
+            if error_code:
+                # Check if error code contains FAIL or is not SUCCESS
+                if "FAIL" in error_code.upper() or "SUCCESS" not in error_code.upper():
+                    result = FAIL_O
+                    
+                    # Check if F2421 fault exists for this node
+                    fault_code = "F2421" if node_id in fault_per_node else "N/A"
+                    
+                    data.append([
+                        node_name,
+                        error_code,
+                        total_failures if total_failures else "N/A",
+                        fault_code
+                    ])
+                elif total_failures == total_run_count and total_run_count > 0:
+                    # Even if current status is SUCCESS, check if there were historical failures
+                    result = FAIL_O
+                    fault_code = "F2421" if node_id in fault_per_node else "N/A"
+                    
+                    data.append([
+                        node_name,
+                        error_code,
+                        total_failures,
+                        fault_code
+                    ])
+            else:
+                # Could not get test results or parse output
+                data.append([node_name, "SSD Diag Test results are not available", "N/A", "N/A"])
+                result = ERROR
+            
+        except pexpect.TIMEOUT:
+            data.append([node_name, "SSH Timeout", "N/A", "N/A"])
+            result = ERROR
+        except pexpect.EOF:
+            data.append([node_name, "SSH Connection Closed", "N/A", "N/A"])
+            result = ERROR
+        except Exception as e:
+            data.append([node_name, "Error: {}".format(str(e)), "N/A", "N/A"])
+            result = ERROR
+    
+    if result == PASS:
+        msg = "All switches passed SSD diagnostic test 24"
+        recommended_action = ""
+    elif result == FAIL_O:
+        msg = "SSD diagnostic test failures detected on {} switch(es)".format(len(data))
+    else:
+        msg = "Errors occurred while checking switches"
+        recommended_action = "Review the errors and retry the check if necessary"
+    
+    return Result(
+        result=result,
+        msg=msg,
+        headers=headers,
+        data=data,
+        recommended_action=recommended_action,
+        doc_url=doc_url
+    )
+
 # ---- Script Execution ----
 
 
@@ -6115,6 +6265,7 @@ class CheckManager:
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
+        switch_ssd_diag_test_check,
 
         # Configurations
         vpc_paired_switches_check,

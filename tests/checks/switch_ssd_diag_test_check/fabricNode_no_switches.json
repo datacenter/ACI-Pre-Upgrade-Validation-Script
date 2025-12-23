@@ -1,0 +1,32 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.1",
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "commissioned",
+        "id": "1",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "apic1",
+        "nodeType": "unspecified",
+        "role": "controller"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.2",
+        "dn": "topology/pod-1/node-2",
+        "fabricSt": "commissioned",
+        "id": "2",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "apic2",
+        "nodeType": "unspecified",
+        "role": "controller"
+      }
+    }
+  }
+]
