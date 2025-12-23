@@ -2229,9 +2229,9 @@ A shared service (VRF Route Leaking) contract with vzAny as a consumer may use m
 
 When Rule Expansion takes place after an upgrade, the increase in the TCAM space may result in TCAM overflow which can lead to traffic disruption because contracts that used to work may stop working.
 
-See [Inter-VRF contract with vzAny as the consumer][61] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, consider enabling the policy compression directive on contract filters to mitigate the increase of TCAM usage. However, note that enabling the policy compression directive will result in loss of the statistics capability for those rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
+See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, consider enabling the policy compression directive on contract filters to mitigate the increase of TCAM usage. However, note that enabling the policy compression directive will result in loss of the statistics capability for those rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
 
-See [Enable Policy Compression in Cisco ACI Contract Guide][62] for details about Policy Compression.
+See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
 
 
 ## Defect Check Details
