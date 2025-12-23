@@ -191,6 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Pending Contract Check][d29]                   | CSCwp99433   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #pending-contract-check
 
 
 ## General Check Details
@@ -2613,6 +2615,14 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### Pending Contract Check
+
+Due to [CSCwp99433][62], failed transactions during high-scale contract processing can cause pending contracts (`fvPndgCtrct`) to get permanently stuck in memory, preventing contract policies from being deployed to leaf switches. The issue occurs when performing operations that require significant contract reprocessing, such as changing VRF enforcement mode (enforced ↔ unenforced) for VRFs containing hundreds or thousands of contracts, bulk contract configuration changes, or large-scale tenant migrations. When triggered, the `policyelement` service fails multiple transactions but continues processing, leaving `fvPndgCtrct` objects stuck in the system.
+
+This script checks for the presence of pending contracts by querying `fvPndgCtrct` objects with a count in the affected version.
+
+If any instances of `fvPndgCtrct` are flagged by this script, Cisco TAC must be contacted to identify and resolve the stuck contracts.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2676,3 +2686,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp99433

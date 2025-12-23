@@ -6007,6 +6007,35 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+
+@check_wrapper(check_title='Pending Contract Check')
+def pending_contract_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Pending Contract Count"]
+    data = []
+    recommended_action = 'Pending contracts detected. Contact TAC to resolve stuck contract deployments before upgrade to prevent outage.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#pending-contract-check'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)   
+
+    if tversion.older_than('6.1(4h)'):
+        # Query fvPndgCtrct with count
+        fvPndgCtrct_count = icurl('class', 'fvPndgCtrct.json?rsp-subtree-include=count')
+        
+        if fvPndgCtrct_count:
+            count = int(fvPndgCtrct_count[0]['moCount']['attributes']['count'])
+            
+            if count > 0:
+                result = FAIL_O
+                data.append([str(count)])
+    
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6168,6 +6197,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        pending_contract_check,
 
     ]
     ssh_checks = [
