@@ -6007,6 +6007,37 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+
+@check_wrapper(check_title='OSPFv3 IPSec ESP ESN stuck in 0')
+def ospfv3_ipsec_esn_check(tversion, **kwargs):
+    result = PASS
+    headers = ["dn","Policy Name"]
+    data = []
+    recommended_action = 'Contact cisco TAC for Support.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ospfv3-ipsec-esn-stuck-in-0'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if (tversion.newer_than("6.1(1f)") or tversion.same_as("6.1(1f)")) and (tversion.older_than("6.1(4h)") or tversion.same_as("6.1(4h)")):
+        esp_config_api = 'fvProtoAuthPol.json?query-target-filter=and(wcard(fvProtoAuthPol.proto,"esp"))'
+
+        esp_configs = icurl('class', esp_config_api)
+
+        if esp_configs:
+            for esp in esp_configs:
+                policy_name = esp['fvProtoAuthPol']['attributes']['name']
+                dn = esp['fvProtoAuthPol']['attributes']['dn']
+                data.append([dn, policy_name])
+
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6168,6 +6199,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        ospfv3_ipsec_esn_check,
 
     ]
     ssh_checks = [

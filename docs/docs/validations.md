@@ -190,7 +190,8 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[OSPFv3 IPSec ESP ESN stuck in 0][d29]          | CSCwp66238   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #ospfv3-ipsec-esp-esn-stuck-in-0
 
 
 ## General Check Details
@@ -2614,6 +2616,15 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### OSPFv3 IPSec ESP ESN stuck in 0
+
+OSPFv3 (Open Shortest Path First for IPv6) can be protected with IPSec ESP, which encrypts and authenticates routing protocol packets. According to RFC4303, the ESP sequence number is a per-SA (Security Association) 32-bit counter that must increment by one for each packet sent.
+
+The bug [CSCwp66238][62] states that all ESP packets sent between ACI and NX-OS have seq=0, no matter how many packets are sent. The ESP implementation in both ACI and NX-OS is not incrementing the ESP sequence number per packet. The value stays at 0 after the Security Association (SA) is established. OSPFv3 adjacencies with ESP encryption may fail or become unstable when traversing devices that check for ESP sequence number increments, such as security appliances.
+
+The script identifies if the ESP protocol is configurd by checking the `fvProtoAuthPol` object. If present, then upgrade to the fixed version.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2676,3 +2687,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp66238
