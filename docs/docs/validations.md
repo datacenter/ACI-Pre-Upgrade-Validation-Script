@@ -191,6 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[AAA Provider DNS Name Configuration check][d29] | CSCwq57598  | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #aaa-provider-dns-name-configuration-check
 
 
 ## General Check Details
@@ -2612,6 +2614,14 @@ In ACI, there are internal objects which track the underlying transactions which
 Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
+
+
+### AAA Provider DNS Name Configuration check
+
+Due to `CSCwq57598`, spines hit kernel panic after the upgrade. SNMPd main process acquires a lock for memory operations at the same time, child SNMP process is spawned by the DNS Cache to resolve the AAA server name & inherently acquires parent mutex_lock state & eventually ends up in blocked state.
+
+This script identifies if APIC is configured with AAA Authentication providers (TACACS+, RADIUS, and LDAP) using hostname. If detected, contact cisco TAC support and upgrade to the fix version.
+
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
