@@ -1,0 +1,71 @@
+[
+    {
+        "fvProtoAuthPol": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-ten1ant/protoAuthPol-ipsec_pol1",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2025-12-23T10:13:32.132+00:00",
+                "monPolDn": "uni/tn-common/monepg-default",
+                "name": "ipsec_pol1",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "proto": "esp",
+                "spi": "256",
+                "status": "",
+                "uid": "15374",
+                "userdom": ":all:"
+            }
+        }
+    },
+    {
+        "fvProtoAuthPol": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-ten1ant/protoAuthPol-ipsec_pol2",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2025-12-23T10:13:32.132+00:00",
+                "monPolDn": "uni/tn-common/monepg-pol1_1",
+                "name": "ipsec_pol2",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "proto": "esp",
+                "spi": "256",
+                "status": "",
+                "uid": "15374",
+                "userdom": ":all:"
+            }
+        }
+    },
+    {
+        "fvProtoAuthPol": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-ten2ant/protoAuthPol-ipsec_pol3",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2025-12-23T10:13:32.132+00:00",
+                "monPolDn": "uni/tn-common/monepg-pol5_2",
+                "name": "ipsec_pol3",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "proto": "esp",
+                "spi": "256",
+                "status": "",
+                "uid": "15374",
+                "userdom": ":all:"
+            }
+        }
+    }
+]
