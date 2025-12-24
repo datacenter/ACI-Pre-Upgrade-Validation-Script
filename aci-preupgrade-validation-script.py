@@ -6012,7 +6012,7 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ["Rogue Exception MACs Count", "presListener Count"]
     data = []
-    recommended_action = 'Add the missing MAC addresses to the rogue EP/COOP exception list before upgrade'
+    recommended_action = 'Remove the affected EP exception configurations and re-add them'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-epcoop-exception-macs-missing'
 
     # Target version check

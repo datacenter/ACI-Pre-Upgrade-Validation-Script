@@ -2687,4 +2687,4 @@ As a workaround, remove the affected EP exception configurations and re-add them
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
-[62]: https://cdetsng.cisco.com/summary/#/defect/CSCwp64296
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
