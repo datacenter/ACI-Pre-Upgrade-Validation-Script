@@ -190,7 +190,8 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[Rogue EP/COOP Exception MACs missing][d29]     | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #rogue-epcoop-exception-macs-missing
 
 
 ## General Check Details
@@ -2614,6 +2616,15 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Rogue EP/COOP Exception MACs missing
+
+Due to the defect [CSCwp64296][62], rogue endpoint (EP) and COOP exception MAC address configurations may be lost after a stateless reload of spine switches in an ACI fabric. The `presListener` MO, which holds the exception list configuration for the tenant shard, is missing or incomplete on the APIC side. This leads to spine switches not receiving the `rogueBDDef` configuration after reload.
+
+This script checks if the APIC version is in the affected range, whether rogue MACs are configured in the exception list, and if `presListener` MOs are missing. If all conditions are met, the check will flag the fabric as susceptible to CSCwp64296.
+
+As a workaround, remove the affected EP exception configurations and re-add them. To permanently resolve the issue, contact Cisco TAC to create the missing `presListener` MOs.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2676,3 +2687,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://cdetsng.cisco.com/summary/#/defect/CSCwp64296
