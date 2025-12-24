@@ -1605,6 +1605,7 @@ def icurl(apitype, query, page_size=100000):
         # should contain entries. This may happen when there are too many queries
         # such as multiple same queries at the same time.
         if int(data['totalCount']) > 0 and not data['imdata']:
+            break
             raise Exception("API response empty with totalCount:{}. APIC may be too busy. Try again later.".format(data["totalCount"]))
         total_imdata += data['imdata']
         total_cnt = int(data['totalCount'])
