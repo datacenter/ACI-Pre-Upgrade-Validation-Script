@@ -1,0 +1,106 @@
+[
+    {
+        "aaaTacacsPlusProvider": {
+            "attributes": {
+                "SSLValidationLevel": "permissive",
+                "annotation": "",
+                "authProtocol": "pap",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/userext/tacacsext/tacacsplusprovider-10.0.0.1",
+                "enableTLS": "no",
+                "epgDn": "",
+                "extMngdBy": "",
+                "keyring": "",
+                "lcOwn": "local",
+                "modTs": "2025-12-17T05:26:53.215+00:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "monitorServer": "disabled",
+                "monitoringUser": "default",
+                "name": "10.0.0.1",
+                "nameAlias": "",
+                "operState": "unknown",
+                "ownerKey": "",
+                "ownerTag": "",
+                "port": "49",
+                "retries": "1",
+                "snmpIndex": "1",
+                "status": "",
+                "timeout": "5",
+                "tp": "",
+                "uid": "15374",
+                "userdom": ":all:",
+                "vrfName": ""
+            }
+        }
+    },
+    {
+        "aaaRadiusProvider": {
+            "attributes": {
+                "annotation": "",
+                "authPort": "1812",
+                "authProtocol": "pap",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/userext/radiusext/radiusprovider-192.168.1.100",
+                "epgDn": "",
+                "extMngdBy": "",
+                "includeMsgAuth": "no",
+                "lcOwn": "local",
+                "modTs": "2025-12-23T05:40:49.902+00:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "monitorServer": "disabled",
+                "monitoringUser": "default",
+                "name": "192.168.1.100",
+                "nameAlias": "",
+                "operState": "unknown",
+                "ownerKey": "",
+                "ownerTag": "",
+                "retries": "1",
+                "snmpIndex": "3",
+                "status": "",
+                "timeout": "5",
+                "uid": "15374",
+                "userdom": ":all:",
+                "vrfName": ""
+            }
+        }
+    },
+    {
+        "aaaLdapProvider": {
+            "attributes": {
+                "SSLValidationLevel": "strict",
+                "annotation": "",
+                "attribute": "CiscoAVPair",
+                "authMethod": "LdapBind",
+                "basedn": "",
+                "childAction": "",
+                "descr": "test",
+                "dn": "uni/userext/ldapext/ldapprovider-10.10.10.50",
+                "enableSSL": "no",
+                "epgDn": "",
+                "extMngdBy": "",
+                "filter": "cn=$userid",
+                "lcOwn": "local",
+                "modTs": "2025-12-23T05:39:47.423+00:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "monitorServer": "disabled",
+                "monitoringUser": "default",
+                "name": "10.10.10.50",
+                "nameAlias": "",
+                "operState": "unknown",
+                "ownerKey": "",
+                "ownerTag": "",
+                "port": "389",
+                "retries": "1",
+                "rootdn": "",
+                "snmpIndex": "2",
+                "status": "",
+                "timeout": "30",
+                "uid": "15374",
+                "userdom": ":all:",
+                "vrfName": ""
+            }
+        }
+    }
+]

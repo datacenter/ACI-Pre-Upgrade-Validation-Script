@@ -6007,6 +6007,57 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+
+@check_wrapper(check_title='AAA Provider DNS Name Configuration check')
+def aaa_snmpd_dns_provider_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Provider Type", "Provider Name", "Provider DN"]
+    data = []
+    recommended_action = 'Contact Cisco TAC for Support before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#aaa-provider-dns-name-configuration-check'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.1(5e)"):
+
+        # Query for all AAA providers (TACACS+, RADIUS, and LDAP)
+        provider_api = 'uni.json?query-target=subtree&target-subtree-class=aaaTacacsPlusProvider,aaaRadiusProvider,aaaLdapProvider'
+        providers = icurl('mo', provider_api)
+
+        # Regular expression to detect DNS names (not IP addresses)
+        dns_name_pattern = r'[a-zA-Z]'
+
+        for provider in providers:
+            provider_type = None
+            provider_name = None
+            provider_dn = None
+
+            if 'aaaRadiusProvider' in provider:
+                provider_type = 'RADIUS'
+                provider_name = provider['aaaRadiusProvider']['attributes']['name']
+                provider_dn = provider['aaaRadiusProvider']['attributes']['dn']
+            elif 'aaaLdapProvider' in provider:
+                provider_type = 'LDAP'
+                provider_name = provider['aaaLdapProvider']['attributes']['name']
+                provider_dn = provider['aaaLdapProvider']['attributes']['dn']
+            elif 'aaaTacacsPlusProvider' in provider:
+                provider_type = 'TACACS+'
+                provider_name = provider['aaaTacacsPlusProvider']['attributes']['name']
+                provider_dn = provider['aaaTacacsPlusProvider']['attributes']['dn']
+
+            # Check if the provider name contains DNS name (has alphabetic characters)
+            if provider_name and re.search(dns_name_pattern, provider_name):
+                data.append([provider_type, provider_name, provider_dn])
+
+        if data:
+            result = FAIL_O
+    else:
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+    
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6168,6 +6219,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        aaa_snmpd_dns_provider_check,
 
     ]
     ssh_checks = [
