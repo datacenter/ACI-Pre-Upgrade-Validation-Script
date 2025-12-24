@@ -1,0 +1,103 @@
+===================================================================== test session starts ======================================================================
+platform linux -- Python 3.8.10, pytest-7.4.0, pluggy-1.2.0 -- /data/ssd/psureshb/repo/pytest_env/bin/python3
+cachedir: .pytest_cache
+rootdir: /data/ssd/psureshb/repo/preCFD/ACI-Pre-Upgrade-Validation-Script
+configfile: pytest.ini
+collected 13 items                                                                                                                                             
+
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_non_affected_tversion_affected_cversion_no_exception_MACs] 
+------------------------------------------------------------------------ live log setup ------------------------------------------------------------------------
+[10:45:39.988 INFO     init_system:6066(MainThread)] Cleaning up previous run files in preupgrade_validator_logs/
+[10:45:39.989 INFO     init_system:6068(MainThread)] Creating directories preupgrade_validator_logs/ and preupgrade_validator_logs/json_results/
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:39.990 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:39.991 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:39.991 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:39.992 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [  7%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_non_affected_cversion_affected_tversion_no_exception_MACs] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.003 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.004 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.004 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.005 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 15%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_non_affected_cversion_tversion_no_exception_MACs] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.016 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.017 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.018 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.019 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 23%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_non_affected_cversion_tversion_with_exception_MACs] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.032 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.032 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.033 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.033 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 30%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_affected_edge_cversion_tversion_no_exception_MACs] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.046 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.047 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.048 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.048 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 38%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_affected_cversion_tversion_no_exception_MACs] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.061 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.062 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.063 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.063 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 46%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_affected_cversion_tversion_exception_MACs_with_exceptcont_listeners] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.076 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.077 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.077 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.078 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 53%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[PASS_affected_edge_cversion_tversion_exception_MACs_with_exceptcont_listeners] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.092 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.093 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.093 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.094 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 61%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[MANUAL_tversion_not_provided] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.107 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.108 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.108 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check| 0/1 checks completed
+[10:45:40.109 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 69%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[FAIL_affected_edge_cversion_tversion_exception_MACs_one_missing_exceptcont_listener] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.122 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.122 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.123 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check| 0/1 checks completed
+[10:45:40.124 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 76%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[FAIL_affected_cversion_tversion_exception_MACs_31_missing_exceptcont_listeners] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.138 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.139 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.139 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check| 0/1 checks completed
+[10:45:40.140 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 84%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[FAIL_affected_cversion_tversion_exception_MACs_many_missing_exceptcont_listeners] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.153 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.153 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.154 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check| 0/1 checks completed
+[10:45:40.155 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [ 92%]
+tests/checks/rogue_ep_coop_exception_mac_check/test_rogue_ep_coop_exception_mac_check.py::test_rogue_ep_coop_exception_mac_check[FAIL_affected_cversion_tversion_exception_MACs_no_exceptcont_listeners] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:45:40.167 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+[10:45:40.168 INFO     _start_thread:1105(MainThread)] (rogue_ep_coop_exception_mac_check) Starting thread.
+[10:45:40.168 INFO     wrapper:1349(rogue_ep_coop_exception_mac_check)] Start rogue_ep_coop_exception_mac_check
+[10:45:40.169 INFO     update_result:1191(rogue_ep_coop_exception_mac_check)] Finalized result in preupgrade_validator_logs/json_results/rogue_ep_coop_exception_mac_check.json
+PASSED                                                                                                                                                   [100%]
+
+====================================================================== 13 passed in 0.20s ======================================================================
