@@ -6007,6 +6007,42 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+
+@check_wrapper(check_title='NTP sync issue in Leaf as NTP server')
+def leaf_ntp_sync_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ['policy dn', 'pod group name', 'policy name']
+    data = []
+    recommended_action = 'NTP wont sync between leaf as NTP server and host. makesure to use in-band ip for NTP server in leaf or checkout the bug CSCwp92030 for fixed version details'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ntp-sync-issue-in-leaf-as-ntp-server'
+
+    fabricRsTimePol_api = 'fabricRsTimePol.json'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.newer_than('6.1(4.28)'):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    if (cversion.newer_than('1.1(1a)') and cversion.older_than('6.1(4.20)')) or (tversion.newer_than('1.1(1a)') and tversion.older_than('6.1(4.20)')):
+        fabricRsTimePol = icurl('class', fabricRsTimePol_api)
+        for rstimepol in fabricRsTimePol:
+            rstimepol_attr = rstimepol['fabricRsTimePol']['attributes']
+            pol_dn = rstimepol_attr['tDn']
+            pol_name = rstimepol_attr['tnDatetimePolName']
+            match = re.search(r'podpgrp-([^/]+)', rstimepol_attr['dn'])
+            pod_group = match.group(1) if match else None
+            pol_res = icurl('mo', pol_dn + '.json')
+            pol_attr = pol_res[0]['datetimePol']['attributes']
+            if pol_attr['serverState'] == 'enabled' and pol_attr['masterMode'] == 'enabled':
+                data.append([pol_attr['dn'], pod_group, pol_name])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    
+
 # ---- Script Execution ----
 
 
@@ -6168,6 +6204,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        leaf_ntp_sync_check,
 
     ]
     ssh_checks = [
