@@ -2622,9 +2622,7 @@ OSPFv3 (Open Shortest Path First for IPv6) can be protected with IPSec ESP, whic
 
 The bug [CSCwp66238][62] states that all ESP packets sent between ACI and NX-OS have seq=0, no matter how many packets are sent. The ESP implementation in both ACI and NX-OS is not incrementing the ESP sequence number per packet. The value stays at 0 after the Security Association (SA) is established. OSPFv3 adjacencies with ESP encryption may fail or become unstable when traversing devices that check for ESP sequence number increments, such as security appliances.
 
-The ESP protocol field present in instances of `fvProtoAuthPol` of affected versions will produce this issue. The script validated if the targer version falls under the affected version range and check if the ESP is present. The affected version range is 6.1(1f) to 6.1(4h).
-
-If found, the target version of your upgrade should be a version with a fix for CSCwp66238.
+The script identifies if the ESP protocol is configurd by checking the `fvProtoAuthPol` object. If present, then upgrade to the fixed version.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

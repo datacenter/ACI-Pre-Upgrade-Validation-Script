@@ -6013,29 +6013,24 @@ def ospfv3_ipsec_esn_check(tversion, **kwargs):
     result = PASS
     headers = ["dn","Policy Name"]
     data = []
-    recommended_action = 'Upgrade to a version with the fix for CSCwp64212. Current target version is affected.'
+    recommended_action = 'Contact cisco TAC for Support.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ospfv3-ipsec-esn-stuck-in-0'
 
     if not tversion:
-        prints("Target version is required for this check.")
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (tversion.newer_than("6.1(1f)") or tversion.same_as("6.1(1f)")) and (tversion.older_than("6.1(4h)") or tversion.same_as("6.1(4h)")):
-        # ospfIPSec_api = 'ospfv3IPsec.json'
-        prints("Checking for OSPFv3 IPSec ESP ESN policies...")
         esp_config_api = 'fvProtoAuthPol.json?query-target-filter=and(wcard(fvProtoAuthPol.proto,"esp"))'
 
         esp_configs = icurl('class', esp_config_api)
 
         if esp_configs:
-            for item in esp_configs:
-                prints("ESP config found: {}".format(item['fvProtoAuthPol']['attributes']['dn']))
-                policy_name = item['fvProtoAuthPol']['attributes']['name']
-                dn = item['fvProtoAuthPol']['attributes']['dn']
+            for esp in esp_configs:
+                policy_name = esp['fvProtoAuthPol']['attributes']['name']
+                dn = esp['fvProtoAuthPol']['attributes']['dn']
                 data.append([dn, policy_name])
 
     else:
-        prints("Non affected target version for this check.")
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     if data:

@@ -1,0 +1,74 @@
+===================================================================== test session starts ======================================================================
+platform linux -- Python 3.8.10, pytest-7.4.0, pluggy-1.2.0 -- /data/ssd/psureshb/repo/pytest_env/bin/python3
+cachedir: .pytest_cache
+rootdir: /data/ssd/psureshb/repo/preCFD/ACI-Pre-Upgrade-Validation-Script
+configfile: pytest.ini
+collected 9 items                                                                                                                                              
+
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[PASS - Target version in affected range, IPSec ESP not enabled] 
+------------------------------------------------------------------------ live log setup ------------------------------------------------------------------------
+[10:34:03.145 INFO     init_system:6066(MainThread)] Creating directories preupgrade_validator_logs/ and preupgrade_validator_logs/json_results/
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.146 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.147 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.148 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.149 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 11%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[PASS - Target version in lower affected version, IPSec ESP not enabled] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.160 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.161 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.162 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.163 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 22%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[PASS - Target version in upper affected version, IPSec ESP not enabled] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.176 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.177 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.178 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.179 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 33%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[NA - Target version below affected range] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.191 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.192 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.193 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.194 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 44%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[NA - Target version above affected range] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.205 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.206 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.207 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.207 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 55%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[MANUAL - Target version not provided] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.220 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.221 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.221 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check----------------------| 0/1 checks completed
+[10:34:03.222 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 66%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[FAIL - Target version in affected range, IPSec ESP enabled] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.235 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.236 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.236 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.238 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 77%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[FAIL - Target version in lower affected version, IPSec ESP enabled] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.251 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.251 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.252 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check----------------------| 0/1 checks completed
+[10:34:03.253 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [ 88%]
+tests/checks/ospfv3_ipsec_esn_check/test_ospfv3_ipsec_esn_check.py::test_ospfv3_ipsec_esn_check[FAIL - Target version in upper affected version, IPSec ESP enabled] 
+------------------------------------------------------------------------ live log call -------------------------------------------------------------------------
+[10:34:03.266 INFO     init_result:1182(MainThread)] Initialized in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+[10:34:03.267 INFO     _start_thread:1105(MainThread)] (ospfv3_ipsec_esn_check) Starting thread.
+[10:34:03.267 INFO     wrapper:1349(ospfv3_ipsec_esn_check)] Start ospfv3_ipsec_esn_check
+[10:34:03.268 INFO     update_result:1191(ospfv3_ipsec_esn_check)] Finalized result in preupgrade_validator_logs/json_results/ospfv3_ipsec_esn_check.json
+PASSED                                                                                                                                                   [100%]
+
+====================================================================== 9 passed in 0.14s =======================================================================
