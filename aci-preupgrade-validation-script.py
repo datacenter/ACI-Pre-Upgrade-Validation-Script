@@ -6034,7 +6034,7 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
             pod_group = match.group(1) if match else None
             pol_res = icurl('mo', pol_dn + '.json')
             pol_attr = pol_res[0]['datetimePol']['attributes']
-            if pol_attr['serverState'] == 'enabled' and pol_attr['masterMode'] == 'enabled':
+            if pol_attr['serverState'] == 'enabled':
                 data.append([pol_attr['dn'], pod_group, pol_name])
 
     if data:
