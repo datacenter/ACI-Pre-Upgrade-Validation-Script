@@ -1,0 +1,28 @@
+[
+        {
+            "fabricRsTimePol": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "dn": "uni/fabric/funcprof/podpgrp-default/rsTimePol",
+                    "extMngdBy": "",
+                    "forceResolve": "yes",
+                    "lcOwn": "local",
+                    "modTs": "2025-12-23T07:43:09.740+00:00",
+                    "monPolDn": "",
+                    "rType": "mo",
+                    "state": "formed",
+                    "stateQual": "none",
+                    "status": "",
+                    "tCl": "datetimePol",
+                    "tContextDn": "",
+                    "tDn": "uni/fabric/time-default",
+                    "tRn": "time-default",
+                    "tType": "name",
+                    "tnDatetimePolName": "default",
+                    "uid": "0",
+                    "userdom": "all"
+                }
+            }
+        }
+    ]

@@ -191,6 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[NTP sync issue in Leaf as NTP server][d29]     | CSCwq28721   | :white_check_mark: |
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,7 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-
+[d29]: #NTP-sync-issue-in-Leaf-as-NTP-server
 
 ## General Check Details
 
@@ -2614,6 +2615,18 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### NTP sync issue in Leaf as NTP server
+
+RCA:
+After the ACI fabric upgraded to affected version, In setup which has leaf switch as NTP server, Destination Ip of NTP request coming from Host(NTP client) is not stored and resused as Source when reply back from leaf side.
+Details information => Sendpkt in NTP(3rd party) code supports only the immediate source interface ip.Mechanism to store the starting source ip address must be present so that packets can be send to the starting source ip addr.
+
+IMPACT:
+After the upgrade, NTP stopped working correctly between the endpoints and the master node (leaf switches). NTP request is being sent with the BD SVI IP as expected, but the leaf switch is responding with a different BD IP in the same VRF, leading to NTP response rejected from the endpoints.
+
+Suggestion:
+Use IP address from a VRF which only has one IP address on the switch, example would be inband VRF(in-band ip) which would usually have only one IP address or move to fixed version refer [CSCwp92030][62].
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2676,3 +2689,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp92030
