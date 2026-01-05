@@ -151,6 +151,7 @@ class Connection(object):
         self._term_len = 0  # terminal length for cisco devices
         self._login = False  # set to true at first successful login
         self._log = None  # private variable for tracking logfile state
+        self.bind_ip = None  # optional source IP to bind for SSH
 
     def __connected(self):
         # determine if a connection is already open
@@ -207,6 +208,8 @@ class Connection(object):
                 "spawning new pexpect connection: ssh %s@%s -p %d" % (self.username, self.hostname, self.port))
             no_verify = " -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
             if self.verify: no_verify = ""
+            if self.bind_ip:
+                no_verify += " -b %s" % self.bind_ip
             self.child = pexpect.spawn("ssh %s %s@%s -p %d" % (no_verify, self.username, self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
         elif self.protocol.lower() == "telnet":
