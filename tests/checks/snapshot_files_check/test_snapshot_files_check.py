@@ -23,7 +23,7 @@ apic_single_ips = [
     if node["fabricNode"]["attributes"]["role"] == "controller"
 ]
 
-grep_cmd = 'tail -n 1000 /data/techsupport/snapshotfile1.txt | grep "GET /snapshots" | grep 404'
+grep_cmd = 'tail -n 1000 /var/log/dme/log/access.log | grep "GET /snapshots" | grep 404'
 
 # Sample log output with 10+ requests within 2 minutes (issue detected)
 grep_output_issue = """10.0.0.3 (-) - - [24/Dec/2025:14:30:06 +0000] "GET /snapshots/ce2_backup_policy-2025-12-24T14-30-06.tar.gz HTTP/1.1" 404 151 "-" "-"
@@ -46,14 +46,14 @@ grep_output_no_issue = """10.0.0.3 (-) - - [24/Dec/2025:14:30:15 +0000] "GET /sn
 """
 
 grep_output_no_file = """\
-grep: /data/techsupport/snapshotfile1.txt: No such file or directory
+grep: /var/log/dme/log/access.log: No such file or directory
 fabric-apic#
 """
 
 # Edge case: Empty log output (no 404 requests found)
 grep_output_empty = ""
 
-# Edge case: Exactly 10 requests within 60 seconds (boundary - should trigger)
+# Edge case: Exactly 10 requests within 60 seconds 
 grep_output_boundary_fail = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GET /snapshots/ce2_snapshot1.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:30:06 +0000] "GET /snapshots/ce2_snapshot2.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:30:12 +0000] "GET /snapshots/ce2_snapshot3.tar.gz HTTP/1.1" 404 151 "-" "-"
@@ -66,7 +66,7 @@ grep_output_boundary_fail = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
 10.0.0.3 (-) - - [24/Dec/2025:14:30:54 +0000] "GET /snapshots/ce2_snapshot10.tar.gz HTTP/1.1" 404 151 "-" "-"
 """
 
-# Edge case: 9 requests within 60 seconds (should pass - below threshold)
+# Edge case: 9 requests within 60 seconds
 grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GET /snapshots/ce2_snapshot1.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:30:08 +0000] "GET /snapshots/ce2_snapshot2.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:30:16 +0000] "GET /snapshots/ce2_snapshot3.tar.gz HTTP/1.1" 404 151 "-" "-"

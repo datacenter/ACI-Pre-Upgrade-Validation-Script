@@ -6041,13 +6041,13 @@ def snapshot_files_check(fabric_nodes, cversion, username, password, **kwargs):
                 c.log = LOG_FILE
                 c.connect()
             except Exception as e:
-                data.append([apic_id, apic_name])
+                data.append([apic_id, apic_name, str(e)])
                 has_error = True
                 continue
             try:
                 c.cmd('tail -n 1000 /var/log/dme/log/access.log | grep "GET /snapshots" | grep 404')
                 access_logs = c.output.splitlines()
-                if len(access_logs)<15 and any("No such file or directory" in line for line in access_logs):
+                if len(access_logs) < 15 and any("No such file or directory" in line for line in access_logs):
                     data.append([apic_id, apic_name, '/var/log/dme/log/access.log not found'])
                     has_error = True
                     continue
