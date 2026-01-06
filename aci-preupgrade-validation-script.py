@@ -65,7 +65,7 @@ dom_regex = r"uni/(?:vmmp-[^/]+/)?(?P<type>phys|l2dom|l3dom|dom)-(?P<dom>[^/]+)"
 
 tz = time.strftime('%z')
 ts = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
-BUNDLE_NAME = 'preupgrade_validator_sudharson1_%s%s.tgz' % (ts, tz)
+BUNDLE_NAME = 'preupgrade_validator_%s%s.tgz' % (ts, tz)
 DIR = 'preupgrade_validator_logs/'
 JSON_DIR = os.path.join(DIR, 'json_results/')
 META_FILE = os.path.join(DIR, 'meta.json')
@@ -6008,25 +6008,22 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
-@check_wrapper(check_title='infinite snapshot file access check')
-def infinite_snapshot_file_access_check(fabric_nodes, cversion, username, password, **kwargs):
+@check_wrapper(check_title='Snapshot files check')
+def snapshot_files_check(fabric_nodes, cversion, username, password, **kwargs):
     result = PASS
     headers = ['apic_id', 'apic_name', 'snapshot_files']
     data = []
     recommended_action = 'Contact Cisco TAC for Support before upgrade'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infinite-snapshot-file-access-check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#Snapshot-files-check'
     if cversion.older_than('6.0(3d)'):
         apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
-        log.debug("APIC nodes found: %s", apics)
         if not apics:
             return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
         # `fabricNode` in pre-4.0 does not have `address`
         if not apics[0]["fabricNode"]["attributes"].get("address"):
             apic1 = [apic for apic in apics if apic["fabricNode"]["attributes"]["id"] == "1"][0]
-            log.debug("Re-fetching infraWiNode.json from APIC-1 using : %s", apic1)
             apic1_dn = apic1["fabricNode"]["attributes"]["dn"]
             apics = icurl("class", "{}/infraWiNode.json".format(apic1_dn))
-            log.debug("Re-fetched infraWiNode.json from APIC-1: %s", apics)
         has_error = False
         for apic in apics:
             if apic.get("fabricNode"):
@@ -6048,16 +6045,17 @@ def infinite_snapshot_file_access_check(fabric_nodes, cversion, username, passwo
                 has_error = True
                 continue
             try:
-                """ c.cmd('tail -n 1000 /var/log/dme/log/access.log | grep "GET /snapshots" | grep 404') """
-                c.cmd('tail -n 1000 /data/techsupport/snapshotfile.txt | grep "GET /snapshots" | grep 404')
+                c.cmd('tail -n 1000 /var/log/dme/log/access.log | grep "GET /snapshots" | grep 404')
                 access_logs = c.output.splitlines()
-                
-                requests = []  # [(timestamp, filename), ...]
+                if len(access_logs)<15 and any("No such file or directory" in line for line in access_logs):
+                    data.append([apic_id, apic_name, '/var/log/dme/log/access.log not found'])
+                    has_error = True
+                    continue
+
+                requests = []
 
                 for line in access_logs:
-                    # Extract timestamp: [22/Dec/2025:04:05:02 +0000]
                     timestamp_match = re.search(r'\[(\d{1,2}/\w{3}/\d{4}):(\d{2}:\d{2}:\d{2})', line)
-                    # Extract filename: ce2_NDI_EXPORT_POLICY-2025-12-22T10-04-36.tar.gz
                     filename_match = re.search(r'GET /snapshots/([^\s]+)', line)
                     
                     if timestamp_match and filename_match:
@@ -6071,11 +6069,11 @@ def infinite_snapshot_file_access_check(fabric_nodes, cversion, username, passwo
 
                 requests.sort()
 
-                # Checking if any 10 consecutive requests are within 2 minutes
+                # Checking if any 10 consecutive requests are within 1 minute
                 if len(requests) >= 10:
                     for i in range(len(requests) - 9):
                         time_diff = (requests[i + 9][0] - requests[i][0]).total_seconds()
-                        if time_diff <= 120:
+                        if time_diff <= 60:
                             window_files = [filename for _, filename in requests[i:i+10]]
                             for filename in window_files:
                                 data.append([apic_id, apic_name, filename])
@@ -6085,10 +6083,12 @@ def infinite_snapshot_file_access_check(fabric_nodes, cversion, username, passwo
                 data.append([apic_id, apic_name, str(e)])
                 has_error = True
                 continue
+
         if has_error:
             result = ERROR
         elif data:
             result = FAIL_UF
+
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
@@ -6253,7 +6253,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
-        infinite_snapshot_file_access_check,
+        snapshot_files_check,
 
     ]
     ssh_checks = [
