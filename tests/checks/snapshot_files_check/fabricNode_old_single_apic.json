@@ -1,0 +1,32 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "unknown",
+        "nodeType": "unspecified",
+        "id": "1",
+        "version": "A",
+        "role": "controller",
+        "adSt": "on",
+        "name": "apic1",
+        "model": "APIC-SERVER-M1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101",
+        "fabricSt": "active",
+        "nodeType": "unspecified",
+        "id": "101",
+        "version": "A",
+        "role": "leaf",
+        "adSt": "on",
+        "name": "leaf101",
+        "model": "N9K-C93180YC-EX"
+      }
+    }
+  }
+]

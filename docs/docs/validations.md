@@ -191,6 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Snapshot files check][d29]                     | CSCwe07002   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,7 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-
+[d29]: #Snapshot-files-check
 
 ## General Check Details
 
@@ -2614,6 +2615,18 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Snapshot files check
+
+RCA:
+Issue occured in 3 node apic cluster, AE process on one apic is busy. Reason is it's trying to fetch the snapshot files which was taken earlier is missing on all apics.
+
+IMPACT:
+Access logs will be flooded with the GET calls. APIC Upgrade/downgrade will fail with message Installer Exited - Pre-upgrade callbacks were not completed.
+
+Suggestion:
+Restart AE on each APIC one at a time. For Reference [CSCwe07002][62].
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2676,3 +2689,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe07002
