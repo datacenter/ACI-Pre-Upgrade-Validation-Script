@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.0.0"
+SCRIPT_VERSION = "v4.0.1"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
