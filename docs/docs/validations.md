@@ -193,7 +193,6 @@ Items                                           | Defect       | This Script    
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
 [active_node_presListener_mo_object_check][d29] | CSCwn81692   | :white_check_mark: | :no_entry_sign:
 
-
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
 [d3]: #contract-port-22-defect
