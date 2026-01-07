@@ -5970,7 +5970,6 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-<<<<<<< HEAD
 @check_wrapper(check_title="Disabled Cipher Configuration")
 def disabled_cipher_check(tversion, username, password, fabric_nodes, **kwargs):
     headers = ["APIC", "Disabled Cipher Count", "Nginx Log Check Status"]
@@ -6084,7 +6083,7 @@ def disabled_cipher_check(tversion, username, password, fabric_nodes, **kwargs):
     else:
         result = PASS
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-=======
+
 
 @check_wrapper(check_title='APIC VMM inventory sync fault (F0132)')
 def apic_vmm_inventory_sync_faults_check(**kwargs):
@@ -6121,7 +6120,6 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         unformatted_data=unformatted_data,
         recommended_action=recommended_action,
         doc_url=doc_url)
->>>>>>> upstream/master
 
 # ---- Script Execution ----
 
