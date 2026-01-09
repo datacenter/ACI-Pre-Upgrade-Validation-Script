@@ -1,0 +1,53 @@
+ [
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1104/sys/ch/supslot-1/sup/flash",
+                    "model": "Micron_5100_MTFDDAV240TCB",
+                    "rev": "D0MU073",
+                    "ser": "PHYH2515051U240J"
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1105/sys/ch/supslot-1/sup/flash",
+                    "model": "Micron_5400_MTFDDAV240TGA",
+                    "rev": "D4CN001",
+                    "ser": "BTYH2262071T240J"
+                   
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1102/sys/ch/supslot-1/sup/flash",
+                    "model": "Micron_5300_MTFDDAV240TGA",
+                    "rev": "D3CN002",
+                    "ser": "PHYH251504SK240J"
+                }
+            }
+        },
+         {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1102/sys/ch/supslot-1/sup/flash",
+                    "model": "Micron_5300_MTFDDAV240TGA",
+                    "rev": "D3MU004",
+                    "ser": "PHYH251504SK240J"
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1101/sys/ch/supslot-1/sup/flash",
+                    "model": "SSDSCKKB240G8K",
+                    "rev": "XC311132",
+                    "ser": "PHYH239002C0240J"
+                }
+            }
+        }
+]
