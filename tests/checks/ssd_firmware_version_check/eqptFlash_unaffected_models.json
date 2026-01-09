@@ -1,0 +1,49 @@
+ [
+        {
+            "eqptFlash": {
+                "attributes": {
+                   
+                    "dn": "topology/pod-1/node-1104/sys/ch/supslot-1/sup/flash",
+                    "model": "SSDSCKKB240G8K",
+                    "rev": "XC311132"
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1105/sys/ch/supslot-1/sup/flash",
+                    "model": "SSDSCKKB240G8K",
+                    "rev": "XC311132"
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1102/sys/ch/supslot-1/sup/flash",
+                    "model": "SSDSCKKB240G8K",
+                    "rev": "XC311132"
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1103/sys/ch/supslot-1/sup/flash",
+                    "model": "SSDSCKKB240G8K",
+                    "rev": "XC311132"
+                   
+                }
+            }
+        },
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-2/node-1109/sys/ch/supslot-1/sup/flash",
+                    "model": "SSDSCKKB240G8K",
+                    "rev": "XC311132"
+                }
+            }
+        }
+]
