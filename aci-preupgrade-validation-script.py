@@ -6024,7 +6024,7 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
     if tversion.newer_than('6.1(4.28)'):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
-    if (cversion.newer_than('1.1(1a)') and cversion.older_than('6.1(4.20)')) or (tversion.newer_than('1.1(1a)') and tversion.older_than('6.1(4.20)')):
+    if (cversion.newer_than('6.1(1f)') and cversion.older_than('6.1(4.28)')) or (tversion.newer_than('6.1(1f)') and tversion.older_than('6.1(4.28)')):
         fabricRsTimePol = icurl('class', fabricRsTimePol_api)
         for rstimepol in fabricRsTimePol:
             rstimepol_attr = rstimepol['fabricRsTimePol']['attributes']
