@@ -5471,7 +5471,7 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
         "\n\tConfirm that within these BDs the PBR configuration is complete."
         "\n\tPlease check the reference document for details."
     )
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service_ep_flag_bd"
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
@@ -5789,7 +5789,6 @@ def get_checks(api_only, debug_function):
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
-        service_ep_flag_bd_check,
 
     ]
     conn_checks = [
