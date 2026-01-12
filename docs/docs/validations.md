@@ -2620,7 +2620,7 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 Due to `CSCwq57598`, spines hit kernel panic after the upgrade. SNMPd main process acquires a lock for memory operations at the same time, child SNMP process is spawned by the DNS Cache to resolve the AAA server name & inherently acquires parent mutex_lock state & eventually ends up in blocked state.
 
-This script identifies if APIC is configured with AAA Authentication providers (TACACS+, RADIUS, and LDAP) using hostname. If detected, contact cisco TAC support and upgrade to the fix version.
+This script identifies if APIC is configured with AAA Authentication providers (TACACS+, RADIUS, and LDAP) using hostname and enabled SNMP policies. If detected, contact cisco TAC support and upgrade to the fix version.
 
 
 

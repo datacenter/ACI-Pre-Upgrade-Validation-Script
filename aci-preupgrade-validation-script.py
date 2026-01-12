@@ -6011,7 +6011,7 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
 @check_wrapper(check_title='AAA Provider DNS Name Configuration check')
 def aaa_snmpd_dns_provider_check(tversion, **kwargs):
     result = PASS
-    headers = ["Provider Type", "Provider Name", "Provider DN"]
+    headers = ["Configuration Type", "Name"]
     data = []
     recommended_action = 'Contact Cisco TAC for Support before upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#aaa-provider-dns-name-configuration-check'
@@ -6031,27 +6031,33 @@ def aaa_snmpd_dns_provider_check(tversion, **kwargs):
         for provider in providers:
             provider_type = None
             provider_name = None
-            provider_dn = None
 
             if 'aaaRadiusProvider' in provider:
                 provider_type = 'RADIUS'
                 provider_name = provider['aaaRadiusProvider']['attributes']['name']
-                provider_dn = provider['aaaRadiusProvider']['attributes']['dn']
             elif 'aaaLdapProvider' in provider:
                 provider_type = 'LDAP'
                 provider_name = provider['aaaLdapProvider']['attributes']['name']
-                provider_dn = provider['aaaLdapProvider']['attributes']['dn']
             elif 'aaaTacacsPlusProvider' in provider:
                 provider_type = 'TACACS+'
                 provider_name = provider['aaaTacacsPlusProvider']['attributes']['name']
-                provider_dn = provider['aaaTacacsPlusProvider']['attributes']['dn']
 
-            # Check if the provider name contains DNS name (has alphabetic characters)
+            # Check if the provider name contains DNS name
             if provider_name and re.search(dns_name_pattern, provider_name):
-                data.append([provider_type, provider_name, provider_dn])
+                 data.append([provider_type, provider_name])
+       
+        snmp_api = 'snmpPol.json?query-target-filter=and(eq(snmpPol.adminSt,"enabled"))'
+        snmp_policy = icurl('class', snmp_api)
 
-        if data:
-            result = FAIL_O
+        if snmp_policy:
+            for policy in snmp_policy:
+                policy_name = policy['snmpPol']['attributes']['name']                
+                data.append(["SNMP Policy", policy_name])
+
+        if providers and snmp_policy:
+            result = MANUAL
+            return Result(result=result, headers=headers, data=data, msg="AAA providers are configured using hostnames and SNMP policies are enabled. If SNMP policies are deployed, please contact TAC for further investigation before proceeding with the upgrade. Otherwise, this warning can be safely ignored.")
+
     else:
         return Result(result=PASS, msg=VER_NOT_AFFECTED)
     
