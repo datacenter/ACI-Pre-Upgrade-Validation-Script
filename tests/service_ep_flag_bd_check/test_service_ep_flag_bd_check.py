@@ -70,7 +70,7 @@ vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
     ],
 )
 def test_logic(mock_icurl, cversion, tversion, expected_result):
-    cver = script.AciVersion(cversion)
-    tver = script.AciVersion(tversion) if tversion else None
-    result = script.service_ep_flag_bd_check(1, 1, cver, tver)
+    cversion = script.AciVersion(cversion)
+    tversion = script.AciVersion(tversion) if tversion else None
+    result = script.service_ep_flag_bd_check(1, 1, cversion, tversion)
     assert result == expected_result
