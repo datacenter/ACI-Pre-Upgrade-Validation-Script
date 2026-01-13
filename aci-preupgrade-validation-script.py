@@ -5460,7 +5460,7 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title='Service-EP Flag in BD without PBR')
+@check_wrapper(check_title='Service EP Flag in BD without PBR')
 def service_ep_flag_bd_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ["Tenant ", "Bridge Domain ", "Service Graph Device", "Device Node Name" ]
