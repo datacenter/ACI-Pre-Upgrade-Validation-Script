@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/</loc>
+         <lastmod>2026-01-14</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/getting_started/</loc>
+         <lastmod>2026-01-14</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/usage/</loc>
+         <lastmod>2026-01-14</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/validations/</loc>
+         <lastmod>2026-01-14</lastmod>
+    </url>
+</urlset>
