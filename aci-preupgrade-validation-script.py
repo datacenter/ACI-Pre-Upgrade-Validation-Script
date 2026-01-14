@@ -151,6 +151,7 @@ class Connection(object):
         self._term_len = 0  # terminal length for cisco devices
         self._login = False  # set to true at first successful login
         self._log = None  # private variable for tracking logfile state
+        self.bind_ip = None  # optional source IP to bind for SSH
 
     def __connected(self):
         # determine if a connection is already open
@@ -207,6 +208,8 @@ class Connection(object):
                 "spawning new pexpect connection: ssh %s@%s -p %d" % (self.username, self.hostname, self.port))
             no_verify = " -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
             if self.verify: no_verify = ""
+            if self.bind_ip:
+                no_verify += " -b %s" % self.bind_ip
             self.child = pexpect.spawn("ssh %s %s@%s -p %d" % (no_verify, self.username, self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
         elif self.protocol.lower() == "telnet":
@@ -6007,6 +6010,129 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+
+@check_wrapper(check_title="SUP-A/A+ Sysmgr Log File Size Check")
+def sup_sysmgr_log_size_check(tversion, username, password, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node", "Model", "Sysmgr Log Size", "Status"]
+    data = []
+    recommended_action = "Contact Cisco TAC for Support before upgrade"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#sup-sysmgr-log-size-check"
+    
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
+    if not tversion.older_than("16.1(4a)"):
+        return Result(result=NA, msg="Target version not affected")
+    
+    # Query eqptSupC for N9K-SUP-A or N9K-SUP-A+ models
+    try:
+        sup_query = 'eqptSupC.json?query-target-filter=and(wcard(eqptSupC.model,"N9K-SUP-A"))'
+        sup_nodes = icurl('class', sup_query)
+        if not sup_nodes:
+            return Result(result=NA, msg="No N9K-SUP-A or N9K-SUP-A+ spine nodes found")
+    except Exception as e:
+        return Result(result=ERROR, msg="Failed to query eqptSupC: {}".format(e))
+    
+    # Get APIC IP for SSH binding
+    try:
+        apic_hostname = run_cmd("bash -c \"hostname\"", splitlines=True)[0].strip()
+        apic_ip = next(
+            (node["fabricNode"]["attributes"].get("address")
+             for node in fabric_nodes
+             if node["fabricNode"]["attributes"]["name"] == apic_hostname),
+            None
+        )
+        if not apic_ip:
+            return Result(result=ERROR, msg="Could not determine APIC IP address for SSH binding")
+    except Exception as e:
+        return Result(result=ERROR, msg="Failed to determine APIC IP: {}".format(e))
+    
+    has_error = False
+    
+    # Check each spine node's sysmgr.log size
+    for sup_node in sup_nodes:
+        attr = sup_node["eqptSupC"]["attributes"]
+        node_dn = attr.get("dn", "")
+        node_model = attr.get("model", "Unknown")
+        
+        # Extract node ID from DN: topology/pod-X/node-Y/sys/...
+        node_match = re.search(node_regex, node_dn)
+        if not node_match:
+            data.append(["N/A", node_model, "N/A", "Failed to parse node ID from DN"])
+            has_error = True
+            continue
+        
+        node_id = node_match.group("node")
+        node_ip = None
+        
+        # Find node IP from fabric_nodes
+        for fabric_node in fabric_nodes:
+            if fabric_node["fabricNode"]["attributes"].get("id") == node_id:
+                node_ip = fabric_node["fabricNode"]["attributes"].get("address")
+                break
+        
+        if not node_ip:
+            data.append([node_id, node_model, "N/A", "Node IP not found in fabric nodes"])
+            has_error = True
+            continue
+        
+        try:
+            # SSH to spine node and check sysmgr.log total size
+            c = Connection(node_ip)
+            c.username = username
+            c.password = password
+            c.bind_ip = apic_ip
+            c.connect()
+            
+            # Execute command to sum sysmgr.log file sizes
+            cmd = "find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'"
+            c.cmd(cmd, timeout=30)
+            output = c.output.strip()
+            c.close()
+
+            # Parse output to get total bytes
+            output_lines = output.split('\n')
+
+            try:
+                total_bytes = int(output_lines[1].strip()) if len(output_lines) > 2 and output_lines[1].strip().isdigit() else 0
+            except (IndexError, ValueError):
+                data.append([node_id, node_model, output, "Failed to parse size"])
+                has_error = True
+                continue
+
+            if total_bytes == 0:
+                data.append([node_id, node_model, "0 B", "No sysmgr.log files found"])
+                continue
+            
+            # Convert bytes to human-readable format
+            size_mib = total_bytes / (1024 * 1024)
+            size_str = "{:.2f} MiB".format(size_mib)
+            
+            # Check if size exceeds 30 MiB
+            if total_bytes >= (30 * 1024 * 1024):
+                result = FAIL_O
+                data.append([node_id, node_model, size_str, "Exceeds 30 MiB threshold"])
+        
+        except pexpect.TIMEOUT:
+            data.append([node_id, node_model, "N/A", "SSH connection timeout"])
+            has_error = True
+        except pexpect.EOF:
+            data.append([node_id, node_model, "N/A", "SSH connection closed"])
+            has_error = True
+        except Exception as e:
+            data.append([node_id, node_model, "N/A", "Error: {}".format(str(e))])
+            has_error = True
+            log.error("Exception checking spine node {}: {}".format(node_ip, str(e)))
+    
+    # Determine final result
+    if has_error and result == PASS:
+        result = ERROR
+    elif not data:
+        result = PASS
+    
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6168,6 +6294,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        sup_sysmgr_log_size_check,
 
     ]
     ssh_checks = [

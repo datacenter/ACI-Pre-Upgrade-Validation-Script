@@ -1,0 +1,47 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.1",
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "commissioned",
+        "id": "1",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "apic1",
+        "nodeType": "unspecified",
+        "role": "controller"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.201",
+        "dn": "topology/pod-1/node-201",
+        "fabricSt": "active",
+        "id": "201",
+        "model": "N9K-C9504",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "spine201",
+        "nodeType": "unspecified",
+        "role": "spine"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.202",
+        "dn": "topology/pod-1/node-202",
+        "fabricSt": "active",
+        "id": "202",
+        "model": "N9K-C9504",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "spine202",
+        "nodeType": "unspecified",
+        "role": "spine"
+      }
+    }
+  }
+]

@@ -191,6 +191,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[SUP-A/A+ Sysmgr Log File Size Check][d29]      | CSCwq58901   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #sup-sysmgr-log-size-check
 
 
 ## General Check Details
@@ -2613,6 +2615,17 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### SUP-A/A+ Sysmgr Log File Size Check
+
+The supervisor module in Cisco ACI spine switches maintains system manager (`sysmgr`) log files in the `/mnt/pss/bootlogs/` directory across multiple boot iterations. Due to [CSCwq58901][61], multiple `sysmgr.log` files can accumulate and consume excessive disk space in the `/mnt/pss/` partition on affected supervisor models.
+
+This check validates that the cumulative size of all `sysmgr.log` files across all boot cycles does not exceed 30MB. If the total size exceeds this threshold, it indicates that log file growth is not being properly managed and could lead to `/mnt/pss/` partition exhaustion, potentially causing critical system failures or preventing the switch from booting.
+
+If this alert is flagged then plan to free up space by empty the contents of those files. No need for removing files just empty them.
+
+!!! example: 
+    echo "" > /mnt/pss/bootlogs/1/sysmgr.log
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2675,4 +2688,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
-[61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[61]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwq58901
