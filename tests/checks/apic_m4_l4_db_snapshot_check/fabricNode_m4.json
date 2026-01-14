@@ -1,0 +1,24 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "1",
+        "name": "apic1",
+        "role": "controller",
+        "model": "APIC-SERVER-M4",
+        "address": "10.0.0.1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "2",
+        "name": "apic2",
+        "role": "controller",
+        "model": "APIC-SERVER-M4",
+        "address": "10.0.0.2"
+      }
+    }
+  }
+]

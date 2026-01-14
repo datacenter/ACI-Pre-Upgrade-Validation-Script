@@ -1,0 +1,24 @@
+[
+  {
+    "eqptCh": {
+      "attributes": {
+        "bootSource": "bootflash",
+        "cimcVersion": "4.2(1a)",
+        "descr": "APIC-SERVER-M4",
+        "dn": "topology/pod-1/node-1/sys/ch",
+        "model": "APIC-SERVER-M4"
+      }
+    }
+  },
+  {
+    "eqptCh": {
+      "attributes": {
+        "bootSource": "bootflash",
+        "cimcVersion": "4.2(1a)",
+        "descr": "APIC-SERVER-M4",
+        "dn": "topology/pod-1/node-2/sys/ch",
+        "model": "APIC-SERVER-M4"
+      }
+    }
+  }
+]

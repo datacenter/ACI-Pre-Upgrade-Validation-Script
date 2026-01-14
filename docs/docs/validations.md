@@ -190,7 +190,8 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: |
+[APIC M4/L4 Model db_snapshot Script Issue][d29] | CSCwn62369   | :white_check_mark: | :no_entry_sign: 
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #apic-m4l4-model-db_snapshot-script-issue
 
 
 ## General Check Details
@@ -2612,6 +2614,21 @@ In ACI, there are internal objects which track the underlying transactions which
 Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
+
+
+### APIC M4/L4 Model db_snapshot Script Issue
+
+Due to the defect CSCwn62369, the db_snapshot.sh script on APIC-SERVER-M4 and APIC-SERVER-L4 models requires modification before upgrading to certain versions. This issue affects upgrades to versions earlier than 5.3(2f) in the 5.3 train or earlier than 6.0(9c) in the 6.0 train. The defect does not impact 5.2, 4.2, 6.1, or any other release trains.
+
+The script checks if:
+
+* The target APIC version is 5.3.x (but earlier than 5.3(2f)) or 6.0.x (but earlier than 6.0(9c))
+* Any APICs in the cluster are running APIC-SERVER-M4 or APIC-SERVER-L4 hardware models
+
+If both conditions are met, the db_snapshot.sh script must be modified by TAC before performing the upgrade to avoid potential issues with database snapshot operations.
+
+!!! important
+    If this check fails, please contact TAC before upgrading. The db_snapshot.sh script requires modification specific to M4/L4 hardware models.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
