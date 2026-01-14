@@ -20,49 +20,63 @@ vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
     [
         # tversion missing
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-na.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-na.json")
+            },
             "5.2(8h)",
             None,
             script.MANUAL
         ),
         # Version not affected (both new)
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")
+            },
             "6.0(8h)",
             "6.1(1g)",
             script.NA,
         ),
         # Version not affected (both old)
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")
+            },
             "4.2(7s)",
             "5.2(4c)",
             script.NA,
         ),
         # Version affected with L4L7 Interface connector without PBR
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")
+            },
             "5.2(8h)",
             "6.0(8e)",
             script.FAIL_O
         ),
         # Version affected with L4L7 Interface connector without PBR
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-pos.json")
+            },
             "5.2(8h)",
             "6.1(1f)",
             script.FAIL_O
         ),
         # Version affected with L4L7 Interface connector without PBR
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-neg.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-neg.json")
+            },
             "5.2(8h)",
             "6.0(8e)",
             script.PASS
         ),
         # Version affected with L4L7 Interface connector without PBR
         (
-            {vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-neg.json")},
+            {
+                vnsLIfCtx_api: read_data(dir, "vnsLIfCtx-neg.json")
+            },
             "5.2(8h)",
             "6.1(1f)",
             script.PASS
@@ -70,7 +84,5 @@ vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
     ],
 )
 def test_logic(mock_icurl, cversion, tversion, expected_result):
-    cversion = script.AciVersion(cversion)
-    tversion = script.AciVersion(tversion) if tversion else None
-    result = script.service_ep_flag_bd_check(1, 1, cversion, tversion)
+    result = script.service_ep_flag_bd_check(1, 1, script.AciVersion(cversion), script.AciVersion(tversion) if tversion else None)
     assert result == expected_result
