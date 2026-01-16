@@ -6085,34 +6085,40 @@ def sup_sysmgr_log_size_check(tversion, username, password, fabric_nodes, **kwar
             c.bind_ip = apic_ip
             c.connect()
             
-            # Execute command to sum sysmgr.log file sizes
-            cmd = "find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'"
+            # Execute command to get sysmgr.log files size in MB (du -cm returns size in MB)
+            cmd = "du -cm /mnt/pss/bootlogs/*/sysmgr.log"
             c.cmd(cmd, timeout=30)
             output = c.output.strip()
             c.close()
 
-            # Parse output to get total bytes
+            # Parse output to get total MB from last line (total line)
             output_lines = output.split('\n')
-
-            try:
-                total_bytes = int(output_lines[1].strip()) if len(output_lines) > 2 and output_lines[1].strip().isdigit() else 0
-            except (IndexError, ValueError):
-                data.append([node_id, node_model, output, "Failed to parse size"])
-                has_error = True
-                continue
-
-            if total_bytes == 0:
-                data.append([node_id, node_model, "0 B", "No sysmgr.log files found"])
+            total_mb = 0
+            
+            # Last line contains the total in format "X       total"
+            for line in reversed(output_lines):
+                line = line.strip()
+                if 'total' in line:
+                    try:
+                        total_mb = int(line.split()[0])
+                        break
+                    except (IndexError, ValueError):
+                        data.append([node_id, node_model, output, "Failed to parse size"])
+                        has_error = True
+                        continue
+            
+            if total_mb == 0:
+                data.append([node_id, node_model, "0 MB", "No sysmgr.log files found"])
                 continue
             
-            # Convert bytes to human-readable format
-            size_mib = total_bytes / (1024 * 1024)
-            size_str = "{:.2f} MiB".format(size_mib)
+            size_str = "{} MB".format(total_mb)
             
-            # Check if size exceeds 30 MiB
-            if total_bytes >= (30 * 1024 * 1024):
+            # Check if size exceeds 30 MB threshold
+            if total_mb > 30:
                 result = FAIL_O
-                data.append([node_id, node_model, size_str, "Exceeds 30 MiB threshold"])
+                data.append([node_id, node_model, size_str, "Exceeds 30 MB threshold"])
+            else:
+                data.append([node_id, node_model, size_str, "OK"])
         
         except pexpect.TIMEOUT:
             data.append([node_id, node_model, "N/A", "SSH connection timeout"])

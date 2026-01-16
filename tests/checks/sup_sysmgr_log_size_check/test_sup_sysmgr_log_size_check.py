@@ -19,7 +19,7 @@ version_unaffected = "16.1(4a)"
 sup_query = 'eqptSupC.json?query-target-filter=and(wcard(eqptSupC.model,"N9K-SUP-A"))'
 
 # SSH command for checking sysmgr.log size
-sysmgr_log_cmd = "find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'"
+sysmgr_log_cmd = "du -cm /mnt/pss/bootlogs/*/sysmgr.log"
 hostname_cmd = "bash -c \"hostname\""
 
 # Test data: eqptSupC responses
@@ -28,27 +28,31 @@ eqptSupC_multi_nodes = read_data(dir, "eqptSupC_multi_nodes.json")
 eqptSupC_empty = []
 
 # Test data: SSH outputs for sysmgr.log size
-sysmgr_log_small = """\
-find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'
-1024
+sysmgr_log_small = """du -cm /mnt/pss/bootlogs/*/sysmgr.log
+1       /mnt/pss/bootlogs/1/sysmgr.log
+1       /mnt/pss/bootlogs/2/sysmgr.log
+1       total
 spine1#
 """
 
-sysmgr_log_large = """\
-find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'
-33554432
+sysmgr_log_large = """du -cm /mnt/pss/bootlogs/*/sysmgr.log
+5       /mnt/pss/bootlogs/1/sysmgr.log
+10      /mnt/pss/bootlogs/2/sysmgr.log
+20      /mnt/pss/bootlogs/3/sysmgr.log
+35      total
 spine1#
 """
 
-sysmgr_log_30mib = """\
-find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'
-31457280
+sysmgr_log_30mb = """du -cm /mnt/pss/bootlogs/*/sysmgr.log
+10      /mnt/pss/bootlogs/1/sysmgr.log
+15      /mnt/pss/bootlogs/2/sysmgr.log
+6       /mnt/pss/bootlogs/3/sysmgr.log
+31      total
 spine1#
 """
 
-sysmgr_log_zero = """\
-find /mnt/pss/bootlogs -mindepth 2 -maxdepth 2 -name 'sysmgr.log' -type f -exec ls -l {} \\; | awk '{sum+=$5} END {print sum}'
-0
+sysmgr_log_zero = """du -cm /mnt/pss/bootlogs/*/sysmgr.log
+0       total
 spine1#
 """
 
@@ -70,7 +74,7 @@ cmd_outputs_base = {
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, fabric_nodes, conn_failure, conn_cmds, cmd_outputs, expected_result",
     [
-        # Test 1: PASS - Small sysmgr.log files within 30MiB threshold
+        # Test 1: PASS - Small sysmgr.log files within 30MB threshold
         (
             {sup_query: eqptSupC_single_node},
             version_affected,
@@ -89,7 +93,7 @@ cmd_outputs_base = {
             script.PASS,
         ),
         
-        # Test 2: FAIL_O - Single spine node with large file exceeding 30MiB
+        # Test 2: FAIL_O - Single spine node with large file exceeding 30MB
         (
             {sup_query: eqptSupC_single_node},
             version_affected,
@@ -224,7 +228,7 @@ cmd_outputs_base = {
             script.PASS,
         ),
         
-        # Test 10: FAIL_O - File at exactly 30MiB threshold (31457280 bytes > 30*1024*1024)
+        # Test 10: FAIL_O - File exceeding 30MB threshold (31 MB > 30 MB)
         (
             {sup_query: eqptSupC_single_node},
             version_affected,
@@ -234,7 +238,7 @@ cmd_outputs_base = {
                 "10.0.0.201": [
                     {
                         "cmd": sysmgr_log_cmd,
-                        "output": sysmgr_log_30mib,
+                        "output": sysmgr_log_30mb,
                         "exception": None,
                     }
                 ]
@@ -267,11 +271,6 @@ cmd_outputs_base = {
     ],
 )
 def test_logic(run_check, mock_icurl, tversion, fabric_nodes, mock_conn, mock_run_cmd, expected_result):
-    # import pdb; pdb.set_trace()
-    result = run_check(
-        tversion=script.AciVersion(tversion) if tversion else None,
-        username="fake_username",
-        password="fake_password",
-        fabric_nodes=fabric_nodes,
-    )
+    
+    result = run_check(tversion=script.AciVersion(tversion) if tversion else None, username="fake_username", password="fake_password", fabric_nodes=fabric_nodes)
     assert result.result == expected_result
