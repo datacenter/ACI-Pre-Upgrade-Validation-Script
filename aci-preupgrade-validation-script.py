@@ -151,6 +151,7 @@ class Connection(object):
         self._term_len = 0  # terminal length for cisco devices
         self._login = False  # set to true at first successful login
         self._log = None  # private variable for tracking logfile state
+        self.bind_ip = None  # optional source IP to bind for SSH
 
     def __connected(self):
         # determine if a connection is already open
@@ -207,6 +208,8 @@ class Connection(object):
                 "spawning new pexpect connection: ssh %s@%s -p %d" % (self.username, self.hostname, self.port))
             no_verify = " -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
             if self.verify: no_verify = ""
+            if self.bind_ip:
+                no_verify += " -b %s" % self.bind_ip
             self.child = pexpect.spawn("ssh %s %s@%s -p %d" % (no_verify, self.username, self.hostname, self.port),
                                        searchwindowsize=self.searchwindowsize)
         elif self.protocol.lower() == "telnet":
@@ -5970,7 +5973,6 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-
 @check_wrapper(check_title='APIC VMM inventory sync fault (F0132)')
 def apic_vmm_inventory_sync_faults_check(**kwargs):
     result = PASS
@@ -6007,6 +6009,107 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         recommended_action=recommended_action,
         doc_url=doc_url)
 
+@check_wrapper(check_title="HW Changes bit check for specific node model")
+def HW_changes_bit_check(tversion, username, password, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node", "Model", "HW Changes Bits", "Recommended Action"]
+    data = []
+    recommended_action = "Contact Cisco TAC for Support before upgrade"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#HW_changes_bit_check"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if not tversion.newer_than("14.2(4a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    
+    affected_models = {"N9K-C9316D-GX", "N9K-C93600CD-GX"}
+
+    node_found = any(
+        node["fabricNode"]["attributes"]["model"] in affected_models
+        for node in fabric_nodes
+    )
+
+    if not node_found:
+        return Result(result=PASS, msg="No switch models found")
+
+    # Discover APIC IP (bind source)
+    try:
+        apic_hostname = run_cmd("bash -c \"hostname\"", splitlines=True)[0].strip()
+        if not apic_hostname:
+            return Result(result=ERROR, msg="Could not determine APIC hostname")
+
+        apic_ip = next(
+            (node["fabricNode"]["attributes"].get("address")
+             for node in fabric_nodes
+             if node["fabricNode"]["attributes"]["name"] == apic_hostname),
+            None
+        )
+    except Exception as e:
+        return Result(result=ERROR, msg="Failed to get APIC IP: {}".format(e))
+
+    if not apic_ip:
+        return Result(result=ERROR, msg="Could not determine APIC IP from fabricNode attributes")
+
+    hw_bits_re = re.compile(r"HW Changes Bits\s*:\s*(0x[0-9a-fA-F]+)")
+    has_error = False
+
+    # SSH directly to each switch hostname from APIC, binding source to APIC IP (-b <apic_ip>)
+    for node in fabric_nodes:
+        if node["fabricNode"]["attributes"]["model"] not in ["N9K-C9316D-GX", "N9K-C93600CD-GX"]:
+                continue
+        attr = node['fabricNode']['attributes']
+        node_name = attr['name']
+        node_model = attr['model']
+
+        node_title = "Checking {} ({})...".format(node_name, node_model)
+        try:
+            c = Connection(node_name)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.bind_ip = apic_ip  # enables: ssh <hostname> -b <APIC_IP>
+            c.connect()
+        except Exception as e:
+            data.append([node_name, node_model, "-", "Connection Error: {}".format(str(e))])
+            has_error = True
+            continue
+
+        try:
+            # Execute command to check HW Changes Bits
+            c.cmd("vsh -c 'show sprom cpu-info' | grep \"HW Changes Bits\"")
+            raw = c.output.strip()
+            match = hw_bits_re.search(raw)
+            if not match:
+                data.append([node_name, node_model, "Parse Error", "Unable to parse HW Changes Bits"])
+                has_error = True
+            else:
+                hw_bits = match.group(1)
+                val = int(hw_bits, 16)
+                if val < 2:
+                    result = FAIL_O
+                    data.append([node_name, node_model, hw_bits, "This switch need Manual Upgrade (CSCvv04251). Contact TAC for Support"])
+        except Exception as e:
+            data.append([
+                node_name,
+                node_model,
+                '-',
+                'Failed to check HW Changes Bits: {}. Please check MANUALLY.'.format(str(e))
+            ])
+            has_error = True
+            continue
+        finally:
+            try:
+                c.close()
+            except Exception:
+                pass
+
+    if has_error and result == PASS:
+        result = ERROR
+    elif not data:
+        result = PASS
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+  
 
 @check_wrapper(check_title='APIC downgrade compatibility when crossing 6.2 release')
 def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
@@ -6188,6 +6291,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        HW_changes_bit_check,
 
     ]
     ssh_checks = [
