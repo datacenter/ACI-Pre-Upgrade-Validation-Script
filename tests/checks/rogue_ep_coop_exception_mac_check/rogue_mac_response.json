@@ -1,0 +1,102 @@
+[
+    {
+        "fvRogueExceptionMac": {
+            "attributes": {
+                "mac": "10:B3:D5:14:14:29",
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-Exception/BD-Exception_BD/rgexpmac-10:B3:D5:14:14:29",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2024-07-17T04:57:04.923+00:00",
+                "name": "",
+                "nameAlias": "",
+                "rn": "rgexpmac-10:B3:D5:14:14:29",
+                "status": "",
+                "uid": "16222",
+                "userdom": ":all:"
+            }
+        }
+    },
+    {
+        "fvRogueExceptionMac": {
+            "attributes": {
+                "mac": "00:50:56:9A:1B:2C",
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-Production/BD-Prod_BD/rgexpmac-00:50:56:9A:1B:2C",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2024-07-18T10:22:15.456+00:00",
+                "name": "",
+                "nameAlias": "",
+                "rn": "rgexpmac-00:50:56:9A:1B:2C",
+                "status": "",
+                "uid": "16223",
+                "userdom": ":all:"
+            }
+        }
+    },
+    {
+        "fvRogueExceptionMac": {
+            "attributes": {
+                "mac": "AA:BB:CC:DD:EE:FF",
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-Test/BD-Test_BD/rgexpmac-AA:BB:CC:DD:EE:FF",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2024-07-19T14:35:28.789+00:00",
+                "name": "",
+                "nameAlias": "",
+                "rn": "rgexpmac-AA:BB:CC:DD:EE:FF",
+                "status": "",
+                "uid": "16224",
+                "userdom": ":all:"
+            }
+        }
+    },
+    {
+        "fvRogueExceptionMac": {
+            "attributes": {
+                "mac": "F0:1F:AF:2D:3E:4F",
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-Dev/BD-Dev_BD/rgexpmac-F0:1F:AF:2D:3E:4F",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2024-07-20T08:45:12.321+00:00",
+                "name": "",
+                "nameAlias": "",
+                "rn": "rgexpmac-F0:1F:AF:2D:3E:4F",
+                "status": "",
+                "uid": "16225",
+                "userdom": ":all:"
+            }
+        }
+    },
+    {
+        "fvRogueExceptionMac": {
+            "attributes": {
+                "mac": "12:34:56:78:9A:BC",
+                "annotation": "",
+                "childAction": "",
+                "descr": "",
+                "dn": "uni/tn-Staging/BD-Staging_BD/rgexpmac-12:34:56:78:9A:BC",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2024-07-21T16:55:33.654+00:00",
+                "name": "",
+                "nameAlias": "",
+                "rn": "rgexpmac-12:34:56:78:9A:BC",
+                "status": "",
+                "uid": "16226",
+                "userdom": ":all:"
+            }
+        }
+    }
+]

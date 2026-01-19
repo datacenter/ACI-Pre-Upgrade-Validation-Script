@@ -6008,6 +6008,40 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
+@check_wrapper(check_title='Rogue EP/COOP Exception MACs missing')
+def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Rogue Exception MACs Count", "presListener Count"]
+    data = []
+    recommended_action = 'Remove the affected EP exception configurations and re-add them'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-epcoop-exception-macs-missing'
+
+    # Target version check
+    if not tversion:
+        prints("Target version not provided, skipping check.")
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
+    # Check applicable only when upgrading from versions newer than 3.1(2v) to versions older than 6.1(3g)
+    if cversion.newer_than("3.1(2v)") and tversion.older_than("6.1(3g)"):
+        # endpoint to fetch the rogue exception MACs
+        exception_mac_api = 'fvRogueExceptionMac.json?query-target-filter=and(wcard(fvRogueExceptionMac.dn,"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}"))'
+
+        # endpoint to fetch the presListener entries
+        presListener_api = 'presListener.json?query-target-filter=and(wcard(presListener.dn,"exceptcont"))'
+
+        exception_macs = icurl('class', exception_mac_api)
+
+        if exception_macs:
+            prints("Found {} exception MACs, checking presListener entries...".format(len(exception_macs)))
+            presListener_response = icurl('class', presListener_api)
+            if len(presListener_response) >= 0 and len(presListener_response) < 32:
+                prints("Insufficient presListener entries ({} found) for {} exception MACs.".format(len(presListener_response), len(exception_macs)))
+                result = FAIL_O
+                data.append([len(exception_macs), len(presListener_response)])
+            
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title='APIC downgrade compatibility when crossing 6.2 release')
 def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     result = NA
@@ -6188,6 +6222,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        rogue_ep_coop_exception_mac_check,
 
     ]
     ssh_checks = [
