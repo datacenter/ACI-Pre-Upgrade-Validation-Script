@@ -2617,7 +2617,7 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 ### SUP-A/A+ Sysmgr Log File Size Check
 
-The supervisor module in Cisco ACI spine switches maintains system manager (`sysmgr`) log files in the `/mnt/pss/bootlogs/` directory across multiple boot iterations. Due to [CSCwq58901][61], multiple `sysmgr.log` files can accumulate and consume excessive disk space in the `/mnt/pss/` partition on affected supervisor models.
+The supervisor module in Cisco ACI spine switches maintains system manager (`sysmgr`) log files in the `/mnt/pss/bootlogs/` directory across multiple boot iterations. Due to [CSCwq58901][62], multiple `sysmgr.log` files can accumulate and consume excessive disk space in the `/mnt/pss/` partition on affected supervisor models.
 
 This check validates that the cumulative size of all `sysmgr.log` files across all boot cycles does not exceed 30MB. If the total size exceeds this threshold, it indicates that log file growth is not being properly managed and could lead to `/mnt/pss/` partition exhaustion, potentially causing critical system failures or preventing the switch from booting.
 
@@ -2688,4 +2688,5 @@ If this alert is flagged then plan to free up space by empty the contents of tho
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
-[61]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwq58901
+[61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwq58901
