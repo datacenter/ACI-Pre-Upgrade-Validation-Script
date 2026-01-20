@@ -36,6 +36,7 @@ Items                                                        | This Script      
 [6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
+[APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -55,6 +56,7 @@ Items                                                        | This Script      
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
+[g19]: #apic-downgrade-compatibility-when-crossing-62-release
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -494,6 +496,38 @@ For current version is 6.1(3f):
 - The script will utilize the new command and flag any DB shard which have surpassed 5G.
 
 In either scenario, contact TAC to collect a database dump of the flagged DME(s) and shard(s) for further analysis.
+
+
+### APIC downgrade compatibility when crossing 6.2 release
+
+APIC 6.2(1) release introduces significant optimizations to the APIC upgrade process, including shorter upgrade time and an orchestrated workflow across the cluster with fewer failure points. This release includes an architecture change on APIC, so APIC running 6.2(1) or newer (e.g., 6.2(1a)) cannot be downgraded to any pre-6.2(1) version (e.g., 6.1(4h)).
+
+Upgrading from pre-6.2(1) to 6.2(1)+ is supported; however, rollback (downgrade) after such an upgrade is not possible.
+
+This check alerts you if you are crossing the 6.2 boundary, beyond which downgrade compatibility is lost. No additional user action is required.
+
+!!! note
+    Switch upgrade architecture hasn't been changed in 6.2(1)/16.2(1). The limitation of downgrade compatibility between pre-/post-6.2(1) versions is only for APIC.
+
+!!! example
+    These are examples for upgrade/downgrade paths to show which downgrade compatibility is lost.
+
+    Upgrade:
+
+    * 6.1(4) -> **6.2(1)**: Supported
+    * **6.2(1)** -> 6.2(2): Supported
+
+    Downgrade:
+
+    * **6.2(1)** -> 6.1(4): Not Supported !!! - The API request gets rejected on APIC.
+    * 6.2(2) -> **6.2(1)**: Supported
+
+    Note that this is just one example. See [APIC Upgrade/Downgrade Matrix][2] for the full list of supported version combinations.
+
+!!! tip
+    Make sure to collect the latest configuration backup before you upgrade your APICs from pre-6.2(1) to 6.2(1)+ so that Cisco TAC can perform the fabric recovery process in the case of emergency where you need to downgrade your APICs to the previous version (i.e. 6.2(1)+ -> pre-6.2(1)).
+
+    If it's for a lab environment, you can initialize the fabric and perform a fresh ISO installation of pre-6.2(1) on APICs.
 
 
 ## Fault Check Details
