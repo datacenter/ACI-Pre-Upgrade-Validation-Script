@@ -193,6 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[ssd_firmware_version_check][d29]               | CSCwr08802   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #ssd-firmware-version-check
 
 
 ## General Check Details
@@ -2647,6 +2649,21 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### ssd firmware version check
+
+RCA:
+
+if Switch SSD model is identifed as Micron 5100 or 5300 or 5400 and SSD firmware version is lower than the(D0MU078, D3CN003, D3MU005. and D4CN005),  firmware upgrade is required to mitigate the core exception issue.
+
+Impact:
+
+Due to [CSCwr08802][62],  Switch reloads due to a hap-reset with no core file collected by sysmgr from the time of the crash. Usually this is seen with processes epm or epmc however other processes may also be affected.
+
+Suggestion:
+
+This check will identify the affected SSD firmware and alert if the affected version is detected.
+Cisco TAC must be contacted to Upgrade identified SSD firmware for the fixed.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2710,3 +2727,5 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr08802
+

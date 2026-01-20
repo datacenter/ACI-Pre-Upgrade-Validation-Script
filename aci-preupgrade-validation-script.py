@@ -6024,6 +6024,48 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
         data.append([cversion, tversion, "Downgrading APIC from 6.2(1)+ to pre-6.2(1) will not be supported."])
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+  
+  
+@check_wrapper(check_title='SSD Firmware Version Check')
+def ssd_firmware_version_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Node_ID","SSD model", "Firmware version"]
+    data = []
+
+    recommended_action = 'Contact Cisco TAC to upgrade SSD firmware to an unaffected version'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ssd-firmware-version-check'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.1(5h)"):
+
+        eqptFlash_api = 'eqptFlash.json'
+        ssd_details = icurl('class', eqptFlash_api)
+        if not ssd_details:
+            return Result(result=FAIL_UF, msg="No eqptFlash object found in the system. Cannot validate SSD firmware versions.", doc_url=doc_url)
+        
+        models_to_check = ['Micron_5400', 'Micron_5300', 'Micron_5100']
+        version_to_check = ['D0MU078', 'D3CN003', 'D3MU005', 'D4CN005']
+       
+        for ssd_data in ssd_details:
+            node_dn = ssd_data['eqptFlash']['attributes']['dn']
+            model = ssd_data['eqptFlash']['attributes']['model']
+            firmware_version = ssd_data['eqptFlash']['attributes']['rev']
+            
+            node_match = re.search(r"node-(?P<node>\d+)", node_dn)
+            node_id = node_match.group('node')
+
+            if any(m in model for m in models_to_check):
+                if any(firmware_version.startswith(v[:4]) and firmware_version < v for v in version_to_check):
+                    data.append([node_id, model, firmware_version])
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -6188,6 +6230,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        ssd_firmware_version_check,
 
     ]
     ssh_checks = [
