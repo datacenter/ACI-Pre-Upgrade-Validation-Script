@@ -6008,6 +6008,59 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
+@check_wrapper(check_title='AAA Provider DNS Name Configuration check')
+def aaa_snmpd_dns_provider_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Configuration Type", "Name"]
+    data = []
+    recommended_action = 'Contact Cisco TAC for Support before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#aaa-provider-dns-name-configuration-check'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.1(5e)"):
+
+        # Query for all AAA providers (TACACS+, RADIUS, and LDAP)
+        provider_api = 'uni.json?query-target=subtree&target-subtree-class=aaaTacacsPlusProvider,aaaRadiusProvider,aaaLdapProvider'
+        providers = icurl('mo', provider_api)
+
+        # Regular expression to detect DNS names (not IP addresses)
+        dns_name_pattern = r'[a-zA-Z]'
+
+        for provider in providers:
+            provider_type = None
+            provider_name = None
+
+            if 'aaaRadiusProvider' in provider:
+                provider_type = 'RADIUS'
+                provider_name = provider['aaaRadiusProvider']['attributes']['name']
+            elif 'aaaLdapProvider' in provider:
+                provider_type = 'LDAP'
+                provider_name = provider['aaaLdapProvider']['attributes']['name']
+            elif 'aaaTacacsPlusProvider' in provider:
+                provider_type = 'TACACS+'
+                provider_name = provider['aaaTacacsPlusProvider']['attributes']['name']
+
+            # Check if the provider name contains DNS name
+            if provider_name and re.search(dns_name_pattern, provider_name):
+                 data.append([provider_type, provider_name])
+       
+        snmp_api = 'snmpPol.json?query-target-filter=and(eq(snmpPol.adminSt,"enabled"))'
+        snmp_policy = icurl('class', snmp_api)
+
+        if snmp_policy:
+            for policy in snmp_policy:
+                policy_name = policy['snmpPol']['attributes']['name']                
+                data.append(["SNMP Policy", policy_name])
+
+        if providers and snmp_policy:
+            result = MANUAL
+            return Result(result=result, headers=headers, data=data, msg="AAA providers are configured using hostnames and SNMP policies are enabled. If SNMP policies are deployed, please contact TAC for further investigation before proceeding with the upgrade. Otherwise, this warning can be safely ignored.")
+
+    else:
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+    
 @check_wrapper(check_title='APIC downgrade compatibility when crossing 6.2 release')
 def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     result = NA
@@ -6188,6 +6241,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        aaa_snmpd_dns_provider_check,
 
     ]
     ssh_checks = [

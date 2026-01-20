@@ -1,0 +1,25 @@
+[
+    {
+        "snmpPol": {
+            "attributes": {
+                "adminSt": "enabled",
+                "annotation": "",
+                "childAction": "",
+                "contact": "",
+                "descr": "",
+                "dn": "uni/fabric/snmppol-default",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "location": "",
+                "modTs": "2025-01-09T10:15:30.123+00:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "default",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "status": "",
+                "userdom": ":all:"
+            }
+        }
+    }
+]
