@@ -1,0 +1,91 @@
+[
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "available (Old: 1501496, New: 240908), capUtilized (Old: 29, New: 89), inodesFree (Old: 12148991, New: 12148990), inodesUsed (Old: 721, New: 722), used (Old: 595656, New: 1856244)",
+                    "childAction": "",
+                    "code": "F1528",
+                    "created": "2026-01-12T06:44:26.382+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /data/log on Node 1 with hostname fab3-apic1 mounted at /data/log is 89% full",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/data/log]-f-[tmpfs]/fault-F1528",
+                    "domain": "infra",
+                    "highestSeverity": "major",
+                    "lastTransition": "2026-01-12T06:44:26.382+00:00",
+                    "lc": "retaining",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqpt-storage-full-major",
+                    "severity": "cleared",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        },
+
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "available (Old: 1501496, New: 240908), capUtilized (Old: 29, New: 89), inodesFree (Old: 12148991, New: 12148990), inodesUsed (Old: 721, New: 722), used (Old: 595656, New: 1856244)",
+                    "childAction": "",
+                    "code": "F1528",
+                    "created": "2026-01-12T06:44:26.382+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /firmware on Node 1 with hostname fab3-apic1 mounted at /firmware is 89% full",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/firmware]-f-[/dev/mapper/vg_ifc0-firmware]/fault-F1528",
+                    "domain": "infra",
+                    "highestSeverity": "major",
+                    "lastTransition": "2026-01-12T06:44:26.382+00:00",
+                    "lc": "soaking",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqpt-storage-full-major",
+                    "severity": "major",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        },
+
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "available (Old: 1501496, New: 240908), capUtilized (Old: 29, New: 89), inodesFree (Old: 12148991, New: 12148990), inodesUsed (Old: 721, New: 722), used (Old: 595656, New: 1856244)",
+                    "childAction": "",
+                    "code": "F1528",
+                    "created": "2026-01-12T06:44:26.382+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /techsupport on Node 1 with hostname fab3-apic1 mounted at /techsupport is 89% full",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/techsupport]-f-[/dev/mapper/vg_ifc0-techsupport]/fault-F1528",
+                    "domain": "infra",
+                    "highestSeverity": "major",
+                    "lastTransition": "2026-01-12T06:44:26.382+00:00",
+                    "lc": "raised-clearing",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqpt-storage-full-major",
+                    "severity": "major",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        }
+    ]
