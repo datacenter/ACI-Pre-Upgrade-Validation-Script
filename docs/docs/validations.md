@@ -193,6 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[active_node_presListener_mo_object_check][d29] | CSCwn81692   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #active_node_presListener_mo_object_check
 
 
 ## General Check Details
@@ -2648,6 +2650,19 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### active_node_presListener_mo_object_check
+
+RCA:
+After upgrading the leaf to an affected version, interface configurations are not pushed because the "pres.Listener" object is missing in the APIC.
+This occurs due to an incomplete/faulty APIC upgrade.
+
+IMPACT:
+If "pres.Listener" is missing after a leaf upgrade or clean reload, leaf ports remain out of service, and infraAccPortP and infraAccBndlGrp cannot program interfaces.
+
+Suggestion:
+Verify that all active leaf node objects are present in the "pres.Listener" list (class 4307) and alert if the affected version is detected. If an alert is raised, upgrade to a version that includes the fix for [CSCwn81692][62].
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2710,3 +2725,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn81692
