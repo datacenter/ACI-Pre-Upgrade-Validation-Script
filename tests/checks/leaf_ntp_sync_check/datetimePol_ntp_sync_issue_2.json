@@ -1,0 +1,29 @@
+[
+        {
+            "datetimePol": {
+                "attributes": {
+                    "StratumValue": "8",
+                    "adminSt": "enabled",
+                    "annotation": "",
+                    "authSt": "disabled",
+                    "childAction": "",
+                    "configIssues": "",
+                    "descr": "",
+                    "dn": "uni/fabric/time-NEW1",
+                    "extMngdBy": "",
+                    "lcOwn": "local",
+                    "masterMode": "enabled",
+                    "modTs": "2024-12-20T07:45:21.917+00:00",
+                    "monPolDn": "",
+                    "name": "NEW1",
+                    "nameAlias": "",
+                    "ownerKey": "",
+                    "ownerTag": "",
+                    "serverState": "enabled",
+                    "status": "",
+                    "uid": "15374",
+                    "userdom": ":all:"
+                }
+            }
+        }
+    ]
