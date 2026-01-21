@@ -1,0 +1,13 @@
+[
+  {
+    "eqptCh": {
+      "attributes": {
+        "bootSource": "bootflash",
+        "cimcVersion": "4.0(2f)",
+        "descr": "APIC-SERVER-L2",
+        "dn": "topology/pod-1/node-1/sys/ch",
+        "model": "APIC-SERVER-L2"
+      }
+    }
+  }
+]

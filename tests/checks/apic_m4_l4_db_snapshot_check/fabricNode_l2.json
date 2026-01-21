@@ -1,0 +1,13 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "1",
+        "name": "apic1",
+        "role": "controller",
+        "model": "APIC-SERVER-L2",
+        "address": "10.0.0.1"
+      }
+    }
+  }
+]
