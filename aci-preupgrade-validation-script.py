@@ -6007,7 +6007,7 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
-@check_wrapper(check_title="APIC M4/L4 Model db_snapshot Script Issue")
+@check_wrapper(check_title="M4/L4 missing db files in TS")
 def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
     result = FAIL_O
     headers = ["Node ID", "APIC Model", "Status"]
@@ -6019,25 +6019,13 @@ def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    # Check 2: Verify target version is affected
-    # Only applicable to 5.3.x releases older than 5.3(2f) or 6.0.x releases older than 6.0(9c)
-    # Not impacting 5.2, 4.2, 6.1 or any other major release
-    if tversion.major_version == "5.3":
-        if not tversion.older_than("5.3(2f)"):
-            return Result(result=NA, msg=VER_NOT_AFFECTED)
-    elif tversion.major_version == "6.0":
-        if not tversion.older_than("6.0(9c)"):
-            return Result(result=NA, msg=VER_NOT_AFFECTED)
-    else:
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
-
-    # Check 3: Get APIC controllers from fabric_nodes
+    # Check 2: Get APIC controllers from fabric_nodes and identify M4/L4 models
     apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
     
     if not apics:
         return Result(result=ERROR, msg="No controllers found in fabricNode. Is the cluster healthy?", doc_url=doc_url)
 
-    # Check 4: Identify affected APIC models (M4 or L4)
+    # Identify affected APIC models (M4 or L4)
     for apic in apics:
         apic_model = apic['fabricNode']['attributes']['model']
         node_id = apic['fabricNode']['attributes']['id']
@@ -6047,6 +6035,14 @@ def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
 
     if not data:
         result = PASS
+        return Result(result=result, headers=headers, data=data, doc_url=doc_url)
+
+    # Check 3: Verify target version is affected
+    # Only applicable to 5.3.x releases older than 5.3(2f) or 6.0.x releases older than 6.0(9c)
+    # Not impacting 5.2, 4.2, 6.1 or any other major release
+    if not ((tversion.major_version == "5.3" and tversion.older_than("5.3(2f)")) or 
+            (tversion.major_version == "6.0" and tversion.older_than("6.0(9c)"))):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
