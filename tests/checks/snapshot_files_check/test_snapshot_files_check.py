@@ -25,7 +25,7 @@ apic_single_ips = [
 
 grep_cmd = 'tail -n 1000 /var/log/dme/log/access.log | grep "GET /snapshots" | grep 404'
 
-# Sample log output with 10+ requests within 2 minutes (issue detected)
+# Sample log output with 10+ requests within 1 minute (issue detected)
 grep_output_issue = """10.0.0.3 (-) - - [24/Dec/2025:14:30:06 +0000] "GET /snapshots/ce2_backup_policy-2025-12-24T14-30-06.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:30:12 +0000] "GET /snapshots/ce2_DailyAutoBackup-2025-12-24T14-30-12.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:30:18 +0000] "GET /snapshots/ce2_ndi_up-2025-12-24T14-30-18.tar.gz HTTP/1.1" 404 151 "-" "-"
@@ -39,7 +39,7 @@ grep_output_issue = """10.0.0.3 (-) - - [24/Dec/2025:14:30:06 +0000] "GET /snaps
 10.0.0.3 (-) - - [24/Dec/2025:14:31:06 +0000] "GET /snapshots/ce2_NDI_EXPORT_POLICY-2025-12-24T14-31-06.tar.gz HTTP/1.1" 404 151 "-" "-"
 """
 
-# Sample log output with less than 10 requests or spread over more than 2 minutes (no issue)
+# Sample log output with less than 10 requests or spread over more than 1 minute (no issue)
 grep_output_no_issue = """10.0.0.3 (-) - - [24/Dec/2025:14:30:15 +0000] "GET /snapshots/ce2_NDI_EXPORT_POLICY-2025-12-24T14-30-05.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:35:20 +0000] "GET /snapshots/ce2_backup_policy-2025-12-24T14-35-10.tar.gz HTTP/1.1" 404 151 "-" "-"
 10.0.0.3 (-) - - [24/Dec/2025:14:40:30 +0000] "GET /snapshots/ce2_DailyAutoBackup-2025-12-24T14-40-20.tar.gz HTTP/1.1" 404 151 "-" "-"

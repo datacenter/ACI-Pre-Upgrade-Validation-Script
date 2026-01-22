@@ -6274,7 +6274,6 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
-        snapshot_files_check,
 
     ]
     ssh_checks = [
@@ -6287,6 +6286,7 @@ class CheckManager:
 
         # Bugs
         observer_db_size_check,
+        snapshot_files_check,
     ]
     cli_checks = [
         # General
