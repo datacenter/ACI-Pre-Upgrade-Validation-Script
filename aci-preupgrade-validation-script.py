@@ -6015,11 +6015,7 @@ def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
     recommended_action = "Please contact TAC, requires the db_snapshot.sh to be modified"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-m4-l4-model-db-snapshot-script-issue"
 
-    # Check 1: Verify target version is provided
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-
-    # Check 2: Get APIC controllers from fabric_nodes and identify M4/L4 models
+    # Check 1: Get APIC controllers from fabric_nodes and identify M4/L4 models
     apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
     
     if not apics:
@@ -6037,12 +6033,12 @@ def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
         result = PASS
         return Result(result=result, headers=headers, data=data, doc_url=doc_url)
 
-    # Check 3: Verify target version is affected
+    # Check 2: Verify target version is affected
     # Only applicable to 5.3.x releases older than 5.3(2f) or 6.0.x releases older than 6.0(9c)
     # Not impacting 5.2, 4.2, 6.1 or any other major release
     if not ((tversion.major_version == "5.3" and tversion.older_than("5.3(2f)")) or 
             (tversion.major_version == "6.0" and tversion.older_than("6.0(9c)"))):
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
