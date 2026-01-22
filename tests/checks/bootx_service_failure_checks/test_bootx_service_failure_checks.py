@@ -21,40 +21,40 @@ test_function = "bootx_service_failure_checks"
 @pytest.mark.parametrize(
     "icurl_outputs, conn_cmds, cversion, expected_result",
     [
-        # Test 1: Version not provided (cversion is None)
+        # Test 1: When fabric node is empty (no nodes found)
         (
-            {fabricNode_api: read_data(dir, "fabricNode.json")},
+            {fabricNode_api: []},
             {},
-            None,
-            script.MANUAL,
+            "6.0(5a)",
+            script.ERROR,
         ),
         # Test 2: Version not affected (below 6.0(2h))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(1a)",
-            script.PASS,
+            script.NA,
         ),
         # Test 3: Version not affected (above 6.0(8h))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(9a)",
-            script.PASS,
+            script.NA,
         ),
         # Test 4: Version not affected (between 6.0(8h) and 6.1(1f))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.0(9h)",
-            script.PASS,
+            script.NA,
         ),
         # Test 5: Version not affected (above 6.1(2g))
         (
             {fabricNode_api: read_data(dir, "fabricNode.json")},
             {},
             "6.1(3a)",
-            script.PASS,
+            script.NA,
         ),
         # Test 6: Version not affected 6.0(2f) (below 6.0(2h)), no issues found
         (
@@ -74,7 +74,7 @@ test_function = "bootx_service_failure_checks"
                 ],
             },
             "6.0(2f)",
-            script.PASS,
+            script.NA,
         ),
         # Test 7: Affected version 6.0(5a) (within 6.0(2h) to 6.0(8h)), file count >= 1000 on one APIC
         (

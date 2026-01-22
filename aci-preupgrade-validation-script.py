@@ -6014,9 +6014,6 @@ def bootx_service_failure_checks(fabric_nodes, cversion, username, password, **k
     data = []
     recommended_action = 'Contact Cisco TAC to investigate all flagged high file and log counts'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bootx_service_failure_log_and_firmware_tmp_directory_checks'
-
-    if not cversion:
-        return Result(result=MANUAL, msg="Current version not provided")
     
     if not fabric_nodes:
         return Result(result=ERROR, msg="Fabric node response empty. Is the cluster healthy?", doc_url=doc_url)
@@ -6088,7 +6085,7 @@ def bootx_service_failure_checks(fabric_nodes, cversion, username, password, **k
         if has_error and result == PASS:
             result = ERROR
     else:
-        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
     
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
@@ -6179,8 +6176,7 @@ class CheckManager:
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
         validate_32_64_bit_image_check,
-        fabric_link_redundancy_check,
-        bootx_service_failure_checks,
+        fabric_link_redundancy_check,        
 
         # Faults
         apic_disk_space_faults_check,
@@ -6255,6 +6251,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        bootx_service_failure_checks,
 
     ]
     ssh_checks = [
