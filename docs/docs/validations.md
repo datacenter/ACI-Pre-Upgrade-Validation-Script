@@ -2616,7 +2616,7 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
-### APIC M4/L4 Model db_snapshot Script Issue
+### M4/L4 Model missing db files in TS
 
 Due to the defect CSCwn62369, the db_snapshot.sh script on APIC-SERVER-M4 and APIC-SERVER-L4 models requires modification before upgrading to certain versions. This issue affects upgrades to versions earlier than 5.3(2f) in the 5.3 train or earlier than 6.0(9c) in the 6.0 train. The defect does not impact 5.2, 4.2, 6.1, or any other release trains.
 
@@ -2693,3 +2693,5 @@ If both conditions are met, the db_snapshot.sh script must be modified by TAC be
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn62369
+
