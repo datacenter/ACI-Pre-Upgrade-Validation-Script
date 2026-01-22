@@ -6027,13 +6027,14 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
  
 
 @check_wrapper(check_title='Snapshot files check')
-def snapshot_files_check(fabric_nodes, cversion, username, password, **kwargs):
+def snapshot_files_check(fabric_nodes, cversion, tversion, username, password, **kwargs):
     result = PASS
     headers = ['apic_id', 'apic_name', 'snapshot_files']
     data = []
     recommended_action = 'Contact Cisco TAC for Support before upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#Snapshot-files-check'
-    if cversion.older_than('6.0(3d)'):
+
+    if cversion.older_than('6.0(3d)') or tversion.older_than('6.0(3d)'):
         apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
         if not apics:
             return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
@@ -6095,17 +6096,18 @@ def snapshot_files_check(fabric_nodes, cversion, username, password, **kwargs):
                             window_files = [filename for _, filename in requests[i:i+10]]
                             for filename in window_files:
                                 data.append([apic_id, apic_name, filename])
+                                result = FAIL_UF
                             break
                     
             except Exception as e:
                 data.append([apic_id, apic_name, str(e)])
                 has_error = True
                 continue
-
-        if has_error:
+        
+        if has_error and result == PASS:
             result = ERROR
-        elif data:
-            result = FAIL_UF
+    else:
+        result = NA
      
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

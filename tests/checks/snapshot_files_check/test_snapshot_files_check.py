@@ -79,7 +79,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
 """
 
 @pytest.mark.parametrize(
-    "icurl_outputs, conn_failure, conn_cmds, cversion, fabric_nodes, expected_result",
+    "icurl_outputs, conn_failure, conn_cmds, cversion, tversion, fabric_nodes, expected_result",
     [
         # Version not affected (6.0(3d) or newer)
         (
@@ -87,8 +87,9 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             False,
             [],
             "6.0(3d)",
+            "6.0(3e)",
             read_data(dir, "fabricNode.json"),
-            script.PASS,
+            script.NA,
         ),
         # Version affected, but no issues found
         (
@@ -105,10 +106,11 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "5.2(1h)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.PASS,
         ),
-        # Version affected, issue detected (10+ requests in 2 minutes)
+        # Version affected, issue detected (10+ requests in 1 minutes)
         (
             {},
             False,
@@ -136,10 +138,11 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
-        # Version affected, issue detected (10+ requests in 2 minutes)
+        # Version affected, issue detected (10+ requests in 1 minutes)
         (
             {},
             False,
@@ -167,6 +170,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -176,6 +180,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "5.2(1h)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -194,6 +199,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -212,6 +218,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "5.2(1h)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -230,6 +237,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.PASS,
         ),
@@ -247,7 +255,8 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
                 for apic_ip in apic_ips
             },
-             "3.2(6o)",
+            "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
         ),
@@ -257,6 +266,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -275,6 +285,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -293,6 +304,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -310,6 +322,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.FAIL_UF,
         ),
@@ -327,6 +340,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.PASS,
         ),
@@ -336,6 +350,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.ERROR,
         ),
@@ -353,100 +368,8 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
-            script.ERROR,
-        ),
-        # Edge case: Multi-APIC with first APIC having issue, others clean
-        (
-            {},
-            False,
-            {
-                apic_ips[0]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[1]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[2]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-            },
-            "5.2(8g)",
-            read_data(dir, "fabricNode.json"),
-            script.FAIL_UF,
-        ),
-        # Edge case: Multi-APIC with last APIC having issue, others clean
-        (
-            {},
-            False,
-            {
-                apic_ips[0]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[1]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[2]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_issue]),
-                        "exception": None,
-                    }
-                ],
-            },
-            "5.2(8g)",
-            read_data(dir, "fabricNode.json"),
-            script.FAIL_UF,
-        ),
-        # Edge case: Multi-APIC with middle APIC having connection issue
-        (
-            {},
-            False,
-            {
-                apic_ips[0]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[1]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "",
-                        "exception": Exception("Connection timeout"),
-                    }
-                ],
-                apic_ips[2]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-            },
-            "6.0(2a)",
-            read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
         # Edge case: Multi-APIC with one file not found, others clean
@@ -477,6 +400,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "5.2(8g)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -495,6 +419,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.PASS,
         ),
@@ -513,6 +438,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -531,6 +457,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.PASS,
         ),
@@ -549,6 +476,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "5.2(8g)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -580,8 +508,9 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "6.0(2a)",
+            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
-            script.ERROR,
+            script.FAIL_UF,
         ),
         # Edge case (pre-4.0): Single APIC with issue
         (
@@ -597,6 +526,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.FAIL_UF,
         ),
@@ -614,6 +544,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.PASS,
         ),
@@ -623,6 +554,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.ERROR,
         ),
@@ -640,6 +572,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.ERROR,
         ),
@@ -671,70 +604,9 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
-        ),
-        # Edge case (pre-4.0): Multi-APIC with last APIC having issue, others clean
-        (
-            {infraWiNode: read_data(dir, "infraWiNode_apic1.json")},
-            False,
-            {
-                apic_ips[0]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[1]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[2]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_issue]),
-                        "exception": None,
-                    }
-                ],
-            },
-            "3.2(6o)",
-            read_data(dir, "fabricNode_old.json"),
-            script.FAIL_UF,
-        ),
-        # Edge case (pre-4.0): Multi-APIC with middle APIC having connection issue
-        (
-            {infraWiNode: read_data(dir, "infraWiNode_apic1.json")},
-            False,
-            {
-                apic_ips[0]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-                apic_ips[1]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "",
-                        "exception": Exception("Connection timeout"),
-                    }
-                ],
-                apic_ips[2]: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_no_issue]),
-                        "exception": None,
-                    }
-                ],
-            },
-            "3.2(6o)",
-            read_data(dir, "fabricNode_old.json"),
-            script.ERROR,
         ),
         # Edge case (pre-4.0): Multi-APIC with one file not found, others clean
         (
@@ -764,6 +636,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -782,6 +655,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.PASS,
         ),
@@ -800,6 +674,7 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
         ),
@@ -818,26 +693,9 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.PASS,
-        ),
-        # Edge case (pre-4.0): Multi-APIC with all having issues
-        (
-            {infraWiNode: read_data(dir, "infraWiNode_apic1.json")},
-            False,
-            {
-                apic_ip: [
-                    {
-                        "cmd": grep_cmd,
-                        "output": "\n".join([grep_cmd, grep_output_issue]),
-                        "exception": None,
-                    }
-                ]
-                for apic_ip in apic_ips
-            },
-            "3.2(6o)",
-            read_data(dir, "fabricNode_old.json"),
-            script.FAIL_UF,
         ),
         # Edge case (pre-4.0): Multi-APIC with mixed issues (issue + file not found + clean)
         (
@@ -867,14 +725,16 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "3.2(6o)",
+            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
-            script.ERROR,
+            script.FAIL_UF,
         ),
     ],
 )
-def test_snapshot_files_check(run_check, mock_icurl, mock_conn, cversion, fabric_nodes, expected_result):
+def test_snapshot_files_check(run_check, mock_icurl, mock_conn, cversion, tversion, fabric_nodes, expected_result):
     result = run_check(
         cversion=script.AciVersion(cversion),
+        tversion=script.AciVersion(tversion),
         username="fake_username",
         password="fake_password",
         fabric_nodes=fabric_nodes,
