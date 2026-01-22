@@ -6026,6 +6026,89 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title = 'Bootx Service failure checks')
+def bootx_service_failure_checks(fabric_nodes, cversion, username, password, **kwargs):
+    result = PASS
+    headers = ["Node", "File Count", "Fatal Errors Found", "Status"]
+    data = []
+    recommended_action = 'Contact Cisco TAC to investigate all flagged high file and log counts'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bootx_service_failure_log_and_firmware_tmp_directory_checks'
+    
+    if not fabric_nodes:
+        return Result(result=ERROR, msg="Fabric node response empty. Is the cluster healthy?", doc_url=doc_url)
+
+    if (not cversion.older_than("6.0(2h)") and not cversion.newer_than("6.0(8h)")) or \
+       (not cversion.older_than("6.1(1f)") and not cversion.newer_than("6.1(2g)")):
+
+        # Filter for controller nodes only
+        controller = [node for node in fabric_nodes if node['fabricNode']['attributes']['role'] == 'controller']
+        if not controller:
+            return Result(result=ERROR, msg="No controller nodes found. Is the cluster healthy?", doc_url=doc_url)
+
+        checked_apics = {}
+        has_error = False   
+
+        for apic in controller:
+            attr = apic['fabricNode']['attributes']
+            if attr['address'] in checked_apics:
+                continue
+            checked_apics[attr['address']] = 1
+            node_id = attr['id']
+            
+            try:
+                c = Connection(attr['address'])
+                c.username = username
+                c.password = password
+                c.log = LOG_FILE
+                c.connect()
+            except Exception as e:
+                data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
+                has_error = True
+                continue
+            
+            try:
+                # Check if /firmware/tmp directory exists and count files
+                c.cmd('[ -d /firmware/tmp ] && ls -1 /firmware/tmp 2>/dev/null | wc -l || echo 0')
+                file_count = 0
+                for line in c.output.strip().split('\n'):
+                    line = line.strip()
+                    if line.isdigit():
+                        file_count = int(line)
+                        break
+                
+                # Check for fatal errors in bootx logs
+                c.cmd('[ -d /var/log/bootx/logs ] && grep -Ri "fatal" /var/log/bootx/logs/* 2>/dev/null | wc -l || echo 0')
+                fatal_count = 0
+                for line in c.output.strip().split('\n'):
+                    line = line.strip()
+                    if line.isdigit():
+                        fatal_count = int(line)
+                        break
+                
+                # Determine status
+                if file_count >= 1000:
+                    status = 'FAIL - High file count'
+                    data.append([node_id, str(file_count),"-", status])
+                    result = FAIL_UF
+
+                if fatal_count > 0:
+                    status = 'FAIL - Fatal errors found'
+                    data.append([node_id, "-", str(fatal_count), status])
+                    result = FAIL_UF
+                    
+            except Exception as e:
+                data.append([node_id, '-', '-', 'ERROR: %s' % str(e)])
+                has_error = True
+                continue
+        c.close()        
+        if has_error and result == PASS:
+            result = ERROR
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6271,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        bootx_service_failure_checks,
 
     ]
     ssh_checks = [
