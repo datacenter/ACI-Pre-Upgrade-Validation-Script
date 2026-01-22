@@ -6009,7 +6009,7 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
 
 @check_wrapper(check_title="M4/L4 missing db files in TS")
 def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
-    result = FAIL_O
+    result = MANUAL
     headers = ["Node ID", "APIC Model", "Status"]
     data = []
     recommended_action = "Please contact TAC, requires the db_snapshot.sh to be modified"
@@ -6030,7 +6030,7 @@ def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
             data.append([node_id, apic_model, "Affected"])
 
     if not data:
-        result = PASS
+        result = NA
         return Result(result=result, headers=headers, data=data, doc_url=doc_url)
 
     # Check 2: Verify target version is affected
@@ -6038,7 +6038,7 @@ def apic_m4_l4_db_snapshot_check(tversion, fabric_nodes, **kwargs):
     # Not impacting 5.2, 4.2, 6.1 or any other major release
     if not ((tversion.major_version == "5.3" and tversion.older_than("5.3(2f)")) or 
             (tversion.major_version == "6.0" and tversion.older_than("6.0(9c)"))):
-        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

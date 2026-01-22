@@ -15,71 +15,71 @@ test_function = "apic_m4_l4_db_snapshot_check"
 @pytest.mark.parametrize(
     "tversion, fabric_nodes, expected_result",
     [
-        # Test 1: PASS - Target version not affected (5.2 train)
+        # Test 1: NA - Target version not affected (5.2 train)
         (
             "5.2(7f)",
             read_data(dir, "fabricNode_m4.json"),
-            script.PASS,
+            script.NA,
         ),
-        # Test 2: PASS - Target version not affected (4.2 train)
+        # Test 2: NA - Target version not affected (4.2 train)
         (
             "4.2(7t)",
             read_data(dir, "fabricNode_m4.json"),
-            script.PASS,
+            script.NA,
         ),
-        # Test 3: PASS - Target version not affected (6.1 train)
+        # Test 3: NA - Target version not affected (6.1 train)
         (
             "6.1(3a)",
             read_data(dir, "fabricNode_m4.json"),
-            script.PASS,
+            script.NA,
         ),
-        # Test 4: PASS - Target version 5.3(2f) or newer
+        # Test 4: NA - Target version 5.3(2f) or newer
         (
             "5.3(2f)",
             read_data(dir, "fabricNode_m4.json"),
-            script.PASS,
+            script.NA,
         ),
-        # Test 5: PASS - Target version 6.0(9c) or newer
+        # Test 5: NA - Target version 6.0(9c) or newer
         (
             "6.0(9c)",
             read_data(dir, "fabricNode_m4.json"),
-            script.PASS,
+            script.NA,
         ),
-        # Test 6: FAIL_O - M4 model with affected 5.3 version
+        # Test 6: MANUAL - M4 model with affected 5.3 version
         (
             "5.3(2a)",
             read_data(dir, "fabricNode_m4.json"),
-            script.FAIL_O,
+            script.MANUAL,
         ),
-        # Test 7: FAIL_O - M4 model with affected 6.0 version
+        # Test 7: MANUAL - M4 model with affected 6.0 version
         (
             "6.0(8a)",
             read_data(dir, "fabricNode_m4.json"),
-            script.FAIL_O,
+            script.MANUAL,
         ),
-        # Test 8: FAIL_O - L4 model with affected 5.3 version
+        # Test 8: MANUAL - L4 model with affected 5.3 version
         (
             "5.3(1a)",
             read_data(dir, "fabricNode_l4.json"),
-            script.FAIL_O,
+            script.MANUAL,
         ),
-        # Test 9: FAIL_O - L4 model with affected 6.0 version
+        # Test 9: MANUAL - L4 model with affected 6.0 version
         (
             "6.0(5a)",
             read_data(dir, "fabricNode_l4.json"),
-            script.FAIL_O,
+            script.MANUAL,
         ),
-        # Test 10: PASS - L2 model (not affected) with affected version
+        # Test 10: NA - L2 model (not affected) with affected version
         (
             "5.3(2a)",
             read_data(dir, "fabricNode_l2.json"),
-            script.PASS,
+            script.NA,
         ),
-        # Test 11: PASS - L2 model (not affected) with affected version
+        # Test 11: NA - L2 model (not affected) with affected version
         (
             "6.0(8a)",
             read_data(dir, "fabricNode_l2.json"),
-            script.PASS,
+            script.NA,
         ),
     ],
 )
