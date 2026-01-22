@@ -1,0 +1,22 @@
+[
+  {
+    "infraWiNode": {
+      "attributes": {
+        "addr": "10.0.0.1",
+        "adminSt": "in-service",
+        "apicMode": "active",
+        "cntrlSbstState": "approved",
+        "dn": "topology/pod-1/node-1/av/node-1",
+        "failoverStatus": "idle",
+        "health": "fully-fit",
+        "id": "1",
+        "mbSn": "FCH1234ABCD",
+        "name": "",
+        "nodeName": "apic1",
+        "operSt": "available",
+        "podId": "0",
+        "targetMbSn": ""
+      }
+    }
+  }
+]

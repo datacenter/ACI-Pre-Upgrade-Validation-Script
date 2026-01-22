@@ -6024,6 +6024,92 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
         data.append([cversion, tversion, "Downgrading APIC from 6.2(1)+ to pre-6.2(1) will not be supported."])
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+ 
+
+@check_wrapper(check_title='Snapshot files check')
+def snapshot_files_check(fabric_nodes, cversion, tversion, username, password, **kwargs):
+    result = PASS
+    headers = ['apic_id', 'apic_name', 'snapshot_files']
+    data = []
+    recommended_action = 'Contact Cisco TAC for Support before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#Snapshot-files-check'
+
+    if cversion.older_than('6.0(3d)') or tversion.older_than('6.0(3d)'):
+        apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+        if not apics:
+            return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+        # `fabricNode` in pre-4.0 does not have `address`
+        if not apics[0]["fabricNode"]["attributes"].get("address"):
+            apic1 = [apic for apic in apics if apic["fabricNode"]["attributes"]["id"] == "1"][0]
+            apic1_dn = apic1["fabricNode"]["attributes"]["dn"]
+            apics = icurl("class", "{}/infraWiNode.json".format(apic1_dn))
+        has_error = False
+        for apic in apics:
+            if apic.get("fabricNode"):
+                apic_id = apic["fabricNode"]["attributes"]["id"]
+                apic_name = apic["fabricNode"]["attributes"]["name"]
+                apic_addr = apic["fabricNode"]["attributes"]["address"]
+            else:
+                apic_id = apic["infraWiNode"]["attributes"]["id"]
+                apic_name = apic["infraWiNode"]["attributes"]["nodeName"]
+                apic_addr = apic["infraWiNode"]["attributes"]["addr"]
+            try:
+                c = Connection(apic_addr)
+                c.username = username
+                c.password = password
+                c.log = LOG_FILE
+                c.connect()
+            except Exception as e:
+                data.append([apic_id, apic_name, str(e)])
+                has_error = True
+                continue
+            try:
+                c.cmd('tail -n 1000 /var/log/dme/log/access.log | grep "GET /snapshots" | grep 404')
+                access_logs = c.output.splitlines()
+                if len(access_logs) < 15 and any("No such file or directory" in line for line in access_logs):
+                    data.append([apic_id, apic_name, '/var/log/dme/log/access.log not found'])
+                    has_error = True
+                    continue
+
+                requests = []
+
+                for line in access_logs:
+                    timestamp_match = re.search(r'\[(\d{1,2}/\w{3}/\d{4}):(\d{2}:\d{2}:\d{2})', line)
+                    filename_match = re.search(r'GET /snapshots/([^\s]+)', line)
+                    
+                    if timestamp_match and filename_match:
+                        timestamp_str = f"{timestamp_match.group(1)}:{timestamp_match.group(2)}"
+                        filename = filename_match.group(1)
+                        try:
+                            timestamp = datetime.strptime(timestamp_str, "%d/%b/%Y:%H:%M:%S")
+                            requests.append((timestamp, filename))
+                        except:
+                            continue
+
+                requests.sort()
+
+                # Checking if any 10 consecutive requests are within 1 minute
+                if len(requests) >= 10:
+                    for i in range(len(requests) - 9):
+                        time_diff = (requests[i + 9][0] - requests[i][0]).total_seconds()
+                        if time_diff <= 60:
+                            window_files = [filename for _, filename in requests[i:i+10]]
+                            for filename in window_files:
+                                data.append([apic_id, apic_name, filename])
+                                result = FAIL_UF
+                            break
+                    
+            except Exception as e:
+                data.append([apic_id, apic_name, str(e)])
+                has_error = True
+                continue
+        
+        if has_error and result == PASS:
+            result = ERROR
+    else:
+        result = NA
+     
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -6200,6 +6286,7 @@ class CheckManager:
 
         # Bugs
         observer_db_size_check,
+        snapshot_files_check,
     ]
     cli_checks = [
         # General
