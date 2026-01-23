@@ -2813,7 +2813,7 @@ def overlapping_vlan_pools_check(**kwargs):
         epg_key = ':'.join([dn.group('tenant'), dn.group('ap'), dn.group('epg')])
         port_keys = []
         if not dn.group('aep'):
-            fex = dn.group('stfex') if dn.group('stfex') else dn.group('dyfex')
+            fex = dn.group('stfex') if dn.group('stfex') else dnF.group('dyfex')
             port = dn.group('stport') if dn.group('stport') else dn.group('dyport')
             if fex:
                 port_keys.append('/'.join([dn.group('node'), fex, port]))
