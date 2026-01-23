@@ -5976,11 +5976,8 @@ def disabled_cipher_check(tversion, username, password, fabric_nodes, **kwargs):
     data = []
     recommended_action = "Re-enable the disabled ciphers or contact Cisco TAC for guidance on cipher configuration"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#disabled-cipher-configuration"
-
+   
     # Check 1: Verify target version is 6.0.2
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-
     if not (tversion.same_as("6.0(2a)") or tversion.same_as("6.0(2h)") or tversion.same_as("6.0(2j)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
