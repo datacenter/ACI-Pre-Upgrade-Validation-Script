@@ -37,7 +37,7 @@ Items                                                        | This Script      
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
-
+[svccoreCtrlr excessive entries check][d30]                  | :white_check_mark: | 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
@@ -57,6 +57,7 @@ Items                                                        | This Script      
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
+[g20]: #svccoreCtrlr-excessive-entries-check
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+
 
 ## General Check Details
 
@@ -2667,6 +2669,16 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
+### svccoreCtrlr excessive entries check
+
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, queries are stuck in (pending) status.
+
+Due to [CSCws84232][62], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
+Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
+
+This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2732,3 +2744,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]:https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
