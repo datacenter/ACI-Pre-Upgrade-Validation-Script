@@ -193,6 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Inband Management Policy Misconfiguration][d29]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #inband-management-policy-misconfiguration
 
 
 ## General Check Details
@@ -2648,6 +2650,26 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Inband Management Policy Misconfiguration
+
+RCA:
+
+Due to the defect [CSCwh80837][62], starting from version 6.0(4c), an implicit deletion of `fvRsCustQosPol` was introduced under InBand EPG as QoS configuration is not applicable to management inband EPG and it was raising an invalid fault under it. This implicit deletion triggers a re-processing and pushes updates to `fvInBEpP` (Inband Endpoint Profile) on leaf nodes where the inband management policy is deployed.
+
+Impact:
+
+When upgrading from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (`mgmtRsInBStNode`) with invalid values, the re-processing triggered by [CSCwh80837][62] will expose the underlying [CSCwd40071][63] defect. This results in continuous policyelem core dumps when attempting to add any access policies configuration to a leaf switch (such as VLANs tied to leaf profiles via physical domain, AAEP, interface policy group, or port selector).
+
+The invalid configuration occurs when `mgmtRsInBStNode` has "0.0.0.0" values (with no mask) for either the "addr" or "gw" fields.
+
+Suggestion:
+
+This check identifies misconfigured `mgmtRsInBStNode` objects where either "addr" or "gw" attributes are set to "0.0.0.0" when the upgrade crosses the 6.0(4c) release boundary. Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
+
+!!! note
+    The [CSCwd40071][63] defect affects versions 5.2(5c) and later, with a fix available in 6.0(1g). However, the issue will only be triggered during upgrades crossing 6.0(4c) due to [CSCwh80837][62].
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2710,3 +2732,5 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
+[63]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
