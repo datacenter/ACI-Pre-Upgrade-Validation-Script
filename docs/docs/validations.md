@@ -193,7 +193,6 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
-[Tacacs server unresponsive check][d29]         | CSCwo28197   | :white_check_mark: | 
 [svccoreCtrlr excessive entries check][d30]     | CSCws8423    | :white_check_mark: | 
 
 [d1]: #ep-announce-compatibility
@@ -224,7 +223,6 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-[d29]: #tacacs-server-unresponsive-check
 [d30]: #svccoreCtrlr-excessive-entries-check
 
 
@@ -2651,13 +2649,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
-### Tacacs server unresponsive check
-
-Due to [CSCwo28197][62], APIC TACACS authentication may fail with the error “AAA server is unresponsive or too slow to respond” caused by stalled AAA/PAM requests after prolonged uptime.The issue may temporarily clear after an APIC reboot or nginx restart.
-
-Administrators may be unable to log in to the APIC using TACACS authentication via GUI or SSH, potentially affecting access during operations or upgrades.
-
-Check APIC nginx logs for TACACS unresponsive errors on affected releases. If detected, contact Cisco TAC or upgrade to a release containing the fix for CSCwo28197 before proceeding with an upgrade.
 
 ### svccoreCtrlr excessive entries check
 
@@ -2732,5 +2723,4 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
-[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo28197
 [63]:https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
