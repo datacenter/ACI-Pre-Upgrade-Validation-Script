@@ -5970,6 +5970,117 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title="Disabled Cipher Configuration")
+def disabled_cipher_check(tversion, username, password, fabric_nodes, **kwargs):
+    headers = ["APIC", "Disabled Cipher Count", "Nginx Log Check Status"]
+    data = []
+    recommended_action = "Re-enable the disabled ciphers or contact Cisco TAC for guidance on cipher configuration"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#disabled-cipher-configuration"
+   
+    # Check 1: Verify target version is 6.0.2
+    if not (tversion.same_as("6.0(2a)") or tversion.same_as("6.0(2h)") or tversion.same_as("6.0(2j)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    # Check 2: Query for disabled ciphers
+    cipher_api = "commCipher.json?query-target-filter=and(or(wcard(commCipher.id,\"ECDHE-RSA\"),wcard(commCipher.id,\"DHE-RSA\"),wcard(commCipher.id,\"TLS_AES_256\")),eq(commCipher.state,\"disabled\"))"
+    try:
+        disabled_ciphers = icurl("class", cipher_api)
+        disabled_cipher_count = len(disabled_ciphers)
+    except Exception as e:
+        log.error("Failed to query disabled ciphers: %s", str(e))
+        return Result(result=ERROR, msg="Failed to query disabled ciphers: {}".format(str(e)), doc_url=doc_url)
+
+    if disabled_cipher_count == 0:
+        return Result(result=PASS, msg="No disabled ciphers found", doc_url=doc_url)
+
+    # Check 3: SSH to all APICs and check nginx logs
+    controllers = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    
+    if not controllers:
+        return Result(result=ERROR, msg="No controllers found in fabricNode. Is the cluster healthy?", doc_url=doc_url)
+
+    prints("")
+    
+    for apic in controllers:
+        attr = apic["fabricNode"]["attributes"]
+        apic_name = attr["name"]
+        node_title = "Checking %s..." % apic_name
+        prints(node_title, end=" ")
+        
+        try:
+            c = Connection(attr["address"])
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            log.error("Connection failed to %s: %s", apic_name, str(e))
+            data.append([apic_name, str(disabled_cipher_count), "Connection Error: {}".format(str(e))])
+            prints(ERROR)
+            continue
+        
+        try:
+            cmd = "zgrep \"Failed to write nginxproxy conf file\" /var/log/dme/log/nginx.bin.war* 2>/dev/null | head -20"
+            c.cmd(cmd, timeout=35)
+            
+            # Log raw output for debugging
+            log.debug("APIC %s raw output: %s", apic_name, repr(c.output))
+            
+            # Check if output contains actual error messages
+            # If zgrep finds matches, the output will have error messages before the prompt
+            # If zgrep finds nothing, the output will only have the command echo and prompt
+            # Look for lines between command and prompt that contain the error message
+            lines = c.output.split("\n")
+            found_error = False
+            
+            for line in lines:
+                # Skip the command echo line and prompt line
+                if "zgrep" in line or line.strip().endswith("#"):
+                    continue
+                # If this line contains the error message and it's not empty, we found it
+                if line.strip() and "Failed to write nginxproxy conf file" in line:
+                    found_error = True
+                    log.debug("APIC %s found error line: %s", apic_name, repr(line))
+                    break
+            
+            if found_error:
+                data.append([apic_name, str(disabled_cipher_count), "FOUND"])
+                log.debug("APIC %s: Nginx error FOUND in logs", apic_name)
+            else:
+                data.append([apic_name, str(disabled_cipher_count), "Not found in nginx logs"])
+                log.debug("APIC %s: Nginx error NOT found in logs (only prompt returned)", apic_name)
+            
+            prints(DONE)
+        except pexpect.TIMEOUT:
+            log.warning("Command timeout on %s", apic_name)
+            data.append([apic_name, str(disabled_cipher_count), "Command Timeout"])
+            prints(ERROR)
+        except pexpect.EOF:
+            log.warning("Connection closed unexpectedly on %s", apic_name)
+            data.append([apic_name, str(disabled_cipher_count), "Connection Closed"])
+            prints(ERROR)
+        except Exception as e:
+            log.exception("Error checking nginx logs on %s", apic_name)
+            data.append([apic_name, str(disabled_cipher_count), "Error: {}".format(str(e))])
+            prints(ERROR)
+        finally:
+            try:
+                c.close()
+            except Exception:
+                pass
+
+    # Determine final result based on priority: FAIL_O > ERROR > PASS
+    if not data:
+        return Result(result=ERROR, msg="Unable to check nginx logs on any APIC", headers=headers, data=[], doc_url=doc_url)
+    
+    if any("FOUND" in row[2] for row in data):
+        result = FAIL_O
+    elif any("Error" in row[2] or "Timeout" in row[2] or "Closed" in row[2] for row in data):
+        result = ERROR
+    else:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 
 @check_wrapper(check_title='APIC VMM inventory sync fault (F0132)')
 def apic_vmm_inventory_sync_faults_check(**kwargs):
@@ -6188,6 +6299,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        disabled_cipher_check,
 
     ]
     ssh_checks = [
@@ -6332,7 +6444,7 @@ def main(_args=None):
     # Print result of each failed check
     for index, check_id in enumerate(cm.check_ids):
         result_obj = cm.get_check_result(check_id)
-        if not result_obj or result_obj.result in (NA, PASS):
+        if not result_obj or result_obj.result in (NA,PASS):
             continue
         check_title = cm.get_check_title(check_id)
         print_result(index + 1, cm.total_checks, check_title, **result_obj.as_dict())
