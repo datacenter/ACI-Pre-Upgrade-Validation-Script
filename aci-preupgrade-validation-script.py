@@ -6025,6 +6025,63 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title="Tacacs server unresponsive check")
+def tacacs_server_unresponsive_check(fabric_nodes, tversion, username, password, **kwargs):
+    result = PASS
+    headers = ['APIC_Name', 'count']
+    data = []
+    recommended_action = "Contact Cisco TAC for Support before upgrade"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tacacs-server-unresponsive-check"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if tversion.older_than("6.1(4h)"):
+        controllers = [node for node in fabric_nodes if node['fabricNode']['attributes']['role'] == 'controller']
+        if not controllers:
+            return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+        has_error = False
+        for controller in controllers:
+            try:
+                connection = Connection(controller['fabricNode']['attributes']['address'])
+                connection.username = username
+                connection.password = password
+                connection.connect()
+                connection.cmd('cd /var/log/dme/log && zgrep -c "AAA server is unresponsive or too slow to respond" nginx.bin.log')
+                count = int(connection.output.strip())
+                if(count > 0):
+                    data.append([controller['fabricNode']['attributes']['name'], count])
+            except Exception as e:
+                has_error = True
+                data.append([controller['fabricNode']['attributes']['name'], str(e)])
+                
+        connection.close()
+
+        if has_error:
+            result = ERROR
+        elif data:
+            result = FAIL_O
+        return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
+    else:
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+    
+@check_wrapper(check_title="svccoreCtrlr excessive entries check")
+def svccoreCtrlr_excessive_entries_check(tversion, **kwargs):
+    result = PASS
+    headers = ['svccoreCtrlr Object Count']
+    data = []
+    recommended_action = "Contact Cisco TAC for Support before upgrade"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccoreCtrlr-excessive-entries-check"
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if tversion.older_than("6.2(1h)") or tversion.same_as("6.2(1h)"):
+        svccore_classes = icurl('class', 'svccoreCtrlr.json')
+        if(len(svccore_classes) > 240):
+            data.append([len(svccore_classes)])
+        if data:
+            result = FAIL_O
+        return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
 # ---- Script Execution ----
 
@@ -6114,6 +6171,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
+        svccoreCtrlr_excessive_entries_check,
 
         # Faults
         apic_disk_space_faults_check,
