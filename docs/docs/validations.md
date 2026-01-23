@@ -193,6 +193,8 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[svccoreCtrlr excessive entries check][d30]     | CSCws8423    | :white_check_mark: | 
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
 
@@ -224,6 +226,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d30]: #svccoreCtrlr-excessive-entries-check
 [d29]: #auto-firmware-update-on-switch-discovery
 
 
