@@ -9,7 +9,8 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-
+test_function = "service_ep_flag_bd_check" 
+ 
 # icurl queries
 vnsLIfCtx_api = "vnsLIfCtx.json"
 vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
@@ -83,6 +84,10 @@ vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
         ),
     ],
 )
-def test_logic(mock_icurl, icurl_outputs, cversion, tversion, expected_result):
-    result = script.service_ep_flag_bd_check(1, 1, script.AciVersion(cversion), script.AciVersion(tversion) if tversion else None)
-    assert result == expected_result
+
+def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
+    result = run_check(
+        cversion=script.AciVersion(cversion),
+        tversion=script.AciVersion(tversion) if tversion else None,
+    )
+    assert result.result == expected_result
