@@ -193,6 +193,8 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Service-EP Flag in BD without PBR][d29]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
+
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +224,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #service-ep-flag-in-bd-without-pbr
 
 
 ## General Check Details
@@ -2648,6 +2651,19 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Service-EP Flag in BD without PBR
+
+On ACI releases 5.2.5c/6.0.1g and 16.0.8e/6.1.1f, the Service-ep flag is set on the Service epg (vlanCktEp) even when PBR (vnsRsLIfCtxToSvcRedirectPol) is not configured.
+The service-ep ctrl setting configures the Don't Learn (DL) Bit to 1 when forwarding the traffic to destination.
+The DL bit being set on traffic coming from service device causes more BUM traffic on customer network.
+
+When customers upgrade to a version >= 16.0.8e/6.1.1f, due to the fix of [CSCwi17652][62] the Service-ep flag gets removed for the specific service EPGs vlanCktEp without PBR 
+
+This may affect working service graphs. If any instances of missing `vnsRsLIfCtxToSvcRedirectPol` are flagged by this script, Cisco TAC must be contacted to identify and resolve any underlying issue before performing the upgrade.
+
+
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2710,3 +2726,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi17652

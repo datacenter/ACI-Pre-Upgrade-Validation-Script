@@ -1,0 +1,311 @@
+[
+    {
+        "vnsLIfCtx": {
+            "attributes": {
+                "connNameOrLbl": "consumer",
+                "ctxDn": "uni/tn-CIB/ctx-DC-VRF",
+                "dn": "uni/tn-CIB/ldevCtx-c-External-to-Any-DC-Prod_Contract-g-Prod-FTD-Local-SG-n-N1/lIfCtx-c-consumer",
+                "l3Dest": "no",
+                "permitLog": "no",
+                "prefGrMemb": "exclude"
+            },
+            "children": [
+                {
+                    "vnsRsLIfCtxToSvcRedirectPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToSvcRedirectPol",
+                            "tCl": "vnsSvcRedirectPol",
+                            "tDn": "uni/tn-CIB/svcCont/svcRedirectPol-Prod-FTD-Outside-Users_RedirectPol",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToLIf": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToLIf",
+                            "tCl": "vnsLIf",
+                            "tDn": "uni/tn-CIB/lDevVip-Prod-SV-FTD/lIf-Prod-SV-FTD-Out",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToCustQosPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToCustQosPol",
+                            "stateQual": "default-target",
+                            "tDn": "uni/tn-common/qoscustom-default"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToBD": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToBD",
+                            "tCl": "fvBD",
+                            "tDn": "uni/tn-CIB/BD-Prod-FTD-Out_BD",
+                            "tType": "mo"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "vnsLIfCtx": {
+            "attributes": {
+                "connNameOrLbl": "provider",
+                "ctxDn": "uni/tn-CIB/ctx-DC-VRF",
+                "dn": "uni/tn-CIB/ldevCtx-c-ANYEPG-To-OSP-Cluster2_LB_uSeg_EPG_Contract-g-Prod_FTD_LB_Local-n-N1/lIfCtx-c-provider",
+                "l3Dest": "no",
+                "permitLog": "no",
+                "prefGrMemb": "exclude"
+            },
+            "children": [
+                {
+                    "vnsRsLIfCtxToSvcRedirectPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToSvcRedirectPol",
+                            "tCl": "vnsSvcRedirectPol",
+                            "tDn": "uni/tn-CIB/svcCont/svcRedirectPol-Prod-FTD-Inside-Servers_RedirectPol",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToLIf": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToLIf",
+                            "tCl": "vnsLIf",
+                            "tDn": "uni/tn-CIB/lDevVip-Prod-SV-FTD/lIf-Prod-SV-FTD-IN",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToCustQosPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToCustQosPol",
+                            "stateQual": "default-target",
+                            "tDn": "uni/tn-common/qoscustom-default"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToBD": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToBD",
+                            "tCl": "fvBD",
+                            "tDn": "uni/tn-CIB/BD-Prod-FTD-IN_BD",
+                            "tType": "mo"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "vnsLIfCtx": {
+            "attributes": {
+                "connNameOrLbl": "provider",
+                "ctxDn": "uni/tn-CIB/ctx-DC-VRF",
+                "dn": "uni/tn-CIB/ldevCtx-c-Test_LB_Contract-g-Prod_FTD_LB_Local-n-N2/lIfCtx-c-provider",
+                "l3Dest": "yes",
+                "permitLog": "no",
+                "prefGrMemb": "exclude"
+            },
+            "children": [
+                {
+                    "vnsRsLIfCtxToLIf": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToLIf",
+                            "tCl": "vnsLIf",
+                            "tDn": "uni/tn-CIB/lDevVip-Prod-SV-LB/lIf-Prod-SV-LB-IN",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToCustQosPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToCustQosPol",
+                            "stateQual": "default-target",
+                            "tDn": "uni/tn-common/qoscustom-default"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToBD": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToBD",
+                            "tCl": "fvBD",
+                            "tDn": "uni/tn-CIB/BD-Prod-LB-IN_BD",
+                            "tType": "mo"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "vnsLIfCtx": {
+            "attributes": {
+                "connNameOrLbl": "consumer",
+                "ctxDn": "uni/tn-CIB/ctx-DC-VRF",
+                "dn": "uni/tn-CIB/ldevCtx-c-Test_LB_Contract-g-Prod_FTD_LB_Local-n-N2/lIfCtx-c-consumer",
+                "l3Dest": "yes",
+                "permitLog": "no",
+                "prefGrMemb": "exclude"
+            },
+            "children": [
+                {
+                    "vnsRsLIfCtxToLIf": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToLIf",
+                            "tCl": "vnsLIf",
+                            "tDn": "uni/tn-CIB/lDevVip-Prod-SV-LB/lIf-Prod-SV-LB-Out",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToCustQosPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToCustQosPol",
+                            "stateQual": "default-target",
+                            "tDn": "uni/tn-common/qoscustom-default"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToBD": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToBD",
+                            "tCl": "fvBD",
+                            "tDn": "uni/tn-CIB/BD-Prod-LB-Out_BD",
+                            "tType": "mo"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "vnsLIfCtx": {
+            "attributes": {
+                "connNameOrLbl": "consumer",
+                "ctxDn": "uni/tn-CIB/ctx-DC-VRF",
+                "dn": "uni/tn-CIB/ldevCtx-c-Test_LB_Contract-g-Prod-FW-LB-SG-n-node1/lIfCtx-c-consumer",
+                "l3Dest": "yes",
+                "permitLog": "no",
+                "prefGrMemb": "exclude"
+            },
+            "children": [
+                {
+                    "vnsRsLIfCtxToSvcRedirectPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToSvcRedirectPol",
+                            "tCl": "vnsSvcRedirectPol",
+                            "tDn": "uni/tn-CIB/svcCont/svcRedirectPol-Prod-FTD-Inside-Servers_RedirectPol",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToLIf": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToLIf",
+                            "tCl": "vnsLIf",
+                            "tDn": "uni/tn-CIB/lDevVip-Prod-SV-FTD/lIf-Prod-SV-FTD-IN",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToCustQosPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToCustQosPol",
+                            "stateQual": "default-target",
+                            "tDn": "uni/tn-common/qoscustom-default"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToBD": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToBD",
+                            "tCl": "fvBD",
+                            "tDn": "uni/tn-CIB/BD-Prod-FTD-IN_BD",
+                            "tType": "mo"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "vnsLIfCtx": {
+            "attributes": {
+                "connNameOrLbl": "consumer",
+                "ctxDn": "uni/tn-CIB/ctx-DC-VRF",
+                "dn": "uni/tn-CIB/ldevCtx-c-Prod-ExtEPG-to-OSP_uSeg_EPG-g-Prod_FTD_LB_Local-n-N2/lIfCtx-c-consumer",
+                "l3Dest": "yes",
+                "permitLog": "no",
+                "prefGrMemb": "exclude"
+            },
+            "children": [
+                {
+                    "vnsRsLIfCtxToLIf": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToLIf",
+                            "tCl": "vnsLIf",
+                            "tDn": "uni/tn-CIB/lDevVip-Prod-SV-LB/lIf-Prod-SV-LB-Out",
+                            "tType": "mo"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToCustQosPol": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToCustQosPol",
+                            "stateQual": "default-target",
+                            "tDn": "uni/tn-common/qoscustom-default"
+                        }
+                    }
+                },
+                {
+                    "vnsRsLIfCtxToBD": {
+                        "attributes": {
+                            "rType": "mo",
+                            "rn": "rsLIfCtxToBD",
+                            "tCl": "fvBD",
+                            "tDn": "uni/tn-CIB/BD-Prod-LB-Out_BD",
+                            "tType": "mo"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+]
