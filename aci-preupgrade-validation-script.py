@@ -1786,10 +1786,10 @@ def get_vpc_nodes():
     return vpc_nodes
 
 
-def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
-    username = password = None
+def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None, username=None, password=None):
     if not api_only:
-        username, password = get_credentials()
+        if not username or not password:
+            username, password = get_credentials()
 
     try:
         fabric_nodes = get_fabric_nodes()
@@ -6039,6 +6039,8 @@ def parse_args(args):
     parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
     parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
     parser.add_argument("--timeout", action="store", nargs="?", type=int, const=-1, default=DEFAULT_TIMEOUT, help="Show default script timeout (sec) or overwrite it when a number is provided (e.g. --timeout 1200).")
+    parser.add_argument("-u", "--username", action="store", type=str, help="Sets username to be used. If not provied it will prompt for")
+    parser.add_argument("-p", "--password", action="store", type=str, help="Sets password to be used. If not provied it will prompt for")
     parsed_args = parser.parse_args(args)
     return parsed_args
 
@@ -6317,7 +6319,7 @@ def main(_args=None):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
-    common_data = query_common_data(args.api_only, args.cversion, args.tversion)
+    common_data = query_common_data(args.api_only, args.cversion, args.tversion, args.username, args.password)
     write_script_metadata(args.api_only, args.timeout, cm.total_checks, common_data)
 
     cm.run_checks(common_data)
