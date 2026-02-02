@@ -2672,9 +2672,9 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
-### svccoreCtrlr excessive entries check
+### svccoreCtrlr or svccoreNode excessive entries check
 
-Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, queries are stuck in (pending) status.
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
 
 Due to [CSCws84232][62], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
