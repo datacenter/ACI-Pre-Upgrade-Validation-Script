@@ -193,7 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
-[svccoreCtrlr excessive entries check][d30]     | CSCws8423    | :white_check_mark: | 
+[svccoreCtrlr or svccoreNode excessive entries check][d30]     | CSCws8423    | :white_check_mark: | 
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -223,7 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-[d30]: #svccoreCtrlr-excessive-entries-check
+[d30]: #svccoreCtrlr-or-svccoreNode-excessive-entries-check
 
 
 ## General Check Details
@@ -2650,9 +2650,9 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
-### svccoreCtrlr excessive entries check
+### svccoreCtrlr or svccoreNode excessive entries check
 
-Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, queries are stuck in (pending) status.
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
 
 Due to [CSCws84232][62], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.

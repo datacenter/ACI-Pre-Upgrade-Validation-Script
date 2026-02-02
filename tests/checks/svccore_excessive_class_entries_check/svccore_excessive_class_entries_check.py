@@ -12,6 +12,7 @@ test_function = "svccoreCtrlr_excessive_entries_check"
 
 # icurl queries
 svccoreClassEntry = 'svccoreCtrlr.json'
+svccoreNodeEntry = 'svccoreNode.json'
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result",
@@ -30,16 +31,38 @@ svccoreClassEntry = 'svccoreCtrlr.json'
         ),
         # No excessive class entries
         (
-            {svccoreClassEntry: read_data(dir, "svccore_positive.json")},
+            {
+                svccoreClassEntry: read_data(dir, "svccore_positive.json"),
+                svccoreNodeEntry: read_data(dir, "svccoreNode_positive.json")
+            },
             "5.2(8e)",
             script.PASS,
         ),
         # Excessive class entries found
         (
-            {svccoreClassEntry: read_data(dir, "svccore_negative.json")},
+            {
+                svccoreClassEntry: read_data(dir, "svccore_negative.json"),
+                svccoreNodeEntry: read_data(dir, "svccoreNode_positive.json")
+            },
             "5.2(8e)",
-            script.FAIL_O,
+            script.MANUAL,
         ),
+        (
+            {
+                svccoreClassEntry: read_data(dir, "svccoreNode_negative.json"),
+                svccoreNodeEntry: read_data(dir, "svccoreNode_negative.json")
+            },
+            "5.2(8e)",
+            script.MANUAL,
+        ),
+        (
+            {
+                svccoreClassEntry: read_data(dir, "svccore_positive.json"),
+                svccoreNodeEntry: read_data(dir, "svccoreNode_negative.json")
+            },
+            "5.2(8e)",
+            script.MANUAL,
+        )
     ],
 )
 

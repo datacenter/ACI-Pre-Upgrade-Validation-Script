@@ -6026,21 +6026,22 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
     
-@check_wrapper(check_title="svccoreCtrlr excessive entries check")
-def svccoreCtrlr_excessive_entries_check(tversion, **kwargs):
+@check_wrapper(check_title="svccoreCtrlr or svccoreNode excessive entries check")
+def svccoreCtrlr_or_svccoreNode_excessive_entries_check(tversion, **kwargs):
     result = PASS
-    headers = ['svccoreCtrlr Object Count']
+    headers = ['svccoreCtrlr Object Count','svccoreNode Object Count']
     data = []
     recommended_action = "Contact Cisco TAC for Support before upgrade"
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccoreCtrlr-excessive-entries-check"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccoreCtrlr-or-svccoreNode-excessive-entries-check"
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
     if tversion.older_than("6.2(1h)") or tversion.same_as("6.2(1h)"):
         svccore_classes = icurl('class', 'svccoreCtrlr.json')
-        if(len(svccore_classes) > 240):
-            data.append([len(svccore_classes)])
+        svccoreNode_classes = icurl('class', 'svccoreNode.json')
+        if(len(svccore_classes) > 2 or len(svccoreNode_classes) > 2):
+            data.append([len(svccore_classes), len(svccoreNode_classes)])
         if data:
-            result = FAIL_O
+            result = MANUAL
         return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
     else:
         return Result(result=NA, msg=VER_NOT_AFFECTED)
@@ -6133,7 +6134,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
-        svccoreCtrlr_excessive_entries_check,
+        svccoreCtrlr_or_svccoreNode_excessive_entries_check,
 
         # Faults
         apic_disk_space_faults_check,
