@@ -1,0 +1,36 @@
+[
+  {
+    "svccoreCtrlr": {
+      "attributes": {
+        "ack": "yes",
+        "annotation": "",
+        "childAction": "",
+        "corefileUri": "/data/techsupport/dbgexp_coreexp-default_scale-msite4-apic3_sysid-3_2025-05-29T07-35PDT_svc_ifc_reader.bin_log.3866.tar.gz",
+        "createTime": "2025-05-29T06:30:26.000-08:00",
+        "ctrlrId": "3",
+        "dn": "dbgs/cores/ctrlr-3-svc-reader-ts-2025-05-29T06:30:26.000-08:00",
+        "executableName": "svc_ifc_reader.bin",
+        "exitCode": "139",
+        "extMngdBy": "",
+        "fileSize": "2604202606",
+        "lcOwn": "local",
+        "md5CkSum": "f9d78c3898add98bade9f559f0e0bdec",
+        "modTs": "2025-07-21T20:19:56.949-08:00",
+        "monPolDn": "uni/fabric/monfab-default",
+        "procId": "3866",
+        "procStartTime": "2025-04-24T01:44:56.000-08:00",
+        "procUptimeSeconds": "3041132.000000",
+        "restartCnt": "0",
+        "rlimit": "4294967295",
+        "stackMem": "352",
+        "status": "",
+        "svcName": "reader",
+        "sysImgName": "6.1(3.133a) Built on Tue Apr 22 03:49:40 PDT 2025 by jenkins on kube28",
+        "sysImgVer": "6.1(3.133a)",
+        "uid": "0",
+        "userdom": "",
+        "virtMem": "634355712"
+      }
+    }
+  }
+]

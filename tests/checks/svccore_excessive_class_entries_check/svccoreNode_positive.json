@@ -1,0 +1,292 @@
+[
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    },
+    {
+      "svccoreNode": {
+        "attributes": {
+          "ack": "no",
+          "cardId": "1",
+          "corefileUri": "/data/techsupport/dbgexp_coreexp-default_pod1-spine2_sysid-1002_2025-09-05T11-18UTC_1757071129_0x102_login_log.65166.tar.gz",
+          "createTime": "2025-09-05T11:18:49.000+00:00",
+          "deathRsn": "Default",
+          "dn": "dbgs/cores/node-1002-card-1-svc-login-ts-2025-09-05T11:18:49.000+00:00",
+          "exitCode": "placeHolderTBD",
+          "fileSize": "6312484",
+          "lastHbSeconds": "0.000000",
+          "md5CkSum": "1f0f973f74ff19598820f06b28e4b115",
+          "modTs": "2025-09-05T10:56:48.957+00:00",
+          "monPolDn": "uni/fabric/monfab-default",
+          "nodeId": "1002",
+          "procId": "65166",
+          "procStartTime": "1970-01-01T00:00:00.000+00:00",
+          "procUptimeSeconds": "0.000000",
+          "restartCnt": "0",
+          "rlimit": "0",
+          "stackMem": "0",
+          "svcName": "login",
+          "sysImgName": "aci-n9000-system.15.3.2c.bin",
+          "sysImgVer": "15.3(2c) S0\n",
+          "virtMem": "0"
+        }
+      }
+    }
+]
