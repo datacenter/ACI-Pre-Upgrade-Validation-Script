@@ -6042,7 +6042,7 @@ def svccoreCtrlr_or_svccoreNode_excessive_entries_check(tversion, **kwargs):
     if tversion.older_than("6.2(1h)") or tversion.same_as("6.2(1h)"):
         svccore_classes = icurl('class', 'svccoreCtrlr.json')
         svccoreNode_classes = icurl('class', 'svccoreNode.json')
-        if(len(svccore_classes) > 2 or len(svccoreNode_classes) > 2):
+        if(len(svccore_classes) > 240 or len(svccoreNode_classes) > 240):
             data.append([len(svccore_classes), len(svccoreNode_classes)])
         if data:
             result = MANUAL
