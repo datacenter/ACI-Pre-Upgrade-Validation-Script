@@ -79,14 +79,13 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
 """
 
 @pytest.mark.parametrize(
-    "icurl_outputs, conn_failure, conn_cmds, cversion, tversion, fabric_nodes, expected_result",
+    "icurl_outputs, conn_failure, conn_cmds, tversion, fabric_nodes, expected_result",
     [
         # Version not affected (6.0(3d) or newer)
         (
             {},
             False,
             [],
-            "6.0(3d)",
             "6.0(3e)",
             read_data(dir, "fabricNode.json"),
             script.NA,
@@ -106,7 +105,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "5.2(1h)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.PASS,
         ),
@@ -138,7 +136,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -170,7 +167,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -180,7 +176,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "5.2(1h)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -199,7 +194,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -218,7 +212,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "5.2(1h)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -237,7 +230,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.PASS,
         ),
@@ -256,7 +248,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
         ),
@@ -266,7 +257,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -285,7 +275,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -304,7 +293,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -322,7 +310,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.FAIL_UF,
         ),
@@ -340,7 +327,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.PASS,
         ),
@@ -350,7 +336,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.ERROR,
         ),
@@ -368,7 +353,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_single_apic.json"),
             script.ERROR,
         ),
@@ -400,7 +384,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "5.2(8g)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.ERROR,
         ),
@@ -419,7 +402,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.PASS,
         ),
@@ -438,7 +420,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -457,7 +438,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.PASS,
         ),
@@ -476,7 +456,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "5.2(8g)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -508,7 +487,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "6.0(2a)",
-            "6.0(3d)",
             read_data(dir, "fabricNode.json"),
             script.FAIL_UF,
         ),
@@ -526,7 +504,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.FAIL_UF,
         ),
@@ -544,7 +521,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.PASS,
         ),
@@ -554,7 +530,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
             True,
             [],
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.ERROR,
         ),
@@ -572,7 +547,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ]
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old_single_apic.json"),
             script.ERROR,
         ),
@@ -604,7 +578,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
         ),
@@ -636,7 +609,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.ERROR,
         ),
@@ -655,7 +627,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.PASS,
         ),
@@ -674,7 +645,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
         ),
@@ -693,7 +663,6 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 for apic_ip in apic_ips
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.PASS,
         ),
@@ -725,15 +694,13 @@ grep_output_boundary_pass = """10.0.0.3 (-) - - [24/Dec/2025:14:30:00 +0000] "GE
                 ],
             },
             "3.2(6o)",
-            "6.0(3d)",
             read_data(dir, "fabricNode_old.json"),
             script.FAIL_UF,
         ),
     ],
 )
-def test_snapshot_files_check(run_check, mock_icurl, mock_conn, cversion, tversion, fabric_nodes, expected_result):
+def test_snapshot_files_check(run_check, mock_icurl, mock_conn, tversion, fabric_nodes, expected_result):
     result = run_check(
-        cversion=script.AciVersion(cversion),
         tversion=script.AciVersion(tversion),
         username="fake_username",
         password="fake_password",

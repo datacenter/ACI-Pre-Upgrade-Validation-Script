@@ -6027,14 +6027,14 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
  
 
 @check_wrapper(check_title='Snapshot files check')
-def snapshot_files_check(fabric_nodes, cversion, tversion, username, password, **kwargs):
+def snapshot_files_check(fabric_nodes, tversion, username, password, **kwargs):
     result = PASS
     headers = ['apic_id', 'apic_name', 'snapshot_files']
     data = []
     recommended_action = 'Contact Cisco TAC for Support before upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#Snapshot-files-check'
 
-    if cversion.older_than('6.0(3d)') or tversion.older_than('6.0(3d)'):
+    if tversion.older_than('6.0(3d)'):
         apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
         if not apics:
             return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
