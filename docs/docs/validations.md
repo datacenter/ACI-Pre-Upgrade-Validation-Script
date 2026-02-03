@@ -2651,14 +2651,15 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 ### Snapshot files check
 
+
 RCA:
-Issue occured in 3 node apic cluster, AE process on one apic is busy. Reason is it's trying to fetch the snapshot files which was taken earlier is missing on all apics.
+Due to defect [CSCwe07002][62], APIC upgrades or downgrades may fail when the AE (Application Engine) process becomes stuck in an infinite retry loop attempting to download snapshot files that no longer exist but still have configuration references. 
 
 IMPACT:
-Access logs will be flooded with the GET calls. APIC Upgrade/downgrade will fail with message Installer Exited - Pre-upgrade callbacks were not completed.
+This causes the AE process to remain busy, and the upgrade will fail with the error `Installer Exited - Pre-upgrade callbacks were not completed`. When this occurs, the APIC access logs will be flooded with failed GET requests for the missing snapshot file.
 
 Suggestion:
-Restart AE on each APIC one at a time. For Reference [CSCwe07002][62].
+Prior to the fix, there was no limit on retry attempts. The fix in [CSCwe07002][62] limits snapshot file synchronization retries to 5 attempts. Cisco TAC must be contacted to restart the AE service as a workaround.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
