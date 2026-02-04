@@ -6025,6 +6025,47 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title="presListener MO Status")
+def pres_listener_mo_check(fabric_nodes, tversion, **kwargs):
+    result = PASS
+    msg = ''
+    headers = ['Pod-ID', 'Node-ID', 'State']
+    data = []
+    recommended_action = 'Contact TAC to apply the workaround for the listed Nodes BEFORE Upgrade.'
+    # fabricNode.fabricSt shows `disabled` for both Decommissioned and Maintenance (GIR).
+    # fabricRsDecommissionNode.debug==yes is required to show `disabled (Maintenance)`.
+    presListener = icurl('class','presListener.json')
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+       
+    if tversion.newer_than("6.1(3f)"):
+        result = NA
+        return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
+    
+    for fabric_node in fabric_nodes:
+        found = False
+        if fabric_node['fabricNode']['attributes']['role'] != "leaf":
+            continue
+        state = fabric_node['fabricNode']['attributes']['fabricSt']
+        if state != 'active':
+            continue
+        dn = re.search(node_regex, fabric_node['fabricNode']['attributes']['dn'])
+        pod_id = dn.group("pod")
+        node_id = dn.group("node")
+        for mo in presListener:
+            if (
+                node_id in mo['presListener']['attributes']['lstDn'] and 
+                'class-4307' in mo['presListener']['attributes']['dn']
+                ):
+                found = True
+                continue
+        if not found:
+            result = FAIL_O
+            data.append([pod_id, node_id, state])       
+    if not fabric_nodes:
+        result = MANUAL
+        msg = 'Active Switch Leaf fabricNode not found!'
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
 
 # ---- Script Execution ----
 
@@ -6188,6 +6229,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        pres_listener_mo_check,
 
     ]
     ssh_checks = [
