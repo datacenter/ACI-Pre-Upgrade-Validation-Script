@@ -1,0 +1,50 @@
+[
+    {
+        "presListener": {
+            "attributes": {
+                "childAction": "",
+                "dn": "resregistry/resregistry-20/relnholder/rspresClass-[resregistry/resregistry-20/class-4307]/list-[uni/infra/nodecfgcont]",
+                "lcOwn": "local",
+                "lstDn": "uni/infra/nodecfgcont",
+                "modTs": "2026-01-21T01:44:22.201+00:00",
+                "status": ""
+            }
+        }
+    },
+    {
+        "presListener": {
+            "attributes": {
+                "childAction": "",
+                "dn": "resregistry/resregistry-20/relnholder/rspresClass-[resregistry/resregistry-20/class-4307]/list-[uni/infra/nodecfgcont/node-102]",
+                "lcOwn": "local",
+                "lstDn": "uni/infra/nodecfgcont/node-102",
+                "modTs": "2026-01-21T16:02:15.685+00:00",
+                "status": ""
+            }
+        }
+    },
+    {
+        "presListener": {
+            "attributes": {
+                "childAction": "",
+                "dn": "resregistry/resregistry-20/relnholder/rspresClass-[resregistry/resregistry-20/class-4307]/list-[uni/infra/nodecfgcont/node-101]",
+                "lcOwn": "local",
+                "lstDn": "uni/infra/nodecfgcont/node-101",
+                "modTs": "2026-01-21T16:02:15.685+00:00",
+                "status": ""
+            }
+        }
+    },
+    {
+        "presListener": {
+            "attributes": {
+                "childAction": "",
+                "dn": "resregistry/resregistry-20/relnholder/rspresClass-[resregistry/resregistry-20/class-4307]/list-[uni/infra/nodecfgcont/node-103]",
+                "lcOwn": "local",
+                "lstDn": "uni/infra/nodecfgcont/node-103",
+                "modTs": "2026-01-21T18:39:38.321+00:00",
+                "status": ""
+            }
+        }
+    }
+]

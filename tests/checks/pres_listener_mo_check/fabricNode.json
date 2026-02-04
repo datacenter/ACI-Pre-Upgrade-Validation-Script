@@ -1,0 +1,95 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "off",
+                "address": "10.2.176.64",
+                "annotation": "",
+                "apicType": "apic",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-101",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "101",
+                "lastStateModTs": "2026-01-28T22:24:54.843+00:00",
+                "lcOwn": "local",
+                "modTs": "2026-01-28T22:25:42.207+00:00",
+                "model": "N9K-C93180YC-EX",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "SITE2-L101",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "leaf",
+                "serial": "FDO204520TY",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(6e)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "off",
+                "address": "10.2.176.66",
+                "annotation": "",
+                "apicType": "apic",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-102",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "102",
+                "lastStateModTs": "2026-01-28T22:25:45.863+00:00",
+                "lcOwn": "local",
+                "modTs": "2026-01-28T22:26:42.234+00:00",
+                "model": "N9K-C93180YC-EX",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "SITE2-L102",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "leaf",
+                "serial": "FDO204520SZ",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(6e)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "off",
+                "address": "10.2.176.67",
+                "annotation": "",
+                "apicType": "apic",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-103",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "103",
+                "lastStateModTs": "2026-01-28T22:25:45.863+00:00",
+                "lcOwn": "local",
+                "modTs": "2026-01-28T22:26:42.231+00:00",
+                "model": "N9K-C93240YC-FX2",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "SITE2-L103",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "leaf",
+                "serial": "FDO25210JA1",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.3(2f)"
+            }
+        }
+    }
+]
