@@ -6032,6 +6032,7 @@ def pres_listener_mo_check(fabric_nodes, tversion, **kwargs):
     headers = ['Pod-ID', 'Node-ID', 'State']
     data = []
     recommended_action = 'Contact TAC to apply the workaround for the listed Nodes BEFORE Upgrade.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#missing-preslistener-mo'
     # fabricNode.fabricSt shows `disabled` for both Decommissioned and Maintenance (GIR).
     # fabricRsDecommissionNode.debug==yes is required to show `disabled (Maintenance)`.
     presListener = icurl('class','presListener.json')
@@ -6065,7 +6066,7 @@ def pres_listener_mo_check(fabric_nodes, tversion, **kwargs):
     if not fabric_nodes:
         result = MANUAL
         msg = 'Active Switch Leaf fabricNode not found!'
-    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
 
