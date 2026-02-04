@@ -2658,7 +2658,7 @@ Due to the defect [CSCwh80837][62], starting from version 6.0(4c), an implicit d
 
 Impact:
 
-When upgrading from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (`mgmtRsInBStNode`) with invalid values, the re-processing triggered by [CSCwh80837][62] will expose the underlying [CSCwd40071][63] defect. This results in continuous policyelem core dumps when attempting to add any access policies configuration to a leaf switch (such as VLANs tied to leaf profiles via physical domain, AAEP, interface policy group, or port selector).
+When upgrading from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (`mgmtRsInBStNode`) with invalid values, the re-processing triggered by [CSCwh80837][62] will expose the underlying [CSCwd40071][63] defect. This results in continuous policyelem core dumps and switch reboot when attempting to add any access policies configuration to a leaf switch (such as VLANs tied to leaf profiles via physical domain, AAEP, interface policy group, or port selector).
 
 The invalid configuration occurs when `mgmtRsInBStNode` has "0.0.0.0" values (with no mask) for either the "addr" or "gw" fields.
 
