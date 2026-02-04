@@ -6025,6 +6025,58 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+# Connection Base Check
+@check_wrapper(check_title='GX HW_Changes_Bit')
+def gx_hw_changes_bit_check(username, password, fabric_nodes, cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Switch ID", "Switch Name", "HW Changes Bits value"]
+    data = []
+    recommended_action = 'Review The Bug RNE and apply the workaround before Upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#gx_hw_changes_bit'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if cversion.older_than("4.2(3a)") and tversion.newer_than("4.2(5l)"):
+        result = PASS    
+	# -GX Switches can be Leaf or Spine
+    switches = [node for node in fabric_nodes if (
+        node["fabricNode"]["attributes"]["model"] == "N9K-C9316D-GX" or 
+        node["fabricNode"]["attributes"]["model"] == "N9K-C93600CD-GX"
+        )]
+    if not switches:
+        return Result(result=NA, msg="No affected Switches found", doc_url=doc_url)
+
+    for switch in switches:
+        switch_id = switch["fabricNode"]["attributes"]["id"]
+        switch_name = switch["fabricNode"]["attributes"]["name"]
+        switch_addr = switch["fabricNode"]["attributes"]["address"]
+
+        try:
+            c = Connection(switch_addr)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([switch_id, switch_name, str(e)])
+            has_error = True
+            continue
+        try:
+            cmd = r"vsh -c 'show sprom cpu-info' | grep 'HW Changes Bits'"
+            c.cmd(cmd)
+            if "HW Changes Bits : 0x3" in c.output:
+                data.append([switch_id, switch_name, '0x3 Found!'])
+                #has_error = True
+                continue
+        except Exception as e:
+            data.append([switch_id, switch_name, str(e)])
+            has_error = True
+            continue
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_UF
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
 
