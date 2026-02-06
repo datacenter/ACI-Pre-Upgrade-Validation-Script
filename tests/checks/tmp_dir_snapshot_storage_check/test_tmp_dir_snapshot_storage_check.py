@@ -79,6 +79,24 @@ faultInst_api = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"
             "6.0(3a)",
             script.FAIL_UF,
         ),
+        # 3.x version with /tmp faults
+        (
+            {faultInst_api: read_data(dir, "faultInst_tmp_pos.json")},
+            "3.2(10e)",
+            script.FAIL_UF,
+        ),
+        # 4.x version with only non-/tmp faults (should PASS)
+        (
+            {faultInst_api: read_data(dir, "faultInst_non_tmp.json")},
+            "4.2(7f)",
+            script.PASS,
+        ),
+        # 6.0.x version with mixed faults
+        (
+            {faultInst_api: read_data(dir, "faultInst_mixed.json")},
+            "6.0(5h)",
+            script.FAIL_UF,
+        ),
         # ===== FIXED VERSIONS (>= 6.1(4a)) =====
         # Exact fix version 6.1(4a) with /tmp faults (should be NA)
         (
