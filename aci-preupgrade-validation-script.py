@@ -6036,8 +6036,11 @@ def gx_hw_changes_bit_check(username, password, fabric_nodes, cversion, tversion
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
-    if cversion.older_than("4.2(3a)") and tversion.newer_than("4.2(5l)"):
-        result = PASS    
+    if (
+        cversion.older_than("4.2(3a)") or cversion.newer_than("4.2(5a)")
+        ) and tversion.newer_than("4.2(5l)"):
+        result = NA  
+    has_error = False  
 	# -GX Switches can be Leaf or Spine
     switches = [node for node in fabric_nodes if (
         node["fabricNode"]["attributes"]["model"] == "N9K-C9316D-GX" or 
@@ -6240,6 +6243,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        gx_hw_changes_bit_check,
 
     ]
     ssh_checks = [
