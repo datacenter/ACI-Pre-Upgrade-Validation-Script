@@ -1,0 +1,64 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.1.72.70",
+                "annotation": "",
+                "apicType": "apic",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-101",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "101",
+                "lastStateModTs": "2026-01-21T14:24:21.952-05:00",
+                "lcOwn": "local",
+                "modTs": "2026-01-21T14:24:22.964-05:00",
+                "model": "N9K-C9316D-GX",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "leaf1",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "leaf",
+                "serial": "FDO221802B0",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-16.0(9d)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.1.72.71",
+                "annotation": "",
+                "apicType": "apic",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-103",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "103",
+                "lastStateModTs": "2026-01-20T19:37:36.258-05:00",
+                "lcOwn": "local",
+                "modTs": "2026-01-20T19:38:54.044-05:00",
+                "model": "N9K-C93600CD-GX",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "leaf3",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "leaf",
+                "serial": "FDO22180284",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-16.0(9d)"
+            }
+        }
+    }
+]
