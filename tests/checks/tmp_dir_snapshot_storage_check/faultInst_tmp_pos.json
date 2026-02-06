@@ -1,0 +1,32 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "threshold-crossed",
+                "code": "F1527",
+                "descr": "Storage unit /tmp on Node 1 of pod 1 is 80% full",
+                "dn": "topology/pod-1/node-1/sys/ch/p-[/tmp]-fault-F1527"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "threshold-crossed",
+                "code": "F1528",
+                "descr": "Storage unit /tmp on Node 2 of pod 1 is 87% full",
+                "dn": "topology/pod-1/node-2/sys/ch/p-[/tmp]-fault-F1528"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "threshold-crossed",
+                "code": "F1529",
+                "descr": "Storage unit /tmp on Node 3 of pod 1 is 95% full",
+                "dn": "topology/pod-1/node-3/sys/ch/p-[/tmp]-fault-F1529"
+            }
+        }
+    }
+]

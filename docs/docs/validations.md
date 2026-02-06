@@ -190,7 +190,8 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[/tmp Directory Disk Space for Snapshot Storage][d29] | CSCwo96334   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -220,6 +221,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #tmp-directory-disk-space-for-snapshot-storage
 
 
 ## General Check Details
@@ -2604,6 +2606,38 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### /tmp Directory Disk Space for Snapshot Storage
+
+Prior to ACI version 6.1(4), the APIC uses the `/tmp` directory to store database snapshots during the upgrade process. If the `/tmp` directory has insufficient free space (typically indicated by disk space faults F1527, F1528, or F1529), the upgrade process may fail due to inability to create required snapshot files.
+
+Due to [CSCwo96334][60], starting from ACI version 6.1(4), snapshots are stored in `/data` directory instead of `/tmp`, which provides more available disk space and resolves this issue.
+
+This check monitors the `/tmp` directory utilization on APICs by querying for the following faults:
+
+- **F1527** (Minor): Storage unit is 75-84% full
+- **F1528** (Major): Storage unit is 85-89% full  
+- **F1529** (Critical): Storage unit is 90-100% full
+
+**Impact:**
+
+If `/tmp` is at or above 75% utilization when upgrading to versions prior to 6.1(4), the upgrade may fail when attempting to create database snapshots. This can result in:
+
+- Upgrade workflow failure
+- Inability to complete APIC database conversion
+- Potential need for manual cleanup and upgrade retry
+
+**Recommended Action:**
+
+If this check flags high `/tmp` utilization:
+
+1. Contact Cisco TAC for assistance before proceeding with the upgrade
+2. Work with TAC to identify and remove unnecessary files from `/tmp` 
+3. Consider upgrading to ACI 6.1(4) or later where snapshots use `/data` directory instead
+4. Ensure at least 25-30% free space in `/tmp` before attempting upgrade to pre-6.1(4) versions
+
+**Note:** This check only applies when upgrading to versions older than 6.1(4). For upgrades to 6.1(4) or later, this check returns N/A as the issue is resolved in those versions.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2664,5 +2698,6 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
+[60]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo96334
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
