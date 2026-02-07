@@ -1,0 +1,13 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "address": "10.0.0.101",
+        "dn": "topology/pod-1/node-101",
+        "id": "101",
+        "name": "fab5-leaf1",
+        "role": "leaf"
+      }
+    }
+  }
+]

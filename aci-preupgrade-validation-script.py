@@ -6025,6 +6025,63 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+# Connection Base Check
+@check_wrapper(check_title='Bootx Service tmp files')
+def bootx_service_tmp_files_check(username, password, fabric_nodes, cversion, **kwargs):
+    result = PASS
+    headers = ["APIC ID", "APIC Name", "Folder Location", "Number of files"]
+    data = []
+    recommended_action = 'Review the workaround for the bug and apply it before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#bootx-service-tmp-files'
+
+    if (cversion.older_than("6.0(2a)")) or (cversion.newer_than("6.0(9a)") and cversion.older_than("6.1(1a)")) or (cversion.newer_than("6.1(2a)")):
+        result = NA
+        return Result(result=result, msg="Current Version not affected.")
+
+    apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    if not apics:
+        return Result(result=ERROR, msg="No fabricNode of APIC. Is the cluster healthy?", doc_url=doc_url)
+    # condition is version <6, address is populated in fabricNode
+    folder_name = "/firmware/tmp"
+    has_error = False
+    for apic in apics:
+        apic_id = apic["fabricNode"]["attributes"]["id"]
+        apic_name = apic["fabricNode"]["attributes"]["name"]
+        apic_addr = apic["fabricNode"]["attributes"]["address"]
+        try:
+            c = Connection(apic_addr)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([apic_id, apic_name, "-", str(e)])
+            has_error = True
+            continue
+        try:
+            cmd = r"ls -ltr /firmware/tmp | head -1"
+            c.cmd(cmd)
+            if "No such file or directory" in c.output:
+                data.append([apic_id, apic_name, '/firmware/tmp not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
+                has_error = True
+                continue
+            dbstats = c.output.split("\n")
+            for line in dbstats:
+                total_files_regex = r"total (?P<files>\d{1,})"
+                numberof_files_match = re.match(total_files_regex, line)
+                if numberof_files_match:
+                    files = numberof_files_match.group("files")
+                    if int(files) > 1000:
+                        data.append([apic_id, apic_name, folder_name, files])
+        except Exception as e:
+            data.append([apic_id, apic_name, "-", str(e)])
+            has_error = True
+            continue
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
 
@@ -6188,6 +6245,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        bootx_service_tmp_files_check,
 
     ]
     ssh_checks = [
