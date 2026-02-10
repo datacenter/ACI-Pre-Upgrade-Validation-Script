@@ -6026,6 +6026,84 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# Connection Base Check
+@check_wrapper(check_title='Sup-A(+) /MNT/PSS Filesystem Check')
+def sup_a_filesystem_check(username, password, fabric_nodes, tversion, **kwargs):
+    result = PASS
+    headers = ["Switch ID", "Switch Name", "/mnt/pss Folder usage (MB)", "File Location"]
+    data = []
+    recommended_action = 'Review The Bug RNE and apply the workaround to remove any unwanted file before Upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#sup-aa-mnt-pss-filesystem'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if tversion.newer_than("6.1(4a)"):
+        return Result(result=NA, msg='Version not Affected')
+
+    has_error = False  
+    n9k_sup_api = 'eqptSupC.json'
+    n9k_sup_api += '?query-target-filter=and(wcard(eqptSupC.model,"N9K-SUP-A"))' 
+    # Affected model is Sup-A or Sup-A+
+    n9k_sup_mos = icurl('class', n9k_sup_api)
+    if not n9k_sup_mos:
+        return Result(result=NA, msg="No affected Supervisors found", doc_url=doc_url)
+    
+    nodes = []
+    sup_regex = node_regex + r'/sys/ch/supslot-(?P<slot>\d)/sup'
+    for sup in n9k_sup_mos:
+        node_match = re.search(sup_regex, sup["eqptSupC"]["attributes"]["dn"])
+        if node_match:
+            nodes.append(node_match.group("node"))
+    nodes = list(set(nodes))
+
+    switches = [node for node in fabric_nodes if (
+        node["fabricNode"]["attributes"]["id"] in nodes)]
+
+    for switch in switches:
+        switch_id = switch["fabricNode"]["attributes"]["id"]
+        switch_name = switch["fabricNode"]["attributes"]["name"]
+        switch_addr = switch["fabricNode"]["attributes"]["address"]
+
+        try:
+            c = Connection(switch_addr)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([switch_id, switch_name, "-", str(e)])
+            has_error = True
+            continue
+        try:
+            cmd = r"du -ahm /mnt/pss/bootlogs/ | sort -rh | head -15"
+            c.cmd(cmd)
+            if "No such file or directory" in c.output:
+                data.append([switch_id, switch_name, '/mnt/pss/bootlogs not found', "Check user permissions or retry as 'apic#fallback\\\\admin'"])
+                has_error = True
+                continue
+
+            mntpss = c.output.split("\n")
+            for line in mntpss:
+                total_filesystem_regex = r"(?P<filesize>\d{1,})	\/mnt\/pss\/bootlogs\/(?P<filename>\w+\/\w+.+)"
+                mntpss_usage_match = re.match(total_filesystem_regex, line)
+                if mntpss_usage_match:
+                    filesize = mntpss_usage_match.group("filesize")
+                    if int(filesize) > 30: # More than 30MB per file
+                        filename = "/mnt/pss/bootlogs/"+ mntpss_usage_match.group("filename")
+                        data.append([switch_id, switch_name, filesize, filename])
+        except Exception as e:
+            data.append([switch_id, switch_name, "-",  str(e)])
+            has_error = True
+            continue
+        
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_UF
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6266,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        sup_a_filesystem_check,
 
     ]
     ssh_checks = [
