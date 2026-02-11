@@ -6026,6 +6026,41 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Rogue Exception Mac")
+def rogue_exception_mac_check(cversion, tversion, **kwargs):
+    result = FAIL_UF
+    headers = ['Tenant', 'BD', 'MAC Address']
+    data = []
+    recommended_action = 'Contact TAC to apply the permament fix for the issue'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-exception-mac-exceptcont-count'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if (cversion.older_than("5.2(3a)") or cversion.newer_than("6.0(4a)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    if (tversion.newer_than("6.0(9e)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    fvRogueExceptionMac = 'fvRogueExceptionMac.json'
+    rogue_exception_macs = icurl('class', fvRogueExceptionMac)
+    if not rogue_exception_macs:
+        return Result(result=NA)  
+    presListener = 'presListener.json'
+    presListener += '?query-target-filter=and(wcard(presListener.dn,"exceptcont"))'
+    pres_listener_mos = icurl('class', presListener)
+    if (len(pres_listener_mos) == 0 or len(pres_listener_mos) >= 32):
+        return Result(result=PASS, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)      
+    #Failing scenario, rogue exc mac + less than 32 exceptcont presListener MOs
+    rogue_exc_mac_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rgexpmac-(?P<mac>[^"]+)'
+    for rogue_exception_mac in rogue_exception_macs:
+        dn = re.search(rogue_exc_mac_regex, rogue_exception_mac['fvRogueExceptionMac']['attributes']['dn'])
+        data.append([
+            dn.group('tenant'),
+            dn.group('bd'),
+            dn.group('mac'),
+        ])
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6223,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        rogue_exception_mac_check,
 
     ]
     ssh_checks = [
