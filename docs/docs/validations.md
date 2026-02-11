@@ -192,7 +192,7 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: |
 [Rogue EP/COOP Exception MACs missing][d29]     | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
