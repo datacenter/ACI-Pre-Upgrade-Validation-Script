@@ -6021,8 +6021,16 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
         prints("Target version not provided, skipping check.")
         return Result(result=MANUAL, msg=TVER_MISSING)
     
-    # Check applicable only when upgrading from versions newer than 3.1(2v) to versions older than 6.1(3g)
-    if cversion.newer_than("3.1(2v)") and tversion.older_than("6.1(3g)"):
+    # Affected source version is in range [5.2(3):6.0(3)] . Fixed on 6.0(9e)+ and 6.1(4)+.
+    # if cversion.newer_than("3.1(2v)") and tversion.older_than("6.1(3g)"):
+    if (
+    (cversion.same_as("5.2(3e)") or cversion.newer_than("5.2(3e)")) and
+    (cversion.same_as("6.0(3g)") or cversion.older_than("6.0(3g)")) and
+    (
+        tversion.older_than("6.0(9e)") or
+        ((tversion.same_as("6.1(1f)") or tversion.newer_than("6.1(1f)")) and tversion.older_than("6.1(4h)"))
+    )
+    ):
         # endpoint to fetch the rogue exception MACs
         exception_mac_api = 'fvRogueExceptionMac.json?query-target-filter=and(wcard(fvRogueExceptionMac.dn,"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}"))'
 
