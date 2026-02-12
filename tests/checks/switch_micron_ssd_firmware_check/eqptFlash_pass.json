@@ -1,0 +1,137 @@
+{
+  "totalCount": "4",
+  "imdata": [
+    {
+      "eqptFlash": {
+        "attributes": {
+          "acc": "read-write",
+          "cap": "244198",
+          "childAction": "",
+          "deltape": "0",
+          "descr": "flash",
+          "dn": "topology/pod-1/node-101/sys/ch/supslot-1/sup/flash",
+          "gbb": "0",
+          "id": "1",
+          "lba": "0",
+          "lifetime": "3",
+          "majorAlarm": "no",
+          "mfgTm": "2026-01-15T10:30:15.123+00:00",
+          "minorAlarm": "no",
+          "modTs": "2026-02-10T10:29:30.456+00:00",
+          "model": "Micron_5100_MTFDDAK256TBN",
+          "monPolDn": "uni/fabric/monfab-default",
+          "operSt": "ok",
+          "peCycles": "120",
+          "readErr": "0",
+          "rev": "D0MU080",
+          "ser": "MSA23450123",
+          "status": "",
+          "tbw": "15.234567",
+          "type": "flash",
+          "vendor": "Micron",
+          "warning": "no",
+          "wlc": "0"
+        }
+      }
+    },
+    {
+      "eqptFlash": {
+        "attributes": {
+          "acc": "read-write",
+          "cap": "457862",
+          "childAction": "",
+          "deltape": "0",
+          "descr": "flash",
+          "dn": "topology/pod-1/node-102/sys/ch/supslot-1/sup/flash",
+          "gbb": "0",
+          "id": "1",
+          "lba": "0",
+          "lifetime": "2",
+          "majorAlarm": "no",
+          "mfgTm": "2026-01-20T08:15:22.789+00:00",
+          "minorAlarm": "no",
+          "modTs": "2026-02-10T08:14:45.321+00:00",
+          "model": "Micron_5300_MTFDDAK480TDS",
+          "monPolDn": "uni/fabric/monfab-default",
+          "operSt": "ok",
+          "peCycles": "85",
+          "readErr": "0",
+          "rev": "D3CN005",
+          "ser": "MSA23450456",
+          "status": "",
+          "tbw": "12.456789",
+          "type": "flash",
+          "vendor": "Micron",
+          "warning": "no",
+          "wlc": "0"
+        }
+      }
+    },
+    {
+      "eqptFlash": {
+        "attributes": {
+          "acc": "read-write",
+          "cap": "915724",
+          "childAction": "",
+          "deltape": "0",
+          "descr": "flash",
+          "dn": "topology/pod-1/node-103/sys/ch/supslot-1/sup/flash",
+          "gbb": "0",
+          "id": "1",
+          "lba": "0",
+          "lifetime": "1",
+          "majorAlarm": "no",
+          "mfgTm": "2026-01-25T14:20:35.456+00:00",
+          "minorAlarm": "no",
+          "modTs": "2026-02-10T14:19:55.789+00:00",
+          "model": "Micron_5300_MTFDDAK960TDS",
+          "monPolDn": "uni/fabric/monfab-default",
+          "operSt": "ok",
+          "peCycles": "65",
+          "readErr": "0",
+          "rev": "D3MU010",
+          "ser": "MSA23450789",
+          "status": "",
+          "tbw": "8.765432",
+          "type": "flash",
+          "vendor": "Micron",
+          "warning": "no",
+          "wlc": "0"
+        }
+      }
+    },
+    {
+      "eqptFlash": {
+        "attributes": {
+          "acc": "read-write",
+          "cap": "1831448",
+          "childAction": "",
+          "deltape": "0",
+          "descr": "flash",
+          "dn": "topology/pod-1/node-104/sys/ch/supslot-1/sup/flash",
+          "gbb": "0",
+          "id": "1",
+          "lba": "0",
+          "lifetime": "0",
+          "majorAlarm": "no",
+          "mfgTm": "2026-01-28T12:45:10.234+00:00",
+          "minorAlarm": "no",
+          "modTs": "2026-02-10T12:44:25.567+00:00",
+          "model": "Micron_5400_MTFDDAK1T9TGP",
+          "monPolDn": "uni/fabric/monfab-default",
+          "operSt": "ok",
+          "peCycles": "45",
+          "readErr": "0",
+          "rev": "D4CN010",
+          "ser": "MSA23451012",
+          "status": "",
+          "tbw": "5.432109",
+          "type": "flash",
+          "vendor": "Micron",
+          "warning": "no",
+          "wlc": "0"
+        }
+      }
+    }
+  ]
+}

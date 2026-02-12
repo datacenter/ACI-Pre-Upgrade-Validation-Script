@@ -1,0 +1,38 @@
+{
+  "totalCount": "1",
+  "imdata": [
+    {
+      "eqptFlash": {
+        "attributes": {
+          "acc": "read-write",
+          "cap": "1831448",
+          "childAction": "",
+          "deltape": "0",
+          "descr": "flash",
+          "dn": "topology/pod-1/node-104/sys/ch/supslot-1/sup/flash",
+          "gbb": "0",
+          "id": "1",
+          "lba": "0",
+          "lifetime": "3",
+          "majorAlarm": "no",
+          "mfgTm": "2026-01-18T13:25:55.456+00:00",
+          "minorAlarm": "no",
+          "modTs": "2026-02-10T13:25:10.789+00:00",
+          "model": "Micron_5400_MTFDDAK1T9TGP",
+          "monPolDn": "uni/fabric/monfab-default",
+          "operSt": "ok",
+          "peCycles": "145",
+          "readErr": "0",
+          "rev": "D4CN003",
+          "ser": "MSA23441012",
+          "status": "",
+          "tbw": "14.567890",
+          "type": "flash",
+          "vendor": "Micron",
+          "warning": "no",
+          "wlc": "0"
+        }
+      }
+    }
+  ]
+}

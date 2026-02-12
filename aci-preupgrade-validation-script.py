@@ -6025,6 +6025,100 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='Switch SSD firmware version on Micron M5100/M5300/M5400 models')
+def switch_micron_ssd_firmware_check(tversion, **kwargs):
+    # Conditions of this check for failure scenario:
+    # 1. The target version is lower than 6.1(5e)
+    # 2. Switch SSD model is Micron 5100 or 5300 or 5400 
+    # 3. SSD firmware version is lower than D0MU078, D3CN003, D3MU005, and D4CN005
+    # If all above conditions are met, CSCwr08802 (Switch reloads due to a hap-reset on switches 
+    # running Micron M5100/M5300/M5400) may occur after APIC upgrade.
+    # Take either of the below actions to resolve the issue:
+    # 1. Contact Cisco TAC to upgrade the SSD firmware manually
+    # 2. Upgrade the APIC to at least 6.1(5e) where the issue is fixed.
+
+    def compare_ssd_firmware_versions(current, required):
+        """
+        Compare firmware versions by checking last 3 digits
+        Returns True if upgrade is required (current < required)
+        """
+        try:
+            current_ver = int(current[-3:])
+            required_ver = int(required[-3:])
+            return current_ver < required_ver
+        except (ValueError, IndexError) as e:
+            log.error("Failed to compare versions {} vs {}: {}".format(current, required, e))
+            return False
+
+    M5100_REQ_FW_VER = "D0MU078"
+    M5300_D3CN_REQ_FW_VER = "D3CN003"
+    M5300_D3MU_REQ_FW_VER = "D3MU005"
+    M5400_REQ_FW_VER = "D4CN005"
+
+    result = PASS
+    headers = ["Node ID", "SSD Model", "SSD Firmware Version"]
+    data = []
+    recommended_action = ''
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ssds-going-into-read-only-mode'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
+    if tversion.newer_than("6.1(5e)") or tversion.same_as("6.1(5e)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    eqptFlash = icurl('class', 
+                      'eqptFlash.json?query-target-filter=or(wcard(eqptFlash.model,"Micron_5300*"),wcard(eqptFlash.model,"Micron_5100*"),wcard(eqptFlash.model,"Micron_5400*"))')
+    
+    for flash in eqptFlash:
+        attrs = flash['eqptFlash']['attributes']
+        dn = attrs.get('dn', '')
+        model = attrs.get('model', '')
+        rev = attrs.get('rev', '')
+        
+        # Extract node ID from DN
+        node_match = re.search(node_regex, dn)
+        if not node_match:
+            log.debug("Could not extract node ID from DN: {}".format(dn))
+            continue
+        node_id = node_match.group("node")
+        
+        # Check M5100 firmware version
+        if "Micron_5100" in model:
+            if compare_ssd_firmware_versions(rev, M5100_REQ_FW_VER):
+                data.append([node_id, model, rev])
+        
+        # Check M5300 firmware version (two variants: D3CN and D3MU)
+        elif "Micron_5300" in model:
+            if len(rev) >= 4:
+                ssd_fw_prefix = rev[:4]
+                if ssd_fw_prefix == "D3CN":
+                    if compare_ssd_firmware_versions(rev, M5300_D3CN_REQ_FW_VER):
+                        data.append([node_id, model, rev])
+                elif ssd_fw_prefix == "D3MU":
+                    if compare_ssd_firmware_versions(rev, M5300_D3MU_REQ_FW_VER):
+                        data.append([node_id, model, rev])
+        
+        # Check M5400 firmware version
+        elif "Micron_5400" in model:
+            if compare_ssd_firmware_versions(rev, M5400_REQ_FW_VER):
+                data.append([node_id, model, rev])
+    
+    if data:
+        result = FAIL_O
+        recommended_action = (
+            "\n\tTo avoid potential switch reloads due to a hap-reset after the APIC upgrade, "
+            "contact Cisco TAC to upgrade the SSD firmware on the affected switches to at least "
+            "the required versions:\n"
+            "\t - Micron M5100: {}\n"
+            "\t - Micron M5300 (D3CN): {}\n"
+            "\t - Micron M5300 (D3MU): {}\n"
+            "\t - Micron M5400: {}\n"
+            "\tAlternatively, consider upgrading the ACI switches to at least version 16.1(5e) where this issue is resolved."
+        ).format(M5100_REQ_FW_VER, M5300_D3CN_REQ_FW_VER, M5300_D3MU_REQ_FW_VER, M5400_REQ_FW_VER)
+    
+    return Result(result=result, headers=headers, data=data, 
+                  recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
 
@@ -6188,6 +6282,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        switch_micron_ssd_firmware_check,
 
     ]
     ssh_checks = [

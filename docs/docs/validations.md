@@ -193,6 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[SSDs going into Read-Only Mode][d29]          | CSCwr08802   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #ssds-going-into-read-only-mode
 
 
 ## General Check Details
@@ -2647,6 +2649,12 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### SSDs going into read-only mode
+
+Due to [CSCwr08802][62], Nexus 9000 series switches with Micron `M5100, M5300 and M5400` series SSDs are susceptible to SSDs going into Read Only mode. The SSDs may incorrectly trigger their internal power hold-up circuit. This causes the drive to enter a protective "write-protect" (Read-Only) mode to prevent potential data loss. When the SSD becomes read-only, processes may crash (causing a hap-reset), or the device may become unresponsive. 
+
+The script checks if any Nexus 9000 series switches in the fabric are using Micron `M5100, M5300 and M5400` series SSDs with affected firmware versions. If so, to mitigate the risk of SSDs going into read-only mode, contact Cisco TAC to arrange for SSD firmware manual upgrade, or upgrade ACI switch software to 16.1(5) or later maintenance release which includes automated SSD firmware upgrade process.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2710,3 +2718,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr08802
