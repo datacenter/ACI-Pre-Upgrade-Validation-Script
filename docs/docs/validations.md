@@ -193,6 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Rogue Exception MAC exceptcont Count][d29]     | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #rogue-exception-mac-exceptcont-count
 
 
 ## General Check Details
@@ -2648,6 +2650,16 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Rogue Exception MAC exceptcont Count 
+
+ACI supports Rogue EP control since version 3.2(1). This feature detects an endpoint that moves too frequently in the Fabric and pauses the learning for such EP during a hold interval. Starting from ACI version 5.2(3) is also possible to configure an "exception" list of MAC addresses not subject to the same Rogue EP settings, more information can be found at the [aci-fabric-endpoint-learning][62] whitepaper.
+
+Due to [CSCwp64296][63], after an upgrade the EP exception list is not present in the Spines. This can cause traffic issues if the EPs are put in freeze state due to the Rogue EP control feature.
+
+The workaround is removing the listed Rogue Exception MAC addresses and adding them back, to fully resolve the issue contact TAC to create the missing objects.
+
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2710,3 +2722,5 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://www.cisco.com/c/dam/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/aci-fabric-endpoint-learning-wp.pdf#RogueEPControl
+[63]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296

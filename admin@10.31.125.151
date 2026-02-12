@@ -6040,14 +6040,14 @@ def rogue_exception_mac_check(cversion, tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     if (tversion.newer_than("6.0(9e)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
-    fvRogueExceptionMac = 'fvRogueExceptionMac.json'
+    fvRogueExceptionMac = 'faulfvRogueExceptionMactInst.json'
     rogue_exception_macs = icurl('class', fvRogueExceptionMac)
     if not rogue_exception_macs:
         return Result(result=NA)  
     presListener = 'presListener.json'
     presListener += '?query-target-filter=and(wcard(presListener.dn,"exceptcont"))'
     pres_listener_mos = icurl('class', presListener)
-    if (len(pres_listener_mos) == 0 or len(pres_listener_mos) >= 32):
+    if (len(pres_listener_mos) == 0 or len(pres_listener_mos) > 32):
         return Result(result=PASS, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)      
     #Failing scenario, rogue exc mac + less than 32 exceptcont presListener MOs
     rogue_exc_mac_regex = r'uni/tn-(?P<tenant>[^/]+)/BD-(?P<bd>[^/]+)/rgexpmac-(?P<mac>[^"]+)'
