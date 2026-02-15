@@ -59,7 +59,7 @@ Items                                                        | This Script      
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
 ----------------------------------------------|----------------|-------------------|-------------------------------
-[APIC Disk Space Usage][f1]                   | F1527: 80% - 85%<br>F1528: 85% - 90%<br>F1529: 90% or more  | :white_check_mark: | :white_check_mark: 4.2(1)
+[APIC Disk Space Usage][f1]                   | F1527: 75% - 84%<br>F1528: 85% - 89%<br>F1529: 90% or more  | :white_check_mark: | :white_check_mark: 4.2(1)
 [Standby APIC Disk Space Usage][f2]           |                | :white_check_mark: | :white_check_mark: 5.2(3)
 [Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4)
 [APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1)
@@ -191,7 +191,6 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
-[/tmp Directory Disk Space for Snapshot Storage][d29] | CSCwo96334   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -221,7 +220,6 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-[d29]: #tmp-directory-disk-space-for-snapshot-storage
 
 
 ## General Check Details
@@ -503,11 +501,53 @@ In either scenario, contact TAC to collect a database dump of the flagged DME(s)
 
 If a Cisco APIC is running low on disk space for any reason, the Cisco APIC upgrade can fail. The Cisco APIC will raise three different faults depending on the amount of disk space remaining. If any of these faults are raised on the system, the issue should be resolved prior to performing the upgrade.
 
-* **F1527**: A warning level fault for Cisco APIC disk space usage. This is raised when the utilization is between 80% and 85%.
+* **F1527**: A warning level fault for Cisco APIC disk space usage. This is raised when the utilization is between 75% and 84%.
 
-* **F1528**: A major level fault for Cisco APIC disk space usage. This is raised when the utilization is between 85% and 90%.
+* **F1528**: A major level fault for Cisco APIC disk space usage. This is raised when the utilization is between 85% and 89%.
 
 * **F1529**: A critical level fault for Cisco APIC disk space usage. This is raised when the utilization is between 90% and above.
+
+#### Special Handling for /tmp Directory (CSCwo96334)
+
+Prior to ACI version 6.1(4), the APIC uses the `/tmp` directory to store database snapshots during the upgrade process. If the `/tmp` directory has insufficient free space (typically indicated by disk space faults F1527, F1528, or F1529), the upgrade process may fail due to inability to create required snapshot files.
+
+Due to [CSCwo96334][62], starting from ACI version 6.1(4), snapshots are stored in `/data` directory instead of `/tmp`, which provides more available disk space and resolves this issue.
+
+**Version-Specific Behavior:**
+
+This check has special handling for `/tmp` disk space faults based on the target version:
+
+* **For upgrades to versions < 6.1(4)**: 
+    - `/tmp` disk space faults (F1527/F1528/F1529) are reported and must be addressed
+    - Insufficient `/tmp` space can cause upgrade failure when creating database snapshots
+    - Check result: **FAIL** if `/tmp` faults exist
+
+* **For upgrades to versions >= 6.1(4)**: 
+    - `/tmp` disk space faults are ignored by this check
+    - Snapshots are stored in `/data` directory instead, which typically has more space
+    - Check result: **N/A** if only `/tmp` faults exist (not relevant for upgrade)
+    - Other mountpoint faults (/firmware, /techsupport, etc.) are still reported
+
+**Impact of /tmp Disk Space Issues (for versions < 6.1(4)):**
+
+If `/tmp` is at or above 75% utilization when upgrading to versions prior to 6.1(4), the upgrade may fail with:
+
+- Upgrade workflow failure during snapshot creation
+- Inability to complete APIC database conversion
+- Potential need for manual cleanup and upgrade retry
+- Extended downtime due to failed upgrade attempts
+
+**Recommended Actions:**
+
+For `/tmp` disk space issues when upgrading to versions < 6.1(4):
+
+1. **Contact Cisco TAC** for assistance before proceeding with the upgrade
+2. Work with TAC to identify and remove unnecessary files from `/tmp` safely
+3. Consider upgrading to ACI 6.1(4) or later as an alternative, where this issue is resolved
+4. Ensure at least 25-30% free space in `/tmp` before attempting upgrade
+5. Do not manually delete files from `/tmp` without TAC guidance to avoid system instability
+
+For other mountpoints (applies to all versions):
 
 You can run the following `moquery` on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well. In the example below, with the faults against `/firmware`, you can simply remove unnecessary firmware images under `Admin > Firmware` in the Cisco APIC GUI. You should not perform the Linux command rm to remove an image directly from `/firmware`, as the firmware images are synchronized across Cisco APICs. If the fault is raised against a disk space that you are not aware of, contact Cisco TAC to resolve the issue prior to the upgrade.
 
@@ -2606,36 +2646,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
-### /tmp Directory Disk Space for Snapshot Storage
-
-Prior to ACI version 6.1(4), the APIC uses the `/tmp` directory to store database snapshots during the upgrade process. If the `/tmp` directory has insufficient free space (typically indicated by disk space faults F1527, F1528, or F1529), the upgrade process may fail due to inability to create required snapshot files.
-
-Due to [CSCwo96334][60], starting from ACI version 6.1(4), snapshots are stored in `/data` directory instead of `/tmp`, which provides more available disk space and resolves this issue.
-
-This check monitors the `/tmp` directory utilization on APICs by querying for the following faults:
-
-- **F1527** (Minor): Storage unit is 75-84% full
-- **F1528** (Major): Storage unit is 85-89% full  
-- **F1529** (Critical): Storage unit is 90-100% full
-
-**Impact:**
-
-If `/tmp` is at or above 75% utilization when upgrading to versions prior to 6.1(4), the upgrade may fail when attempting to create database snapshots. This can result in:
-
-- Upgrade workflow failure
-- Inability to complete APIC database conversion
-- Potential need for manual cleanup and upgrade retry
-
-**Recommended Action:**
-
-If this check flags high `/tmp` utilization:
-
-1. Contact Cisco TAC for assistance before proceeding with the upgrade
-2. Work with TAC to identify and remove unnecessary files from `/tmp` 
-3. Consider upgrading to ACI 6.1(4) or later where snapshots use `/data` directory instead
-4. Ensure at least 25-30% free space in `/tmp` before attempting upgrade to pre-6.1(4) versions
-
-**Note:** This check only applies when upgrading to versions older than 6.1(4). For upgrades to 6.1(4) or later, this check returns N/A as the issue is resolved in those versions.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -2698,6 +2708,6 @@ If this check flags high `/tmp` utilization:
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
-[60]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo96334
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo96334

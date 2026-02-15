@@ -4,6 +4,7 @@
             "attributes": {
                 "cause": "threshold-crossed",
                 "code": "F1527",
+                "lc": "raised",
                 "descr": "Storage unit /firmware on Node 1 of pod 1 is 78% full",
                 "dn": "topology/pod-1/node-1/sys/ch/p-[/firmware]-fault-F1527"
             }
@@ -14,6 +15,7 @@
             "attributes": {
                 "cause": "threshold-crossed",
                 "code": "F1528",
+                "lc": "raised",
                 "descr": "Storage unit /techsupport on Node 2 of pod 1 is 88% full",
                 "dn": "topology/pod-1/node-2/sys/ch/p-[/techsupport]-fault-F1528"
             }

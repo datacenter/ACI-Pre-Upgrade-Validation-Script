@@ -2974,7 +2974,7 @@ def scalability_faults_check(**kwargs):
 
 
 @check_wrapper(check_title="APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)")
-def apic_disk_space_faults_check(cversion, **kwargs):
+def apic_disk_space_faults_check(cversion, tversion, **kwargs):
     result = FAIL_UF
     headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Current Usage %', 'Recommended Action']
     data = []
@@ -2983,29 +2983,49 @@ def apic_disk_space_faults_check(cversion, **kwargs):
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-disk-space-usage"
     recommended_action = {
         '/firmware': 'Remove unneeded images',
-        '/techsupport': 'Remove unneeded techsupports/cores'
+        '/techsupport': 'Remove unneeded techsupports/cores',
+        '/tmp': 'Contact Cisco TAC for assistance. The /tmp directory may need cleanup or the upgrade may require special handling.'
     }
     default_action = 'Contact Cisco TAC.'
     if cversion.same_as('4.0(1h)') or cversion.older_than('3.2(6i)'):
         default_action += ' A typical issue is CSCvn13119.'
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
-    desc_regex = r'is (?P<usage>\d{2}%) full'
+    desc_regex = r'is (?P<usage>\d{2,3}%) full'
 
+    tmp_faults_skipped = False  # Track if we skip /tmp faults for tversion >= 6.1(4a)
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
     for faultInst in faultInsts:
-        fc = faultInst['faultInst']['attributes']['code']
-        dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-        desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-        if dn and desc:
-            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
-                         desc.group('usage'),
-                         recommended_action.get(dn.group('mountpoint'), default_action)])
-        else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
+        lc = faultInst['faultInst']['attributes'].get('lc','')
+        
+        # Only process raised faults
+        if lc == 'raised':
+            fc = faultInst['faultInst']['attributes']['code']
+            dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+            desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+            
+            if dn:
+                mountpoint = dn.group('mountpoint')
+                # CSCwo96334: Skip /tmp faults if tversion >= 6.1(4a) (snapshots use /data instead)
+                if mountpoint == '/tmp' and tversion and not tversion.older_than("6.1(4a)"):
+                    tmp_faults_skipped = True
+                    continue
+                
+                if desc:
+                    data.append([fc, dn.group('pod'), dn.group('node'), mountpoint,
+                                 desc.group('usage'),
+                                 recommended_action.get(mountpoint, default_action)])
+                else:
+                    unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], 
+                                            recommended_action.get(mountpoint, default_action)])
+    
     if not data and not unformatted_data:
-        result = PASS
+        # If we only found /tmp faults that were skipped (tversion >= 6.1(4a)), return NA
+        if tmp_faults_skipped:
+            result = NA
+        else:
+            result = PASS
     return Result(
         result=result,
         headers=headers,
@@ -5962,57 +5982,6 @@ def configpush_shard_check(tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-
-@check_wrapper(check_title='/tmp directory disk space for snapshot storage during upgrade')
-def tmp_dir_snapshot_storage_check(tversion, **kwargs):
-    result = FAIL_UF
-    headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Current Usage %', 'Recommended Action']
-    data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
-    unformatted_data = []
-    recommended_action = 'Contact Cisco TAC for assistance. The /tmp directory may need cleanup or the upgrade may require special handling.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tmp-directory-snapshot-storage'
-
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-
-    if tversion.older_than("6.1(4a)"):
-        dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
-        desc_regex = r'is (?P<usage>\d{2,3}%) full'
-        
-        # Query for F1527, F1528, or F1529 faults
-        faultInsts = icurl('class',
-                           'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
-        
-        for faultInst in faultInsts:
-            fc = faultInst['faultInst']['attributes']['code']
-            dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-            desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-            
-            # Only flag /tmp directory issues for this check
-            if dn and desc and dn.group('mountpoint') == '/tmp':
-                data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
-                            desc.group('usage'), recommended_action])
-            elif dn and dn.group('mountpoint') == '/tmp':
-                # If we can parse DN but not description, still report it
-                unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
-        
-        if not data and not unformatted_data:
-            result = PASS
-    else:
-        result = NA
-        
-    return Result(
-        result=result,
-        headers=headers,
-        data=data,
-        unformatted_headers=unformatted_headers,
-        unformatted_data=unformatted_data,
-        recommended_action=recommended_action,
-        doc_url=doc_url,
-    )
-
-
 # ---- Script Execution ----
 
 
@@ -6120,7 +6089,6 @@ class CheckManager:
         scalability_faults_check,
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
-        tmp_dir_snapshot_storage_check,
 
         # Configurations
         vpc_paired_switches_check,

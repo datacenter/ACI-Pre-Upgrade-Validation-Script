@@ -9,7 +9,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "tmp_dir_snapshot_storage_check"
+test_function = "apic_disk_space_faults_check"
 
 # icurl queries
 faultInst_api = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))'
@@ -67,11 +67,11 @@ faultInst_api = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"
             "6.1(3z)",
             script.FAIL_UF,
         ),
-        # Affected version with only non-/tmp faults (should PASS)
+        # Affected version with only non-/tmp faults (should FAIL_UF)
         (
             {faultInst_api: read_data(dir, "faultInst_non_tmp.json")},
             "5.2(6a)",
-            script.PASS,
+            script.FAIL_UF,
         ),
         # Affected version with mixed /tmp and non-/tmp faults (should FAIL_UF)
         (
@@ -85,11 +85,11 @@ faultInst_api = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"
             "3.2(10e)",
             script.FAIL_UF,
         ),
-        # 4.x version with only non-/tmp faults (should PASS)
+        # 4.x version with only non-/tmp faults (should FAIL_UF)
         (
             {faultInst_api: read_data(dir, "faultInst_non_tmp.json")},
             "4.2(7f)",
-            script.PASS,
+            script.FAIL_UF,
         ),
         # 6.0.x version with mixed faults
         (
@@ -98,31 +98,31 @@ faultInst_api = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"
             script.FAIL_UF,
         ),
         # ===== FIXED VERSIONS (>= 6.1(4a)) =====
-        # Exact fix version 6.1(4a) with /tmp faults (should be NA)
+        # Exact fix version 6.1(4a) with /tmp faults (should be NA - CSCwo96334 doesn't apply)
         (
             {faultInst_api: read_data(dir, "faultInst_tmp_pos.json")},
             "6.1(4a)",
             script.NA,
         ),
-        # Exact fix version 6.1(4a) without faults (should be NA)
+        # Exact fix version 6.1(4a) without faults (should PASS)
         (
             {faultInst_api: []},
             "6.1(4a)",
-            script.NA,
+            script.PASS,
         ),
-        # Later 6.1.x version with /tmp faults (should be NA)
+        # Later 6.1.x version with /tmp faults (should be NA - CSCwo96334 doesn't apply)
         (
             {faultInst_api: read_data(dir, "faultInst_tmp_pos.json")},
             "6.1(5a)",
             script.NA,
         ),
-        # 6.2.x version with /tmp faults (should be NA)
+        # 6.2.x version with /tmp faults (should be NA - CSCwo96334 doesn't apply)
         (
             {faultInst_api: read_data(dir, "faultInst_tmp_pos.json")},
             "6.2(1a)",
             script.NA,
         ),
-        # Future 7.x version with /tmp faults (should be NA)
+        # Future 7.x version with /tmp faults (should be NA - CSCwo96334 doesn't apply)
         (
             {faultInst_api: read_data(dir, "faultInst_tmp_pos.json")},
             "7.0(1a)",
@@ -132,6 +132,7 @@ faultInst_api = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"
 )
 def test_logic(run_check, mock_icurl, tversion, expected_result):
     result = run_check(
+        cversion=script.AciVersion("5.2(1a)"),
         tversion=script.AciVersion(tversion) if tversion else None,
     )
     assert result.result == expected_result
