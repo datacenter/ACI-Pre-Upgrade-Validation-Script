@@ -1,0 +1,89 @@
+[
+    {
+      "mgmtRsInBStNode": {
+        "attributes": {
+          "addr": "0.0.0.0",
+          "annotation": "",
+          "childAction": "",
+          "configurationMode": "static",
+          "descr": "",
+          "dn": "uni/tn-mgmt/mgmtp-default/inb-inb/rsinBStNode-[topology/pod-1/node-104]",
+          "extMngdBy": "",
+          "forceResolve": "yes",
+          "gw": "14.2.107.241",
+          "lcOwn": "local",
+          "modTs": "2023-03-09T15:09:10.230-06:00",
+          "rType": "mo",
+          "rn": "rsinBStNode-[topology/pod-1/node-104]",
+          "state": "unformed",
+          "stateQual": "none",
+          "status": "",
+          "tCl": "fabricNode",
+          "tDn": "topology/pod-1/node-104",
+          "tType": "mo",
+          "uid": "17189",
+          "userdom": ":all:",
+          "v6Addr": "::",
+          "v6Gw": "::"
+        }
+      }
+    },
+    {
+      "mgmtRsInBStNode": {
+        "attributes": {
+          "addr": "172.29.213.72/24",
+          "annotation": "",
+          "childAction": "",
+          "configurationMode": "static",
+          "descr": "",
+          "dn": "uni/tn-mgmt/mgmtp-default/inb-InBand/rsinBStNode-[topology/pod-1/node-204]",
+          "extMngdBy": "",
+          "forceResolve": "yes",
+          "gw": "0.0.0.0",
+          "lcOwn": "local",
+          "modTs": "2026-02-03T15:12:34.815-06:00",
+          "rType": "mo",
+          "rn": "rsinBStNode-[topology/pod-1/node-204]",
+          "state": "unformed",
+          "stateQual": "none",
+          "status": "",
+          "tCl": "fabricNode",
+          "tDn": "topology/pod-1/node-204",
+          "tType": "mo",
+          "uid": "23653",
+          "userdom": ":all:",
+          "v6Addr": "::",
+          "v6Gw": "::"
+        }
+      }
+    },
+    {
+      "mgmtRsInBStNode": {
+        "attributes": {
+          "addr": "172.29.213.82/24",
+          "annotation": "",
+          "childAction": "",
+          "configurationMode": "static",
+          "descr": "",
+          "dn": "uni/tn-mgmt/mgmtp-default/inb-InBand/rsinBStNode-[topology/pod-1/node-305]",
+          "extMngdBy": "",
+          "forceResolve": "yes",
+          "gw": "172.29.213.1",
+          "lcOwn": "local",
+          "modTs": "2026-02-03T15:12:34.815-06:00",
+          "rType": "mo",
+          "rn": "rsinBStNode-[topology/pod-1/node-305]",
+          "state": "unformed",
+          "stateQual": "none",
+          "status": "",
+          "tCl": "fabricNode",
+          "tDn": "topology/pod-1/node-305",
+          "tType": "mo",
+          "uid": "23653",
+          "userdom": ":all:",
+          "v6Addr": "::",
+          "v6Gw": "::"
+        }
+      }
+    }
+  ]
