@@ -193,6 +193,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[Inb mgmt Zero Addr][d29]                       | CSCwd40071   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #inb-mgmt-zero-addr
 
 
 ## General Check Details
@@ -2648,6 +2650,16 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
 
+### Inb mgmt Zero Addr
+
+ACI supports both Out-of-band and Inband Management configuration, these inband management policies can be pushed via REST API calls. 
+
+Due to [CSCwd40071][62], ACI accepts a zero, "0.0.0.0" value in Address or Gateway attributes. 
+This can cause PolicyElem hap resets when a Node downloads the Policy like during an upgrade, which can lead to problems with data plane.
+
+Remove any instance of misconfiguration before the upgrade to avoid unexpected issues.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2710,3 +2722,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071

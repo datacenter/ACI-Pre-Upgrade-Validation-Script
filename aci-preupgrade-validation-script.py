@@ -6026,6 +6026,44 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Inband Mgmt Zero Address")
+def inband_mgmt_zero_address_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Inband Mgmt EPG", "Node", "Inband Address", "Inband Gateway"]
+    data = []
+    recommended_action = "Remove the zero address(es) from the Inband EPG before upgrade"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inb-mgmt-zero-addr"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    # Misconfig Rejected beginning at 6.0(1g)
+    if cversion.newer_than("6.0(1g)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    if tversion.older_than("6.0(4g)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    # Inband Mmgmt Node
+    mgmtRsInBStNode_api = icurl("class", "mgmtRsInBStNode.json")
+    if not mgmtRsInBStNode_api:
+        return Result(result=NA, msg='No mgmtRsInBStNode MOs')
+    
+    inb_mgmt_regex = r'uni/tn-mgmt/mgmtp-default/inb' 
+    inb_mgmt_regex += r'-(?P<inbepg>.+)/rsinBStNode-'
+    inb_mgmt_regex += r'\[' + node_regex + r'\]'
+    for mgmtInB in mgmtRsInBStNode_api:
+            addr = mgmtInB["mgmtRsInBStNode"]["attributes"]["addr"]
+            gw = mgmtInB["mgmtRsInBStNode"]["attributes"]["gw"]
+            if addr == "0.0.0.0" or gw == "0.0.0.0":
+                dn = mgmtInB["mgmtRsInBStNode"]["attributes"]["dn"]
+                inb_array = re.search(inb_mgmt_regex, dn)
+                node = inb_array.group("node")
+                inb_epg =inb_array.group("inbepg")
+                data.append([inb_epg, node, addr, gw ])
+            
+    if data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6226,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        inband_mgmt_zero_address_check,
 
     ]
     ssh_checks = [
