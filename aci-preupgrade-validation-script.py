@@ -1023,6 +1023,7 @@ class ThreadManager:
         common_kwargs,
         monitor_interval=0.5,  # sec
         monitor_timeout=600,  # sec
+        max_threads=None,
         callback_on_monitoring=None,
         callback_on_start_failure=None,
         callback_on_timeout=None,
@@ -1030,6 +1031,9 @@ class ThreadManager:
         self.funcs = funcs
         self.threads = None
         self.common_kwargs = common_kwargs
+        # Semaphore to cap the number of concurrently running check threads.
+        # None means unlimited.
+        self.semaphore = threading.Semaphore(max_threads) if max_threads and max_threads > 0 else None
 
         # Not using `thread.join(timeout)` because it waits for each thread sequentially,
         # which means the program may wait for "timeout * num of threads" at worst case.
@@ -1053,7 +1057,7 @@ class ThreadManager:
             raise RuntimeError("Threading on going. Cannot start again.")
 
         self.threads = [
-            self._generate_thread(target=func, kwargs=self.common_kwargs)
+            self._generate_thread(target=func, kwargs=self.common_kwargs, use_semaphore=True)
             for func in self.funcs
         ]
 
@@ -1080,9 +1084,19 @@ class ThreadManager:
     def is_timeout(self):
         return self.timeout_event.is_set()
 
-    def _generate_thread(self, target, args=(), kwargs=None):
+    def _generate_thread(self, target, args=(), kwargs=None, use_semaphore=False):
         if kwargs is None:
             kwargs = {}
+        if use_semaphore and self.semaphore is not None:
+            semaphore = self.semaphore
+            original_target = target
+            def _wrapped_target(*a, **kw):
+                try:
+                    original_target(*a, **kw)
+                finally:
+                    semaphore.release()
+            _wrapped_target.__name__ = target.__name__
+            target = _wrapped_target
         thread = CustomThread(
             target=target, name=target.__name__, args=args, kwargs=kwargs
         )
@@ -1102,11 +1116,16 @@ class ThreadManager:
         thread_started = False
         while not self.is_timeout():
             try:
+                if self.semaphore is not None:
+                    log.info("({}) Waiting for an available thread slot.".format(thread.name))
+                    self.semaphore.acquire()
                 log.info("({}) Starting thread.".format(thread.name))
                 thread.start()
                 thread_started = True
                 break
             except RuntimeError as e:
+                if self.semaphore is not None:
+                    self.semaphore.release()
                 if str(e) != "can't start new thread":
                     log.error("({}) Unexpected error to start a thread.".format(thread.name), exc_info=True)
                     break
@@ -1121,6 +1140,8 @@ class ThreadManager:
                     time_elapsed += queue_interval
                     continue
             except Exception:
+                if self.semaphore is not None:
+                    self.semaphore.release()
                 log.error("({}) Unexpected error to start a thread.".format(thread.name), exc_info=True)
                 break
 
@@ -6042,6 +6063,7 @@ def parse_args(args):
     parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
     parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
     parser.add_argument("--timeout", action="store", nargs="?", type=int, const=-1, default=DEFAULT_TIMEOUT, help="Show default script timeout (sec) or overwrite it when a number is provided (e.g. --timeout 1200).")
+    parser.add_argument("--max-threads", action="store", type=int, default=None, help="Maximum number of check threads to run concurrently. Defaults to unlimited.")
     parsed_args = parser.parse_args(args)
     return parsed_args
 
@@ -6212,11 +6234,12 @@ class CheckManager:
         apic_ca_cert_validation,
     ]
 
-    def __init__(self, api_only=False, debug_function="", timeout=600, monitor_interval=0.5):
+    def __init__(self, api_only=False, debug_function="", timeout=600, monitor_interval=0.5, max_threads=None):
         self.api_only = api_only
         self.debug_function = debug_function
         self.monitor_interval = monitor_interval  # sec
         self.monitor_timeout = timeout  # sec
+        self.max_threads = max_threads
         self.timeout_event = None
 
         self.check_funcs = self.get_check_funcs()
@@ -6287,6 +6310,7 @@ class CheckManager:
             common_kwargs=dict({"finalize_check": self.finalize_check}, **common_data),
             monitor_interval=self.monitor_interval,
             monitor_timeout=self.monitor_timeout,
+            max_threads=self.max_threads,
             callback_on_monitoring=print_progress,
             callback_on_start_failure=self.finalize_check_on_thread_failure,
             callback_on_timeout=self.finalize_check_on_thread_timeout,
@@ -6306,7 +6330,7 @@ def main(_args=None):
         print("Timeout(sec): {}".format(DEFAULT_TIMEOUT))
         return
 
-    cm = CheckManager(args.api_only, args.debug_function, args.timeout)
+    cm = CheckManager(args.api_only, args.debug_function, args.timeout, max_threads=args.max_threads)
 
     if args.total_checks:
         print("Total Number of Checks: {}".format(cm.total_checks))

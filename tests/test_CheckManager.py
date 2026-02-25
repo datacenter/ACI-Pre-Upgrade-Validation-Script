@@ -41,7 +41,7 @@ def mock_generate_thread(monkeypatch, request):
     def thread_start_with_exception(timeout=5.0):
         raise exception
 
-    def _mock_generate_thread(self, target, args=(), kwargs=None):
+    def _mock_generate_thread(self, target, args=(), kwargs=None, use_semaphore=False):
         if kwargs is None:
             kwargs = {}
         thread = script.CustomThread(target=target, name=target.__name__, args=args, kwargs=kwargs)
