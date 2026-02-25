@@ -187,6 +187,7 @@ Items                                           | Defect       | This Script    
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:
 [Stale Decommissioned Spine][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 Platform Model][d22]                 | CSCwk77800   | :white_check_mark: | :no_entry_sign:
+[N9K-C9408 with 6+ N9K-X9400-16W LEMs][d29]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #n9k-c9408-with-6-n9k-x9400-16w-lems
 
 
 ## General Check Details
@@ -2585,6 +2587,25 @@ Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDe
 
 When an identified switch node is upgraded to a fixed 6.1(3)+ version, the `N9K-C9400-SW-GX2A` fabric membership entry will show up as inactive and must be decomissioned and the new `N9K-C9408` fabric membership entry must be registered. The result is that the node IDs in question will not completely join the fabric post-upgrade until these additional steps are performed on each identified `N9K-C9408` node.
 
+### N9K-C9408 with 6+ N9K-X9400-16W LEMs
+
+Due to defect [CSCws82819][62], upgrading from pre-16.1(2f) to 16.1(2f) or later can result in a boot loop when a `N9K-C9408` node has 6 or more installed `N9K-X9400-16W` LEMs.
+
+This check is applicable only when the APIC target version is between 6.1(2f) and 6.2(1g), inclusive.
+
+The script checks the following conditions:
+
+1. Target version is in the affected window (6.1(2f) through 6.2(1g)).
+2. At least one switch node model is `N9K-C9408`.
+3. For each `N9K-C9408` node, the number of `eqptLC` entries with model `N9K-X9400-16W` is counted.
+
+If any affected node has more than 5 matching LEMs, the check is flagged as `FAIL - OUTAGE WARNING!!` with the node-level count details.
+
+Recommended action:
+
+* Do **not** proceed with the upgrade when flagged.
+* Reduce the number of `N9K-X9400-16W` LEMs to 5 or fewer on each affected `N9K-C9408` node, or choose a different target version.
+
 ### PBR High Scale
 
 Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
@@ -2710,3 +2731,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
