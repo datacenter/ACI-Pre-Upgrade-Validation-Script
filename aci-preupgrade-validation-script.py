@@ -1493,11 +1493,14 @@ def get_row(widths, values, spad="  ", lpad=""):
 
 def prints(objects, sep=' ', end='\n'):
     with open(RESULT_FILE, 'a') as f:
-        print(objects, sep=sep, end=end, file=sys.stdout)
+        try:
+            print(objects, sep=sep, end=end, file=sys.stdout)
+            sys.stdout.flush()
+        except OSError:
+            pass
         if end == "\r":
             end = "\n"  # easier to read with \n in a log file
         print(objects, sep=sep, end=end, file=f)
-        sys.stdout.flush()
         f.flush()
 
 

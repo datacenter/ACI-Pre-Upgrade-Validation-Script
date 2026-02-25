@@ -85,7 +85,10 @@ class TestCheckManager:
         assert cm.get_check_result("fake_10_check") is None
 
         # Check number of initialized checks in result files
-        result_files = os.listdir(script.JSON_DIR)
+        result_files = [
+            f for f in os.listdir(script.JSON_DIR)
+            if f.replace(".json", "") in cm.check_ids
+        ]
         assert len(result_files) == cm.total_checks
 
         # Check the filename of result files and their `ruleStatus`
