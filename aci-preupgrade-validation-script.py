@@ -4738,6 +4738,7 @@ def fabricPathEp_target_check(**kwargs):
             fex_a = groups.get("fexA")
             fex_b = groups.get("fexB")
             path = groups.get("path")
+            print(path)
 
             # CHECK FEX ID(s) of extpath(s) is 101 or greater
             if fex_a:
@@ -4772,7 +4773,13 @@ def fabricPathEp_target_check(**kwargs):
                         elif int(third) > 16:
                             data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
                 else:
-                    data.append([dn, "PathEp 'eth' syntax is invalid"])
+                    # CHECK eth1//0 malform scenario (double slashes)
+                    if "//" in path:
+                        data.append([dn, "PathEp 'eth' syntax is invalid"])
+                    # CHECK Ethx/y malform scenario (should not be caps)
+                    elif path.startswith("Eth"):
+                        data.append([dn, "PathEp 'eth' should be lowercase 'eth'"])
+
         else:
             data.append([dn, "target is not a valid fabricPathEp DN"])
 
