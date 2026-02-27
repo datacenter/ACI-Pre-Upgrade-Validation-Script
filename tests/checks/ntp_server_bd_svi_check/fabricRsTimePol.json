@@ -1,0 +1,56 @@
+[
+    {
+        "fabricRsTimePol": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "dn": "uni/fabric/funcprof/podpgrp-calo-d-polGrp/rsTimePol",
+                "extMngdBy": "",
+                "forceResolve": "yes",
+                "lcOwn": "local",
+                "modTs": "2023-01-02T10:36:41.882-06:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "rType": "mo",
+                "rn": "rsTimePol",
+                "state": "formed",
+                "stateQual": "none",
+                "status": "",
+                "tCl": "datetimePol",
+                "tContextDn": "",
+                "tDn": "uni/fabric/time-calo-NTP",
+                "tRn": "time-calo-NTP",
+                "tType": "name",
+                "tnDatetimePolName": "calo-NTP",
+                "uid": "0",
+                "userdom": "all"
+            }
+        }
+    },
+    {
+        "fabricRsTimePol": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "dn": "uni/fabric/funcprof/podpgrp-PodPolicy-Fabric/rsTimePol",
+                "extMngdBy": "",
+                "forceResolve": "yes",
+                "lcOwn": "local",
+                "modTs": "2026-02-03T15:12:35.361-06:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "rType": "mo",
+                "rn": "rsTimePol",
+                "state": "formed",
+                "stateQual": "none",
+                "status": "",
+                "tCl": "datetimePol",
+                "tContextDn": "",
+                "tDn": "uni/fabric/time-fabric_ntp",
+                "tRn": "time-fabric_ntp",
+                "tType": "name",
+                "tnDatetimePolName": "fabric_ntp",
+                "uid": "0",
+                "userdom": ""
+            }
+        }
+    }
+]

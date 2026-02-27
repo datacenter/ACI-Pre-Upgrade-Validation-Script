@@ -1,0 +1,86 @@
+[
+    {
+        "datetimePol": {
+            "attributes": {
+                "StratumValue": "8",
+                "adminSt": "disabled",
+                "annotation": "",
+                "authSt": "disabled",
+                "childAction": "",
+                "configIssues": "",
+                "descr": "",
+                "dn": "uni/fabric/time-default",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "masterMode": "disabled",
+                "modTs": "2026-02-03T15:12:35.361-06:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "default",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "rn": "time-default",
+                "serverState": "disabled",
+                "status": "",
+                "uid": "0",
+                "userdom": ""
+            }
+        }
+    },
+    {
+        "datetimePol": {
+            "attributes": {
+                "StratumValue": "8",
+                "adminSt": "enabled",
+                "annotation": "",
+                "authSt": "disabled",
+                "childAction": "",
+                "configIssues": "",
+                "descr": "NTP for fabric in Vercruz",
+                "dn": "uni/fabric/time-fabric_ntp",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "masterMode": "disabled",
+                "modTs": "2026-02-03T15:12:35.361-06:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "fabric_ntp",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "rn": "time-fabric_ntp",
+                "serverState": "disabled",
+                "status": "",
+                "uid": "23653",
+                "userdom": ""
+            }
+        }
+    },
+    {
+        "datetimePol": {
+            "attributes": {
+                "StratumValue": "8",
+                "adminSt": "enabled",
+                "annotation": "",
+                "authSt": "disabled",
+                "childAction": "",
+                "configIssues": "",
+                "descr": "",
+                "dn": "uni/fabric/time-calo-NTP",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "masterMode": "disabled",
+                "modTs": "2023-01-02T10:36:19.837-06:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "calo-NTP",
+                "nameAlias": "",
+                "ownerKey": "",
+                "ownerTag": "",
+                "rn": "time-calo-NTP",
+                "serverState": "disabled",
+                "status": "",
+                "uid": "15374",
+                "userdom": ":all:"
+            }
+        }
+    }
+]
