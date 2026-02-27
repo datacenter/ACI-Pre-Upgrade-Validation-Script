@@ -134,7 +134,7 @@ Items                                         | Faults         | This Script    
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
-
+[Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -160,6 +160,7 @@ Items                                         | Faults         | This Script    
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
+[c25]: #preferred_group_shared_service_provider
 
 ### Defect Condition Checks
 
@@ -2265,6 +2266,16 @@ See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Gu
 
 See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
 
+### Preferred Group Shared Service Provider
+
+As detailed in the[ACI Policy Model][62] Starting in 4.2(6d) and later, or  5.1(1h) and later an EPG in a Contract Preferred Group can consume a shared service contract, but cannot be a provider for a shared service contract with an L3Out EPG as consumer.
+
+Due to the behavior change contracts will no longer be pushed post-upgrade causing a significant datacenter outage.
+
+The configuration will be faulted: e.g. F0467 Configuration failed for uni/tn-common/brc-shared/contract/epgCont-1/instp-ext-epg due to Invalid Contract Configuration, debug message: invalid-contract-config: Shared service provider cannot be in a Preferred Group.
+
+
+Starting version 6.0(1g), this validation is relaxed for normal EPGs  but is still not allowed for External EPGs.
 
 ## Defect Check Details
 
@@ -2710,3 +2721,5 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
+

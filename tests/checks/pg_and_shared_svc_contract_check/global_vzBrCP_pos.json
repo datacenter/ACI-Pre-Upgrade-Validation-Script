@@ -1,0 +1,24 @@
+[
+    {"vzBrCP":{
+    "attributes":{
+        "accessPrivilege":"USER",
+        "annotation":"",
+        "childAction":"",
+        "configIssues":"",
+        "descr":"",
+        "dn":"uni/tn-common/brc-AD_C",
+        "name":"AD_C",
+        "scope":"global"
+        }
+        }
+    },
+    {"vzBrCP":{
+    "attributes":{
+        "accessPrivilege":"USER",
+        "dn":"uni/tn-laumende/brc-test",
+        "name":"test",
+        "scope":"global"
+        }
+        }
+    }
+    ]
