@@ -6079,7 +6079,7 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     list_of_shrd_contracts =[]
     for shrd_contract in shrd_contracts:
         list_of_shrd_contracts.append(shrd_contract["vzBrCP"]["attributes"]["dn"])
-    # Because of CSCwb32627 # Configuration only becomes faulted for extEPGs after 6.0(1g), normal epgs permitted.
+    # Configuration only becomes faulted for extEPGs after 6.0(1g), normal epgs permitted.
     if tversion.older_than("6.0(1g)"):  
         glbl_epgs_api = 'fvAEPg.json'
         glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"16"),eq(fvAEPg.prefGrMemb,"include"))'
