@@ -4738,7 +4738,6 @@ def fabricPathEp_target_check(**kwargs):
             fex_a = groups.get("fexA")
             fex_b = groups.get("fexB")
             path = groups.get("path")
-            print(path)
 
             # CHECK FEX ID(s) of extpath(s) is 101 or greater
             if fex_a:
