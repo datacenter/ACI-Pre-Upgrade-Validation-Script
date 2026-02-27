@@ -1,0 +1,12 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "code": "F2731",
+        "changeSet": "mediaWearout (Old: 2, New: 1)",
+        "description": "Storage unit /dev/sdb on Node 3 mounted at /dev/sdb has 1% life remaining",
+        "dn": "topology/pod-2/node-3/sys/ch/p-[/dev/sdb]-f-[/dev/sdb]/fault-F2731"
+      }
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[
+    {
+        "error": {
+            "attributes": {
+                "code": "400",
+                "text": "Request failed, unresolved class for l3extVirtualLIfP"
+            }
+        }
+    }
+]

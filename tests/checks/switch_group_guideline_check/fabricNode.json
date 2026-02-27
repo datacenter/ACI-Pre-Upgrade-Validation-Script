@@ -1,0 +1,206 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "commissioned",
+        "id": "1",
+        "name": "apic1",
+        "role": "controller",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-2",
+        "fabricSt": "commissioned",
+        "id": "2",
+        "name": "apic2",
+        "role": "controller",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-3",
+        "fabricSt": "commissioned",
+        "id": "3",
+        "name": "apic3",
+        "role": "controller",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101",
+        "fabricSt": "active",
+        "id": "101",
+        "name": "LF101",
+        "role": "leaf",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-102",
+        "fabricSt": "active",
+        "id": "102",
+        "name": "LF102",
+        "role": "leaf",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-201",
+        "fabricSt": "active",
+        "id": "201",
+        "name": "LF201",
+        "role": "leaf",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-202",
+        "fabricSt": "active",
+        "id": "202",
+        "name": "LF202",
+        "role": "leaf",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-111",
+        "fabricSt": "active",
+        "id": "111",
+        "name": "T2_LF111",
+        "role": "leaf",
+        "nodeType": "tier-2-leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-112",
+        "fabricSt": "active",
+        "id": "112",
+        "name": "T2_LF112",
+        "role": "leaf",
+        "nodeType": "tier-2-leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-121",
+        "fabricSt": "active",
+        "id": "121",
+        "name": "RL_LF121",
+        "role": "leaf",
+        "nodeType": "remote-leaf-wan"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-122",
+        "fabricSt": "active",
+        "id": "122",
+        "name": "RL_LF122",
+        "role": "leaf",
+        "nodeType": "remote-leaf-wan"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001",
+        "fabricSt": "active",
+        "id": "1001",
+        "name": "SP1001",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1002",
+        "fabricSt": "active",
+        "id": "1002",
+        "name": "SP1002",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1003",
+        "fabricSt": "active",
+        "id": "1003",
+        "name": "SP1003",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1004",
+        "fabricSt": "active",
+        "id": "1004",
+        "name": "SP1004",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-2001",
+        "fabricSt": "active",
+        "id": "2001",
+        "name": "SP2001",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-2002",
+        "fabricSt": "active",
+        "id": "2002",
+        "name": "SP2002",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  }
+]

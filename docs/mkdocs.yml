@@ -16,6 +16,7 @@ theme:
   favicon: assets/logo.svg
 markdown_extensions:
   - admonition
+  - attr_list
 
   # code blocks
   - pymdownx.highlight:

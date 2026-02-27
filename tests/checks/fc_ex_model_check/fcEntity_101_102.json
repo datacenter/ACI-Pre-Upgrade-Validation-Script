@@ -1,0 +1,18 @@
+[
+  {
+    "fcEntity": {
+      "attributes": {
+        "adminSt": "enabled",
+        "dn": "topology/pod-1/node-102/sys/fc"
+      }
+    }
+  },
+  {
+    "fcEntity": {
+      "attributes": {
+        "adminSt": "enabled",
+        "dn": "topology/pod-1/node-101/sys/fc"
+      }
+    }
+  }
+]

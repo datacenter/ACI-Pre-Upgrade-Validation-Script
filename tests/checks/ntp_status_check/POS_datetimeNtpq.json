@@ -1,0 +1,29 @@
+{
+    "imdata": [
+        {
+            "datetimeNtpq": {
+                "attributes": {
+                    "auth": "none",
+                    "childAction": "",
+                    "delay": "0.875",
+                    "dn": "topology/pod-1/node-1/sys/ntpq-calo-timeserver-1.cisco.com",
+                    "jitter": "0.027",
+                    "lcOwn": "local",
+                    "modTs": "2022-12-07T18:20:27.571-05:00",
+                    "monPolDn": "uni/fabric/monfab-default",
+                    "offset": "0.004",
+                    "poll": "64",
+                    "reach": "377",
+                    "refid": ".GPS.",
+                    "remote": "calo-timeserver-1.cisco.com",
+                    "status": "",
+                    "stratum": "1",
+                    "t": "u",
+                    "tally": "",
+                    "when": "16"
+                }
+            }
+        }
+    ],
+    "totalCount": "1"
+}

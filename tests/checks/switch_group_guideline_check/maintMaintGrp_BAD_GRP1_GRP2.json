@@ -1,0 +1,116 @@
+[
+  {
+    "maintMaintGrp": {
+      "attributes": {
+        "dn": "uni/fabric/maintgrp-GRP1",
+        "fwtype": "switch",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "GRP1",
+        "type": "range"
+      },
+      "children": [
+        {
+          "maintRsMgrpp": {
+            "attributes": {
+              "tCl": "maintMaintP",
+              "tDn": "uni/fabric/maintpol-GRP1",
+              "tnMaintMaintPName": "GRP1"
+            }
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk101-101", "from_": "101", "to_": "101"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk102-102", "from_": "102", "to_": "102"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk121-121", "from_": "121", "to_": "121"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk122-122", "from_": "122", "to_": "122"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk1001-1001", "from_": "1001", "to_": "1001"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk1002-1002", "from_": "1002", "to_": "1002"}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "maintMaintGrp": {
+      "attributes": {
+        "dn": "uni/fabric/maintgrp-GRP2",
+        "fwtype": "switch",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "GRP2",
+        "type": "range"
+      },
+      "children": [
+        {
+          "maintRsMgrpp": {
+            "attributes": {
+              "tCl": "maintMaintP",
+              "tDn": "uni/fabric/maintpol-GRP2",
+              "tnMaintMaintPName": "GRP2"
+            }
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk111-111", "from_": "111", "to_": "111"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk112-112", "from_": "112", "to_": "112"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk201-201", "from_": "201", "to_": "201"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk202-202", "from_": "202", "to_": "202"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk1003-1003", "from_": "1003", "to_": "1003"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk1004-1004", "from_": "1004", "to_": "1004"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk2001-2001", "from_": "2001", "to_": "2001"}
+          }
+        },
+        {
+          "fabricNodeBlk": {
+            "attributes": {"name": "blk2002-2002", "from_": "2002", "to_": "2002"}
+          }
+        }
+      ]
+    }
+  }
+]

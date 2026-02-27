@@ -1,0 +1,62 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "unknown",
+        "nodeType": "unspecified",
+        "id": "1",
+        "version": "A",
+        "role": "controller",
+        "adSt": "on",
+        "name": "apic1",
+        "model": "APIC-SERVER-M1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-2",
+        "fabricSt": "unknown",
+        "nodeType": "unspecified",
+        "id": "2",
+        "version": "A",
+        "role": "controller",
+        "adSt": "on",
+        "name": "apic2",
+        "model": "APIC-SERVER-M1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-2/node-3",
+        "fabricSt": "unknown",
+        "nodeType": "unspecified",
+        "id": "3",
+        "version": "A",
+        "role": "controller",
+        "adSt": "on",
+        "name": "apic3",
+        "model": "APIC-SERVER-M1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101",
+        "fabricSt": "active",
+        "nodeType": "unspecified",
+        "id": "101",
+        "version": "",
+        "role": "leaf",
+        "adSt": "on",
+        "name": "leaf1",
+        "model": "N9K-C9396PX"
+      }
+    }
+  }
+]

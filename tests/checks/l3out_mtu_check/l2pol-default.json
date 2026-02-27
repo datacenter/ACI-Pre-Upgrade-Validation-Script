@@ -1,0 +1,24 @@
+[
+        {
+            "l2InstPol": {
+                "attributes": {
+                    "annotation": "",
+                    "childAction": "",
+                    "descr": "",
+                    "dn": "uni/fabric/l2pol-default",
+                    "extMngdBy": "",
+                    "fabricMtu": "9000",
+                    "lcOwn": "local",
+                    "managementMtu": "9000",
+                    "modTs": "2025-04-28T23:16:48.741+00:00",
+                    "name": "default",
+                    "nameAlias": "",
+                    "ownerKey": "",
+                    "ownerTag": "",
+                    "status": "",
+                    "uid": "0",
+                    "userdom": "all"
+                }
+            }
+        }
+    ]

@@ -1,0 +1,30 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "dn": "topology/pod-2/node-201",
+        "fabricSt": "active",
+        "id": "201",
+        "model": "N9K-C93180YC-FX",
+        "name": "RL201",
+        "nodeType": "remote-leaf-wan",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "dn": "topology/pod-2/node-202",
+        "fabricSt": "active",
+        "id": "202",
+        "model": "N9K-C93180YC-FX",
+        "name": "RL202",
+        "nodeType": "remote-leaf-wan",
+        "role": "leaf"
+      }
+    }
+  }
+]

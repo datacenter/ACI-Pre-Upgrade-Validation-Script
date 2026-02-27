@@ -1,0 +1,46 @@
+{
+    "imdata": [
+        {
+            "datetimeClkPol": {
+                "attributes": {
+                    "StratumValue": "8",
+                    "adminSt": "enabled",
+                    "authSt": "disabled",
+                    "childAction": "",
+                    "clock": "2022-12-07T18:22:33.715-05:00",
+                    "clockRaw": "13206872637755334329",
+                    "descr": "",
+                    "dn": "topology/pod-1/node-201/sys/time",
+                    "flags": "synced",
+                    "lcOwn": "local",
+                    "leap": "0",
+                    "masterMode": "disabled",
+                    "modTs": "2022-01-02T22:36:04.148-05:00",
+                    "monPolDn": "uni/fabric/monfab-Spine-Mon",
+                    "name": "default",
+                    "nameAlias": "",
+                    "ntpdCfgFailedBmp": "",
+                    "ntpdCfgFailedTs": "00:00:00:00.000",
+                    "ntpdCfgState": "0",
+                    "ownerKey": "",
+                    "ownerTag": "",
+                    "peer": "258740908",
+                    "polDn": "uni/fabric/time-default",
+                    "poll": "6",
+                    "precision": "-20",
+                    "refId": "172.18.108.15",
+                    "refName": "172.18.108.15",
+                    "refTime": "2022-12-07T18:21:19.436-05:00",
+                    "refTimeRaw": "8059221958312304239",
+                    "rootDelay": "49",
+                    "rootDispersion": "2315255808",
+                    "serverState": "disabled",
+                    "srvStatus": "",
+                    "status": "",
+                    "stratum": "2"
+                }
+            }
+        }
+    ],
+    "totalCount": "1"
+}

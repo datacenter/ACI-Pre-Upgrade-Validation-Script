@@ -1,0 +1,64 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "address": "10.0.0.1",
+        "annotation": "",
+        "apicType": "apic",
+        "childAction": "",
+        "delayedHeartbeat": "no",
+        "dn": "topology/pod-1/node-1",
+        "extMngdBy": "",
+        "fabricSt": "unknown",
+        "id": "1",
+        "lastStateModTs": "2022-11-14T13:36:15.401-05:00",
+        "lcOwn": "local",
+        "modTs": "2022-11-14T13:36:16.119-05:00",
+        "model": "APIC-SERVER-L2",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "fab3-apic1",
+        "nameAlias": "",
+        "nodeType": "unspecified",
+        "role": "controller",
+        "serial": "FOX1234ABCE",
+        "status": "",
+        "uid": "0",
+        "userdom": "all",
+        "vendor": "Cisco Systems, Inc",
+        "version": "5.2(7f)"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "adSt": "on",
+        "address": "10.0.128.65",
+        "annotation": "",
+        "apicType": "apic",
+        "childAction": "",
+        "delayedHeartbeat": "no",
+        "dn": "topology/pod-1/node-201",
+        "extMngdBy": "",
+        "fabricSt": "active",
+        "id": "201",
+        "lastStateModTs": "2022-03-30T11:34:22.529-05:00",
+        "lcOwn": "local",
+        "modTs": "2022-03-30T11:34:34.616-05:00",
+        "model": "N9K-C9504",
+        "monPolDn": "uni/fabric/monfab-default",
+        "name": "fab3-spine201",
+        "nameAlias": "",
+        "nodeType": "unspecified",
+        "role": "spine",
+        "serial": "FOX1234ABCD",
+        "status": "",
+        "uid": "0",
+        "userdom": "all",
+        "vendor": "Cisco Systems, Inc",
+        "version": "n9000-14.2(6d)"
+      }
+    }
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "totalCount": "1",
+  "imdata": [
+    {
+      "infraSetPol": {
+        "attributes": {
+          "dn": "uni/infra/settings",
+          "enableRemoteLeafDirect": "yes"
+        }
+      }
+    }
+  ]
+}
