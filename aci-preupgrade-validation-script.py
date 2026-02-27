@@ -6025,6 +6025,41 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title="NTP Server BD SVI Check")
+def ntp_server_bd_svi_check(cversion, tversion, **kargs):
+    result = FAIL_UF
+    headers = ["Fabric Time Pol", "NTP Pol Name"]
+    data = []
+    recommended_action = 'Use the in-band or out-of-band management IP address of the leaf switch as the NTP server IP address.'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ntp-server-bd-svi"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if cversion.older_than("6.1(1f)") or cversion.newer_than("6.1(5e)"):
+        return Result(result=NA, msg='Version not affected')
+
+    if tversion.older_than("6.1(1f)") or tversion.newer_than("6.1(5e)"):
+        return Result(result=NA, msg='Version not affected')
+    
+    fabric_time_pols = icurl('class', 'fabricRsTimePol.json')
+    datetime_pols = icurl('class', 'datetimePol.json') 
+
+    fabric_time_pol_regex = r'uni/fabric/funcprof/podpgrp-(?P<podgroup>[^/]+)/rsTimePol'
+    for datetime_pol in datetime_pols:
+        for fabric_time_pol in fabric_time_pols:
+            if (
+                datetime_pol['datetimePol']['attributes']['dn'] == fabric_time_pol['fabricRsTimePol']['attributes']['tDn']
+                ) and(
+                datetime_pol['datetimePol']['attributes']['serverState'] == 'enabled'
+                ):
+                fp = re.search(fabric_time_pol_regex, fabric_time_pol['fabricRsTimePol']['attributes']['dn'])
+                data.append([fp.group("podgroup"), datetime_pol['datetimePol']['attributes']['name']])
+
+    if not data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 
 # ---- Script Execution ----
 
@@ -6188,6 +6223,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        ntp_server_bd_svi_check,
 
     ]
     ssh_checks = [
