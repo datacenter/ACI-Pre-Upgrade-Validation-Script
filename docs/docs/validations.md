@@ -2592,25 +2592,6 @@ Due to defect [CSCwf58763][42], upgrading to non-fixed versions with `fabricRsDe
 
 When an identified switch node is upgraded to a fixed 6.1(3)+ version, the `N9K-C9400-SW-GX2A` fabric membership entry will show up as inactive and must be decomissioned and the new `N9K-C9408` fabric membership entry must be registered. The result is that the node IDs in question will not completely join the fabric post-upgrade until these additional steps are performed on each identified `N9K-C9408` node.
 
-### N9K-C9408 with 6+ N9K-X9400-16W LEMs
-
-Due to defect [CSCws82819][62], upgrading from pre-16.1(2f) to 16.1(2f) or later can result in a boot loop when a `N9K-C9408` node has 6 or more installed `N9K-X9400-16W` LEMs.
-
-This check is applicable only when the APIC target version is between 6.1(2f) and 6.2(1g), inclusive.
-
-The script checks the following conditions:
-
-1. Target version is in the affected window (6.1(2f) through 6.2(1g)).
-2. At least one switch node model is `N9K-C9408`.
-3. For each `N9K-C9408` node, the number of `eqptLC` entries with model `N9K-X9400-16W` is counted.
-
-If any affected node has more than 5 matching LEMs, the check is flagged as `FAIL - OUTAGE WARNING!!` with the node-level count details.
-
-Recommended action:
-
-* Do **not** proceed with the upgrade when flagged.
-* Reduce the number of `N9K-X9400-16W` LEMs to 5 or fewer on each affected `N9K-C9408` node, or choose a different target version.
-
 ### PBR High Scale
 
 Due to [CSCwi66348][46], Leaf Switches with high scale PBR config (classes `vnsAdjacencyDefCont`, `vnsSvcRedirEcmpBucketCons` and `fvAdjDefCons` specifically) can take an unexpectedly long time to complete bootstrap after an upgrade.
@@ -2673,6 +2654,7 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+<<<<<<< HEAD
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2691,6 +2673,18 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+=======
+### N9K-C9408 with 6 or more N9K-X9400-16W LEMs
+
+Due to defect [CSCws82819][62], upgrading from pre-16.1(2f) to 16.1(2f) or later can result in a boot loop when a `N9K-C9408` node has 6 or more installed N9K-X9400-16W` LEMs.
+
+Recommended action:
+
+* Do **not** proceed with the upgrade when flagged.
+* Reduce the number of `N9K-X9400-16W` LEMs to 5 or fewer on each affected `N9K-C9408` node, or choose a different target version.
+* If reducing LEM count is not operationally feasible, open a TAC case for an upgrade path recommendation.
+
+>>>>>>> Removed if conditio for model check and modified the recommended actions
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

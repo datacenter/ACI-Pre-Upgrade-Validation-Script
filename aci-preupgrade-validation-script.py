@@ -6260,7 +6260,7 @@ class CheckManager:
         clock_signal_component_failure_check,
         stale_decomissioned_spine_check,
         n9408_model_check,
-        c9408_lem_count_check,
+        n9k_c9408_model_lem_count_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
         isis_database_byte_check,
