@@ -6026,6 +6026,50 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Ctrlr and Node svccore count")
+def svccore_ctrl_and_node_check(tversion, **kwargs):
+    result = FAIL_UF
+    headers = ["Node ID", "svccoreCtrlr/Node Count"]
+    data = []
+    recommended_action = 'Contact TAC to remove the exceeding svccoreCtrlr, svccoreNode MOs before upgrade.'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ctrlr-and-node-svccore-count"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.newer_than("6.2(1a)"):
+        return Result(result=NA, msg='Targer version not affected')
+    
+    svccoreCtrlr = icurl("class","svccoreCtrlr.json")
+    svccoreNode = icurl( "class","svccoreNode.json")
+
+    svccoreCtrlr_mos = len(svccoreCtrlr) 
+    svccoreNode_mos = len(svccoreNode)
+    total_mos = svccoreCtrlr_mos + svccoreNode_mos
+
+    if total_mos > 240:
+        files_per_node = {}
+        for mo in chain(svccoreCtrlr, svccoreNode):
+            if mo.get("svccoreCtrlr"):
+                node = mo["svccoreCtrlr"]["attributes"]["ctrlrId"]
+            else:
+                node = mo["svccoreNode"]["attributes"]["nodeId"]
+            files_per_node[node] = files_per_node.get(node, 0 ) + 1
+    
+        for node, files in files_per_node.items():
+            data.append([node, files])        
+
+    if not data:
+        result = PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6232,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        svccore_ctrl_and_node_check,
 
     ]
     ssh_checks = [
