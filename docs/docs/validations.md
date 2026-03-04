@@ -187,6 +187,7 @@ Items                                           | Defect       | This Script    
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:
 [Stale Decommissioned Spine][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 Platform Model][d22]                 | CSCwk77800   | :white_check_mark: | :no_entry_sign:
+[N9K-C9408 with 6+ N9K-X9400-16W LEMs][d29]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
@@ -222,6 +223,7 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
+[d29]: #n9k-c9408-with-6-n9k-x9400-16w-lems
 
 
 ## General Check Details
@@ -2647,6 +2649,16 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### N9K-C9408 with 6 or more N9K-X9400-16W LEMs
+
+Due to defect [CSCws82819][62], upgrading from pre-16.1(2f) to 16.1(2f) or later can result in a boot loop when a `N9K-C9408` node has 6 or more installed N9K-X9400-16W` LEMs.
+
+Recommended action:
+
+Please use a different target version.
+
+
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2710,3 +2722,4 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819

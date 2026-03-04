@@ -6026,6 +6026,53 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='N9K-C9408 with 6 or more N9K-X9400-16W LEMs')
+def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Switch Model", "LEM Model", "LEM Count"]
+    data = []
+    recommended_action = (
+        "Upgrade from pre-16.1(2f) to 16.1(2f) or later on N9K-C9408 with 6 or more LEMs will result in boot loop.Choose a different version."
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-6-n9k-x9400-16w-lems'
+
+    if tversion.older_than("6.1(2f)") or tversion.newer_than("6.2(1g)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    c9408_nodes = {}
+    for node in fabric_nodes:
+        node_id = node['fabricNode']['attributes']['id']
+        model = node['fabricNode']['attributes']['model']
+        if model == "N9K-C9408":
+            c9408_nodes[node_id] = "N9K-C9408"
+
+    if not c9408_nodes:
+        return Result(result=NA, msg='No N9K-C9408 nodes found. Skipping.')
+
+    eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
+    eqptLCs = icurl('class', eqptLC_api)
+
+    lem_count_per_node = defaultdict(int)
+    for eqptLC in eqptLCs:
+        dn = eqptLC['eqptLC']['attributes']['dn']
+        dn_match = re.search(node_regex, dn)
+        if not dn_match:
+            continue
+        node_id = dn_match.group("node")
+        if node_id in c9408_nodes:
+            lem_count_per_node[node_id] += 1
+
+    for node_id in sorted(c9408_nodes, key=int):
+        lem_count = lem_count_per_node[node_id]
+        if lem_count > 5:
+            data.append([node_id, c9408_nodes[node_id], "N9K-X9400-16W", lem_count])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6235,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        n9k_c9408_model_lem_count_check,
 
     ]
     ssh_checks = [
