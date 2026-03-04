@@ -9,7 +9,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "c9408_lem_count_check"
+test_function = "n9k_c9408_model_lem_count_check"
 
 
 eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
@@ -22,7 +22,7 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
         (
             {eqptLC_api: read_data(dir, "eqptLC_empty.json")},
             "6.1(2e)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.NA,
             [],
             script.VER_NOT_AFFECTED,
@@ -31,16 +31,16 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
         (
             {eqptLC_api: read_data(dir, "eqptLC_empty.json")},
             "6.2(1h)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.NA,
             [],
             script.VER_NOT_AFFECTED,
         ),
-        # Applicable version but no C9408 node
+        # Version not affected (higher than 6.2(1g))
         (
-            {eqptLC_api: read_data(dir, "eqptLC_6_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_6_node.json")},
             "6.1(2f)",
-            read_data(dir, "fabric_nodes_no_c9408.json"),
+            read_data(dir, "fabricNode_no_n9k_c9408.json"),
             script.NA,
             [],
             "No N9K-C9408 nodes found. Skipping.",
@@ -49,70 +49,70 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
         (
             {eqptLC_api: read_data(dir, "eqptLC_empty.json")},
             "6.1(2f)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.PASS,
             [],
             "",
         ),
         # Applicable version, exactly 5 LEMs -> PASS
         (
-            {eqptLC_api: read_data(dir, "eqptLC_5_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_5_node.json")},
             "6.2(1g)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.PASS,
             [],
             "",
         ),
         # Applicable mid-train version 6.1(5e), less than 6 LEMs on C9408 -> PASS
         (
-            {eqptLC_api: read_data(dir, "eqptLC_5_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_5_node.json")},
             "6.1(5e)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.PASS,
             [],
             "",
         ),
         # Applicable mid-train version 6.1(5e), 6 LEMs on C9408 -> FAIL_O
         (
-            {eqptLC_api: read_data(dir, "eqptLC_6_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_6_node.json")},
             "6.1(5e)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
             [["101", "N9K-C9408", "N9K-X9400-16W", 6]],
             "",
         ),
         # Applicable mid-train version 6.1(5e), more than 6 LEMs on C9408 -> FAIL_O
         (
-            {eqptLC_api: read_data(dir, "eqptLC_7_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_7_node.json")},
             "6.1(5e)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
             [["101", "N9K-C9408", "N9K-X9400-16W", 7]],
             "",
         ),
         # Applicable version, 6 LEMs on C9408 -> FAIL_O
         (
-            {eqptLC_api: read_data(dir, "eqptLC_6_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_6_node.json")},
             "6.1(2f)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
             [["101", "N9K-C9408", "N9K-X9400-16W", 6]],
             "",
         ),
         # Applicable version, more than 6 LEMs on C9408 -> FAIL_O
         (
-            {eqptLC_api: read_data(dir, "eqptLC_7_node101.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_7_node.json")},
             "6.1(2f)",
-            read_data(dir, "fabric_nodes_c9408_101.json"),
+            read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
             [["101", "N9K-C9408", "N9K-X9400-16W", 7]],
             "",
         ),
         # Count only C9408 nodes and only matching LEM model
         (
-            {eqptLC_api: read_data(dir, "eqptLC_mixed_101_102_201.json")},
+            {eqptLC_api: read_data(dir, "eqptLC_mixed.json")},
             "6.1(3a)",
-            read_data(dir, "fabric_nodes_mixed.json"),
+            read_data(dir, "fabricNode_mixed.json"),
             script.FAIL_O,
             [
                 ["101", "N9K-C9408", "N9K-X9400-16W", 6],
