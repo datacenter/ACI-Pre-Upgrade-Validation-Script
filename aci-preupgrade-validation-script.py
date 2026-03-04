@@ -6027,12 +6027,12 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title='N9K-C9408 with 6 or more N9K-X9400-16W LEMs')
-def c9408_boot_loop_lem_count_check(tversion, fabric_nodes, **kwargs):
+def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node ID", "Switch Model", "LEM Model", "LEM Count"]
     data = []
     recommended_action = (
-        "Upgrade from pre-16.1(2f) to 16.1(2f) or later on N9K-C9408 with 6 or more LEMs will result in boot loop. Do NOT proceed. Use fewer LEMs or choose a different version.  "
+        "Upgrade from pre-16.1(2f) to 16.1(2f) or later on N9K-C9408 with 6 or more LEMs will result in boot loop.Choose a different version."
     )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-6-n9k-x9400-16w-lems'
 
@@ -6235,7 +6235,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
-        c9408_boot_loop_lem_count_check,
+        n9k_c9408_model_lem_count_check,
 
     ]
     ssh_checks = [
