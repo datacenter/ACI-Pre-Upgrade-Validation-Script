@@ -2650,11 +2650,22 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 ### Auto Firmware Update on Switch Discovery
 
-Due to [CSCwe83941][62] if 'Auto Firmware Update on Switch Discovery' is enabled with the target release of 16.0(3) and later, a new switch commissioned to ACI Fabric could fail discovery.
+[Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
 
-The download of firmware image fails, causing the switch to become "soft-brick" , the switch needs to be recovered.
+* when adding a new switch to expand the fabric
+* when replacing an existing switch
+* when initializing and rediscovering an existing switch
 
-Do not upgrade with 'Auto Firmware Update on Switch Discovery' enabled,  to avoid this escenario.
+It does not activate during regular upgrades initiated through the APIC.
+
+Due to [CSCwe83941][62], if a new switch is running 6.0(1), 6.0(2) or any version older than 5.2(8), attempting to upgrade it to 6.0(3)+ using Auto Firmware Update will fail. The switch will become unusable until a manual recovery procedure is performed directly on the device.
+
+While this issue does not occur during standard upgrades, it is important to be aware of the risk when your target version is 6.0(3) or newer and the switch is running 6.0(1), 6.0(2), or a version older than 5.2(8). Auto Firmware Update may get triggered and hit this issue during switch replacement in an upgrade window or if you need to re-initialize a switch after a failed upgrade.
+
+To avoid this risk, consider disabling Auto Firmware Update before upgrading to 6.0(3)+ if any switches are running the affected older versions. In the future, ensure that any new switch is running a compatible version before re-enabling Auto Firmware Update and registering it to the fabric.
+
+!!! note
+    This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -2720,3 +2731,4 @@ Do not upgrade with 'Auto Firmware Update on Switch Discovery' enabled,  to avoi
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
+[63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
