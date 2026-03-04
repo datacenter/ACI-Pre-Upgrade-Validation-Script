@@ -6026,6 +6026,29 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='Auto Firmware Update on Switch Discovery')
+def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Auto Firmware Update Status", "Default Firmware Version", "Upgrade Target Version"]
+    data = []
+    recommended_action = 'Disable Auto Firmware Update before the upgrade as a precaution. See the reference doc for details.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#auto-firmware-update-on-switch-discovery'
+
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.0(3a)") or (
+        cversion.newer_than("6.0(3a)") or (cversion.major1 == "5" and cversion.newer_than("5.2(8a)"))
+    ):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    fwrepop = icurl("mo", "uni/fabric/fwrepop.json")
+    if fwrepop and fwrepop[0]["firmwareRepoP"]["attributes"]["enforceBootscriptVersionValidation"] == "yes":
+        data.append(["Enabled", fwrepop[0]["firmwareRepoP"]["attributes"]["defaultSwitchVersion"], str(tversion)])
+        result = MANUAL
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6188,6 +6211,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        auto_firmware_update_on_switch_check,
 
     ]
     ssh_checks = [

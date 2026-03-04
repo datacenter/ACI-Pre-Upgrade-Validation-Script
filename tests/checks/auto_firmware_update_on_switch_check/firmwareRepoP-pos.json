@@ -1,0 +1,25 @@
+[
+	{
+		"firmwareRepoP": {
+			"attributes": {
+				"annotation": "",
+				"childAction": "",
+				"defaultSwitchVersion": "n9000-16.0(9d)",
+				"descr": "",
+				"dn": "uni/fabric/fwrepop",
+				"enforceBootscriptVersionValidation": "yes",
+				"extMngdBy": "",
+				"lcOwn": "local",
+				"modTs": "2025-08-13T17:50:54.830+00:00",
+				"monPolDn": "uni/fabric/monfab-default",
+				"name": "default",
+				"nameAlias": "",
+				"ownerKey": "",
+				"ownerTag": "",
+				"status": "",
+				"uid": "0",
+				"userdom": "all"
+			}
+		}
+	}
+]
