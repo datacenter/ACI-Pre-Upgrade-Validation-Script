@@ -2680,9 +2680,8 @@ Due to defect [CSCws82819][62], upgrading from pre-16.1(2f) to 16.1(2f) or later
 
 Recommended action:
 
-* Do **not** proceed with the upgrade when flagged.
-* Reduce the number of `N9K-X9400-16W` LEMs to 5 or fewer on each affected `N9K-C9408` node, or choose a different target version.
-* If reducing LEM count is not operationally feasible, open a TAC case for an upgrade path recommendation.
+Please use a different target version.
+
 
 >>>>>>> Removed if conditio for model check and modified the recommended actions
 
