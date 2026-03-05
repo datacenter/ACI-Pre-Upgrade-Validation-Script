@@ -6012,13 +6012,13 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
-@check_wrapper(check_title='Rogue EP/COOP Exception MACs missing')
+@check_wrapper(check_title='Rogue/COOP Exception List missing on switches')
 def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ["Rogue Exception MACs Count", "presListener Count"]
     data = []
     recommended_action = 'Remove the affected EP exception configurations and re-add them'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-epcoop-exception-macs-missing'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#roguecoop-exception-list-missing-on-switches'
 
     # Target version check
     if not tversion:
