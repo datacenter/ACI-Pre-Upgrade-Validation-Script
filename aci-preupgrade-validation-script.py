@@ -2991,25 +2991,29 @@ def apic_disk_space_faults_check(cversion, **kwargs):
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-disk-space-usage"
     recommended_action = {
         '/firmware': 'Remove unneeded images',
-        '/techsupport': 'Remove unneeded techsupports/cores'
+        '/techsupport': 'Remove unneeded techsupports/cores',
+        '/data/log': 'Remove unneeded logs in var/log/dme/log'
     }
     default_action = 'Contact Cisco TAC.'
     if cversion.same_as('4.0(1h)') or cversion.older_than('3.2(6i)'):
         default_action += ' A typical issue is CSCvn13119.'
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
-    desc_regex = r'is (?P<usage>\d{2}%) full'
+    desc_regex = r'is (?P<usage>\d{2,3}%) full'
 
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
     for faultInst in faultInsts:
+        lc = faultInst['faultInst']['attributes']['lc']
+        if lc not in ["raised", "soaking"]:
+            continue
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
         if dn and desc:
             data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
-                         desc.group('usage'),
-                         recommended_action.get(dn.group('mountpoint'), default_action)])
+                        desc.group('usage'),
+                        recommended_action.get(dn.group('mountpoint'), default_action)])
         else:
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
@@ -6068,6 +6072,29 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='Auto Firmware Update on Switch Discovery')
+def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Auto Firmware Update Status", "Default Firmware Version", "Upgrade Target Version"]
+    data = []
+    recommended_action = 'Disable Auto Firmware Update before the upgrade as a precaution. See the reference doc for details.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#auto-firmware-update-on-switch-discovery'
+
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.0(3a)") or (
+        cversion.newer_than("6.0(3a)") or (cversion.major1 == "5" and cversion.newer_than("5.2(8a)"))
+    ):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    fwrepop = icurl("mo", "uni/fabric/fwrepop.json")
+    if fwrepop and fwrepop[0]["firmwareRepoP"]["attributes"]["enforceBootscriptVersionValidation"] == "yes":
+        data.append(["Enabled", fwrepop[0]["firmwareRepoP"]["attributes"]["defaultSwitchVersion"], str(tversion)])
+        result = MANUAL
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6230,6 +6257,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
 
     ]
