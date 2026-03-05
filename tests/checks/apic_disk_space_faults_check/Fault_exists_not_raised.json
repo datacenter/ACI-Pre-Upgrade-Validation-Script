@@ -45,7 +45,7 @@
                     "domain": "infra",
                     "highestSeverity": "major",
                     "lastTransition": "2026-01-12T06:44:26.382+00:00",
-                    "lc": "soaking",
+                    "lc": "soaking-clearing",
                     "occur": "1",
                     "origSeverity": "major",
                     "prevSeverity": "major",

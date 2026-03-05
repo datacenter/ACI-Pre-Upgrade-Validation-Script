@@ -3000,21 +3000,22 @@ def apic_disk_space_faults_check(cversion, **kwargs):
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full'
-    
+
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
     for faultInst in faultInsts:
         lc = faultInst['faultInst']['attributes']['lc']
-        if lc == "raised":
-            fc = faultInst['faultInst']['attributes']['code']
-            dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
-            desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-            if dn and desc:
-                data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
-                            desc.group('usage'),
-                            recommended_action.get(dn.group('mountpoint'), default_action)])
-            else:
-                unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
+        if lc not in ["raised", "soaking"]:
+            continue
+        fc = faultInst['faultInst']['attributes']['code']
+        dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+        desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+        if dn and desc:
+            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
+                        desc.group('usage'),
+                        recommended_action.get(dn.group('mountpoint'), default_action)])
+        else:
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
         result = PASS
     return Result(
