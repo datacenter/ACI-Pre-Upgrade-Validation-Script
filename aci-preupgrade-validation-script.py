@@ -6035,7 +6035,7 @@ def svccoreCtrlr_or_svccoreNode_excessive_entries_check(**kwargs):
     result = PASS
     headers = ['svccoreCtrlr Object Count','svccoreNode Object Count']
     data = []
-    recommended_action = "Contact Cisco TAC for Support before upgrade"
+    recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccoreCtrlr-or-svccoreNode-excessive-entries-check"
     svccore_classes = icurl('class', 'svccoreCtrlr.json')
     svccoreNode_classes = icurl('class', 'svccoreNode.json')
