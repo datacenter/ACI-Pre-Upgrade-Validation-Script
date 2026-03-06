@@ -6027,25 +6027,20 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     
 @check_wrapper(check_title="svccoreCtrlr or svccoreNode excessive entries check")
-def svccoreCtrlr_or_svccoreNode_excessive_entries_check(tversion, **kwargs):
+def svccoreCtrlr_or_svccoreNode_excessive_entries_check(**kwargs):
     result = PASS
     headers = ['svccoreCtrlr Object Count','svccoreNode Object Count']
     data = []
     recommended_action = "Contact Cisco TAC for Support before upgrade"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccoreCtrlr-or-svccoreNode-excessive-entries-check"
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-    if tversion.older_than("6.2(1h)") or tversion.same_as("6.2(1h)"):
-        svccore_classes = icurl('class', 'svccoreCtrlr.json')
-        svccoreNode_classes = icurl('class', 'svccoreNode.json')
-        if(len(svccore_classes) > 240 or len(svccoreNode_classes) > 240):
-            data.append([len(svccore_classes), len(svccoreNode_classes)])
-        if data:
-            result = MANUAL
-        return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
-    else:
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
-
+    svccore_classes = icurl('class', 'svccoreCtrlr.json')
+    svccoreNode_classes = icurl('class', 'svccoreNode.json')
+    if(len(svccore_classes) > 240 or len(svccoreNode_classes) > 240):
+        data.append([len(svccore_classes), len(svccoreNode_classes)])
+    if data:
+        result = MANUAL
+    return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
+    
 # ---- Script Execution ----
 
 
