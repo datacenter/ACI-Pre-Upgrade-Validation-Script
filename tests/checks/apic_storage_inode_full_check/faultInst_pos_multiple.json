@@ -1,0 +1,86 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4388",
+                "ack": "yes",
+                "alert": "no",
+                "cause": "equipment-full",
+                "changeSet": "available (Old: 21267888, New: 21267684), inodesFree (Old: 591336, New: 591298), inodesUsed (Old: 2030104, New: 2030142), used (Old: 17576548, New: 17576752)",
+                "created": "2024-08-01T15:58:47.786+02:00",
+                "delegated": "no",
+                "descr": "Storage unit / on Node 3 mounted at / is 78% full for Inodes",
+                "dn": "topology/pod-2/node-3/sys/ch/p-[/]-f-[overlayfs]/fault-F4388",
+                "domain": "infra",
+                "highestSeverity": "warning",
+                "lastTransition": "2024-08-01T19:42:15.784+02:00",
+                "lc": "raised",
+                "modTs": "never",
+                "occur": "1",
+                "origSeverity": "warning",
+                "prevSeverity": "warning",
+                "rn": "fault-F4388",
+                "rule": "eqpt-storage-inode-warning",
+                "severity": "warning",
+                "status": "",
+                "subject": "equipment-full"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4390",
+                "ack": "no",
+                "alert": "yes",
+                "cause": "equipment-full",
+                "changeSet": "available (Old: 8267888, New: 7267684), inodesFree (Old: 191336, New: 91298), inodesUsed (Old: 4030104, New: 4130142)",
+                "created": "2024-08-02T09:30:15.123+02:00",
+                "delegated": "no",
+                "descr": "Storage unit /data/techsupport on Node 5 mounted at /data/techsupport is 95% full for Inodes",
+                "dn": "topology/pod-1/node-5/sys/ch/p-[/data/techsupport]-f-[overlayfs]/fault-F4390",
+                "domain": "infra",
+                "highestSeverity": "critical",
+                "lastTransition": "2024-08-02T10:15:30.456+02:00",
+                "lc": "raised",
+                "modTs": "never",
+                "occur": "2",
+                "origSeverity": "critical",
+                "prevSeverity": "critical",
+                "rn": "fault-F4390",
+                "rule": "eqpt-storage-inode-critical",
+                "severity": "critical",
+                "status": "",
+                "subject": "equipment-full"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4388",
+                "ack": "yes",
+                "alert": "no",
+                "cause": "equipment-full",
+                "changeSet": "inodesFree (Old: 491336, New: 391298), inodesUsed (Old: 2530104, New: 2630142)",
+                "created": "2024-08-03T14:22:33.789+02:00",
+                "delegated": "no",
+                "descr": "Storage unit /firmware on Node 101 mounted at /firmware is 82% full for Inodes",
+                "dn": "topology/pod-3/node-101/sys/ch/p-[/firmware]-f-[overlayfs]/fault-F4388",
+                "domain": "infra",
+                "highestSeverity": "warning",
+                "lastTransition": "2024-08-03T15:45:12.345+02:00",
+                "lc": "raised",
+                "modTs": "never",
+                "occur": "1",
+                "origSeverity": "warning",
+                "prevSeverity": "warning",
+                "rn": "fault-F4388",
+                "rule": "eqpt-storage-inode-warning",
+                "severity": "warning",
+                "status": "",
+                "subject": "equipment-full"
+            }
+        }
+    }
+]

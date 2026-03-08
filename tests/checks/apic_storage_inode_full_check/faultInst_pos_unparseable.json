@@ -1,0 +1,30 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4388",
+                "ack": "yes",
+                "alert": "no",
+                "cause": "equipment-full",
+                "changeSet": "inodesFree (Old: 291336, New: 191298)",
+                "created": "2024-08-04T11:15:22.456+02:00",
+                "delegated": "no",
+                "descr": "Storage unit mounted at some-weird-path is 85 percent full for Inodes",
+                "dn": "some/unparseable/dn/format/fault-F4388",
+                "domain": "infra",
+                "highestSeverity": "warning",
+                "lastTransition": "2024-08-04T12:30:45.789+02:00",
+                "lc": "raised",
+                "modTs": "never",
+                "occur": "1",
+                "origSeverity": "warning",
+                "prevSeverity": "warning",
+                "rn": "fault-F4388",
+                "rule": "eqpt-storage-inode-warning",
+                "severity": "warning",
+                "status": "",
+                "subject": "equipment-full"
+            }
+        }
+    }
+]
