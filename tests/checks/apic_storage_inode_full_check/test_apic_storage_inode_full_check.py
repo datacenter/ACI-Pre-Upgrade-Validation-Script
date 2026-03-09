@@ -13,64 +13,68 @@ test_function = "apic_storage_inode_check"
 
 # icurl queries
 faultInst_api = 'faultInst.json'
-faultInst_api += '?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4390"))'
-
+faultInst_api += '?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))'
 
 @pytest.mark.parametrize(
-    "icurl_outputs, expected_result",
+    "icurl_outputs, expected_result, expected_data",
     [
-        # Target version in affected range (>= 5.3(2b)) and < 6.0(8f)) with raised faults
-        (
-            {faultInst_api: read_data(dir, "faultInst_pos_raised.json")},
-            script.FAIL_O,
-        ),
-        # Target version in affected range with raised faults (F4390 - critical)
-        (
-            {faultInst_api: read_data(dir, "faultInst_pos_f4390.json")},
-            script.FAIL_O,
-        ),
-        # Target version in affected range with NO raised faults (cleared faults)
-        (
-            {faultInst_api: read_data(dir, "faultInst_neg_cleared.json")},
-            script.PASS,
-        ),
-        # Target version in affected range with NO faults at all
+        # PASS - No raised faults
         (
             {faultInst_api: []},
             script.PASS,
+            [],
         ),
-        # Target version BELOW affected range (< 5.2(8i))
+        # FAIL - Soaking faults
         (
-            {faultInst_api: read_data(dir, "faultInst_pos_raised.json")},
-            script.NA,
+            {faultInst_api: read_data(dir, "Fault_soaking.json")},
+            script.FAIL_UF,
+            [
+                ["F4388", "1", "1", "/data/admin/bin/avread", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+                ["F4388", "1", "1", "/etc/hosts", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+                ["F4388", "1", "1", "/", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+            ],
         ),
-        # Target version ABOVE affected range (>= 6.0(8f))
+        # FAIL - Raised faults
         (
-            {faultInst_api: read_data(dir, "faultInst_pos_raised.json")},
-            script.NA,
+            {faultInst_api: read_data(dir, "Fault_raised.json")},
+            script.FAIL_UF,
+            [
+                ["F4388", "1", "1", "/data/admin/bin/avread", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+                ["F4388", "1", "1", "/etc/hosts", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+                ["F4388", "1", "1", "/", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+            ],
         ),
-        # Target version way above affected range
+        # PASS - Faults exist but not raised nor soaking (cleared)
         (
-            {faultInst_api: read_data(dir, "faultInst_pos_raised.json")},
-            script.NA,
+            {faultInst_api: read_data(dir, "Fault_exists_not_raised.json")},
+            script.PASS,
+            [],
         ),
-        # NO target version provided
+        # FAIL - Raised faults with multiple status - Cleared and Active
         (
-            {faultInst_api: []},
-            script.MANUAL,
+            {faultInst_api: read_data(dir, "Fault_combination.json")},
+            script.FAIL_UF,
+            [
+                ["F4388", "1", "1", "/data/admin/bin/avread", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+                ["F4388", "1", "1", "/etc/hosts", "82%", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+            ],
         ),
-        # Multiple raised faults from different nodes
+        #   FAIL - Raised faults with unknown mount point (unformatted data)
         (
-            {faultInst_api: read_data(dir, "faultInst_pos_multiple.json")},
-            script.FAIL_O,
-        ),
-        # Fault with unparseable DN (should go to unformatted_data)
-        (
-            {faultInst_api: read_data(dir, "faultInst_pos_unparseable.json")},
-            script.FAIL_O,
+            {faultInst_api: read_data(dir, "Fault_unformatted_data.json")},
+            script.FAIL_UF,
+            [
+                ["F4388", "topology/pod-1/node-1/sys/ch/invalid/fault-F4388", "Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault"],
+            ],
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, expected_result):
+
+def test_logic(run_check, mock_icurl, expected_result, expected_data):
     result = run_check()
     assert result.result == expected_result
+    if result.data:
+        assert result.data == expected_data
+    else:
+        assert result.unformatted_data == expected_data
+    
