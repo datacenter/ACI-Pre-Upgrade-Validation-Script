@@ -8,11 +8,11 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
-test_function = "svccoreCtrlr_or_svccoreNode_excessive_entries_check"
+test_function = "svccore_excessive_data_check"
 
 # icurl queries
-svccoreClassEntry = 'svccoreCtrlr.json'
-svccoreNodeEntry = 'svccoreNode.json'
+svccoreClassEntry = 'svccoreCtrlr.json?&rsp-subtree-include=count'
+svccoreNodeEntry = 'svccoreNode.json?&rsp-subtree-include=count'
 
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result",

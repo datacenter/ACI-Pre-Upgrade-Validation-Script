@@ -6029,22 +6029,46 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-    
-@check_wrapper(check_title="svccoreCtrlr or svccoreNode excessive entries check")
-def svccoreCtrlr_or_svccoreNode_excessive_entries_check(**kwargs):
+
+@check_wrapper(check_title='Auto Firmware Update on Switch Discovery')
+def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Auto Firmware Update Status", "Default Firmware Version", "Upgrade Target Version"]
+    data = []
+    recommended_action = 'Disable Auto Firmware Update before the upgrade as a precaution. See the reference doc for details.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#auto-firmware-update-on-switch-discovery'
+
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.0(3a)") or (
+        cversion.newer_than("6.0(3a)") or (cversion.major1 == "5" and cversion.newer_than("5.2(8a)"))
+    ):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    fwrepop = icurl("mo", "uni/fabric/fwrepop.json")
+    if fwrepop and fwrepop[0]["firmwareRepoP"]["attributes"]["enforceBootscriptVersionValidation"] == "yes":
+        data.append(["Enabled", fwrepop[0]["firmwareRepoP"]["attributes"]["defaultSwitchVersion"], str(tversion)])
+        result = MANUAL
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="svccore excessive data check")
+def svccore_excessive_data_check(**kwargs):
     result = PASS
     headers = ['svccoreCtrlr Object Count','svccoreNode Object Count']
     data = []
     recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccoreCtrlr-or-svccoreNode-excessive-entries-check"
-    svccore_classes = icurl('class', 'svccoreCtrlr.json')
-    svccoreNode_classes = icurl('class', 'svccoreNode.json')
-    if(len(svccore_classes) > 240 or len(svccoreNode_classes) > 240):
-        data.append([len(svccore_classes), len(svccoreNode_classes)])
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore_excessive_data_check"
+    svccoreCtrlr_count = icurl('class', 'svccoreCtrlr.json?&rsp-subtree-include=count')
+    svccoreNode_count = icurl('class', 'svccoreNode.json?&rsp-subtree-include=count')
+    if(int(svccoreCtrlr_count[0]['moCount']['attributes']['count']) > 2 or int(svccoreNode_count[0]['moCount']['attributes']['count']) > 2):
+        data.append([svccoreCtrlr_count[0]['moCount']['attributes']['count'], svccoreNode_count[0]['moCount']['attributes']['count']])
     if data:
         result = MANUAL
     return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
-    
+
 # ---- Script Execution ----
 
 
@@ -6133,7 +6157,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
-        svccoreCtrlr_or_svccoreNode_excessive_entries_check,
+        svccore_excessive_data_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -6208,7 +6232,6 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
-        auto_firmware_update_on_switch_check,
 
     ]
     ssh_checks = [
