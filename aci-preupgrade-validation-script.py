@@ -6063,7 +6063,7 @@ def svccore_excessive_data_check(**kwargs):
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore_excessive_data_check"
     svccoreCtrlr_count = icurl('class', 'svccoreCtrlr.json?&rsp-subtree-include=count')
     svccoreNode_count = icurl('class', 'svccoreNode.json?&rsp-subtree-include=count')
-    if(int(svccoreCtrlr_count[0]['moCount']['attributes']['count']) > 2 or int(svccoreNode_count[0]['moCount']['attributes']['count']) > 2):
+    if(int(svccoreCtrlr_count[0]['moCount']['attributes']['count']) > 240 or int(svccoreNode_count[0]['moCount']['attributes']['count']) > 240):
         data.append([svccoreCtrlr_count[0]['moCount']['attributes']['count'], svccoreNode_count[0]['moCount']['attributes']['count']])
     if data:
         result = MANUAL
