@@ -187,14 +187,18 @@ Items                                           | Defect       | This Script    
 [Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:
 [Stale Decommissioned Spine][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 Platform Model][d22]                 | CSCwk77800   | :white_check_mark: | :no_entry_sign:
-[N9K-C9408 with 6+ N9K-X9400-16W LEMs][d29]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:
 [Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
+<<<<<<< HEAD
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+=======
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
+[N9K-C9408 with 6+ N9K-X9400-16W LEMs][d29]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
+>>>>>>> Updated the if condition for maintenance release,6.1(5e) and variable name for impacted nodes.Also, updated pytest test cases
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
