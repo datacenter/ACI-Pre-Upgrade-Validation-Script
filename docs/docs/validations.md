@@ -227,7 +227,6 @@ Items                                           | Defect       | This Script    
 [d29]: #auto-firmware-update-on-switch-discovery
 [d30]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 
-
 ## General Check Details
 
 ### Compatibility (Target ACI Version)
@@ -2675,9 +2674,6 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 Due to defect [CSCws82819][64], `N9K-C9408` switch will experience a boot loop with dt_helper process crash if upgraded from pre-16.1(2f) to 16.1(2f)-16.1(5) or 16.2(1g) with more than 5 `N9K-X9400-16W` LEMs installed.
 
 To avoid this issue, please select a fix version.
-
-
-
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
