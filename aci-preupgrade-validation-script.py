@@ -6266,8 +6266,6 @@ class CheckManager:
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
         n9k_c9408_model_lem_count_check,
-        auto_firmware_update_on_switch_check,
-        n9k_c9408_model_lem_count_check,
 
     ]
     ssh_checks = [
