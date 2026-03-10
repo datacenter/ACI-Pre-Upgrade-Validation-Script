@@ -192,8 +192,9 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
-[NTP sync issue in Leaf as NTP server][d29]     | CSCwq28721   | :white_check_mark: |
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[NTP sync issue in Leaf as NTP server][d30]     | CSCwq28721   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -223,7 +224,8 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-[d29]: #NTP-sync-issue-in-Leaf-as-NTP-server
+[d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #NTP-sync-issue-in-Leaf-as-NTP-server
 
 ## General Check Details
 
@@ -2648,6 +2650,25 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### Auto Firmware Update on Switch Discovery
+
+[Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
+
+* when adding a new switch to expand the fabric
+* when replacing an existing switch
+* when initializing and rediscovering an existing switch
+
+It does not activate during regular upgrades initiated through the APIC.
+
+Due to [CSCwe83941][62], if a new switch is running 6.0(1), 6.0(2) or any version older than 5.2(8), attempting to upgrade it to 6.0(3)+ using Auto Firmware Update will fail. The switch will become unusable until a manual recovery procedure is performed directly on the device.
+
+While this issue does not occur during standard upgrades, it is important to be aware of the risk when your target version is 6.0(3) or newer and the switch is running 6.0(1), 6.0(2), or a version older than 5.2(8). Auto Firmware Update may get triggered and hit this issue during switch replacement in an upgrade window or if you need to re-initialize a switch after a failed upgrade.
+
+To avoid this risk, consider disabling Auto Firmware Update before upgrading to 6.0(3)+ if any switches are running the affected older versions. In the future, ensure that any new switch is running a compatible version before re-enabling Auto Firmware Update and registering it to the fabric.
+
+!!! note
+    This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
 
 ### NTP sync issue in Leaf as NTP server
 
@@ -2659,7 +2680,8 @@ IMPACT:
 After the upgrade, NTP stopped working correctly between the endpoints and the master node (leaf switches). NTP request is being sent with the BD SVI IP as expected, but the leaf switch is responding with a different BD IP in the same VRF, leading to NTP response rejected from the endpoints.
 
 Suggestion:
-Use IP address from a VRF which only has one IP address on the switch, example would be inband VRF(in-band ip) which would usually have only one IP address or move to fixed version refer [CSCwp92030][62].
+Use IP address from a VRF which only has one IP address on the switch, example would be inband VRF(in-band ip) which would usually have only one IP address or move to fixed version refer [CSCwp92030][64].
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2723,4 +2745,6 @@ Use IP address from a VRF which only has one IP address on the switch, example w
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
-[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp92030
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
+[63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp92030
