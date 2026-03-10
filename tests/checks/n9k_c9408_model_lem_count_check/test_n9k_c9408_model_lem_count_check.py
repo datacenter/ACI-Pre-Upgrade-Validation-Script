@@ -11,7 +11,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 test_function = "n9k_c9408_model_lem_count_check"
 
-
+# icurl queries
 eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
 
 

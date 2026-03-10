@@ -192,13 +192,9 @@ Items                                           | Defect       | This Script    
 [Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
-<<<<<<< HEAD
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
-=======
-[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | 
-[N9K-C9408 with 6+ N9K-X9400-16W LEMs][d29]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
->>>>>>> Updated the if condition for maintenance release,6.1(5e) and variable name for impacted nodes.Also, updated pytest test cases
+[N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d30]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -228,12 +224,9 @@ Items                                           | Defect       | This Script    
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
-<<<<<<< HEAD
 [d29]: #auto-firmware-update-on-switch-discovery
-=======
-[d29]: #n9k-c9408-with-6-n9k-x9400-16w-lems
+[d30]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 
->>>>>>> Added a new check for the bug 'CSCws82819N9K-C9408 boot loop on 16.1.2f and later with 6 or more LEMs'
 
 ## General Check Details
 
@@ -2658,7 +2651,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
-<<<<<<< HEAD
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2677,17 +2669,14 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
-=======
-### N9K-C9408 with 6 or more N9K-X9400-16W LEMs
 
-Due to defect [CSCws82819][62], upgrading from pre-16.1(2f) to 16.1(2f) or later can result in a boot loop when a `N9K-C9408` node has 6 or more installed N9K-X9400-16W` LEMs.
+### N9K-C9408 with more than 5 N9K-X9400-16W LEMs
 
-Recommended action:
+Due to defect [CSCws82819][64], `N9K-C9408` switch will experience a boot loop with dt_helper process crash if upgraded from pre-16.1(2f) to 16.1(2f)-16.1(5) or 16.2(1g) with more than 5 `N9K-X9400-16W` LEMs installed.
 
-Please use a different target version.
+To avoid this issue, please select a fix version.
 
 
->>>>>>> Removed if conditio for model check and modified the recommended actions
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -2752,9 +2741,6 @@ Please use a different target version.
 [59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
-<<<<<<< HEAD
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
-=======
-[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
->>>>>>> Added a new check for the bug 'CSCws82819N9K-C9408 boot loop on 16.1.2f and later with 6 or more LEMs'
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819

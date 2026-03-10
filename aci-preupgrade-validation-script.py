@@ -6059,7 +6059,7 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
     headers = ["Node ID", "Switch Model", "LEM Model", "LEM Count"]
     data = []
     recommended_action = (
-        "Upgrade from pre-16.1(2f) to 16.1(2f) or later on N9K-C9408 with 6 or more N9K-X9400-16W LEMs can result in boot loop. Choose a different version."
+        "N9K-C9408 switches configured with >5 N9K-X9400-16W LEMs will enter a boot loop if upgraded to 16.1(2f)-16.1(5) or 16.2(1g). Please select a fix version."
     )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-6-n9k-x9400-16w-lems'
 
@@ -6260,7 +6260,6 @@ class CheckManager:
         clock_signal_component_failure_check,
         stale_decomissioned_spine_check,
         n9408_model_check,
-        n9k_c9408_model_lem_count_check,
         pbr_high_scale_check,
         standby_sup_sync_check,
         isis_database_byte_check,
@@ -6268,6 +6267,7 @@ class CheckManager:
         auto_firmware_update_on_switch_check,
         n9k_c9408_model_lem_count_check,
         auto_firmware_update_on_switch_check,
+        n9k_c9408_model_lem_count_check,
 
     ]
     ssh_checks = [
