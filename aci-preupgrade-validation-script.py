@@ -6053,7 +6053,7 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title='N9K-C9408 with 6 or more N9K-X9400-16W LEMs')
+@check_wrapper(check_title='N9K-C9408 with more than 5 N9K-X9400-16W LEMs')
 def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node ID", "Switch Model", "LEM Model", "LEM Count"]
@@ -6061,7 +6061,7 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
     recommended_action = (
         "N9K-C9408 switches configured with >5 N9K-X9400-16W LEMs will enter a boot loop if upgraded to 16.1(2f)-16.1(5) or 16.2(1g). Please select a fix version."
     )
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-6-n9k-x9400-16w-lems'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-more-than-5-n9k-x9400-16w-lems'
 
     if tversion.older_than("6.1(2f)") or (tversion.newer_than("6.1(5e)") and not tversion.same_as("6.2(1g)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
