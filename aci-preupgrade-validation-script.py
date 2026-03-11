@@ -6062,9 +6062,9 @@ def svccore_excessive_data_check(**kwargs):
     recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore_excessive_data_check"
     try:
-        svccoreCtrlr_classes_count = icurl('class', 'svccoreCtrlr.json?&rsp-subtree-include=count')
-        svccoreNode_classes_count = icurl('class', 'svccoreNode.json?&rsp-subtree-include=count')
-        if(int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240 or int(svccoreNode_classes_count[0]['moCount']['attributes']['count']) > 240):
+        svccoreCtrlr_classes_count = icurl('class', 'svccoreCtrlr.json?query-target=self&rsp-subtree-include=count')
+        svccoreNode_classes_count = icurl('class', 'svccoreNode.json?query-target=self&rsp-subtree-include=count')
+        if(int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240 or int(svccoreNode_classes_count[1]['moCount']['attributes']['count']) > 240):
             data.append([svccoreCtrlr_classes_count[0]['moCount']['attributes']['count'], svccoreNode_classes_count[0]['moCount']['attributes']['count']])
         if data:
             result = MANUAL
