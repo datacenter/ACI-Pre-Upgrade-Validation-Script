@@ -82,7 +82,7 @@ Items                                         | Faults         | This Script    
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
-
+[APIC Storage Inode Check][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -105,6 +105,7 @@ Items                                         | Faults         | This Script    
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
+[f22]: #apic-storage-inode-check
 
 ### Configuration Checks
 
@@ -1551,6 +1552,56 @@ EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inven
 
 This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
 
+
+### APIC Storage Inode Check
+
+If a Cisco APIC is running low on inode capacity for any reason, the Cisco APIC upgrade can fail. The Cisco APIC will raise three different faults depending on inode utilization. If any of these faults are raised on the system, the issue should be resolved prior to performing the upgrade.
+
+* **F4388**: A warning level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 75%.
+
+* **F4389**: A major level fault for Cisco APIC storage inode utilization. This is raised when utilization is between 85% and 90%.
+
+* **F4390**: A critical level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 90%.
+
+Although the storage space for the filesystem might be adequate we might still see issues with inode usage, this happens when we have more number of files or directories created with lower file sizes.
+
+Recommended Action:
+
+To recover from this fault, try the following action
+
+1. Free up space from affected disk partition .
+2. TAC may be required to analyze and cleanup certain directories due to filesystem permissions. Cleanup of `/` is one such example.
+
+!!! example "Fault Example (F4390: " Critical fault for APIC Inode Utilisation)
+    ```
+    moquery -c faultInst -f 'fault.Inst.code=="F4390"'
+    Total Objects shown: 1
+   
+    # faultInst
+    ack             : yes
+    alert           : no
+    cause           : equipment-full
+    changeSet       : available (Old: 19408344, New: 19407972), inodesFree (Old: 263915, New: 263842), inodesUsed (Old: 2357525, New: 2357598), 
+    used (Old: 19436092, New: 19436464)
+    code            : F4390
+    created         : 2024-08-05T05:42:31.975+02:00
+    delegated       : no
+    descr           : Storage unit /scratch-writes on node 3 with hostname b001nnc000003 mounted at /scratch-writes is 90% full for Inodes
+    dn              : topology/pod-2/node-3/sys/ch/p-[/scratch-writes]-f-[/dev/mapper/atx-scratch]/fault-F4390
+    domain          : infra
+    highestSeverity : critical
+    lastTransition  : 2024-08-05T09:41:18.152+02:00
+    lc              : raised
+    occur           : 2
+    origSeverity    : critical
+    prevSeverity    : cleared
+    rule            : eqpt-storage-inode-critical
+    severity        : critical
+    subject         : equipment-full
+    type            : operational
+    ```
+    
+    
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       

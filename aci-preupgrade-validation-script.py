@@ -6053,6 +6053,35 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title="APIC Storage Inode Check (F4388, F4389, F4390 equipment-full)")
+def apic_storage_inode_check(**kwargs):
+    result = FAIL_UF
+    headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Usage %', 'Recommended Action']
+    data = []
+    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_data = []
+    recommended_action = 'Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-check'
+    dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
+    desc_regex = r'is (?P<usage>\d{2,3}%) full for Inodes'
+    faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))') 
+    for faultInst in faultInsts:
+        lc = faultInst['faultInst']['attributes']['lc']
+        if lc not in ["raised", "soaking"]:
+            continue
+        fc = faultInst['faultInst']['attributes']['code']
+        dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+        desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+        if dn and desc:
+            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'), desc.group('usage'), recommended_action])
+        else:
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
+    if not data and not unformatted_data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6162,6 +6191,7 @@ class CheckManager:
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
+        apic_storage_inode_check,
 
         # Configurations
         vpc_paired_switches_check,
