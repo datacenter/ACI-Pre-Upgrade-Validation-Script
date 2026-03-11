@@ -6183,6 +6183,7 @@ class CheckManager:
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
+        auto_firmware_update_on_switch_check,
 
         # Configurations
         vpc_paired_switches_check,
