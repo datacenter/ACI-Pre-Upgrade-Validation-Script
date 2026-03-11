@@ -76,7 +76,7 @@ bootflash_output_no_such_file = ""
             {
                 fabricSetupPs: read_data(dir, "fabricSetupP.json")
             },
-            read_data(dir, "fabricNode-Neg.json"),
+            read_data(dir, "fabricNode-neg.json"),
             "6.1(4h)",
             False,
             [],
