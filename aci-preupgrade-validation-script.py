@@ -6183,7 +6183,6 @@ class CheckManager:
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
-        auto_firmware_update_on_switch_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -6237,6 +6236,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        auto_firmware_update_on_switch_check,
 
     ]
     ssh_checks = [
