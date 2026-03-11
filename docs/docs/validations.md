@@ -1563,6 +1563,8 @@ If a Cisco APIC is running low on inode capacity for any reason, the Cisco APIC 
 
 * **F4390**: A critical level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 90%.
 
+Although the storage space for the filesystem might be adequate we might still see issues with inode usage, this happens when we have more number of files or directories created with lower file sizes.
+
 Recommended Action:
 
 To recover from this fault, try the following action

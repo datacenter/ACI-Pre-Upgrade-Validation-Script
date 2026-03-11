@@ -8,10 +8,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
-
 test_function = "apic_storage_inode_check"
-
-# icurl queries
 faultInst_api = 'faultInst.json'
 faultInst_api += '?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))'
 
