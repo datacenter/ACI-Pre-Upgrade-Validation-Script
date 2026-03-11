@@ -1,0 +1,29 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "101",
+        "model": "N9K-C9372TX-E",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "102",
+        "model": "N9K-C93180LC-EX",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "103",
+        "model": "N9K-C93180YC-FX",
+        "role": "leaf"
+      }
+    }
+  }
+]
