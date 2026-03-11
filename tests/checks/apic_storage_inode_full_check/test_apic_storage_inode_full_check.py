@@ -74,4 +74,3 @@ def test_logic(run_check, mock_icurl, expected_result, expected_data):
         assert result.data == expected_data
     else:
         assert result.unformatted_data == expected_data
-    
