@@ -2671,7 +2671,7 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 ### N9K-C9408 with more than 5 N9K-X9400-16W LEMs
 
-Due to defect [CSCws82819][64], N9K-C9408 switch will experience a boot loop with dt_helper process crash if upgraded to versions 16.1(2f) to 16.1(5) or 16.2(1g) with more than 5 `N9K-X9400-16W` LEMs installed.
+Due to defect [CSCws82819][64], N9K-C9408 switch will experience a boot loop with dt_helper process crash if upgraded to versions 16.1(2f) to 16.1(5) or 16.2(1g) with more than 5 N9K-X9400-16W LEMs installed.
 
 To avoid this issue, please upgrade to fix version.
 
