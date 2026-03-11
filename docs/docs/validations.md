@@ -227,7 +227,6 @@ Items                                           | Defect       | This Script    
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
 
-
 ## General Check Details
 
 ### Compatibility (Target ACI Version)
