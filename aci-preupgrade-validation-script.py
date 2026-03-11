@@ -6053,6 +6053,26 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title="svccore excessive data check")
+def svccore_excessive_data_check(**kwargs):
+    result = PASS
+    headers = ['svccoreCtrlr Object Count','svccoreNode Object Count']
+    data = []
+    recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore_excessive_data_check"
+    try:
+        svccoreCtrlr_classes_count = icurl('class', 'svccoreCtrlr.json?query-target=self&rsp-subtree-include=count')
+        svccoreNode_classes_count = icurl('class', 'svccoreNode.json?query-target=self&rsp-subtree-include=count')
+        if(int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240 or int(svccoreNode_classes_count[1]['moCount']['attributes']['count']) > 240):
+            data.append([svccoreCtrlr_classes_count[0]['moCount']['attributes']['count'], svccoreNode_classes_count[0]['moCount']['attributes']['count']])
+        if data:
+            result = MANUAL
+        return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
+    except Exception as e:
+        return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6141,6 +6161,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
+        svccore_excessive_data_check,
 
         # Faults
         apic_disk_space_faults_check,
