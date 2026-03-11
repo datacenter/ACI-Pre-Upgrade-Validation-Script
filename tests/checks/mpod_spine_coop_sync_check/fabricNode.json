@@ -1,0 +1,157 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.0.128.67",
+                "annotation": "",
+                "apicType": "not-applicable",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-201",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "201",
+                "lastStateModTs": "2026-03-06T14:54:07.938-04:00",
+                "lcOwn": "local",
+                "mfgTm": "1969-12-31T20:00:00.000-04:00",
+                "modTs": "2026-03-06T14:54:09.818-04:00",
+                "model": "N9K-C9408",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "spine1",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "spine",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(8f)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.0.128.68",
+                "annotation": "",
+                "apicType": "not-applicable",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-202",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "202",
+                "lastStateModTs": "2026-03-06T14:54:07.938-04:00",
+                "lcOwn": "local",
+                "mfgTm": "1969-12-31T20:00:00.000-04:00",
+                "modTs": "2026-03-06T14:54:09.818-04:00",
+                "model": "N9K-C9504",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "spine2",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "spine",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(8f)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.0.128.69",
+                "annotation": "",
+                "apicType": "not-applicable",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-203",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "203",
+                "lastStateModTs": "2026-03-06T14:54:07.938-04:00",
+                "lcOwn": "local",
+                "mfgTm": "1969-12-31T20:00:00.000-04:00",
+                "modTs": "2026-03-06T14:54:09.818-04:00",
+                "model": "N9K-C9508",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "spine3",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "spine",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(8f)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.0.128.70",
+                "annotation": "",
+                "apicType": "not-applicable",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-204",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "204",
+                "lastStateModTs": "2026-03-06T14:54:07.938-04:00",
+                "lcOwn": "local",
+                "mfgTm": "1969-12-31T20:00:00.000-04:00",
+                "modTs": "2026-03-06T14:54:09.818-04:00",
+                "model": "N9K-C9516",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "spine4",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "spine",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(8f)"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "adSt": "on",
+                "address": "10.0.128.71",
+                "annotation": "",
+                "apicType": "not-applicable",
+                "childAction": "",
+                "delayedHeartbeat": "no",
+                "dn": "topology/pod-1/node-205",
+                "extMngdBy": "",
+                "fabricSt": "active",
+                "id": "205",
+                "lastStateModTs": "2026-03-06T14:54:07.938-04:00",
+                "lcOwn": "local",
+                "mfgTm": "1969-12-31T20:00:00.000-04:00",
+                "modTs": "2026-03-06T14:54:09.818-04:00",
+                "model": "N9K-C9336C-FX2",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "spine5",
+                "nameAlias": "",
+                "nodeType": "unspecified",
+                "role": "spine",
+                "status": "",
+                "uid": "0",
+                "userdom": "all",
+                "vendor": "Cisco Systems, Inc",
+                "version": "n9000-15.2(8f)"
+            }
+        }
+    }
+]

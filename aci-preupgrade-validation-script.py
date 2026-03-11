@@ -6053,6 +6053,71 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+# Connection Base Check
+@check_wrapper(check_title='Multi-Pod Coop EP Sync Check')
+def mpod_spine_coop_sync_check(username, password, fabric_nodes, tversion, **kwargs):
+    result = PASS
+    headers = ["Switch ID", "Switch Name", "Bootscript present"]
+    data = []
+    recommended_action = 'Remove the /bootflash/bootstrap.xml file before upgrade'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#multipod-spine-coop-sync'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    # Only 6.1(4h) affected
+    if tversion.version != "6.1(4h)":
+        return Result(result=NA, msg=VER_NOT_AFFECTED)  
+    # Only Mpod affected
+    fabricSetupPs = icurl('class', 'fabricSetupP.json')
+    if len(fabricSetupPs) <= 1:
+        return Result(result=NA,  msg="Multi-Pod not configured") 
+    has_error = False  
+	#  Modular Spines affected only
+    modular_spines = ["N9K-C9408" , "N9K-C9504", "N9K-C9508", "N9K-C9516"]
+
+    switches = [node for node in fabric_nodes if (
+        node["fabricNode"]["attributes"]["model"] in modular_spines
+        )]
+    if not switches:
+        return Result(result=NA, msg="No affected Switches found", doc_url=doc_url)
+
+    for switch in switches:
+        files = []
+        switch_id = switch["fabricNode"]["attributes"]["id"]
+        switch_name = switch["fabricNode"]["attributes"]["name"]
+        switch_addr = switch["fabricNode"]["attributes"]["address"]
+        try:
+            c = Connection(switch_addr)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+        except Exception as e:
+            data.append([switch_id, switch_name, str(e)])
+            has_error = True
+            continue
+        try:
+            cmd = r"ls bootflash/ | grep boots"
+            c.cmd(cmd)
+            # Neither file found, continue
+            if not c.output:
+                continue
+            # Bootstrap.xml present, Bootscript missing
+            if ("bootstrap.xml" in c.output) and not ("bootscript" in c.output):
+                data.append([switch_id, switch_name, 'bootscript file missing!!'])
+                continue            
+        except Exception as e:
+            data.append([switch_id, switch_name, str(e)])
+            has_error = True
+            continue
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6216,6 +6281,7 @@ class CheckManager:
         isis_database_byte_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
+        mpod_spine_coop_sync_check,
 
     ]
     ssh_checks = [

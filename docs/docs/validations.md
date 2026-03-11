@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[Multipod Spine Coop Sync][d30]                 | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #multipod-spine-coop-sync
 
 ## General Check Details
 
@@ -2668,6 +2670,14 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
 
+### Multipod Spine Coop Sync
+
+The Council of Oracle Protocol or Coop is used by ACI Switches to ensure a consistent Endpoint information across the ACI Fabric.  In a [Multi-Pod deployment][64], each ACI Pod runs a different COOP instance, using MP-BGP to share Endpoint information across Pods. 
+
+Due to [CSCwr66848][65], upon upgrading to ACI 6.0(4h) Modular Spines in a Multi-Pod setup can lose their BGP EVI (EVPN Instance) information, this keeps the Spines from syncing with other Pods, leading to traffic isssues. 
+
+If this alert is raised, remove the bootstrap.xml file from the /bootflash directory on each Spine prior to the upgrade.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2732,3 +2742,5 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-737855.html
+[65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848

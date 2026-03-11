@@ -1,0 +1,25 @@
+[
+    {
+        "fabricSetupP": {
+            "attributes": {
+                "annotation": "",
+                "childAction": "",
+                "configIssues": "",
+                "descr": "",
+                "dn": "uni/controller/setuppol/setupp-1",
+                "extMngdBy": "",
+                "lcOwn": "local",
+                "modTs": "2023-01-31T22:42:58.315-04:00",
+                "monPolDn": "uni/fabric/monfab-default",
+                "name": "",
+                "nameAlias": "",
+                "podId": "1",
+                "podType": "physical",
+                "status": "",
+                "tepPool": "10.0.0.0/16",
+                "uid": "0",
+                "userdom": "all"
+            }
+        }
+    }
+]
