@@ -13,6 +13,8 @@ test_function = "mpod_spine_coop_sync_check"
 
 fabricNodes = read_data(dir, "fabricNode.json")
 
+no_fabricNodes = read_data(dir, "fabricNode-Neg.json")
+
 modular_spines = ["N9K-C9408" , "N9K-C9504", "N9K-C9508", "N9K-C9516"]
 
 fabricSetupPs = "fabricSetupP.json"
@@ -52,7 +54,7 @@ bootflash_output_no_such_file = ""
             {
                 fabricSetupPs: read_data(dir, "fabricSetupP.json")
             },
-            read_data(dir, "fabricNode-Neg.json"),
+            no_fabricNodes,
             "6.0(5h)",
             False,
             [],
@@ -76,7 +78,7 @@ bootflash_output_no_such_file = ""
             {
                 fabricSetupPs: read_data(dir, "fabricSetupP.json")
             },
-            read_data(dir, "fabricNode-Neg.json"),
+            no_fabricNodes,
             "6.1(4h)",
             False,
             [],
