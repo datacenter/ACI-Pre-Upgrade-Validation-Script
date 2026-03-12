@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d30]     | CSCws82819   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 
 ## General Check Details
 
@@ -2667,6 +2669,11 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
+### N9K-C9408 with more than 5 N9K-X9400-16W LEMs
+
+Due to defect [CSCws82819][64], N9K-C9408 switch will experience a boot loop with dt_helper process crash if upgraded to versions 16.1(2f) to 16.1(5) or 16.2(1g) with more than 5 N9K-X9400-16W LEMs installed.
+
+To avoid this issue, please upgrade to fix version or use less than 6 N9K-X9400-16W in one spine node.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2732,3 +2739,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
