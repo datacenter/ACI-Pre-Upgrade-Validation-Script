@@ -2673,7 +2673,7 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 Due to defect [CSCws82819][64], N9K-C9408 switch will experience a boot loop with dt_helper process crash if upgraded to versions 16.1(2f) to 16.1(5) or 16.2(1g) with more than 5 N9K-X9400-16W LEMs installed.
 
-To avoid this issue, please upgrade to fix version.
+To avoid this issue, please upgrade to fix version or use less than 6 N9K-X9400-16W in one spine node.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
