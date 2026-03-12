@@ -6016,7 +6016,11 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     recommended_action = 'Remove the affected EP exception configurations and re-add them'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-epcoop-exception-macs-missing'
 
-    # Affected source version is in range [6.0(3d):6.0(9e)). Fixed on 6.0(9e)+ and 6.1(4)+.
+    exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
+    presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
+
+    # Before APIC upgrade, check if there are any rogue exception MACs and insufficient presListener entries.
+    # Affected source version is in range [5.2(3e):6.0(3d)]. Fixed on 6.0(9e)+ and 6.1(4)+.
     if (
     (cversion.same_as("5.2(3e)") or cversion.newer_than("5.2(3e)")) and
     (cversion.same_as("6.0(3d)") or cversion.older_than("6.0(3d)")) and
@@ -6025,18 +6029,30 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
         ((tversion.same_as("6.1(1f)") or tversion.newer_than("6.1(1f)")) and tversion.older_than("6.1(4h)"))
     )
     ):
-
-        exception_mac_api = 'fvRogueExceptionMac.json'
-        presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
-
         exception_macs = icurl('class', exception_mac_api)
-        if exception_macs:
-            log.info("Found {} exception MACs, checking presListener entries...".format(len(exception_macs)))
+        exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
+        if exception_macs_count > 0:
             presListener_response = icurl('class', presListener_api)
             if int(presListener_response[0]['moCount']['attributes']['count']) >= 0 and int(presListener_response[0]['moCount']['attributes']['count']) < 32:
-                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(int(presListener_response[0]['moCount']['attributes']['count']), len(exception_macs)))
+                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(int(presListener_response[0]['moCount']['attributes']['count']), exception_macs[0]['moCount']['attributes']['count']))
                 result = FAIL_O
-                data.append([len(exception_macs), int(presListener_response[0]['moCount']['attributes']['count'])])
+                data.append([exception_macs[0]['moCount']['attributes']['count'], int(presListener_response[0]['moCount']['attributes']['count'])])
+            elif int(presListener_response[0]['moCount']['attributes']['count']) == 32:
+                result = POST
+                msg = "The upgrade path from {} to {} can cause rogue exception MACs to be lost post APIC upgrade. Please dilligently review the exception MACs and presListener entries post APIC upgrade.".format(cversion, tversion)
+                return Result(result=result, msg=msg)
+
+    # After APIC upgrade, check if there are any rogue exception MACs and insufficient presListener entries.
+    elif cversion.same_as(tversion):
+        exception_macs = icurl('class', exception_mac_api)
+        exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
+        if exception_macs_count > 0:
+            log.info("Found {} exception MACs, checking presListener entries...".format(exception_macs_count))
+            presListener_response = icurl('class', presListener_api)
+            if int(presListener_response[0]['moCount']['attributes']['count']) >= 0 and int(presListener_response[0]['moCount']['attributes']['count']) < 32:
+                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(int(presListener_response[0]['moCount']['attributes']['count']), exception_macs_count))
+                result = FAIL_O
+                data.append([exception_macs_count, int(presListener_response[0]['moCount']['attributes']['count'])])
             
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
