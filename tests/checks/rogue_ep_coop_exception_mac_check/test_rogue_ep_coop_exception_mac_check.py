@@ -11,7 +11,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 test_function = "rogue_ep_coop_exception_mac_check"
 
-exception_mac_api = 'fvRogueExceptionMac.json'
+exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
 
 presListener_api = 'presListener.json'
 presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
@@ -84,12 +84,12 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "5.2(3e)",
             script.PASS,
         ),
-        # Affected edge cversion (6.0(3d)) and tversion (6.0(8h)), no exception MACs
+        # Affected edge cversion (6.0(2j)) and tversion (6.0(8h)), no exception MACs
         (
             {exception_mac_api: read_data(dir, "no_rogue_mac_response.json"),
              presListener_api: read_data(dir, "presListener_exceptcont.json")},
             "6.0(8h)",
-            "6.0(3d)",
+            "6.0(2j)",
             script.PASS,
         ),
         # Affected cversion and tversion, no exception MACs
@@ -149,13 +149,38 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "5.2(8g)",
             script.FAIL_O,
         ),
-        # Affected edge cversion (6.0(3d)) and tversion (6.0(8h)), exception MACs present, no exceptcont presListeners
+        # Affected edge cversion (6.0(2j)) and tversion (6.0(8h)), exception MACs present, no exceptcont presListeners
         (
             {exception_mac_api: read_data(dir, "rogue_mac_response.json"),
              presListener_api: read_data(dir, "presListener_exceptcont_32_missing.json")},
             "6.0(8h)",
-            "6.0(3d)",
+            "6.0(2j)",
             script.FAIL_O,
+        ),
+        # After APIC upgrade.
+        # Same cversion and tversion, exception MACs present, no exceptcont presListeners
+        (
+            {exception_mac_api: read_data(dir, "rogue_mac_response.json"),
+             presListener_api: read_data(dir, "presListener_exceptcont_32_missing.json")},
+            "6.1(2f)",
+            "6.1(2f)",
+            script.FAIL_O,
+        ),
+        # Same cversion and tversion, exception MACs present, exceptcont listeners missing
+        (
+            {exception_mac_api: read_data(dir, "rogue_mac_response.json"),
+             presListener_api: read_data(dir, "presListener_exceptcont_31_missing.json")},
+            "6.1(2f)",
+            "6.1(2f)",
+            script.FAIL_O,
+        ),
+        # Same cversion and tversion, exception MACs present, 32 exceptcont presListeners present
+        (
+            {exception_mac_api: read_data(dir, "rogue_mac_response.json"),
+             presListener_api: read_data(dir, "presListener_exceptcont.json")},
+            "6.1(2f)",
+            "6.1(2f)",
+            script.PASS,
         ),
     ],
     ids=[
@@ -167,7 +192,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
         "PASS_non_affected_cversion_tversion_with_exception_MACs",
         "PASS_non_affected_cversion_tversion_corner_case_with_exception_MACs",
         "PASS_affected_edge_cversion_5.2(3e)_tversion_6.1(3f)_no_exception_MACs",
-        "PASS_affected_edge_cversion_6.0(3d)_tversion_6.0(8h)_no_exception_MACs",
+        "PASS_affected_edge_cversion_6.0(2j)_tversion_6.0(8h)_no_exception_MACs",
         "PASS_affected_cversion_tversion_no_exception_MACs",
         "PASS_affected_cversion_tversion_exception_MACs_with_32_exceptcont_listeners",
         "PASS_affected_edge_cversion_tversion_exception_MACs_with_32_exceptcont_listeners",
@@ -175,7 +200,10 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
         "FAIL_affected_cversion_tversion_exception_MACs_31_exceptcont_listeners",
         "FAIL_affected_cversion_tversion_exception_MACs_many_missing_exceptcont_listeners",
         "FAIL_affected_cversion_tversion_exception_MACs_no_exceptcont_listeners",
-        "FAIL_affected_edge_cversion_6.0(3d)_tversion_6.0(8h)_exception_MACs_no_exceptcont_listeners",
+        "FAIL_affected_edge_cversion_6.0(2j)_tversion_6.0(8h)_exception_MACs_no_exceptcont_listeners",
+        "FAIL_after_APIC_upgrade_same_cversion_tversion_exception_MACs_no_exceptcont_listeners",
+        "FAIL_after_APIC_upgrade_same_cversion_tversion_exception_MACs_exception_MACs_present_exceptcont_listeners_missing",
+        "PASS_after_APIC_upgrade_same_cversion_tversion_exception_MACs_32_exceptcont_listeners",
     ],
 )
 def test_rogue_ep_coop_exception_mac_check(run_check, mock_icurl, tversion, cversion, expected_result):
