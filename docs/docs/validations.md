@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,8 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #rogue-ep-exception-list-missing-on-switches
+
 
 ## General Check Details
 
@@ -2648,6 +2651,7 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2666,6 +2670,33 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+
+### Rogue EP Exception List missing on switches
+
+Rogue Endpoint Control and COOP Dampening are features that mitigate the impact of flapping endpoints by temporarily pausing the learning of such endpoints. However, in some environments, certain MAC or IP addresses are expected to move frequently.
+
+The **Rogue/COOP Exception List** feature, introduced in 5.2(3), allows you to exclude specific MAC addresses from Rogue Endpoint Control and COOP Dampening. Initially, each MAC address had to be configured individually in each bridge domain. In 6.0(3), this feature was enhanced to support fabric-wide exception lists with wildcard options per bridge domain and the ability to exclude MAC addresses in L3Outs.
+
+However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with **Rogue/COOP Exception List**s configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
+
+!!! info
+    The root cause is that internal objects called `presListener` for **Rogue/COOP Exception List**, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade. This is due to [CSCwp64296][64], introduced with the enhancement in 6.0(3).
+
+    The total number of `presListener` for **Rogue/COOP Exception List** on APICs should be 32, but APICs may fail to create all of them when upgrading from an older version to 6.0(3)+. If the spine switches are then upgraded while some `presListener`s are missing on APICs, they cannot retrieve the complete lists.
+
+This rule checks for [CSCwp64296][64] with the following logic:
+
+* Current APIC version is older than `6.0(3d)`.
+* Target APIC version is in an affected range:
+    * older than `6.0(9e)`, or
+    * from `6.1(1f)` up to (but not including) `6.1(4h)`.
+* At least one **Rogue/COOP Exception MAC** exists.
+* The total number of `presListener` entries for the **Rogue/COOP Exception List** is less than 32.
+
+If all of the above conditions are met, this check fails because switches may not receive the complete exception list after upgrade.
+
+Recommended action: delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -2732,3 +2763,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296

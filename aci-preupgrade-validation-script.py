@@ -6053,6 +6053,35 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title='Rogue EP Exception List missing on switches')
+def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Rogue Exception MACs Count", "presListener Count"]
+    data = []
+    recommended_action = 'Delete the affected exception list and create again'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-ep-exception-list-missing-on-switches'
+
+    exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
+    presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
+
+    # Check if there are any rogue exception MACs and insufficient presListener entries.
+    # Affected source version is in range [5.2(3e):6.0(3d)]. Fixed on 6.0(9e)+ and 6.1(4h)+.
+    if ((cversion.older_than("6.0(3d)")) and
+    (tversion.older_than("6.0(9e)") or ((tversion.same_as("6.1(1f)") or tversion.newer_than("6.1(1f)")) and tversion.older_than("6.1(4h)")))
+    ) or cversion.same_as(tversion):
+        exception_macs = icurl('class', exception_mac_api)
+        exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
+        if exception_macs_count > 0:
+            presListener_response = icurl('class', presListener_api)
+            presListener_count = int(presListener_response[0]['moCount']['attributes']['count'])
+            if presListener_count >= 0 and presListener_count < 32:
+                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(presListener_count, exception_macs_count))
+                result = FAIL_O
+                data.append([exception_macs_count, presListener_count])
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6216,7 +6245,8 @@ class CheckManager:
         isis_database_byte_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
-
+        rogue_ep_coop_exception_mac_check,
+        
     ]
     ssh_checks = [
         # General
