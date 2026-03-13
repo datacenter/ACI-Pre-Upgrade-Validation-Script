@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[Multi-Pod modular spine bootscript check][d30]       | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #multipod-modular-spine-bootscript-check
 
 ## General Check Details
 
@@ -2667,6 +2669,24 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
+### Multi-Pod Modular Spine Bootscript
+
+Due to [CSCwr66848][64], in a Multi-Pod fabric, modular spine switches have `bootscript` file present in their bootflash from the initial bootstrap process. When upgrading to 6.1(4h) or 6.1(5e), if `bootscript` file is missing that can cause traffic loss across pods until the spine in this condition is clean reloaded.
+
+To avoid this issue, verify that `bootscript` file exists in the bootflash of each spine switch prior to upgrading to 6.1(4h) or 6.1(5e). If not found, the `bootstrap.xml` file must be removed before proceeding with the upgrade.
+
+!!! tip
+    You can manually check for the presence of `bootscript` on a spine switch by logging into the switch CLI and running the following command:
+    ```
+    spine1# ls -l bootflash/ | grep boots
+    -rw-rw-rw- 1 root  admin   152 Jan  5 11:51 bootscript
+    -rw-r--r-- 1   600 admin 14119 Jan  5 11:51 bootstrap.xml
+    ```
+    If `bootscript` is not present, delete the `bootstrap.xml` file from bootflash to resolve the issue:
+    ```
+    spine1# delete bootflash/bootstrap.xml
+    ```
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2732,3 +2752,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
