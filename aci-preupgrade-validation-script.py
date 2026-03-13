@@ -6012,55 +6012,6 @@ def apic_vmm_inventory_sync_faults_check(**kwargs):
         doc_url=doc_url)
 
 
-@check_wrapper(check_title='Rogue/COOP Exception List missing on switches')
-def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
-    result = PASS
-    headers = ["Rogue Exception MACs Count", "presListener Count"]
-    data = []
-    recommended_action = 'Remove the affected EP exception configurations and re-add them'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#roguecoop-exception-list-missing-on-switches'
-
-    exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
-    presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
-
-    # Before APIC upgrade, check if there are any rogue exception MACs and insufficient presListener entries.
-    # Affected source version is in range [5.2(3e):6.0(3d)]. Fixed on 6.0(9e)+ and 6.1(4)+.
-    if (
-    (cversion.same_as("5.2(3e)") or cversion.newer_than("5.2(3e)")) and
-    (cversion.same_as("6.0(3d)") or cversion.older_than("6.0(3d)")) and
-    (
-        tversion.older_than("6.0(9e)") or
-        ((tversion.same_as("6.1(1f)") or tversion.newer_than("6.1(1f)")) and tversion.older_than("6.1(4h)"))
-    )
-    ):
-        exception_macs = icurl('class', exception_mac_api)
-        exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
-        if exception_macs_count > 0:
-            presListener_response = icurl('class', presListener_api)
-            if int(presListener_response[0]['moCount']['attributes']['count']) >= 0 and int(presListener_response[0]['moCount']['attributes']['count']) < 32:
-                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(int(presListener_response[0]['moCount']['attributes']['count']), exception_macs[0]['moCount']['attributes']['count']))
-                result = FAIL_O
-                data.append([exception_macs[0]['moCount']['attributes']['count'], int(presListener_response[0]['moCount']['attributes']['count'])])
-            elif int(presListener_response[0]['moCount']['attributes']['count']) == 32:
-                result = POST
-                msg = "The upgrade path from {} to {} can cause rogue exception MACs to be lost post APIC upgrade. Please dilligently review the exception MACs and presListener entries post APIC upgrade.".format(cversion, tversion)
-                return Result(result=result, msg=msg)
-
-    # After APIC upgrade, check if there are any rogue exception MACs and insufficient presListener entries.
-    elif cversion.same_as(tversion):
-        exception_macs = icurl('class', exception_mac_api)
-        exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
-        if exception_macs_count > 0:
-            log.info("Found {} exception MACs, checking presListener entries...".format(exception_macs_count))
-            presListener_response = icurl('class', presListener_api)
-            if int(presListener_response[0]['moCount']['attributes']['count']) >= 0 and int(presListener_response[0]['moCount']['attributes']['count']) < 32:
-                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(int(presListener_response[0]['moCount']['attributes']['count']), exception_macs_count))
-                result = FAIL_O
-                data.append([exception_macs_count, int(presListener_response[0]['moCount']['attributes']['count'])])
-            
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
 @check_wrapper(check_title='APIC downgrade compatibility when crossing 6.2 release')
 def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     result = NA
@@ -6099,6 +6050,35 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
     if fwrepop and fwrepop[0]["firmwareRepoP"]["attributes"]["enforceBootscriptVersionValidation"] == "yes":
         data.append(["Enabled", fwrepop[0]["firmwareRepoP"]["attributes"]["defaultSwitchVersion"], str(tversion)])
         result = MANUAL
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title='Rogue EP Exception List missing on switches')
+def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Rogue Exception MACs Count", "presListener Count"]
+    data = []
+    recommended_action = 'Delete the affected exception list and create again'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-ep-exception-list-missing-on-switches'
+
+    exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
+    presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
+
+    # Check if there are any rogue exception MACs and insufficient presListener entries.
+    # Affected source version is in range [5.2(3e):6.0(3d)]. Fixed on 6.0(9e)+ and 6.1(4h)+.
+    if ((cversion.older_than("6.0(3d)")) and
+    (tversion.older_than("6.0(9e)") or ((tversion.same_as("6.1(1f)") or tversion.newer_than("6.1(1f)")) and tversion.older_than("6.1(4h)")))
+    ) or cversion.same_as(tversion):
+        exception_macs = icurl('class', exception_mac_api)
+        exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
+        if exception_macs_count > 0:
+            presListener_response = icurl('class', presListener_api)
+            presListener_count = int(presListener_response[0]['moCount']['attributes']['count'])
+            if presListener_count >= 0 and presListener_count < 32:
+                log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(presListener_count, exception_macs_count))
+                result = FAIL_O
+                data.append([exception_macs_count, presListener_count])
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
@@ -6266,7 +6246,7 @@ class CheckManager:
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
-
+        
     ]
     ssh_checks = [
         # General

@@ -194,7 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
-[Rogue/COOP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
+[Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -225,7 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
-[d30]: #roguecoop-exception-list-missing-on-switches
+[d30]: #rogue-ep-exception-list-missing-on-switches
 
 
 ## General Check Details
@@ -2672,7 +2672,7 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
 
-### Rogue/COOP Exception List missing on switches
+### Rogue EP Exception List missing on switches
 
 Rogue Endpoint Control and COOP Dampening are features that mitigate the impact of flapping endpoints by temporarily pausing the learning of such endpoints. However, in some environments, certain MAC or IP addresses are expected to move frequently.
 
@@ -2685,22 +2685,18 @@ However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3
 
     The total number of `presListener` for **Rogue/COOP Exception List** on APICs should be 32, but APICs may fail to create all of them when upgrading from an older version to 6.0(3)+. If the spine switches are then upgraded while some `presListener`s are missing on APICs, they cannot retrieve the complete lists.
 
-This rule alerts you to [CSCwp64296][64] if:
+This rule checks for [CSCwp64296][64] with the following logic:
 
-* Your current version is between 5.2(3) and 6.0(2).
-* Your target version is affected by [CSCwp64296][64].
-* **Rogue/COOP Exception List** for bridge domains are configured.
+* Current APIC version is older than `6.0(3d)`.
+* Target APIC version is in an affected range:
+    * older than `6.0(9e)`, or
+    * from `6.1(1f)` up to (but not including) `6.1(4h)`.
+* At least one **Rogue/COOP Exception MAC** exists.
+* The total number of `presListener` entries for the **Rogue/COOP Exception List** is less than 32.
 
-OR
+If all of the above conditions are met, this check fails because switches may not receive the complete exception list after upgrade.
 
-* Both your current and target APIC versions are the same and affected by [CSCwp64296][64].
-* The oldest current switch version is between 5.2(3) and 6.0(2).
-* **Rogue/COOP Exception List** for bridge domains are configured.
-* The total number of `presListener` for **Rogue/COOP Exception List** is less than 32.
-
-If the first set of conditions is met, you should change your target version to one with the fix for [CSCwp64296][64].
-
-If the second set of conditions is met, it means that the APICs were already upgraded and affected by [CSCwp64296][64], but some switches have yet to be upgraded. In this case, you need to contact Cisco TAC to resolve the issue of missing `presListener` objects on APICs (see info above) to prevent the switches from failing to retrieve the exception lists.
+Recommended action: delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
