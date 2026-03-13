@@ -6059,7 +6059,7 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     result = PASS
     headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present", "Bootstrap file Present"]
     data = []
-    recommended_action = "Bootscript is missing, delete bootstrap.xml from bootflash"
+    recommended_action = "Bootscript is missing, delete bootstrap.xml from /bootflash folder and do clean reboot"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multipod-modular-spine-bootscript-check"
 
     pod_count_resp = icurl('class', 'fabricSetupP.json?query-target=self&rsp-subtree-include=count')
