@@ -227,7 +227,6 @@ Items                                           | Defect       | This Script    
 [d29]: #auto-firmware-update-on-switch-discovery
 [d30]: #inband-management-policy-misconfiguration
 
-
 ## General Check Details
 
 ### Compatibility (Target ACI Version)
