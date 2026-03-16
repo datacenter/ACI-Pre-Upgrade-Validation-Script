@@ -2674,29 +2674,13 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 ### Rogue EP Exception List missing on switches
 
-Rogue Endpoint Control and COOP Dampening are features that mitigate the impact of flapping endpoints by temporarily pausing the learning of such endpoints. However, in some environments, certain MAC or IP addresses are expected to move frequently.
+The Rogue/COOP Exception List feature, introduced in 5.2(3), allows exclusion of specific MAC addresses from Rogue Endpoint Control and COOP Dampening. Initially, each MAC address had to be configured individually in each bridge domain. In 6.0(3), this feature was enhanced to support fabric-wide exception lists with wildcard options per bridge domain and the ability to exclude MAC addresses in L3Outs.
 
-The **Rogue/COOP Exception List** feature, introduced in 5.2(3), allows you to exclude specific MAC addresses from Rogue Endpoint Control and COOP Dampening. Initially, each MAC address had to be configured individually in each bridge domain. In 6.0(3), this feature was enhanced to support fabric-wide exception lists with wildcard options per bridge domain and the ability to exclude MAC addresses in L3Outs.
+However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with Rogue/COOP Exception Lists configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
 
-However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with **Rogue/COOP Exception List**s configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
+The root cause is that internal objects called `presListener` for Rogue/COOP Exception List, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade. This is due to [CSCwp64296][64], introduced with the enhancement in 6.0(3).
 
-!!! info
-    The root cause is that internal objects called `presListener` for **Rogue/COOP Exception List**, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade. This is due to [CSCwp64296][64], introduced with the enhancement in 6.0(3).
-
-    The total number of `presListener` for **Rogue/COOP Exception List** on APICs should be 32, but APICs may fail to create all of them when upgrading from an older version to 6.0(3)+. If the spine switches are then upgraded while some `presListener`s are missing on APICs, they cannot retrieve the complete lists.
-
-This rule checks for [CSCwp64296][64] with the following logic:
-
-* Current APIC version is older than `6.0(3d)`.
-* Target APIC version is in an affected range:
-    * older than `6.0(9e)`, or
-    * from `6.1(1f)` up to (but not including) `6.1(4h)`.
-* At least one **Rogue/COOP Exception MAC** exists.
-* The total number of `presListener` entries for the **Rogue/COOP Exception List** is less than 32.
-
-If all of the above conditions are met, this check fails because switches may not receive the complete exception list after upgrade.
-
-Recommended action: delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
+Recommended action: Delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

@@ -183,28 +183,6 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             script.PASS,
         ),
     ],
-    ids=[
-        "PASS_non_affected_tversion_6.1(4h)_fixed_affected_cversion_no_exception_MACs",
-        "PASS_non_affected_tversion_6.0(9e)_fixed_affected_cversion_no_exception_MACs",
-        "PASS_non_affected_cversion_too_old_affected_tversion_no_exception_MACs",
-        "PASS_non_affected_cversion_too_new_affected_tversion_no_exception_MACs",
-        "PASS_non_affected_cversion_tversion_no_exception_MACs",
-        "PASS_non_affected_cversion_tversion_with_exception_MACs",
-        "PASS_non_affected_cversion_tversion_corner_case_with_exception_MACs",
-        "PASS_affected_edge_cversion_5.2(3e)_tversion_6.1(3f)_no_exception_MACs",
-        "PASS_affected_edge_cversion_6.0(2j)_tversion_6.0(8h)_no_exception_MACs",
-        "PASS_affected_cversion_tversion_no_exception_MACs",
-        "PASS_affected_cversion_tversion_exception_MACs_with_32_exceptcont_listeners",
-        "PASS_affected_edge_cversion_tversion_exception_MACs_with_32_exceptcont_listeners",
-        "FAIL_affected_edge_cversion_tversion_exception_MACs_one_missing_exceptcont_listener",
-        "FAIL_affected_cversion_tversion_exception_MACs_31_exceptcont_listeners",
-        "FAIL_affected_cversion_tversion_exception_MACs_many_missing_exceptcont_listeners",
-        "FAIL_affected_cversion_tversion_exception_MACs_no_exceptcont_listeners",
-        "FAIL_affected_edge_cversion_6.0(2j)_tversion_6.0(8h)_exception_MACs_no_exceptcont_listeners",
-        "FAIL_after_APIC_upgrade_same_cversion_tversion_exception_MACs_no_exceptcont_listeners",
-        "FAIL_after_APIC_upgrade_same_cversion_tversion_exception_MACs_exception_MACs_present_exceptcont_listeners_missing",
-        "PASS_after_APIC_upgrade_same_cversion_tversion_exception_MACs_32_exceptcont_listeners",
-    ],
 )
 def test_rogue_ep_coop_exception_mac_check(run_check, mock_icurl, tversion, cversion, expected_result):
     """Test rogue_ep_coop_exception_mac_check with various scenarios."""
