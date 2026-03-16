@@ -6059,24 +6059,20 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     result = PASS
     headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present", "Bootstrap file Present"]
     data = []
-    recommended_action = "Bootscript is missing, delete bootstrap.xml from /bootflash folder and do clean reboot"
+    recommended_action = "Delete bootstrap.xml from /bootflash folder and do clean reboot"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multipod-modular-spine-bootscript-check"
 
     pod_count_resp = icurl('class', 'fabricSetupP.json?query-target=self&rsp-subtree-include=count')
     if (int(pod_count_resp[0]['moCount']['attributes']['count'])) < 2:
-        return Result(result=NA, msg="Multi-Pod is not enabled in fabric.")
+        return Result(result=NA, msg="Not MultiPod Fabric.")
 
-    if not (tversion.same_as("6.1(4h)") or tversion.same_as("6.1(5e)")):
+    if not (tversion.same_as("6.1(4h)")):
         return Result(result=NA, msg="Target version is not affected")
 
     modular_spine_models = {"N9K-C9408", "N9K-C9504", "N9K-C9508", "N9K-C9516"}
-    found_modular_spine = any(
-        node["fabricNode"]["attributes"].get("role") == "spine" and
-        node["fabricNode"]["attributes"].get("model") in modular_spine_models
-        for node in fabric_nodes
-    )
+    found_modular_spine = any(node["fabricNode"]["attributes"].get("model") in modular_spine_models for node in fabric_nodes)
     if not found_modular_spine:
-        return Result(result=NA, msg="No modular spine (N9K-C9408, N9K-C9504, N9K-C9508, N9K-C9516) found in fabric.")
+        return Result(result=NA, msg="No modular spine found in fabric.")
 
     has_error = False
     for node in fabric_nodes:
@@ -6116,7 +6112,7 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
             result = FAIL_O
         elif bootscript_missing and bootstrap_missing:
             result = FAIL_UF
-            recommended_action = "bootscript and bootstrap.xml files are not found, Move to Fix version."
+            recommended_action = "Move to Fix version."
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

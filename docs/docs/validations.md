@@ -2673,7 +2673,7 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 Due to [CSCwr66848][64], in a Multi-Pod fabric, modular spine switches have `bootscript` file present in their bootflash from the initial bootstrap process. When upgrading to 6.1(4h) or 6.1(5e), if `bootscript` file is missing that can cause traffic loss across pods until the spine in this condition is clean reloaded.
 
-To avoid this issue, verify that `bootscript` file exists in the bootflash of each spine switch prior to upgrading to 6.1(4h) or 6.1(5e). If not found, the `bootstrap.xml` file must be removed before proceeding with the upgrade.
+To avoid this issue, verify that `bootscript` file exists in the bootflash of each spine switch prior to upgrading to 6.1(4h). If not found, the `bootstrap.xml` file must be removed before proceeding with the upgrade.
 
 !!! tip
     You can manually check for the presence of `bootscript` on a spine switch by logging into the switch CLI and running the following command:
