@@ -2678,7 +2678,7 @@ The Rogue/COOP Exception List feature, introduced in 5.2(3), allows exclusion of
 
 However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with Rogue/COOP Exception Lists configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
 
-The root cause is that internal objects called `presListener` for Rogue/COOP Exception List, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade. This is due to [CSCwp64296][64], introduced with the enhancement in 6.0(3).
+The root cause is that internal objects called `presListener` for Rogue/COOP Exception List, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade.
 
 Recommended action: Delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
 
