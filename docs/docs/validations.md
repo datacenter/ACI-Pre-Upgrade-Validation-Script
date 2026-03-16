@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,8 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #rogue-ep-exception-list-missing-on-switches
+
 
 ## General Check Details
 
@@ -2648,6 +2651,7 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2666,6 +2670,17 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+
+### Rogue EP Exception List missing on switches
+
+The Rogue/COOP Exception List feature, introduced in 5.2(3), allows exclusion of specific MAC addresses from Rogue Endpoint Control and COOP Dampening. Initially, each MAC address had to be configured individually in each bridge domain. In 6.0(3), this feature was enhanced to support fabric-wide exception lists with wildcard options per bridge domain and the ability to exclude MAC addresses in L3Outs.
+
+However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with Rogue/COOP Exception Lists configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
+
+The root cause is that internal objects called `presListener` for Rogue/COOP Exception List, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade.
+
+Recommended action: Delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -2732,3 +2747,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
