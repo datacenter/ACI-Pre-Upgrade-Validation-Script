@@ -6057,9 +6057,9 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title="Multi-Pod modular spine bootscript check")
 def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, password, **kwargs):
     result = PASS
-    headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present", "Bootstrap file Present"]
+    headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present"]
     data = []
-    recommended_action = "Delete bootstrap.xml from /bootflash folder and do clean reboot"
+    recommended_action = "clean reboot on impacted spine"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multipod-modular-spine-bootscript-check"
 
     pod_count_resp = icurl('class', 'fabricSetupP.json?query-target=self&rsp-subtree-include=count')
@@ -6095,24 +6095,19 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
             c.connect()
             c.cmd("ls -l bootflash/ | grep boots")
             bootscript_present = "Yes" if "bootscript" in c.output else "No"
-            bootstrap_present = "Yes" if "bootstrap.xml" in c.output else "No"
         except Exception as e:
             ssh_error = f"SSH ERROR: {e}"
-            data.append([pod_id, node_id, node_name, model, ssh_error, ssh_error])
+            data.append([pod_id, node_id, node_name, model, ssh_error])
             has_error = True
             continue
-        data.append([pod_id, node_id, node_name, model, bootscript_present, bootstrap_present])
+        data.append([pod_id, node_id, node_name, model, bootscript_present])
 
     if has_error:
         result = ERROR
     elif data:
         bootscript_missing = any(row[4] == "No" for row in data)
-        bootstrap_missing  = any(row[5] == "No" for row in data)
-        if bootscript_missing and not bootstrap_missing:
+        if bootscript_missing:
             result = FAIL_O
-        elif bootscript_missing and bootstrap_missing:
-            result = FAIL_UF
-            recommended_action = "Move to Fix version."
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

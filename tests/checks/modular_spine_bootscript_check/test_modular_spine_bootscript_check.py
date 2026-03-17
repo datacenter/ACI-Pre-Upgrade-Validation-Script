@@ -94,36 +94,8 @@ ifav42-spine1#
             },
             script.PASS,
             [
-                ["1", "201", "Spine1", "N9K-C9504", "Yes", "Yes"],
-                ["2", "202", "Spine2", "N9K-C9508", "Yes", "Yes"],
-            ],
-        ),
-        # Test 5: PASS - bootscript present on all spine nodes (tversion 6.1(5e))
-        (
-            {fabric_setup_count: multipod_setup},
-            "6.1(5e)",
-            fabric_nodes_with_modular_spine,
-            False,
-            {
-                "10.0.0.201": [
-                    {
-                        "cmd": bootscript_cmd,
-                        "output": bootscript_found,
-                        "exception": None,
-                    }
-                ],
-                "10.0.0.202": [
-                    {
-                        "cmd": bootscript_cmd,
-                        "output": bootscript_found,
-                        "exception": None,
-                    }
-                ],
-            },
-            script.PASS,
-            [
-                ["1", "201", "Spine1", "N9K-C9504", "Yes", "Yes"],
-                ["2", "202", "Spine2", "N9K-C9508", "Yes", "Yes"],
+                ["1", "201", "Spine1", "N9K-C9504", "Yes"],
+                ["2", "202", "Spine2", "N9K-C9508", "Yes"],
             ],
         ),
         # Test 6: FAIL_O - bootscript missing on all spine nodes
@@ -150,8 +122,8 @@ ifav42-spine1#
             },
             script.FAIL_O,
             [
-                ["1", "201", "Spine1", "N9K-C9504", "No", "Yes"],
-                ["2", "202", "Spine2", "N9K-C9508", "No", "Yes"],
+                ["1", "201", "Spine1", "N9K-C9504", "No"],
+                ["2", "202", "Spine2", "N9K-C9508", "No"],
             ],
         ),
         # Test 7: FAIL_O - bootscript missing on one spine node
@@ -178,36 +150,8 @@ ifav42-spine1#
             },
             script.FAIL_O,
             [
-                ["1", "201", "Spine1", "N9K-C9504", "Yes", "Yes"],
-                ["2", "202", "Spine2", "N9K-C9508", "No",  "Yes"],
-            ],
-        ),
-        # Test 8: FAIL_UF - bootscript and bootstrap.xml missing on all spine nodes
-        (
-            {fabric_setup_count: multipod_setup},
-            "6.1(4h)",
-            fabric_nodes_with_modular_spine,
-            False,
-            {
-                "10.0.0.201": [
-                    {
-                        "cmd": bootscript_cmd,
-                        "output": bootstript_and_bootstrap_not_found,
-                        "exception": None,
-                    }
-                ],
-                "10.0.0.202": [
-                    {
-                        "cmd": bootscript_cmd,
-                        "output": bootstript_and_bootstrap_not_found,
-                        "exception": None,
-                    }
-                ],
-            },
-            script.FAIL_UF,
-            [
-                ["1", "201", "Spine1", "N9K-C9504", "No", "No"],
-                ["2", "202", "Spine2", "N9K-C9508", "No", "No"],
+                ["1", "201", "Spine1", "N9K-C9504", "Yes"],
+                ["2", "202", "Spine2", "N9K-C9508", "No"],
             ],
         ),
         # Test 9: ERROR - SSH connection exception on spine node
