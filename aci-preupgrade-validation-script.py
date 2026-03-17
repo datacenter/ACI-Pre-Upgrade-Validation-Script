@@ -6053,6 +6053,64 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title="Multi-Pod modular spine bootscript check")
+def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, password, **kwargs):
+    result = PASS
+    headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present"]
+    data = []
+    recommended_action = "clean reboot on impacted spine"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multipod-modular-spine-bootscript-check"
+
+    pod_count_resp = icurl('class', 'fabricSetupP.json?query-target=self&rsp-subtree-include=count')
+    if (int(pod_count_resp[0]['moCount']['attributes']['count'])) < 2:
+        return Result(result=NA, msg="Not MultiPod Fabric.")
+
+    if not (tversion.same_as("6.1(4h)")):
+        return Result(result=NA, msg="Target version is not affected")
+
+    modular_spine_models = {"N9K-C9408", "N9K-C9504", "N9K-C9508", "N9K-C9516"}
+    found_modular_spine = any(node["fabricNode"]["attributes"].get("model") in modular_spine_models for node in fabric_nodes)
+    if not found_modular_spine:
+        return Result(result=NA, msg="No modular spine found in fabric.")
+
+    has_error = False
+    for node in fabric_nodes:
+        attr = node["fabricNode"]["attributes"]
+        if attr.get("role") != "spine":
+            continue
+
+        node_id = attr.get("id")
+        node_name = attr.get("name")
+        dn = re.search(node_regex, attr.get("dn", ""))
+        pod_id = dn.group("pod") if dn else "Unknown"
+        mgmt_ip = attr.get("address")
+        model = attr.get("model")
+
+        c = Connection(mgmt_ip)
+        c.username = username
+        c.password = password
+        c.log = LOG_FILE
+        try:
+            c.connect()
+            c.cmd("ls -l bootflash/ | grep boots")
+            bootscript_present = "Yes" if "bootscript" in c.output else "No"
+        except Exception as e:
+            ssh_error = f"SSH ERROR: {e}"
+            data.append([pod_id, node_id, node_name, model, ssh_error])
+            has_error = True
+            continue
+        data.append([pod_id, node_id, node_name, model, bootscript_present])
+
+    if has_error:
+        result = ERROR
+    elif data:
+        bootscript_missing = any(row[4] == "No" for row in data)
+        if bootscript_missing:
+            result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6216,6 +6274,7 @@ class CheckManager:
         isis_database_byte_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
+        multipod_modular_spine_bootscript_check,
 
     ]
     ssh_checks = [
