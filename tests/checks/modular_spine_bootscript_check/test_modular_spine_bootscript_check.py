@@ -32,10 +32,6 @@ ls -l bootflash/ | grep boots
 -rw-r--r-- 1   600 admin           14119 Jan  5 11:51 bootstrap.xml
 ifav42-spine1#
 """
-bootstript_and_bootstrap_not_found = """\
-ls -l bootflash/ | grep boots
-ifav42-spine1#
-"""
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, fabric_nodes, conn_failure, conn_cmds, expected_result, expected_data",
