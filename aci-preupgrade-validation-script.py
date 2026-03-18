@@ -2982,7 +2982,7 @@ def scalability_faults_check(**kwargs):
 
 
 @check_wrapper(check_title="APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)")
-def apic_disk_space_faults_check(cversion, **kwargs):
+def apic_disk_space_faults_check(cversion, tversion,**kwargs):
     result = FAIL_UF
     headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Current Usage %', 'Recommended Action']
     data = []
@@ -2992,7 +2992,8 @@ def apic_disk_space_faults_check(cversion, **kwargs):
     recommended_action = {
         '/firmware': 'Remove unneeded images',
         '/techsupport': 'Remove unneeded techsupports/cores',
-        '/data/log': 'Remove unneeded logs in var/log/dme/log'
+        '/data/log': 'Remove unneeded logs in var/log/dme/log',
+        '/tmp': 'Remove unneeded logs in /tmp directory'
     }
     default_action = 'Contact Cisco TAC.'
     if cversion.same_as('4.0(1h)') or cversion.older_than('3.2(6i)'):
@@ -3000,7 +3001,8 @@ def apic_disk_space_faults_check(cversion, **kwargs):
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full'
-
+    
+    tmp_faults_skipped = False  # Track if we skip /tmp faults for tversion >= 6.1(4a)
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
     for faultInst in faultInsts:
@@ -3010,14 +3012,24 @@ def apic_disk_space_faults_check(cversion, **kwargs):
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-        if dn and desc:
-            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
+        if dn:
+            mountpoint = dn.group('mountpoint')
+            # CSCwo96334: Skip /tmp faults if tversion >= 6.1(4a) (snapshots use /data instead)
+            if mountpoint == '/tmp' and tversion and not tversion.older_than("6.1(4a)"):
+                tmp_faults_skipped = True
+                continue
+            if desc:
+                data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
                         desc.group('usage'),
                         recommended_action.get(dn.group('mountpoint'), default_action)])
-        else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
+            else:
+                unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
-        result = PASS
+        # If we only found /tmp faults that were skipped (tversion >= 6.1(4a)), return NA
+        if tmp_faults_skipped:
+            result = NA
+        else:
+            result = PASS
     return Result(
         result=result,
         headers=headers,
