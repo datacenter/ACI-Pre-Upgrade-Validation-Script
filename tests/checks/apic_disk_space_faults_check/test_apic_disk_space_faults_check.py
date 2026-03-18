@@ -16,29 +16,34 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, cversion, expected_result, expected_data",
+    "icurl_outputs, cversion, tversion, expected_result, expected_data",
     [
         # PASS - No raised faults
         (
             {faultInst: []},
             "4.2(1h)",
+            "4.2(1h)",
             script.PASS,
             [],
         ),
-        # FAIL - Raised faults with /firmware,/techsupport,/data/log mount points
+        # FAIL - Raised faults with /firmware,/techsupport,/data/log, /tmp mount points
         (
             {faultInst: read_data(dir, "Fault_raised.json")},
+            "4.2(1h)",
             "4.2(1h)",
             script.FAIL_UF,
             [
                 ["F1528", "1", "1", "/data/log", "89%", "Remove unneeded logs in var/log/dme/log"],
                 ["F1528", "1", "1", "/firmware", "89%", "Remove unneeded images"],
                 ["F1528", "1", "1", "/techsupport", "89%", "Remove unneeded techsupports/cores"],
+                ["F1529", "1", "1", "/tmp", "100%", "Remove unneeded logs in /tmp directory"],
+                ["F1528", "1", "1", "/tmp", "89%", "Remove unneeded logs in /tmp directory"],
             ],
         ),
         # PASS - Faults exist but not raised nor soaking (cleared)
         (
             {faultInst: read_data(dir, "Fault_exists_not_raised.json")},
+            "4.2(1h)",
             "4.2(1h)",
             script.PASS,
             [],
@@ -47,15 +52,54 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
         (
             {faultInst: read_data(dir, "Fault_combination.json")},
             "4.2(1h)",
+            "4.2(1h)",
             script.FAIL_UF,
             [
                 ["F1529", "1", "1", "/data/log", "94%", "Remove unneeded logs in var/log/dme/log"],
                 ["F1528", "1", "1", "/firmware", "89%", "Remove unneeded images"],
+                ["F1529", "1", "1", "/tmp", "100%", "Remove unneeded logs in /tmp directory"],
+                ["F1528", "1", "1", "/tmp", "89%", "Remove unneeded logs in /tmp directory"],
+                ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
             ],
+        ),
+        # FAIL - /tmp included when tversion is below 6.1(4a)
+        (
+            {faultInst: read_data(dir, "Fault_combination.json")},
+            "4.2(1h)",
+            "6.1(2f)",
+            script.FAIL_UF,
+            [
+                ["F1529", "1", "1", "/data/log", "94%", "Remove unneeded logs in var/log/dme/log"],
+                ["F1528", "1", "1", "/firmware", "89%", "Remove unneeded images"],
+                ["F1529", "1", "1", "/tmp", "100%", "Remove unneeded logs in /tmp directory"],
+                ["F1528", "1", "1", "/tmp", "89%", "Remove unneeded logs in /tmp directory"],
+                ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
+            ],
+        ),
+        # FAIL - /tmp skipped when tversion is 6.1(4a) or later
+        (
+            {faultInst: read_data(dir, "Fault_combination.json")},
+            "4.2(1h)",
+            "6.1(4a)",
+            script.FAIL_UF,
+            [
+                ["F1529", "1", "1", "/data/log", "94%", "Remove unneeded logs in var/log/dme/log"],
+                ["F1528", "1", "1", "/firmware", "89%", "Remove unneeded images"],
+                ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
+            ],
+        ),
+        # NA - only /tmp faults and tversion is 6.1(4a) or later
+        (
+            {faultInst: read_data(dir, "Fault_combination.json")[3:5]},
+            "4.2(1h)",
+            "6.1(4a)",
+            script.NA,
+            [],
         ),
         # FAIL - Raised faults with unknown mount point (unformatted data)
         (
             {faultInst: read_data(dir, "Fault_unformatted_data.json")},
+            "4.2(1h)",
             "4.2(1h)",
             script.FAIL_UF,
             [
@@ -66,6 +110,7 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
         (
             {faultInst: read_data(dir, "Fault_unformatted_data.json")},
             "4.0(1h)",
+            "4.0(1h)",
             script.FAIL_UF,
             [
                 ["F1528", "1", "1", "/unknown", "88%", "Contact Cisco TAC. A typical issue is CSCvn13119."],
@@ -75,12 +120,16 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
         (
             {faultInst: []},
             "4.0(1h)",
+            "4.0(1h)",
             script.PASS,
             [],
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, cversion, expected_result, expected_data):
-    result = run_check(cversion=script.AciVersion(cversion))
+def test_logic(run_check, mock_icurl, cversion, tversion, expected_result, expected_data):
+    result = run_check(
+        cversion=script.AciVersion(cversion),
+        tversion=script.AciVersion(tversion),
+    )
     assert result.result == expected_result
     assert result.data == expected_data
