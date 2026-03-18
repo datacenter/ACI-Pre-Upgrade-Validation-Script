@@ -6055,14 +6055,14 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
 
 @check_wrapper(check_title="Inband Management Policy Misconfiguration")
-def inband_management_policy_misconfig_check(tversion, **kwargs):
+def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ["Node_ID", "Address", "Gateway"]
     data = []
     recommended_action = "Contact Cisco TAC to remove any identified misconfigured 'mgmtRsInBStNode' objects"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
     
-    if tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)"):
+    if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
         mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.addr,"0.0.0.0/0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))')
         for mgmtRsInBStNode in mgmtRsInBStNodes:
             attrs = mgmtRsInBStNode["mgmtRsInBStNode"]["attributes"]
