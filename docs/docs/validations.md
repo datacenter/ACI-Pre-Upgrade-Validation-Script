@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[N9300 Switch Memory][d30]                      | -            | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #n9300-switch-memory
 
 ## General Check Details
 
@@ -2647,6 +2649,12 @@ In ACI, there are internal objects which track the underlying transactions which
 Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
+
+### N9300 Switch Memory
+
+This check applies only when the target upgrade version is 6.1. It reviews `procMemUsage` for N9300-series switches and flags nodes with less than 24GB memory installed.
+
+If any N9300-series switch is flagged by this check, increase the switch memory to at least 24GB before the upgrade.
 
 ### Auto Firmware Update on Switch Discovery
 

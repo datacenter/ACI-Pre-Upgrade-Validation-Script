@@ -5877,6 +5877,73 @@ def isis_database_byte_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='N9300 Switch Memory')
+def n9300_switch_memory_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
+    data = []
+    recommended_action = 'Increase the switch memory to at least 24GB before proceeding with the Cisco ACI software upgrade.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
+    min_memory_kb = 24 * 1024 * 1024
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.major_version != '6.1':
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    proc_mem_query = 'procMemUsage.json'
+    affected_nodes = [
+        node for node in fabric_nodes
+        if node.get('fabricNode', {}).get('attributes', {}).get('model', '').startswith('N9K-C93')
+    ]
+
+    if not affected_nodes:
+        return Result(result=NA, msg='No N9300 switches found. Skipping.')
+
+    proc_mem_mos = icurl('class', proc_mem_query)
+    node_total_kb = {}
+
+    for memory_mo in proc_mem_mos:
+        attrs = memory_mo.get('procMemUsage', {}).get('attributes', {})
+        total = attrs.get('Total')
+        mem_dn = attrs.get('dn', '')
+        if not total or '/memusage-sup' not in mem_dn:
+            continue
+        dn_match = re.search(node_regex, mem_dn)
+        if not dn_match:
+            continue
+        try:
+            total_kb = int(total)
+        except ValueError:
+            continue
+
+        node_id = dn_match.group('node')
+        if node_id not in node_total_kb:
+            node_total_kb[node_id] = total_kb
+
+    for node in affected_nodes:
+        node_id = node['fabricNode']['attributes']['id']
+        total_kb = node_total_kb.get(node_id)
+        if total_kb is None:
+            continue
+
+        memory_in_gb = round(total_kb / 1048576, 2)
+        if total_kb < min_memory_kb:
+            result = FAIL_O
+            data.append([
+                node_id,
+                node['fabricNode']['attributes'].get('name', ''),
+                node['fabricNode']['attributes'].get('model', ''),
+                memory_in_gb,
+            ])
+
+    if result == PASS:
+        return Result(result=result)
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
 def apic_database_size_check(cversion, **kwargs):
@@ -6214,6 +6281,7 @@ class CheckManager:
         pbr_high_scale_check,
         standby_sup_sync_check,
         isis_database_byte_check,
+        n9300_switch_memory_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
 
