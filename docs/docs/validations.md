@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[NTP sync issue in Leaf as NTP server][d30]     | CSCwq28721   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #NTP-sync-issue-in-Leaf-as-NTP-server
 
 ## General Check Details
 
@@ -2668,6 +2670,19 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
 
+### NTP sync issue in Leaf as NTP server
+
+RCA:
+After the ACI fabric upgraded to affected version, In setup which has leaf switch as NTP server, Destination Ip of NTP request coming from Host(NTP client) is not stored and resused as Source when reply back from leaf side.
+Details information => Sendpkt in NTP(3rd party) code supports only the immediate source interface ip.Mechanism to store the starting source ip address must be present so that packets can be send to the starting source ip addr.
+
+IMPACT:
+After the upgrade, NTP stopped working correctly between the endpoints and the master node (leaf switches). NTP request is being sent with the BD SVI IP as expected, but the leaf switch is responding with a different BD IP in the same VRF, leading to NTP response rejected from the endpoints.
+
+Suggestion:
+Use IP address from a VRF which only has one IP address on the switch, example would be inband VRF(in-band ip) which would usually have only one IP address or move to fixed version refer [CSCwp92030][64].
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2732,3 +2747,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp92030
