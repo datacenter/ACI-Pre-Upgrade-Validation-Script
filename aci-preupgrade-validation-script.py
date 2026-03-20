@@ -950,7 +950,9 @@ class CustomThread(threading.Thread):
             timeout (float): How long we wait for the thread start event.
                              5.0 sec by default.
         """
-        _start_new_thread = getattr(threading, "_start_new_thread", None)
+        _active_limbo_lock = threading._active_limbo_lock
+        _limbo = threading._limbo
+        _start_new_thread = threading._start_new_thread
 
         # Python2 uses name mangling
         if hasattr(self, "_Thread__initialized"):
@@ -965,18 +967,6 @@ class CustomThread(threading.Thread):
 
         if self._started.is_set():
             raise RuntimeError("threads can only be started once")
-
-        # Python 3.14+ no longer exposes threading._start_new_thread.
-        # In that case, defer to Thread.start() to keep internal join handles valid.
-        if _start_new_thread is None:
-            super(CustomThread, self).start()
-            self._started.wait(timeout)
-            if not self._started.is_set():
-                raise RuntimeError("can't start new thread")
-            return
-
-        _active_limbo_lock = threading._active_limbo_lock
-        _limbo = threading._limbo
 
         with _active_limbo_lock:
             _limbo[self] = self
@@ -1503,19 +1493,11 @@ def get_row(widths, values, spad="  ", lpad=""):
 
 def prints(objects, sep=' ', end='\n'):
     with open(RESULT_FILE, 'a') as f:
-        stdout_ok = True
-        try:
-            print(objects, sep=sep, end=end, file=sys.stdout)
-        except (OSError, ValueError):
-            stdout_ok = False
+        print(objects, sep=sep, end=end, file=sys.stdout)
         if end == "\r":
             end = "\n"  # easier to read with \n in a log file
         print(objects, sep=sep, end=end, file=f)
-        if stdout_ok:
-            try:
-                sys.stdout.flush()
-            except (OSError, ValueError):
-                pass
+        sys.stdout.flush()
         f.flush()
 
 
