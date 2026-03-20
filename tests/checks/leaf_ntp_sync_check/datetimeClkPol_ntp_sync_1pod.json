@@ -1,0 +1,9 @@
+[
+        {
+            "datetimeClkPol": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-1105/sys/time"
+                }
+            }
+        }
+]

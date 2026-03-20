@@ -6057,28 +6057,45 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title='NTP sync issue in Leaf as NTP server')
 def leaf_ntp_sync_check(cversion, tversion, **kwargs):
     result = PASS
-    headers = ['policy dn', 'pod group name', 'policy name']
+    headers = ['Pod', 'Node', 'VRF']
     data = []
-    recommended_action = 'NTP wont sync between leaf as NTP server and host. makesure to use in-band ip for NTP server in leaf or checkout the bug CSCwp92030 for fixed version details'
+    recommended_action = 'Use in-band ip for NTP server on leaf or upgrade to fix version of CSCwp92030'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ntp-sync-issue-in-leaf-as-ntp-server'
 
-    fabricRsTimePol_api = 'fabricRsTimePol.json'
+    datetimeClkPol_api = 'datetimeClkPol.json?query-target-filter=and(eq(datetimeClkPol.serverState,"enabled"))&rsp-prop-include=naming-only'
+    ipv4Addr_api = 'ipv4Addr.json?query-target-filter=or(wcard(ipv4Addr.dn,":"))&rsp-prop-include=naming-only'
+    ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
 
-    if tversion.newer_than('6.1(4h)') or tversion.same_as('6.0(9e)'):
+    if tversion.newer_than('6.1(4h)'):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
-    if (cversion.newer_than('6.0(9e)') and cversion.older_than('6.1(4h)')) or (tversion.newer_than('6.0(9e)') and tversion.older_than('6.1(4h)')):
-        fabricRsTimePol = icurl('class', fabricRsTimePol_api)
-        for rstimepol in fabricRsTimePol:
-            rstimepol_attr = rstimepol['fabricRsTimePol']['attributes']
-            pol_dn = rstimepol_attr['tDn']
-            pol_name = rstimepol_attr['tnDatetimePolName']
-            match = re.search(r'podpgrp-([^/]+)', rstimepol_attr['dn'])
-            pod_group = match.group(1) if match else None
-            pol_res = icurl('mo', pol_dn + '.json')
-            pol_attr = pol_res[0]['datetimePol']['attributes']
-            if pol_attr['serverState'] == 'enabled':
-                data.append([pol_attr['dn'], pod_group, pol_name])
+    def check_ip_entries_in_vrf(ipAddr_api, affected_pod_groups):
+        pod_vrf_tuple_set = set()
+        icurl_ips = icurl('class', ipAddr_api)
+        ip_type = list(icurl_ips[0].keys())[0] if icurl_ips else None
+        for ip in icurl_ips:
+            ip_dn = ip[ip_type]['attributes']['dn']
+            pod_vrf_regex = re.search(node_regex + r'.*dom-(?P<vrf>[^/]+)', ip_dn)
+            pod = pod_vrf_regex.group("pod") if pod_vrf_regex else None
+            if pod in affected_pod_groups:
+                node = pod_vrf_regex.group("node") if pod_vrf_regex else None
+                vrf = pod_vrf_regex.group("vrf") if pod_vrf_regex else None
+                if (pod, vrf, node) not in pod_vrf_tuple_set:
+                    pod_vrf_tuple_set.add((pod, vrf, node))
+                else:
+                    data.append(['pod-{}'.format(pod), 'node-{}'.format(node), vrf])
+    
+    if (cversion.newer_than('6.0(9e)') and cversion.older_than('6.1(5e)')) or (tversion.newer_than('6.0(9e)') and tversion.older_than('6.1(5e)')):
+        datetimeClkPol = icurl('class', datetimeClkPol_api)
+        affected_pod_groups = set()
+        for clkpol in datetimeClkPol:
+            clkpol_attr = clkpol['datetimeClkPol']['attributes']
+            dn = re.search(node_regex, clkpol_attr['dn'])
+            pod_id = dn.group("pod") if dn else None
+            affected_pod_groups.add(pod_id)
+        affected_pod_groups = sorted(affected_pod_groups)
+        check_ip_entries_in_vrf(ipv4Addr_api, affected_pod_groups)
+        check_ip_entries_in_vrf(ipv6Addr_api, affected_pod_groups)
 
     if data:
         result = FAIL_O

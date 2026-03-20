@@ -5,44 +5,61 @@ import importlib
 from helpers.utils import read_data
 
 script = importlib.import_module("aci-preupgrade-validation-script")
-
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
-
 test_function = "leaf_ntp_sync_check"
-
-fabricRsTimePol_api = "fabricRsTimePol.json"
-datetimePol_mo1 = "uni/fabric/time-default.json"
-datetimePol_mo2 = "uni/fabric/time-NEW1.json"
+datetimeClkPol_api = 'datetimeClkPol.json?query-target-filter=and(eq(datetimeClkPol.serverState,"enabled"))&rsp-prop-include=naming-only'
+ipv4Addr_api = 'ipv4Addr.json?query-target-filter=or(wcard(ipv4Addr.dn,":"))&rsp-prop-include=naming-only'
+ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
 
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
         # no pod group scenario
-        ( { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_no_podgroup.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_issue.json")},
+        ( { datetimeClkPol_api: read_data(dir, "datetimeClkPol_no_podgroup.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue.json")},
             "6.1(3f)",
             "6.1(4b)",
             script.PASS,
         ),
         # single pod scenario
         # Version not affected
-        ( { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_1pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_issue.json")},
+        ( { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_1pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue.json")},
             "6.1(3f)",
             "6.1(5e)",
             script.NA,
         ),
         # Affected version, no NTP sync issue
-        ( { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_1pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_no_issue.json")},
+        ( { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_1pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_no_issue.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_no_issue.json")},
             "6.1(3f)",
             "6.1(4b)",
             script.PASS,
         ),
         # Affected version, NTP sync issue
-        ( { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_1pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_issue.json")},
+        ( { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_1pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue.json")},
+            "6.1(3f)",
+            "6.1(4b)",
+            script.FAIL_O,
+        ),
+        # Affected version, only ipv4 NTP sync issue
+        ( { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_1pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_no_issue.json")},
+            "6.1(3f)",
+            "6.1(4b)",
+            script.FAIL_O,
+        ),
+        # Affected version, only ipv6 NTP sync issue
+        ( { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_1pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_no_issue.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue.json")},
             "6.1(3f)",
             "6.1(4b)",
             script.FAIL_O,
@@ -50,36 +67,54 @@ datetimePol_mo2 = "uni/fabric/time-NEW1.json"
         # multi pod scenario
         # Version not affected
         (
-            { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_2pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_issue.json"),
-            datetimePol_mo2: read_data(dir, "datetimePol_ntp_sync_issue_2.json")},
+            { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_2pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue_2.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_2.json")},
             "6.1(3f)",
             "6.1(5e)",
             script.NA,
         ),
         # Affected version, no NTP sync issue
         (
-            { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_2pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_no_issue.json"),
-            datetimePol_mo2: read_data(dir, "datetimePol_ntp_sync_no_issue_2.json")},
+            { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_2pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_no_issue_2.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_no_issue_2.json")},
             "6.1(3f)",
             "6.1(4b)",
             script.PASS,
         ),
-        # Affected version, one NTP sync issue
+        # Affected version, one pod NTP sync issue
         (
-            { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_2pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_issue.json"),
-            datetimePol_mo2: read_data(dir, "datetimePol_ntp_sync_no_issue_2.json")},
+            { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_2pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue_1.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_1.json")},
             "6.1(3f)",
             "6.1(4b)",
             script.FAIL_O,
         ),
-        # Affected version, multiple NTP sync issues
+        # Affected version, multiple pod NTP sync issues
         (
-            { fabricRsTimePol_api: read_data(dir, "fabricRsTimePol_ntp_sync_2pod.json"),
-            datetimePol_mo1: read_data(dir, "datetimePol_ntp_sync_issue.json"),
-            datetimePol_mo2: read_data(dir, "datetimePol_ntp_sync_issue_2.json")},
+            { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_2pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue_2.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_2.json")},
+            "6.1(3f)",
+            "6.1(4b)",
+            script.FAIL_O,
+        ),
+        # Affected version, only ipv4 NTP sync issues
+        (
+            { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_2pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_issue_2.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_no_issue_2.json")},
+            "6.1(3f)",
+            "6.1(4b)",
+            script.FAIL_O,
+        ),
+        # Affected version, only ipv6 NTP sync issues
+        (
+            { datetimeClkPol_api: read_data(dir, "datetimeClkPol_ntp_sync_2pod.json"),
+            ipv4Addr_api: read_data(dir, "ipv4_ntp_sync_no_issue_2.json"),
+            ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_2.json")},
             "6.1(3f)",
             "6.1(4b)",
             script.FAIL_O,
