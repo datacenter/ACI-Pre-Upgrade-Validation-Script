@@ -6082,7 +6082,7 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
                 vrf = pod_vrf_regex.group("vrf") if pod_vrf_regex else None
                 if (pod, vrf, node) not in pod_vrf_tuple_set:
                     pod_vrf_tuple_set.add((pod, vrf, node))
-                else:
+                elif ['pod-{}'.format(pod), 'node-{}'.format(node), vrf] not in data:
                     data.append(['pod-{}'.format(pod), 'node-{}'.format(node), vrf])
     
     if (cversion.newer_than('6.0(9e)') and cversion.older_than('6.1(5e)')) or (tversion.newer_than('6.0(9e)') and tversion.older_than('6.1(5e)')):
