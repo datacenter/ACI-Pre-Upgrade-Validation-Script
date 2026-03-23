@@ -5882,15 +5882,9 @@ def n9300_switch_memory_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
     data = []
-    recommended_action = 'Increase the switch memory to at least 24GB before proceeding with the Cisco ACI software upgrade.'
+    recommended_action = 'Increase the switch memory to at least 24GB on affected N9300-series switches.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
     min_memory_kb = 24 * 1024 * 1024
-
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-
-    if tversion.major_version != '6.1':
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     proc_mem_query = 'procMemUsage.json'
     affected_nodes = [

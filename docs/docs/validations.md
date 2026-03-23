@@ -2650,12 +2650,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
-### N9300 Switch Memory
-
-This check applies only when the target upgrade version is 6.1. It reviews `procMemUsage` for N9300-series switches and flags nodes with less than 24GB memory installed.
-
-If any N9300-series switch is flagged by this check, increase the switch memory to at least 24GB before the upgrade.
-
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2674,6 +2668,14 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+### N9300 Switch Memory
+
+This check applies to N9300-series switches only. It reviews `procMemUsage` and flags nodes with less than 24GB memory installed.
+
+Impact: Running an N9300-series switch with less than 24GB memory can lead to memory pressure and increase the risk of service instability.
+
+If any N9300-series switch is flagged by this check, increase the switch memory to at least 24GB.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

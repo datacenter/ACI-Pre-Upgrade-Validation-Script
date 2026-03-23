@@ -18,33 +18,11 @@ proc_mem_query = 'procMemUsage.json'
 @pytest.mark.parametrize(
     "fabric_nodes, icurl_outputs, tversion, expected_result, expected_msg, expected_data",
     [
-        # Target version missing
-        (
-            read_data(dir, "fabricNode_one.json"),
-            {
-                proc_mem_query: read_data(dir, "procMemUsage_gt24gb.json"),
-            },
-            None,
-            script.MANUAL,
-            script.TVER_MISSING,
-            [],
-        ),
-        # Target version not affected
-        (
-            read_data(dir, "fabricNode_one.json"),
-            {
-                proc_mem_query: read_data(dir, "procMemUsage_gt24gb.json"),
-            },
-            "6.0(3c)",
-            script.NA,
-            script.VER_NOT_AFFECTED,
-            [],
-        ),
         # No nodes returned
         (
             [],
             {},
-            "6.1(2f)",
+            "6.0(3c)",
             script.NA,
             'No N9300 switches found. Skipping.',
             [],
@@ -55,7 +33,7 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_node201_gt24gb.json"),
             },
-            "6.1(2f)",
+            "6.0(3c)",
             script.NA,
             'No N9300 switches found. Skipping.',
             [],
@@ -66,7 +44,7 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_gt24gb.json"),
             },
-            "6.1(2f)",
+            "6.0(3c)",
             script.PASS,
             '',
             [],
@@ -77,7 +55,7 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_all_gt24gb.json"),
             },
-            "6.1(2f)",
+            "6.0(3c)",
             script.PASS,
             '',
             [],
@@ -88,7 +66,7 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_mixed.json"),
             },
-            "6.1(2f)",
+            "6.0(3c)",
             script.FAIL_O,
             '',
             [["102", "leaf102", "N9K-C9364C", 21.49]],
@@ -97,7 +75,7 @@ proc_mem_query = 'procMemUsage.json'
 )
 def test_logic(run_check, mock_icurl, fabric_nodes, tversion, expected_result, expected_msg, expected_data):
     result = run_check(
-        tversion=script.AciVersion(tversion) if tversion else None,
+        tversion=script.AciVersion(tversion),
         fabric_nodes=fabric_nodes,
     )
     assert result.result == expected_result
