@@ -6094,8 +6094,9 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
             pod_id = dn.group("pod") if dn else None
             affected_pod_groups.add(pod_id)
         affected_pod_groups = sorted(affected_pod_groups)
-        check_ip_entries_in_vrf(ipv4Addr_api, affected_pod_groups)
-        check_ip_entries_in_vrf(ipv6Addr_api, affected_pod_groups)
+        if affected_pod_groups:
+            check_ip_entries_in_vrf(ipv4Addr_api, affected_pod_groups)
+            check_ip_entries_in_vrf(ipv6Addr_api, affected_pod_groups)
 
     if data:
         result = FAIL_O
