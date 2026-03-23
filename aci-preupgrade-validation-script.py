@@ -3001,8 +3001,9 @@ def apic_disk_space_faults_check(cversion, tversion,**kwargs):
 
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full'
-    
-    tmp_faults_skipped = False  # Track if we skip /tmp faults for tversion >= 6.1(4a)
+
+    tmp_faults_skip_versions = ["6.0(9f)", "6.1(4h)", "6.2(1g)"]
+    tmp_faults_skipped = False  # Track if we skip /tmp faults for CSCwo96334 versions
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
     for faultInst in faultInsts:
@@ -3014,8 +3015,8 @@ def apic_disk_space_faults_check(cversion, tversion,**kwargs):
         desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
         if dn:
             mountpoint = dn.group('mountpoint')
-            # CSCwo96334: Skip /tmp faults if tversion >= 6.1(4a) (snapshots use /data instead)
-            if mountpoint == '/tmp' and tversion and not tversion.older_than("6.1(4a)"):
+            # CSCwo96334: Skip /tmp faults when target is >= 6.1(4h) or any unaffected versions
+            if mountpoint == '/tmp' and (not tversion.older_than("6.1(4h)") or any(tversion.same_as(version) for version in tmp_faults_skip_versions)):
                 tmp_faults_skipped = True
                 continue
             if desc:
@@ -3025,7 +3026,7 @@ def apic_disk_space_faults_check(cversion, tversion,**kwargs):
             else:
                 unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
-        # If we only found /tmp faults that were skipped (tversion >= 6.1(4a)), return NA
+        # If we only found /tmp faults that were skipped (CSCwo96334 fixed target versions), return NA
         if tmp_faults_skipped:
             result = NA
         else:

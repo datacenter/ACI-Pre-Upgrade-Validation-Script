@@ -38,6 +38,7 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
                 ["F1528", "1", "1", "/techsupport", "89%", "Remove unneeded techsupports/cores"],
                 ["F1529", "1", "1", "/tmp", "100%", "Remove unneeded logs in /tmp directory"],
                 ["F1528", "1", "1", "/tmp", "89%", "Remove unneeded logs in /tmp directory"],
+                ["F1527", "1", "1", "/tmp", "82%", "Remove unneeded logs in /tmp directory"],
             ],
         ),
         # PASS - Faults exist but not raised nor soaking (cleared)
@@ -62,7 +63,7 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
                 ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
             ],
         ),
-        # FAIL - /tmp included when tversion is below 6.1(4a)
+        # FAIL - /tmp included when tversion is below 6.1(4h)
         (
             {faultInst: read_data(dir, "Fault_combination.json")},
             "4.2(1h)",
@@ -76,11 +77,25 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
                 ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
             ],
         ),
-        # FAIL - /tmp skipped when tversion is 6.1(4a) or later
+        # FAIL - /tmp included when tversion is not one of CSCwo96334 fixed target versions
         (
             {faultInst: read_data(dir, "Fault_combination.json")},
             "4.2(1h)",
-            "6.1(4a)",
+            "6.1(2g)",
+            script.FAIL_UF,
+            [
+                ["F1529", "1", "1", "/data/log", "94%", "Remove unneeded logs in var/log/dme/log"],
+                ["F1528", "1", "1", "/firmware", "89%", "Remove unneeded images"],
+                ["F1529", "1", "1", "/tmp", "100%", "Remove unneeded logs in /tmp directory"],
+                ["F1528", "1", "1", "/tmp", "89%", "Remove unneeded logs in /tmp directory"],
+                ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
+            ],
+        ),
+        # FAIL - /tmp skipped when tversion is one of CSCwo96334 fixed target versions
+        (
+            {faultInst: read_data(dir, "Fault_combination.json")},
+            "4.2(1h)",
+            "6.0(9f)",
             script.FAIL_UF,
             [
                 ["F1529", "1", "1", "/data/log", "94%", "Remove unneeded logs in var/log/dme/log"],
@@ -88,11 +103,11 @@ faultInst = 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq
                 ["F1527", "1", "1", "/data/log", "82%", "Remove unneeded logs in var/log/dme/log"],
             ],
         ),
-        # NA - only /tmp faults and tversion is 6.1(4a) or later
+        # NA - only /tmp faults and tversion is one of CSCwo96334 fixed target versions
         (
             {faultInst: read_data(dir, "Fault_combination.json")[3:5]},
             "4.2(1h)",
-            "6.1(4a)",
+            "6.1(4h)",
             script.NA,
             [],
         ),

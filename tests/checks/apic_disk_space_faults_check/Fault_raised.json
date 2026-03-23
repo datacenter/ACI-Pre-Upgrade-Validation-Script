@@ -147,5 +147,35 @@
                     "type": "operational"
                 }
             }
+        },
+
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "inodesFree (Old: 12167881, New: 12167880), inodesUsed (Old: 64, New: 65)",
+                    "childAction": "",
+                    "code": "F1527",
+                    "created": "2026-03-13T11:46:02.307+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /tmp on node 1 with hostname fab3-apic1 mounted at /tmp is 82% full",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/tmp]-f-[tmpfs]/fault-F1527",
+                    "domain": "infra",
+                    "highestSeverity": "warning",
+                    "lastTransition": "2026-03-13T11:48:02.867+00:00",
+                    "lc": "raised",
+                    "occur": "1",
+                    "origSeverity": "warning",
+                    "prevSeverity": "warning",
+                    "rule": "eqpt-storage-full-warning",
+                    "severity": "warning",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
         }
     ]
