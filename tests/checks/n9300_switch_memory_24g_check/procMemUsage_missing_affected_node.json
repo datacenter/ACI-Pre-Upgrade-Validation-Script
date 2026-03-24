@@ -1,0 +1,11 @@
+[
+    {
+        "procMemUsage": {
+            "attributes": {
+                "dn": "topology/pod-1/node-201/sys/procmem/memusage-sup",
+                "Modname": "sup",
+                "Total": "26535444"
+            }
+        }
+    }
+]
