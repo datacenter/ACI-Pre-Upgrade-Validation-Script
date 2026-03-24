@@ -60,6 +60,28 @@ proc_mem_query = 'procMemUsage.json'
             '',
             [],
         ),
+        # Invalid procMemUsage Total value
+        (
+            read_data(dir, "fabricNode_one.json"),
+            {
+                proc_mem_query: read_data(dir, "procMemUsage_invalid_total.json"),
+            },
+            "6.0(3c)",
+            script.ERROR,
+            'Failed to parse procMemUsage Total for one or more nodes.',
+            [["topology/pod-1/node-101/sys/procmem/memusage-sup", "unknown"]],
+        ),
+        # Missing procMemUsage data for affected node
+        (
+            read_data(dir, "fabricNode_one.json"),
+            {
+                proc_mem_query: read_data(dir, "procMemUsage_missing_affected_node.json"),
+            },
+            "6.0(3c)",
+            script.ERROR,
+            'Missing procMemUsage data for one or more affected N9300 nodes.',
+            [["101", "leaf101", "N9K-C93180YC-FX3"]],
+        ),
         # N9300 node with <24GB memory
         (
             read_data(dir, "fabricNode_two.json"),
