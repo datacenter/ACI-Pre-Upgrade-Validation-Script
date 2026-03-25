@@ -2982,13 +2982,14 @@ def scalability_faults_check(**kwargs):
 
 
 @check_wrapper(check_title="APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)")
-def apic_disk_space_faults_check(cversion, tversion,**kwargs):
+def apic_disk_space_faults_check(cversion, tversion, **kwargs):
     result = FAIL_UF
     headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Current Usage %', 'Recommended Action']
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
     unformatted_data = []
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-disk-space-usage"
+    # we are checking /tmp utilization because high usage can lead to snaphsot corruption during an upgrade. After the fix version, snapshot storage location moved to /data.
     recommended_action = {
         '/firmware': 'Remove unneeded images',
         '/techsupport': 'Remove unneeded techsupports/cores',
