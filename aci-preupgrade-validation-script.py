@@ -6053,6 +6053,86 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title='N9300 Switch Memory')
+def n9300_switch_memory_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
+    data = []
+    recommended_action = 'Increase the switch memory to at least 24GB on affected N9300-series switches.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
+    min_memory_kb = 24 * 1024 * 1024
+    msg = ''
+
+    affected_nodes = [
+        node for node in fabric_nodes
+        if node.get('fabricNode', {}).get('attributes', {}).get('model', '').startswith('N9K-C93')
+    ]
+
+    if not affected_nodes:
+        result = NA
+        msg = 'No N9300 switches found. Skipping.'
+    else:
+        proc_mem_mos = icurl('class', 'procMemUsage.json')
+        node_total_kb = {}
+        parse_errors = []
+
+        for memory_mo in proc_mem_mos:
+            attrs = memory_mo.get('procMemUsage', {}).get('attributes', {})
+            total = attrs.get('Total')
+            mem_dn = attrs.get('dn', '')
+            if not total or '/memusage-sup' not in mem_dn:
+                continue
+            dn_match = re.search(node_regex, mem_dn)
+            if not dn_match:
+                continue
+            try:
+                total_kb = int(total)
+            except (TypeError, ValueError):
+                parse_errors.append([mem_dn, total])
+                continue
+
+            node_id = dn_match.group('node')
+            if node_id not in node_total_kb:
+                node_total_kb[node_id] = total_kb
+
+        if parse_errors:
+            result = ERROR
+            msg = 'Failed to parse procMemUsage Total for one or more nodes.'
+            headers = ['DN', 'Total']
+            data = parse_errors
+        else:
+            missing_nodes = []
+
+            for node in affected_nodes:
+                node_id = node['fabricNode']['attributes']['id']
+                total_kb = node_total_kb.get(node_id)
+                if total_kb is None:
+                    missing_nodes.append([
+                        node_id,
+                        node['fabricNode']['attributes'].get('name', ''),
+                        node['fabricNode']['attributes'].get('model', ''),
+                    ])
+                    continue
+
+                if total_kb < min_memory_kb:
+                    memory_in_gb = round(total_kb / 1048576, 2)
+                    result = FAIL_O
+                    data.append([
+                        node_id,
+                        node['fabricNode']['attributes'].get('name', ''),
+                        node['fabricNode']['attributes'].get('model', ''),
+                        memory_in_gb,
+                    ])
+
+            if missing_nodes:
+                result = ERROR
+                msg = 'Missing procMemUsage data for one or more affected N9300 nodes.'
+                headers = ['NodeId', 'Name', 'Model']
+                data = missing_nodes
+
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6216,6 +6296,7 @@ class CheckManager:
         isis_database_byte_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
+        n9300_switch_memory_check,
 
     ]
     ssh_checks = [

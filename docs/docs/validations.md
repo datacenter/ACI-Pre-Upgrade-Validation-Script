@@ -194,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[N9300 Switch Memory][d30]                      | -            | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -224,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #n9300-switch-memory
 
 ## General Check Details
 
@@ -2666,6 +2668,14 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+### N9300 Switch Memory
+
+This check applies to N9300-series switches only. It reviews `procMemUsage` and flags nodes with less than 24GB memory installed.
+
+Impact: Running an N9300-series switch with less than 24GB memory can lead to memory pressure and increase the risk of service instability.
+
+If any N9300-series switch is flagged by this check, increase the switch memory to at least 24GB.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
