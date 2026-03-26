@@ -82,6 +82,7 @@ Items                                         | Faults         | This Script    
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
+[BGP Policy Already Existing][f22]            | F0467: bgpProt-policy-already-existing | :white_check_mark: | :no_entry_sign:
 
 
 [f1]: #apic-disk-space-usage
@@ -105,6 +106,7 @@ Items                                         | Faults         | This Script    
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
+[f22]: #bgp-policy-already-existing
 
 ### Configuration Checks
 
@@ -1550,6 +1552,37 @@ EPGs using the `immediate` or `on-demand` resolution immediacy (this is typical)
 EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inventory for VLAN deployment and so unexpected inventory changes will not change vlan programmings.
 
 This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
+
+### BGP Policy Already Existing
+
+This check validates `F0467` faults where `changeSet` contains `bgpProt-policy-already-existing`.
+The fault indicates conflicting BGP protocol policy configuration under an L3Out deployment path.
+
+Resolve these faults before upgrade by reviewing the affected L3Out BGP policy and removing duplicate or inconsistent configuration.
+
+Example:
+
+    # fault.Delegate
+    affected         : resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues
+    code             : F0467
+    ack              : no
+    cause            : configuration-failed
+    changeSet        : configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no
+    childAction      :
+    created          : 2026-03-25T11:31:16.724+00:00
+    descr            : Fault delegate: Configuration failed for uni/tn-common/out-L3outY due to A specific leaf node can hold only a single bgpProtP config; this fault is raised when inconsistent configuration is detected, debug message:
+    dn               : uni/tn-common/out-L3outY/fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
+    domain           : tenant
+    highestSeverity  : critical
+    lc               : raised
+    occur            : 1
+    origSeverity     : critical
+    prevSeverity     : critical
+    rn               : fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : critical
+    subject          : management
+    type             : config
 
 ## Configuration Check Details
 
