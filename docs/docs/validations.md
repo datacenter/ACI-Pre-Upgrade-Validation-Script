@@ -1556,7 +1556,7 @@ This check returns a `MANUAL` result as there are many reasons for a partial inv
 ### BgpProto Timer Policy Already Existing
 
 This check validates `F0467` faults where `changeSet` contains `bgpProt-policy-already-existing`.
-The fault indicates conflicting BGP protocol timer policy configuration under an L3Outs deployed under vrf in same node.
+The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node.
 
 Resolve these faults before upgrade by reviewing the affected L3Out BGP proto timer policy.
 

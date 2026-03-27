@@ -4362,7 +4362,7 @@ def bgpProto_timer_policy_already_existing_check(**kwargs):
     data = []
     unformatted_headers = ['Fault', 'Affected', 'changeSet']
     unformatted_data = []
-    recommended_action = 'Remove the fault by keeping Single bgp policy per vrf for different l3out.'
+    recommended_action = 'Remove the fault by keeping Single bgp timer policy per vrf for different l3out.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgpProto-timer-policy-already-existing'
 
     affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
@@ -6083,10 +6083,6 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
         result = MANUAL
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
-
-
 
 # ---- Script Execution ----
 
