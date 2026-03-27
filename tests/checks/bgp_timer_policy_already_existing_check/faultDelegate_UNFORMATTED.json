@@ -1,0 +1,11 @@
+[
+  {
+    "faultDelegate": {
+      "attributes": {
+        "affected": "resPolCont/rtdOutCont/rtdOutDef-[uni/invalid]/nwissues",
+        "code": "F0467",
+        "changeSet": "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no"
+      }
+    }
+  }
+]
