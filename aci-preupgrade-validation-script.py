@@ -4355,6 +4355,37 @@ def access_untagged_check(**kwargs):
     )
 
 
+@check_wrapper(check_title='BGP Timer Policy Already Existing (F0467 bgpProt-policy-already-existing)')
+def bgpProto_timer_policy_already_existing_check(**kwargs):
+    result = FAIL_O
+    headers = ['Fault', 'Tenant', 'L3Out', 'changeSet']
+    data = []
+    unformatted_headers = ['Fault', 'Affected', 'changeSet']
+    unformatted_data = []
+    recommended_action = 'Remove the fault by keeping Single bgp policy per vrf for different l3out.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgpProto-timer-policy-already-existing'
+
+    affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
+    filter = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.code,"F0467"),wcard(faultDelegate.changeSet,"bgpProt-policy-already-existing"))'
+    fault_delegates = icurl('class', filter)
+
+    for fault_delegate in fault_delegates:
+        attributes = fault_delegate['faultDelegate']['attributes']
+        fault_code = attributes.get('code', '')
+        affected = attributes.get('affected', '')
+        change_set = attributes.get('changeSet', '')
+        affected_array = re.search(affected_regex, affected)
+        if affected_array:
+            data.append([fault_code, affected_array.group('tenant'), affected_array.group('l3out'), change_set])
+        else:
+            unformatted_data.append([fault_code, affected, change_set])
+
+    if not data and not unformatted_data:
+        result = PASS
+
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="Post Upgrade Callback Integrity")
 def post_upgrade_cb_check(cversion, tversion, **kwargs):
     result = PASS
@@ -6054,35 +6085,7 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='BGP Policy Already Existing (F0467 bgpProt-policy-already-existing)')
-def bgp_policy_already_existing_check(**kwargs):
-    result = PASS
-    headers = ['Fault', 'Tenant', 'L3Out', 'changeSet']
-    data = []
-    unformatted_headers = ['Fault', 'Affected', 'changeSet']
-    unformatted_data = []
-    recommended_action = 'Resolve duplicate BGP policy configuration on the affected L3Out.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgp-policy-already-existing'
 
-    affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
-    filter = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.code,"F0467"),wcard(faultDelegate.changeSet,"bgpProt-policy-already-existing"))'
-    fault_delegates = icurl('class', filter)
-
-    for fault_delegate in fault_delegates:
-        attributes = fault_delegate['faultDelegate']['attributes']
-        fault_code = attributes.get('code', '')
-        affected = attributes.get('affected', '')
-        change_set = attributes.get('changeSet', '')
-        affected_array = re.search(affected_regex, affected)
-        if affected_array:
-            data.append([fault_code, affected_array.group('tenant'), affected_array.group('l3out'), change_set])
-        else:
-            unformatted_data.append([fault_code, affected, change_set])
-
-    if data or unformatted_data:
-        result = FAIL_O
-
-    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -6184,7 +6187,7 @@ class CheckManager:
         prefix_already_in_use_check,
         encap_already_in_use_check,
         access_untagged_check,
-        bgp_policy_already_existing_check,
+        bgpProto_timer_policy_already_existing_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,

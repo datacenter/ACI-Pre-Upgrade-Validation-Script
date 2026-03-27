@@ -7,7 +7,7 @@ from helpers.utils import read_data
 script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
-test_function = "bgp_policy_already_existing_check"
+test_function = "bgpProto_timer_policy_already_existing_check"
 # icurl queries
 faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.code,"F0467"),wcard(faultDelegate.changeSet,"bgpProt-policy-already-existing"))'
 
