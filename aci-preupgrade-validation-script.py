@@ -6059,7 +6059,8 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ['Pod', 'Node', 'VRF']
     data = []
-    recommended_action = 'Use in-band ip for NTP server on leaf or upgrade to fix version of CSCwp92030'
+    recommended_action = 'Use IP address from a VRF which only has one IP address on the leaf or upgrade to fix version of CSCwp92030. ' \
+    'Manual check required: "Check if the impacted Node/ VRF has any NTP clients using the IP address in the VRF as NTP server."'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#ntp-sync-issue-in-leaf-as-ntp-server'
 
     datetimeClkPol_api = 'datetimeClkPol.json?query-target-filter=and(eq(datetimeClkPol.serverState,"enabled"))&rsp-prop-include=naming-only'
@@ -6099,7 +6100,7 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
             check_ip_entries_in_vrf(ipv6Addr_api, affected_pod_groups)
 
     if data:
-        result = FAIL_O
+        result = MANUAL
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

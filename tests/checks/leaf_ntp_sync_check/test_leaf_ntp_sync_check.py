@@ -49,7 +49,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-1', 'node-1105', 't0:ctx1']],
         ),
         # Affected version, only ipv4 NTP sync issue
@@ -58,7 +58,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_no_issue.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-1', 'node-1105', 't0:ctx1']],
         ),
         # Affected version, only ipv6 NTP sync issue
@@ -67,7 +67,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-1', 'node-1105', 't0:ctx1']],
         ),
         # multi pod scenario
@@ -98,7 +98,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_1.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-2', 'node-1109', 't0:ctx1']],
         ),
         # Affected version, multiple pod NTP sync issues
@@ -108,7 +108,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_2.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-1', 'node-1105', 't0:ctx1'], ['pod-2', 'node-1109', 't0:ctx1']],
         ),
         # Affected version, only ipv4 NTP sync issues
@@ -118,7 +118,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_no_issue_2.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-1', 'node-1105', 't0:ctx1'], ['pod-2', 'node-1109', 't0:ctx1']],
         ),
         # Affected version, only ipv6 NTP sync issues
@@ -128,7 +128,7 @@ ipv6Addr_api = 'ipv6Addr.json?&rsp-prop-include=naming-only'
             ipv6Addr_api: read_data(dir, "ipv6_ntp_sync_issue_2.json")},
             "6.1(3f)",
             "6.1(4b)",
-            script.FAIL_O,
+            script.MANUAL,
             [['pod-1', 'node-1105', 't0:ctx1'], ['pod-2', 'node-1109', 't0:ctx1']],
         ),
     ],
