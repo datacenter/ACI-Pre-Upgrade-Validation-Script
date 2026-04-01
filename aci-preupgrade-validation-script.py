@@ -6086,7 +6086,7 @@ def leaf_ntp_sync_check(cversion, tversion, **kwargs):
                 elif ['pod-{}'.format(pod), 'node-{}'.format(node), vrf] not in data:
                     data.append(['pod-{}'.format(pod), 'node-{}'.format(node), vrf])
     
-    if (cversion.newer_than('6.0(9e)') and cversion.older_than('6.1(5e)')) or (tversion.newer_than('6.0(9e)') and tversion.older_than('6.1(5e)')):
+    if (cversion.newer_than('6.0(9f)') and cversion.older_than('6.1(5e)')) or (tversion.newer_than('6.0(9f)') and tversion.older_than('6.1(5e)')):
         datetimeClkPol = icurl('class', datetimeClkPol_api)
         affected_pod_groups = set()
         for clkpol in datetimeClkPol:
