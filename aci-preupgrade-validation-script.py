@@ -6087,6 +6087,61 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title='Rogue EP Exception List missing on switches')
+def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Rogue Exception MACs Count", "presListener Count"]
+    data = []
+    recommended_action = 'Delete the exception lists and create again before upgrading switches. Or contact Cisco TAC to restore the missing presListener objects.'
+    recommended_action_pre_apic_upg = 'Change the target version to a fixed version of CSCwp64296.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-ep-exception-list-missing-on-switches'
+
+    exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
+    presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
+
+    # Version ranges
+    # (unless the patch alphabet is explicitly stated, it means the first version of the train)
+    # affected source: 5.2(3) <= version < 6.0(3)
+    # affected target: (6.0(3) <= version < 6.0(9e)) or (6.1(1) <= tversion < 6.1(4))
+
+    def is_affected_source(ver):
+        return ver.newer_than("5.2(3a)") and ver.older_than("6.0(3a)")
+
+    def is_affected_target(ver):
+        in_60 = ver.newer_than("6.0(3a)") and ver.older_than("6.0(9e)")
+        in_61 = ver.newer_than("6.1(1a)") and ver.older_than("6.1(4h)")
+        return in_60 or in_61
+
+    pre_apic_upg = is_affected_source(cversion) and is_affected_target(tversion)  # Before APIC upgrade
+    post_apic_upg = is_affected_target(cversion) and is_affected_target(tversion) and cversion.same_as(tversion)  # After APIC upgrade (and before switch)
+
+    if not (pre_apic_upg or post_apic_upg):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    exception_macs = icurl('class', exception_mac_api)
+    exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
+    # Affected versions but no exception MACs. Not susceptible to the issue.
+    if exception_macs_count == 0:
+        return Result(result=PASS, doc_url=doc_url)
+
+    # The issue in presListener has yet to happen before APIC upgrade. You can still avoid hitting the issue itself.
+    if pre_apic_upg:
+        recommended_action = recommended_action_pre_apic_upg
+        data.append([exception_macs_count, "N/A"])
+        return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    # Check presListener entries on APIC after APIC upgrade.
+    presListener_response = icurl('class', presListener_api)
+    presListener_count = int(presListener_response[0]['moCount']['attributes']['count'])
+    if presListener_count >= 0 and presListener_count < 32:
+        log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(presListener_count, exception_macs_count))
+        result = FAIL_O
+        data.append([exception_macs_count, "only {} found out of 32".format(presListener_count)])
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6251,7 +6306,7 @@ class CheckManager:
         isis_database_byte_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
-
+        rogue_ep_coop_exception_mac_check,
     ]
     ssh_checks = [
         # General
