@@ -6195,15 +6195,15 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
 @check_wrapper(check_title="APIC Storage Inode Check (F4388, F4389, F4390 equipment-full)")
 def apic_storage_inode_check(**kwargs):
     result = FAIL_UF
-    headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Usage %', 'Recommended Action']
+    headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Usage %']
     data = []
-    unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
+    unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-check'
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full for Inodes'
-    faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))') 
+    faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))')
     for faultInst in faultInsts:
         lc = faultInst['faultInst']['attributes']['lc']
         if lc not in ["raised", "soaking"]:
@@ -6212,9 +6212,9 @@ def apic_storage_inode_check(**kwargs):
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
         if dn and desc:
-            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'), desc.group('usage'), recommended_action])
+            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'), desc.group('usage')])
         else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], recommended_action])
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
     if not data and not unformatted_data:
         result = PASS
     return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
