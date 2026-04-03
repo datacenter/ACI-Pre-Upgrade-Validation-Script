@@ -6142,6 +6142,55 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='N9K-C9408 with more than 5 N9K-X9400-16W LEMs')
+def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Switch Model", "LEM Model", "LEM Count"]
+    data = []
+    recommended_action = (
+        "N9K-C9408 switches configured with >5 N9K-X9400-16W LEMs will enter a boot loop if upgraded to impacted release of CSCws82819. Upgrade to Fix version or Use less than 6 LEMS on impacted release"
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-more-than-5-n9k-x9400-16w-lems'
+
+    if tversion.older_than("6.1(2f)") or (tversion.newer_than("6.1(5e)") and not tversion.same_as("6.2(1g)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    affected_nodes = {}
+    for node in fabric_nodes:
+        node_id = node['fabricNode']['attributes']['id']
+        model = node['fabricNode']['attributes']['model']
+        if model == "N9K-C9408":
+            affected_nodes[node_id] = "N9K-C9408"
+
+    if not affected_nodes:
+        return Result(result=NA, msg='No N9K-C9408 nodes found. Skipping.')
+
+    eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
+    try:
+        eqptLCs = icurl('class', eqptLC_api)
+    except Exception as e:
+        return Result(result=ERROR, msg="Failed to query {}: {}".format(eqptLC_api, e))
+
+    lem_count_per_node = defaultdict(int)
+    for eqptLC in eqptLCs:
+        dn = eqptLC['eqptLC']['attributes']['dn']
+        dn_match = re.search(node_regex, dn)
+        if not dn_match:
+            continue
+        node_id = dn_match.group("node")
+        if node_id in affected_nodes:
+            lem_count_per_node[node_id] += 1
+
+    for node_id in sorted(affected_nodes, key=int):
+        lem_count = lem_count_per_node[node_id]
+        if lem_count > 5:
+            data.append([node_id, affected_nodes[node_id], "N9K-X9400-16W", lem_count])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
 # ---- Script Execution ----
 
 
@@ -6307,6 +6356,7 @@ class CheckManager:
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
+        n9k_c9408_model_lem_count_check,
     ]
     ssh_checks = [
         # General
@@ -6478,3 +6528,4 @@ if __name__ == "__main__":
         prints(msg)
         log.error(msg, exc_info=True)
         sys.exit(1)
+        
