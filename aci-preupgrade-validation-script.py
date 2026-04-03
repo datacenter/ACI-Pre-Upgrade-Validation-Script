@@ -6163,13 +6163,10 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
             affected_nodes[node_id] = "N9K-C9408"
 
     if not affected_nodes:
-        return Result(result=NA, msg='No N9K-C9408 nodes found. Skipping.')
+        return Result(result=PASS, msg='No N9K-C9408 nodes found. Skipping.')
 
     eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
-    try:
-        eqptLCs = icurl('class', eqptLC_api)
-    except Exception as e:
-        return Result(result=ERROR, msg="Failed to query {}: {}".format(eqptLC_api, e))
+    eqptLCs = icurl('class', eqptLC_api)
 
     lem_count_per_node = defaultdict(int)
     for eqptLC in eqptLCs:

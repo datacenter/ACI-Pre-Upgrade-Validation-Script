@@ -41,7 +41,7 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
             {eqptLC_api: read_data(dir, "eqptLC_6_node.json")},
             "6.1(2f)",
             read_data(dir, "fabricNode_no_n9k_c9408.json"),
-            script.NA,
+            script.PASS,
             [],
             "No N9K-C9408 nodes found. Skipping.",
         ),
@@ -90,10 +90,10 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
             [["101", "N9K-C9408", "N9K-X9400-16W", 6]],
             "",
         ),
-        # Version not affected (fixed after 6.1(5e))
+        # Version not affected (fixed in 6.1(6)+)
         (
             {eqptLC_api: read_data(dir, "eqptLC_6_node.json")},
-            "6.1(5f)",
+            "6.1(6a)",
             read_data(dir, "fabricNode_n9k_c9408.json"),
             script.NA,
             [],
