@@ -4387,6 +4387,10 @@ def post_upgrade_cb_check(cversion, tversion, **kwargs):
     recommended_action = 'Contact Cisco TAC with Output'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-callback-integrity'
 
+    # Post Upgrade Status is natively checked by APIC starting from 6.0(6)
+    if cversion.newer_than("6.0(6a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
     new_mo_dict = {
         "infraImplicitSetPol": {
             "CreatedBy": "",
