@@ -82,7 +82,7 @@ Items                                         | Faults         | This Script    
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
-[APIC Storage Inode Check][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
+[APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -105,7 +105,7 @@ Items                                         | Faults         | This Script    
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
-[f22]: #apic-storage-inode-check
+[f22]: #apic-storage-inode-usage
 
 ### Configuration Checks
 
@@ -1557,7 +1557,7 @@ EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inven
 This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
 
 
-### APIC Storage Inode Check
+### APIC Storage Inode Usage
 
 If a Cisco APIC is running low on inode capacity for any reason, the Cisco APIC upgrade can fail. The Cisco APIC will raise three different faults depending on inode utilization. If any of these faults are raised on the system, the issue should be resolved prior to performing the upgrade.
 

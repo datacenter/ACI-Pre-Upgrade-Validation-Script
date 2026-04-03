@@ -6194,7 +6194,7 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title="APIC Storage Inode Check (F4388, F4389, F4390 equipment-full)")
+@check_wrapper(check_title="APIC Storage Inode Usage (F4388, F4389, F4390 equipment-full)")
 def apic_storage_inode_check(**kwargs):
     result = FAIL_UF
     headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Usage %']
@@ -6202,7 +6202,7 @@ def apic_storage_inode_check(**kwargs):
     unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
     recommended_action = 'Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-check'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-usage'
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full for Inodes'
     try:
