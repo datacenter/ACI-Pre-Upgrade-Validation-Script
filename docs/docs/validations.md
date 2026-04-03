@@ -1576,7 +1576,7 @@ To recover from this fault, try the following action
 1. Free up space from affected disk partition .
 2. TAC may be required to analyze and cleanup certain directories due to filesystem permissions. Cleanup of `/` is one such example.
 
-!!! example "Fault Example (F4390: " Critical fault for APIC Inode Utilisation)
+!!! example "Fault Example (F4390: Critical fault for APIC Inode Utilisation)"
     ```
     moquery -c faultInst -f 'fault.Inst.code=="F4390"'
     Total Objects shown: 1
@@ -1590,7 +1590,7 @@ To recover from this fault, try the following action
     code            : F4390
     created         : 2024-08-05T05:42:31.975+02:00
     delegated       : no
-    descr           : Storage unit /scratch-writes on node 3 with hostname b001nnc000003 mounted at /scratch-writes is 90% full for Inodes
+    descr           : Storage unit /scratch-writes on node 3 with hostname apic3 mounted at /scratch-writes is 90% full for Inodes
     dn              : topology/pod-2/node-3/sys/ch/p-[/scratch-writes]-f-[/dev/mapper/atx-scratch]/fault-F4390
     domain          : infra
     highestSeverity : critical
