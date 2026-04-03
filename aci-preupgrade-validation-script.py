@@ -6059,7 +6059,7 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ["Rogue Exception MACs Count", "presListener Count"]
     data = []
-    recommended_action = 'Delete the affected exception list and create again before upgrading switches.'
+    recommended_action = 'Delete the exception lists and create again before upgrading switches. Or contact Cisco TAC to restore the missing presListener objects.'
     recommended_action_pre_apic_upg = 'Change the target version to a fixed version of CSCwp64296.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-ep-exception-list-missing-on-switches'
 
@@ -6094,7 +6094,8 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     # The issue in presListener has yet to happen before APIC upgrade. You can still avoid hitting the issue itself.
     if pre_apic_upg:
         recommended_action = recommended_action_pre_apic_upg
-        return Result(result=FAIL_O, recommended_action=recommended_action, doc_url=doc_url)
+        data.append([exception_macs_count, "N/A"])
+        return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
     # Check presListener entries on APIC after APIC upgrade.
     presListener_response = icurl('class', presListener_api)
@@ -6102,7 +6103,7 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
     if presListener_count >= 0 and presListener_count < 32:
         log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(presListener_count, exception_macs_count))
         result = FAIL_O
-        data.append([exception_macs_count, presListener_count])
+        data.append([exception_macs_count, "only {} found out of 32".format(presListener_count)])
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
