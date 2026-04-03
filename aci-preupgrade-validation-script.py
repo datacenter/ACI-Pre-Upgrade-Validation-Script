@@ -1593,6 +1593,8 @@ def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('Your current ACI version does not have requested property')
+        elif "Incorrect filter format for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('Your current ACI version does not have requested value for the property in the filter')
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
@@ -6191,6 +6193,39 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title="APIC Storage Inode Usage (F4388, F4389, F4390 equipment-full)")
+def apic_storage_inode_check(**kwargs):
+    result = FAIL_UF
+    headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Usage %']
+    data = []
+    unformatted_headers = ['Fault', 'Fault DN']
+    unformatted_data = []
+    recommended_action = 'Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-usage'
+    dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
+    desc_regex = r'is (?P<usage>\d{2,3}%) full for Inodes'
+    try:
+        faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))')
+    except OldVerPropNotFound:
+        # Pre 5.2.6 does not have these fault codes.
+        return Result(result=NA, msg="cversion does not have fault code F4388, F4389 or F4390.", doc_url=doc_url)
+    for faultInst in faultInsts:
+        lc = faultInst['faultInst']['attributes']['lc']
+        if lc not in ["raised", "soaking"]:
+            continue
+        fc = faultInst['faultInst']['attributes']['code']
+        dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+        desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+        if dn and desc:
+            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'), desc.group('usage')])
+        else:
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
+    if not data and not unformatted_data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6301,6 +6336,7 @@ class CheckManager:
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
+        apic_storage_inode_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -6528,4 +6564,3 @@ if __name__ == "__main__":
         prints(msg)
         log.error(msg, exc_info=True)
         sys.exit(1)
-        
