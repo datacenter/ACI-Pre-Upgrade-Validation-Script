@@ -6152,6 +6152,9 @@ def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
     )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-more-than-5-n9k-x9400-16w-lems'
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
     if tversion.older_than("6.1(2f)") or (tversion.newer_than("6.1(5e)") and not tversion.same_as("6.2(1g)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 

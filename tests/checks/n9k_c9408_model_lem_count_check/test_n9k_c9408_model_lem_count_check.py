@@ -18,6 +18,8 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, fabric_nodes, expected_result, expected_data, expected_msg",
     [
+        # tversion missing
+        ({}, None, [], script.MANUAL, [], script.TVER_MISSING),
         # Version not affected (lower than 6.1(2f))
         (
             {eqptLC_api: read_data(dir, "eqptLC_empty.json")},
@@ -122,9 +124,11 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, icurl_outputs, tversion, fabric_nodes, expected_result, expected_data, expected_msg):
+def test_logic(
+    run_check, mock_icurl, icurl_outputs, tversion, fabric_nodes, expected_result, expected_data, expected_msg
+):
     result = run_check(
-        tversion=script.AciVersion(tversion),
+        tversion=script.AciVersion(tversion) if tversion else None,
         fabric_nodes=fabric_nodes,
     )
 
