@@ -1593,6 +1593,8 @@ def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('Your current ACI version does not have requested property')
+        elif "Incorrect filter format for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('Your current ACI version does not have requested value for the property in the filter')
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
@@ -6203,7 +6205,11 @@ def apic_storage_inode_check(**kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-check'
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full for Inodes'
-    faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))')
+    try:
+        faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))')
+    except OldVerPropNotFound:
+        # Pre 5.2.6 does not have these fault codes.
+        return Result(result=NA, msg="cversion does not have fault code F4388, F4389 or F4390.", doc_url=doc_url)
     for faultInst in faultInsts:
         lc = faultInst['faultInst']['attributes']['lc']
         if lc not in ["raised", "soaking"]:

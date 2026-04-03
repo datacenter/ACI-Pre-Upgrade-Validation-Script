@@ -18,6 +18,12 @@ faultInst_api += (
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result, expected_data",
     [
+        # NA - Fault code not yet supported in the current APIC version
+        (
+            {faultInst_api: [{"error": {"attributes": {"code": "301", "text": "Incorrect filter format for faultInst.code, value 'F4388' is not valid"}}}]},
+            script.NA,
+            [],
+        ),
         # PASS - No raised faults
         (
             {faultInst_api: []},
