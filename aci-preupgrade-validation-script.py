@@ -6226,6 +6226,71 @@ def apic_storage_inode_check(**kwargs):
     return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# Connection Based Check
+@check_wrapper(check_title="Multi-Pod Modular Spine Bootscript File")
+def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, password, **kwargs):
+    result = PASS
+    headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present"]
+    data = []
+    recommended_action = (
+        "Change the target version to a fixed version of CSCwr66848. "
+        "Or clean reboot these spines without the bootscript file before upgrade."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multi-pod-modular-spine-bootscript-file"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if not tversion.same_as("6.1(4h)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    pod_count_resp = icurl('class', 'fabricSetupP.json?rsp-subtree-include=count')
+    if (int(pod_count_resp[0]['moCount']['attributes']['count'])) < 2:
+        return Result(result=PASS, msg="Not MultiPod Fabric.")
+
+    modular_spine_models = {"N9K-C9408", "N9K-C9504", "N9K-C9508", "N9K-C9516"}
+    modular_spines = [
+        node
+        for node in fabric_nodes
+        if node["fabricNode"]["attributes"].get("model") in modular_spine_models
+        and node["fabricNode"]["attributes"].get("role") == "spine"
+    ]
+    if not modular_spines:
+        return Result(result=PASS, msg="No modular spine found in fabric.")
+
+    has_error = False
+    for node in modular_spines:
+        attr = node["fabricNode"]["attributes"]
+        node_id = attr.get("id")
+        node_name = attr.get("name")
+        dn = re.search(node_regex, attr.get("dn", ""))
+        pod_id = dn.group("pod") if dn else "Unknown"
+        tep_ip = attr.get("address")
+        model = attr.get("model")
+
+        c = Connection(tep_ip)
+        c.username = username
+        c.password = password
+        c.log = LOG_FILE
+        try:
+            c.connect()
+            c.cmd("ls -l /bootflash/ | grep boots")
+            if "bootscript" not in c.output:
+                data.append([pod_id, node_id, node_name, model, "No"])
+        except Exception as e:
+            ssh_error = "SSH ERROR: {}".format(e)
+            data.append([pod_id, node_id, node_name, model, ssh_error])
+            has_error = True
+            continue
+
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6404,6 +6469,7 @@ class CheckManager:
 
         # Bugs
         observer_db_size_check,
+        multipod_modular_spine_bootscript_check,
     ]
     cli_checks = [
         # General
