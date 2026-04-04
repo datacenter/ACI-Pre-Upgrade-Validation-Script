@@ -37,6 +37,7 @@ Items                                                        | This Script      
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
+[Svccore Excessive Data Check][g20]                          | :white_check_mark: | 
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -57,6 +58,7 @@ Items                                                        | This Script      
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
+[g20]: #svccore-excessive-data-check
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -2753,6 +2755,16 @@ This issue happens only when the target version is specifically 6.1(4h).
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
+### Svccore Excessive Data Check
+
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
+
+Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
+Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
+
+This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2820,3 +2832,4 @@ To avoid this issue, change the target version to another version. Or verify tha
 [64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
 [65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
 [66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
+[67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
