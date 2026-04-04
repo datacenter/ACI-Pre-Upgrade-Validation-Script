@@ -6238,6 +6238,9 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multi-pod-modular-spine-bootscript-file"
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
     if not tversion.same_as("6.1(4h)"):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 

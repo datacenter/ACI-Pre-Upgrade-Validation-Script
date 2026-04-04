@@ -37,16 +37,10 @@ spine201#
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, fabric_nodes, conn_failure, conn_cmds, expected_result, expected_data",
     [
+        # Test 0: MANUAL - tversion missing
+        ({}, None, fabric_nodes_with_modular_spine, False, {}, script.MANUAL, []),
         # Test 1: NA - tversion not 6.1(4h)
-        (
-            {fabric_setup_count: multipod_setup},
-            "6.1(3a)",
-            fabric_nodes_with_modular_spine,
-            False,
-            {},
-            script.NA,
-            [],
-        ),
+        ({}, "6.1(3a)", fabric_nodes_with_modular_spine, False, {}, script.NA, []),
         # Test 2: PASS - Not a Multi-Pod setup (fabricSetupP count < 2)
         (
             {fabric_setup_count: not_multipod_setup},
