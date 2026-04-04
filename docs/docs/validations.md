@@ -197,7 +197,7 @@ Items                                           | Defect       | This Script    
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
 [Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
-[Multi-Pod modular spine bootscript check][d32] | CSCwr66848   | :white_check_mark: | :no_entry_sign:
+[Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -230,7 +230,7 @@ Items                                           | Defect       | This Script    
 [d29]: #auto-firmware-update-on-switch-discovery
 [d30]: #rogue-ep-exception-list-missing-on-switches
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
-[d32]: #multipod-modular-spine-bootscript-check
+[d32]: #multi-pod-modular-spine-bootscript-file
 
 ## General Check Details
 
@@ -2744,11 +2744,13 @@ Due to defect [CSCws82819][65], N9K-C9408 switch will experience a boot loop wit
 To avoid this issue, please upgrade to fix version or use less than 6 N9K-X9400-16W in one chassis.
 
 
-### Multi-Pod Modular Spine Bootscript
+### Multi-Pod Modular Spine Bootscript File
 
-Due to [CSCwr66848][66], in a Multi-Pod fabric, modular spine switches have `bootscript` file present in their bootflash from the initial bootstrap process. When upgrading to 6.1(4h), if `bootscript` file is missing that can cause traffic loss across pods until the spine in this condition is clean reloaded.
+Due to [CSCwr66848][66], in Multi-Pod environments, upgrading a modular spine to 6.1(4h) may result in inter-pod traffic to stop working if the `/bootflash/bootscript` file is missing on the spine prior to the upgrade. The traffic interruption occurs because the spine incorrectly indentifies the reason of its reload, leading to an unnecessary attempt to load the missing bootscript file.
 
-To avoid this issue, verify that `bootscript` file exists in the bootflash of each spine switch prior to upgrading to 6.1(4h). If not found, we have to do clean reboot on impacted spine.
+This issue happens only when the target version is specifically 6.1(4h).
+
+To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
