@@ -1812,9 +1812,11 @@ def get_vpc_nodes():
     return vpc_nodes
 
 
-def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
-    username = password = None
-    if not api_only:
+def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None, username=None, password=None):
+    if api_only:
+        username = None
+        password = None
+    elif not username or not password:
         username, password = get_credentials()
 
     try:
@@ -6296,6 +6298,8 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
 
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-u", "--username", action="store", type=str, help="Username used for SSH. If not provied it will prompt for")
+    parser.add_argument("-p", "--password", action="store", type=str, help="Password used for SSH. If not provied it will prompt for")
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
     parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
     parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
@@ -6589,7 +6593,7 @@ def main(_args=None):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
-    common_data = query_common_data(args.api_only, args.cversion, args.tversion)
+    common_data = query_common_data(args.api_only, args.cversion, args.tversion, args.username, args.password)
     write_script_metadata(args.api_only, args.timeout, cm.total_checks, common_data)
 
     cm.run_checks(common_data)
