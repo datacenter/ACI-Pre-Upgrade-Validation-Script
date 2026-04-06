@@ -82,8 +82,6 @@ Items                                         | Faults         | This Script    
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
-[BgpProto timer policy already existing][f22]            | F0467: bgpProt-policy-already-existing | :white_check_mark: | :no_entry_sign:
-
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -106,7 +104,7 @@ Items                                         | Faults         | This Script    
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
-[f22]: #bgpProto-timer-policy-already-existing
+
 
 ### Configuration Checks
 
@@ -196,6 +194,7 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[BgpProto timer policy already existing][d30]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -226,6 +225,7 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #bgpProto-timer-policy-already-existing
 
 ## General Check Details
 
@@ -1553,37 +1553,6 @@ EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inven
 
 This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
 
-### BgpProto Timer Policy Already Existing
-
-This check validates `F0467` faults where `changeSet` contains `bgpProt-policy-already-existing`.
-The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node.
-
-Resolve these faults before upgrade by reviewing the affected L3Out BGP proto timer policy.
-
-Example:
-
-    # fault.Delegate
-    affected         : resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues
-    code             : F0467
-    ack              : no
-    cause            : configuration-failed
-    changeSet        : configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no
-    childAction      :
-    created          : 2026-03-25T11:31:16.724+00:00
-    descr            : Fault delegate: Configuration failed for uni/tn-common/out-L3outY due to A specific leaf node can hold only a single bgpProtP config; this fault is raised when inconsistent configuration is detected, debug message:
-    dn               : uni/tn-common/out-L3outY/fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
-    domain           : tenant
-    highestSeverity  : critical
-    lc               : raised
-    occur            : 1
-    origSeverity     : critical
-    prevSeverity     : critical
-    rn               : fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
-    rule             : fv-nw-issues-config-failed
-    severity         : critical
-    subject          : management
-    type             : config
-
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -2701,6 +2670,37 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
 
 
+### BgpProto Timer Policy Already Existing
+
+This bug [CSCwt78235][64] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'.
+The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node.
+
+Resolve these faults before upgrade by reviewing the affected L3Out BGP proto timer policy.
+
+Example:
+
+    # fault.Delegate
+    affected         : resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues
+    code             : F0467
+    ack              : no
+    cause            : configuration-failed
+    changeSet        : configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no
+    childAction      :
+    created          : 2026-03-25T11:31:16.724+00:00
+    descr            : Fault delegate: Configuration failed for uni/tn-common/out-L3outY due to A specific leaf node can hold only a single bgpProtP config; this fault is raised when inconsistent configuration is detected, debug message:
+    dn               : uni/tn-common/out-L3outY/fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
+    domain           : tenant
+    highestSeverity  : critical
+    lc               : raised
+    occur            : 1
+    origSeverity     : critical
+    prevSeverity     : critical
+    rn               : fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
+    rule             : fv-nw-issues-config-failed
+    severity         : critical
+    subject          : management
+    type             : config
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2765,3 +2765,4 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
