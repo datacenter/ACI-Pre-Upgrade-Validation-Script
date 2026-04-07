@@ -2989,7 +2989,7 @@ def apic_disk_space_faults_check(cversion, tversion, **kwargs):
     unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
     unformatted_data = []
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-disk-space-usage"
-    # we are checking /tmp utilization because high usage can lead to snaphsot corruption during an upgrade. After the fix version, snapshot storage location moved to /data.
+    # we are checking /tmp utilization because high usage can lead to snaphshot corruption during an upgrade. After the fix version, snapshot storage location moved to /data.
     recommended_action = {
         '/firmware': 'Remove unneeded images',
         '/techsupport': 'Remove unneeded techsupports/cores',
