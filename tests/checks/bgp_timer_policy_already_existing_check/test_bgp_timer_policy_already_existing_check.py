@@ -14,26 +14,26 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result, expected_data, expected_unformatted_data",
     [
-        # target release not affected (>= 6.2(3a))
-        (
-            {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
-            "6.2(3a)",
-            script.NA,
-            [],
-            [],
-        ),
-        # target release not affected on 6.1 train (>= 6.1(6a))
-        (
-            {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
-            "6.1(6a)",
-            script.NA,
-            [],
-            [],
-        ),
-        # target release affected (< 6.2(3a))
+        # target release not affected (> 6.2(1g))
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
             "6.2(2a)",
+            script.NA,
+            [],
+            [],
+        ),
+        # target release not affected on 6.1 train (> 6.1(5e))
+        (
+            {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
+            "6.1(5f)",
+            script.NA,
+            [],
+            [],
+        ),
+        # boundary version is still affected for strict newer_than check
+        (
+            {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
+            "6.2(1g)",
             script.FAIL_O,
             [
                 [
@@ -51,7 +51,28 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
             ],
             [],
         ),
-        # target release affected on 6.1 train (< 6.1(6a))
+        # 6.1 boundary version is still affected for strict newer_than check
+        (
+            {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
+            "6.1(5e)",
+            script.FAIL_O,
+            [
+                [
+                    "F0467",
+                    "common",
+                    "L3outY",
+                    "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
+                ],
+                [
+                    "F0467",
+                    "prod",
+                    "L3outA",
+                    "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
+                ],
+            ],
+            [],
+        ),
+        # target release affected on 6.1 train (< 6.1(5e))
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
             "6.1(5a)",

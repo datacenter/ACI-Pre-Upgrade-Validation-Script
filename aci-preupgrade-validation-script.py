@@ -6064,8 +6064,8 @@ def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
     recommended_action = 'Remove the fault by keeping Single bgp timer policy per vrf for different l3out.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgpProto-timer-policy-already-existing'
 
-    if not tversion.older_than("6.2(3a)") or (
-        tversion.major1 == "6" and tversion.major2 == "1" and not tversion.older_than("6.1(6a)")):
+    if tversion.newer_than("6.2(1g)") or (
+        tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     
     affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
