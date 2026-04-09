@@ -114,6 +114,20 @@ def test_icurl(mock_icurl, apitype, query, expected_result):
             ],
             script.OldVerPropNotFound,
         ),
+        # /api/class/faultInfo.json?query-target-filter=eq(faultInst.code,"F999999")
+        (
+            [
+                {
+                    "error": {
+                        "attributes": {
+                            "code": "301",
+                            "text": "Incorrect filter format for faultInst.code, value 'F999999' is not valid",
+                        }
+                    }
+                }
+            ],
+            script.OldVerPropNotFound,
+        ),
         # /api/class/faultInf.json?query-target-filter=eq(faultInst.code,"F2109")
         (
             [
