@@ -6515,7 +6515,6 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         leaf_ntp_sync_check,
-
     ]
     ssh_checks = [
         # General
