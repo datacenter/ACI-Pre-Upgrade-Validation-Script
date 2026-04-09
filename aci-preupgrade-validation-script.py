@@ -6293,6 +6293,112 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='WRED with Affected Leaf/LC/FM Models')
+def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Node Name", "Source", "Model"]
+    data = []
+    recommended_action = (
+        'Detected affected node(s) with WRED enabled. '
+        'Review software fix options and engage TAC.'
+    )
+    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    version_affected = (
+        (tversion.major1 == '6' and tversion.major2 == '1' and tversion.older_than('6.1(6a)'))
+        or (tversion.major1 == '6' and tversion.major2 == '2' and tversion.older_than('6.2(2a)'))
+    )
+    if not version_affected:
+        return Result(result=PASS, msg=VER_NOT_AFFECTED)
+
+    qosCong = icurl('class', 'qosCong.json')
+    wred_enabled = False
+    for cong in qosCong:
+        algo = cong.get('qosCong', {}).get('attributes', {}).get('algo', '')
+        if algo.lower() == 'wred':
+            wred_enabled = True
+            break
+
+    if not wred_enabled:
+        return Result(result=PASS, msg='WRED not enabled. Skipping.')
+
+    affected_models = {
+        'N9K-C9236C',
+        'N9K-C92300YC',
+        'N9K-C9272Q',
+        'N9K-C92304QC',
+        'N9K-C9504-FM-E',
+        'N9K-C9508-FM-E',
+        'N9K-C9516-FM-E',
+    }
+
+    def is_affected_model(model):
+        m = (model or '').upper()
+        return m in affected_models or 'LACROSSE' in m
+
+    node_name_map = {}
+    for node in fabric_nodes:
+        attr = node.get('fabricNode', {}).get('attributes', {})
+        if attr.get('id'):
+            node_name_map[attr.get('id')] = attr.get('name', '')
+
+    impacted = set()
+
+    # Leaf model gate
+    for node in fabric_nodes:
+        attr = node.get('fabricNode', {}).get('attributes', {})
+        if attr.get('role') != 'leaf':
+            continue
+        model = attr.get('model', '')
+        if is_affected_model(model):
+            impacted.add((attr.get('id', ''), attr.get('name', ''), 'Leaf', model))
+
+    # LC model gate
+    eqptLC = icurl('class', 'eqptLC.json')
+    for card in eqptLC:
+        attr = card.get('eqptLC', {}).get('attributes', {})
+        model = attr.get('model', '')
+        if not is_affected_model(model):
+            continue
+        dn = attr.get('dn', '')
+        m = re.search(node_regex, dn)
+        if not m:
+            continue
+        node_id = m.group('node')
+        impacted.add((node_id, node_name_map.get(node_id, ''), 'LC', model))
+
+    # FM model gate
+    eqptFC = icurl('class', 'eqptFC.json')
+    for card in eqptFC:
+        attr = card.get('eqptFC', {}).get('attributes', {})
+        model = attr.get('model', '')
+        if not is_affected_model(model):
+            continue
+        dn = attr.get('dn', '')
+        m = re.search(node_regex, dn)
+        if not m:
+            continue
+        node_id = m.group('node')
+        impacted.add((node_id, node_name_map.get(node_id, ''), 'FM', model))
+
+    if impacted:
+        def sort_key(row):
+            node_id = row[0]
+            try:
+                node_key = int(node_id)
+            except (TypeError, ValueError):
+                node_key = node_id
+            return (node_key, row[2], row[3])
+
+        data = [list(row) for row in sorted(impacted, key=sort_key)]
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6474,6 +6580,7 @@ class CheckManager:
         # Bugs
         observer_db_size_check,
         multipod_modular_spine_bootscript_check,
+        wred_affected_model_check,
     ]
     cli_checks = [
         # General
