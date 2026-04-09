@@ -82,6 +82,7 @@ Items                                         | Faults         | This Script    
 [Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
+[APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -104,6 +105,7 @@ Items                                         | Faults         | This Script    
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
+[f22]: #apic-storage-inode-usage
 
 
 ### Configuration Checks
@@ -194,7 +196,10 @@ Items                                           | Defect       | This Script    
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
-[BgpProto timer policy already existing][d30]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
+[Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
+[N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
+[Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
+[BgpProto timer policy already existing][d33]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -225,7 +230,10 @@ Items                                           | Defect       | This Script    
 [d27]: #isis-dteps-byte-size
 [d28]: #policydist-configpushshardcont-crash
 [d29]: #auto-firmware-update-on-switch-discovery
-[d30]: #bgpProto-timer-policy-already-existing
+[d30]: #rogue-ep-exception-list-missing-on-switches
+[d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
+[d32]: #multi-pod-modular-spine-bootscript-file
+[d33]: #bgpProto-timer-policy-already-existing
 
 ## General Check Details
 
@@ -1553,6 +1561,56 @@ EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inven
 
 This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
 
+
+### APIC Storage Inode Usage
+
+If a Cisco APIC is running low on inode capacity for any reason, the Cisco APIC upgrade can fail. The Cisco APIC will raise three different faults depending on inode utilization. If any of these faults are raised on the system, the issue should be resolved prior to performing the upgrade.
+
+* **F4388**: A warning level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 75%.
+
+* **F4389**: A major level fault for Cisco APIC storage inode utilization. This is raised when utilization is between 85% and 90%.
+
+* **F4390**: A critical level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 90%.
+
+Although the storage space for the filesystem might be adequate we might still see issues with inode usage, this happens when we have more number of files or directories created with lower file sizes.
+
+Recommended Action:
+
+To recover from this fault, try the following action
+
+1. Free up space from affected disk partition .
+2. TAC may be required to analyze and cleanup certain directories due to filesystem permissions. Cleanup of `/` is one such example.
+
+!!! example "Fault Example (F4390: Critical fault for APIC Inode Utilisation)"
+    ```
+    moquery -c faultInst -f 'fault.Inst.code=="F4390"'
+    Total Objects shown: 1
+   
+    # faultInst
+    ack             : yes
+    alert           : no
+    cause           : equipment-full
+    changeSet       : available (Old: 19408344, New: 19407972), inodesFree (Old: 263915, New: 263842), inodesUsed (Old: 2357525, New: 2357598), 
+    used (Old: 19436092, New: 19436464)
+    code            : F4390
+    created         : 2024-08-05T05:42:31.975+02:00
+    delegated       : no
+    descr           : Storage unit /scratch-writes on node 3 with hostname apic3 mounted at /scratch-writes is 90% full for Inodes
+    dn              : topology/pod-2/node-3/sys/ch/p-[/scratch-writes]-f-[/dev/mapper/atx-scratch]/fault-F4390
+    domain          : infra
+    highestSeverity : critical
+    lastTransition  : 2024-08-05T09:41:18.152+02:00
+    lc              : raised
+    occur           : 2
+    origSeverity    : critical
+    prevSeverity    : cleared
+    rule            : eqpt-storage-inode-critical
+    severity        : critical
+    subject         : equipment-full
+    type            : operational
+    ```
+    
+    
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -2650,6 +2708,7 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2668,6 +2727,33 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+
+### Rogue EP Exception List missing on switches
+
+The Rogue/COOP Exception List feature, introduced in 5.2(3), allows exclusion of specific MAC addresses from Rogue Endpoint Control and COOP Dampening. Initially, each MAC address had to be configured individually in each bridge domain. In 6.0(3), this feature was enhanced to support fabric-wide exception lists with wildcard options per bridge domain and the ability to exclude MAC addresses in L3Outs.
+
+However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with Rogue/COOP Exception Lists configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
+
+The root cause is that internal objects called `presListener` for Rogue/COOP Exception List, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade.
+
+Recommended action: Delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
+
+
+### N9K-C9408 with more than 5 N9K-X9400-16W LEMs
+
+Due to defect [CSCws82819][65], N9K-C9408 switch will experience a boot loop with dt_helper process crash if upgraded to versions 16.1(2f) to 16.1(5) or 16.2(1g) with more than 5 N9K-X9400-16W LEMs installed.
+
+To avoid this issue, please upgrade to fix version or use less than 6 N9K-X9400-16W in one chassis.
+
+
+### Multi-Pod Modular Spine Bootscript File
+
+Due to [CSCwr66848][66], in Multi-Pod environments, upgrading a modular spine to 6.1(4h) may result in inter-pod traffic to stop working if the `/bootflash/bootscript` file is missing on the spine prior to the upgrade. The traffic interruption occurs because the spine incorrectly indentifies the reason of its reload, leading to an unnecessary attempt to load the missing bootscript file.
+
+This issue happens only when the target version is specifically 6.1(4h).
+
+To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
 ### BgpProto Timer Policy Already Existing
@@ -2765,4 +2851,7 @@ Example:
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
 [63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
-[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
+[65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
+[66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
+[67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235

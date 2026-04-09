@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.0.1"
+SCRIPT_VERSION = "v4.1.0-dev"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -1023,6 +1023,7 @@ class ThreadManager:
         common_kwargs,
         monitor_interval=0.5,  # sec
         monitor_timeout=600,  # sec
+        max_threads=None,
         callback_on_monitoring=None,
         callback_on_start_failure=None,
         callback_on_timeout=None,
@@ -1030,6 +1031,9 @@ class ThreadManager:
         self.funcs = funcs
         self.threads = None
         self.common_kwargs = common_kwargs
+        # Semaphore to cap the number of concurrently running check threads.
+        # None means unlimited.
+        self.semaphore = threading.Semaphore(max_threads) if max_threads and max_threads > 0 else None
 
         # Not using `thread.join(timeout)` because it waits for each thread sequentially,
         # which means the program may wait for "timeout * num of threads" at worst case.
@@ -1053,7 +1057,7 @@ class ThreadManager:
             raise RuntimeError("Threading on going. Cannot start again.")
 
         self.threads = [
-            self._generate_thread(target=func, kwargs=self.common_kwargs)
+            self._generate_thread(target=func, kwargs=self.common_kwargs, use_semaphore=True)
             for func in self.funcs
         ]
 
@@ -1080,9 +1084,19 @@ class ThreadManager:
     def is_timeout(self):
         return self.timeout_event.is_set()
 
-    def _generate_thread(self, target, args=(), kwargs=None):
+    def _generate_thread(self, target, args=(), kwargs=None, use_semaphore=False):
         if kwargs is None:
             kwargs = {}
+        if use_semaphore and self.semaphore is not None:
+            semaphore = self.semaphore
+            original_target = target
+            def _wrapped_target(*a, **kw):
+                try:
+                    original_target(*a, **kw)
+                finally:
+                    semaphore.release()
+            _wrapped_target.__name__ = target.__name__
+            target = _wrapped_target
         thread = CustomThread(
             target=target, name=target.__name__, args=args, kwargs=kwargs
         )
@@ -1102,11 +1116,16 @@ class ThreadManager:
         thread_started = False
         while not self.is_timeout():
             try:
+                if self.semaphore is not None:
+                    log.info("({}) Waiting for an available thread slot.".format(thread.name))
+                    self.semaphore.acquire()
                 log.info("({}) Starting thread.".format(thread.name))
                 thread.start()
                 thread_started = True
                 break
             except RuntimeError as e:
+                if self.semaphore is not None:
+                    self.semaphore.release()
                 if str(e) != "can't start new thread":
                     log.error("({}) Unexpected error to start a thread.".format(thread.name), exc_info=True)
                     break
@@ -1121,6 +1140,8 @@ class ThreadManager:
                     time_elapsed += queue_interval
                     continue
             except Exception:
+                if self.semaphore is not None:
+                    self.semaphore.release()
                 log.error("({}) Unexpected error to start a thread.".format(thread.name), exc_info=True)
                 break
 
@@ -1493,11 +1514,14 @@ def get_row(widths, values, spad="  ", lpad=""):
 
 def prints(objects, sep=' ', end='\n'):
     with open(RESULT_FILE, 'a') as f:
-        print(objects, sep=sep, end=end, file=sys.stdout)
+        try:
+            print(objects, sep=sep, end=end, file=sys.stdout)
+            sys.stdout.flush()
+        except OSError:
+            pass
         if end == "\r":
             end = "\n"  # easier to read with \n in a log file
         print(objects, sep=sep, end=end, file=f)
-        sys.stdout.flush()
         f.flush()
 
 
@@ -1569,6 +1593,8 @@ def _icurl_error_handler(imdata):
     if imdata and "error" in imdata[0]:
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('Your current ACI version does not have requested property')
+        elif "Incorrect filter format for" in imdata[0]['error']['attributes']['text']:
+            raise OldVerPropNotFound('Your current ACI version does not have requested value for the property in the filter')
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
@@ -1786,9 +1812,11 @@ def get_vpc_nodes():
     return vpc_nodes
 
 
-def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
-    username = password = None
-    if not api_only:
+def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None, username=None, password=None):
+    if api_only:
+        username = None
+        password = None
+    elif not username or not password:
         username, password = get_credentials()
 
     try:
@@ -4363,6 +4391,10 @@ def post_upgrade_cb_check(cversion, tversion, **kwargs):
     recommended_action = 'Contact Cisco TAC with Output'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#post-upgrade-callback-integrity'
 
+    # Post Upgrade Status is natively checked by APIC starting from 6.0(6)
+    if cversion.newer_than("6.0(6a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
     new_mo_dict = {
         "infraImplicitSetPol": {
             "CreatedBy": "",
@@ -4752,7 +4784,13 @@ def fabricPathEp_target_check(**kwargs):
                         elif int(third) > 16:
                             data.append([dn, "eth port {} is invalid (1-16 expected) for breakout ports".format(third)])
                 else:
-                    data.append([dn, "PathEp 'eth' syntax is invalid"])
+                    # CHECK eth1//0 malform scenario (double slashes)
+                    if "//" in path:
+                        data.append([dn, "PathEp 'eth' syntax is invalid"])
+                    # CHECK Ethx/y malform scenario (should not be caps)
+                    elif path.startswith("Eth"):
+                        data.append([dn, "PathEp 'eth' should be lowercase 'eth'"])
+
         else:
             data.append([dn, "target is not a valid fabricPathEp DN"])
 
@@ -6054,6 +6092,207 @@ def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='Rogue EP Exception List missing on switches')
+def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Rogue Exception MACs Count", "presListener Count"]
+    data = []
+    recommended_action = 'Delete the exception lists and create again before upgrading switches. Or contact Cisco TAC to restore the missing presListener objects.'
+    recommended_action_pre_apic_upg = 'Change the target version to a fixed version of CSCwp64296.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#rogue-ep-exception-list-missing-on-switches'
+
+    exception_mac_api = 'fvRogueExceptionMac.json?rsp-subtree-include=count'
+    presListener_api = 'presListener.json?query-target-filter=and(eq(presListener.lstDn,"exceptcont"))&rsp-subtree-include=count'
+
+    # Version ranges
+    # (unless the patch alphabet is explicitly stated, it means the first version of the train)
+    # affected source: 5.2(3) <= version < 6.0(3)
+    # affected target: (6.0(3) <= version < 6.0(9e)) or (6.1(1) <= tversion < 6.1(4))
+
+    def is_affected_source(ver):
+        return ver.newer_than("5.2(3a)") and ver.older_than("6.0(3a)")
+
+    def is_affected_target(ver):
+        in_60 = ver.newer_than("6.0(3a)") and ver.older_than("6.0(9e)")
+        in_61 = ver.newer_than("6.1(1a)") and ver.older_than("6.1(4h)")
+        return in_60 or in_61
+
+    pre_apic_upg = is_affected_source(cversion) and is_affected_target(tversion)  # Before APIC upgrade
+    post_apic_upg = is_affected_target(cversion) and is_affected_target(tversion) and cversion.same_as(tversion)  # After APIC upgrade (and before switch)
+
+    if not (pre_apic_upg or post_apic_upg):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    exception_macs = icurl('class', exception_mac_api)
+    exception_macs_count = int(exception_macs[0]['moCount']['attributes']['count'])
+    # Affected versions but no exception MACs. Not susceptible to the issue.
+    if exception_macs_count == 0:
+        return Result(result=PASS, doc_url=doc_url)
+
+    # The issue in presListener has yet to happen before APIC upgrade. You can still avoid hitting the issue itself.
+    if pre_apic_upg:
+        recommended_action = recommended_action_pre_apic_upg
+        data.append([exception_macs_count, "N/A"])
+        return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    # Check presListener entries on APIC after APIC upgrade.
+    presListener_response = icurl('class', presListener_api)
+    presListener_count = int(presListener_response[0]['moCount']['attributes']['count'])
+    if presListener_count >= 0 and presListener_count < 32:
+        log.info("Insufficient presListener entries ({} found) for {} exception MACs.".format(presListener_count, exception_macs_count))
+        result = FAIL_O
+        data.append([exception_macs_count, "only {} found out of 32".format(presListener_count)])
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title='N9K-C9408 with more than 5 N9K-X9400-16W LEMs')
+def n9k_c9408_model_lem_count_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Switch Model", "LEM Model", "LEM Count"]
+    data = []
+    recommended_action = (
+        "N9K-C9408 switches configured with >5 N9K-X9400-16W LEMs will enter a boot loop if upgraded to impacted release of CSCws82819. Upgrade to Fix version or Use less than 6 LEMS on impacted release"
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c9408-with-more-than-5-n9k-x9400-16w-lems'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.1(2f)") or (tversion.newer_than("6.1(5e)") and not tversion.same_as("6.2(1g)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    affected_nodes = {}
+    for node in fabric_nodes:
+        node_id = node['fabricNode']['attributes']['id']
+        model = node['fabricNode']['attributes']['model']
+        if model == "N9K-C9408":
+            affected_nodes[node_id] = "N9K-C9408"
+
+    if not affected_nodes:
+        return Result(result=PASS, msg='No N9K-C9408 nodes found. Skipping.')
+
+    eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
+    eqptLCs = icurl('class', eqptLC_api)
+
+    lem_count_per_node = defaultdict(int)
+    for eqptLC in eqptLCs:
+        dn = eqptLC['eqptLC']['attributes']['dn']
+        dn_match = re.search(node_regex, dn)
+        if not dn_match:
+            continue
+        node_id = dn_match.group("node")
+        if node_id in affected_nodes:
+            lem_count_per_node[node_id] += 1
+
+    for node_id in sorted(affected_nodes, key=int):
+        lem_count = lem_count_per_node[node_id]
+        if lem_count > 5:
+            data.append([node_id, affected_nodes[node_id], "N9K-X9400-16W", lem_count])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="APIC Storage Inode Usage (F4388, F4389, F4390 equipment-full)")
+def apic_storage_inode_check(**kwargs):
+    result = FAIL_UF
+    headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Usage %']
+    data = []
+    unformatted_headers = ['Fault', 'Fault DN']
+    unformatted_data = []
+    recommended_action = 'Contact Cisco TAC to remove the files in the mount point to free up space and clear the fault'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-storage-inode-usage'
+    dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
+    desc_regex = r'is (?P<usage>\d{2,3}%) full for Inodes'
+    try:
+        faultInsts = icurl('class', 'faultInst.json?query-target-filter=or(eq(faultInst.code,"F4388"),eq(faultInst.code,"F4389"),eq(faultInst.code,"F4390"))')
+    except OldVerPropNotFound:
+        # Pre 5.2.6 does not have these fault codes.
+        return Result(result=NA, msg="cversion does not have fault code F4388, F4389 or F4390.", doc_url=doc_url)
+    for faultInst in faultInsts:
+        lc = faultInst['faultInst']['attributes']['lc']
+        if lc not in ["raised", "soaking"]:
+            continue
+        fc = faultInst['faultInst']['attributes']['code']
+        dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
+        desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
+        if dn and desc:
+            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'), desc.group('usage')])
+        else:
+            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
+    if not data and not unformatted_data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+# Connection Based Check
+@check_wrapper(check_title="Multi-Pod Modular Spine Bootscript File")
+def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, password, **kwargs):
+    result = PASS
+    headers = ["Pod ID", "Node ID", "Node Name", "Model", "Bootscript Present"]
+    data = []
+    recommended_action = (
+        "Change the target version to a fixed version of CSCwr66848. "
+        "Or clean reboot these spines without the bootscript file before upgrade."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multi-pod-modular-spine-bootscript-file"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if not tversion.same_as("6.1(4h)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    pod_count_resp = icurl('class', 'fabricSetupP.json?rsp-subtree-include=count')
+    if (int(pod_count_resp[0]['moCount']['attributes']['count'])) < 2:
+        return Result(result=PASS, msg="Not MultiPod Fabric.")
+
+    modular_spine_models = {"N9K-C9408", "N9K-C9504", "N9K-C9508", "N9K-C9516"}
+    modular_spines = [
+        node
+        for node in fabric_nodes
+        if node["fabricNode"]["attributes"].get("model") in modular_spine_models
+        and node["fabricNode"]["attributes"].get("role") == "spine"
+    ]
+    if not modular_spines:
+        return Result(result=PASS, msg="No modular spine found in fabric.")
+
+    has_error = False
+    for node in modular_spines:
+        attr = node["fabricNode"]["attributes"]
+        node_id = attr.get("id")
+        node_name = attr.get("name")
+        dn = re.search(node_regex, attr.get("dn", ""))
+        pod_id = dn.group("pod") if dn else "Unknown"
+        tep_ip = attr.get("address")
+        model = attr.get("model")
+
+        c = Connection(tep_ip)
+        c.username = username
+        c.password = password
+        c.log = LOG_FILE
+        try:
+            c.connect()
+            c.cmd("ls -l /bootflash/ | grep boots")
+            if "bootscript" not in c.output:
+                data.append([pod_id, node_id, node_name, model, "No"])
+        except Exception as e:
+            ssh_error = "SSH ERROR: {}".format(e)
+            data.append([pod_id, node_id, node_name, model, ssh_error])
+            has_error = True
+            continue
+
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title='BGP Timer Policy Already Existing (F0467 bgpProt-policy-already-existing)')
 def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
     result = FAIL_O
@@ -6094,6 +6333,8 @@ def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
 
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-u", "--username", action="store", type=str, help="Username used for SSH. If not provied it will prompt for")
+    parser.add_argument("-p", "--password", action="store", type=str, help="Password used for SSH. If not provied it will prompt for")
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
     parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
     parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
@@ -6102,6 +6343,7 @@ def parse_args(args):
     parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
     parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
     parser.add_argument("--timeout", action="store", nargs="?", type=int, const=-1, default=DEFAULT_TIMEOUT, help="Show default script timeout (sec) or overwrite it when a number is provided (e.g. --timeout 1200).")
+    parser.add_argument("--max-threads", action="store", type=int, default=None, help="Maximum number of check threads to run concurrently. Defaults to unlimited.")
     parsed_args = parser.parse_args(args)
     return parsed_args
 
@@ -6198,6 +6440,7 @@ class CheckManager:
         fabric_port_down_check,
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
+        apic_storage_inode_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -6252,6 +6495,8 @@ class CheckManager:
         isis_database_byte_check,
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
+        rogue_ep_coop_exception_mac_check,
+        n9k_c9408_model_lem_count_check, 
         bgpProto_timer_policy_already_existing_check,
 
     ]
@@ -6265,6 +6510,7 @@ class CheckManager:
 
         # Bugs
         observer_db_size_check,
+        multipod_modular_spine_bootscript_check,
     ]
     cli_checks = [
         # General
@@ -6274,11 +6520,12 @@ class CheckManager:
         apic_ca_cert_validation,
     ]
 
-    def __init__(self, api_only=False, debug_function="", timeout=600, monitor_interval=0.5):
+    def __init__(self, api_only=False, debug_function="", timeout=600, monitor_interval=0.5, max_threads=None):
         self.api_only = api_only
         self.debug_function = debug_function
         self.monitor_interval = monitor_interval  # sec
         self.monitor_timeout = timeout  # sec
+        self.max_threads = max_threads
         self.timeout_event = None
 
         self.check_funcs = self.get_check_funcs()
@@ -6349,6 +6596,7 @@ class CheckManager:
             common_kwargs=dict({"finalize_check": self.finalize_check}, **common_data),
             monitor_interval=self.monitor_interval,
             monitor_timeout=self.monitor_timeout,
+            max_threads=self.max_threads,
             callback_on_monitoring=print_progress,
             callback_on_start_failure=self.finalize_check_on_thread_failure,
             callback_on_timeout=self.finalize_check_on_thread_timeout,
@@ -6368,7 +6616,7 @@ def main(_args=None):
         print("Timeout(sec): {}".format(DEFAULT_TIMEOUT))
         return
 
-    cm = CheckManager(args.api_only, args.debug_function, args.timeout)
+    cm = CheckManager(args.api_only, args.debug_function, args.timeout, max_threads=args.max_threads)
 
     if args.total_checks:
         print("Total Number of Checks: {}".format(cm.total_checks))
@@ -6382,7 +6630,7 @@ def main(_args=None):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
-    common_data = query_common_data(args.api_only, args.cversion, args.tversion)
+    common_data = query_common_data(args.api_only, args.cversion, args.tversion, args.username, args.password)
     write_script_metadata(args.api_only, args.timeout, cm.total_checks, common_data)
 
     cm.run_checks(common_data)
