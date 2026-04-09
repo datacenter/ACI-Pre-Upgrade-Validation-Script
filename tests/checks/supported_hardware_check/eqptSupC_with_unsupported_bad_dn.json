@@ -1,0 +1,10 @@
+[
+  {
+    "eqptSupC": {
+      "attributes": {
+        "dn": "not-a-topology-dn",
+        "model": "N9K-SUP-B"
+      }
+    }
+  }
+]
