@@ -41,7 +41,7 @@ def mock_generate_thread(monkeypatch, request):
     def thread_start_with_exception(timeout=5.0):
         raise exception
 
-    def _mock_generate_thread(self, target, args=(), kwargs=None):
+    def _mock_generate_thread(self, target, args=(), kwargs=None, use_semaphore=False):
         if kwargs is None:
             kwargs = {}
         thread = script.CustomThread(target=target, name=target.__name__, args=args, kwargs=kwargs)
@@ -85,7 +85,10 @@ class TestCheckManager:
         assert cm.get_check_result("fake_10_check") is None
 
         # Check number of initialized checks in result files
-        result_files = os.listdir(script.JSON_DIR)
+        result_files = [
+            f for f in os.listdir(script.JSON_DIR)
+            if f.replace(".json", "") in cm.check_ids
+        ]
         assert len(result_files) == cm.total_checks
 
         # Check the filename of result files and their `ruleStatus`
