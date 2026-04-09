@@ -6429,7 +6429,7 @@ class CheckManager:
         port_configured_as_l3_check,
         prefix_already_in_use_check,
         encap_already_in_use_check,
-        access_untagged_check,        
+        access_untagged_check,
         bd_subnet_overlap_check,
         bd_duplicate_subnet_check,
         vmm_controller_status_check,
@@ -6498,7 +6498,6 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check, 
         bgpProto_timer_policy_already_existing_check,
-
     ]
     ssh_checks = [
         # General

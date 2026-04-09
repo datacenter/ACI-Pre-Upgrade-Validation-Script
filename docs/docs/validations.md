@@ -2758,7 +2758,7 @@ To avoid this issue, change the target version to another version. Or verify tha
 
 ### BgpProto Timer Policy Already Existing
 
-This bug [CSCwt78235][64] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'.
+This bug [CSCwt78235][67] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'.
 The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node.
 
 Resolve these faults before upgrade by reviewing the affected L3Out BGP proto timer policy.
