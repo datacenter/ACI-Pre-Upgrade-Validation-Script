@@ -1,0 +1,42 @@
+[
+        {
+            "ipv4Addr": {
+                "attributes": {
+                    "addr": "192.168.1.1/24",
+                    "dn": "topology/pod-1/node-1105/sys/ipv4/inst/dom-t0:ctx1/if-[vlan302]/addr-[192.168.1.1/24]"
+                }
+            }
+        },
+        {
+            "ipv4Addr": {
+                "attributes": {
+                    "addr": "192.168.1.2/24",
+                    "dn": "topology/pod-1/node-1105/sys/ipv4/inst/dom-t0:ctx2/if-[vlan50]/addr-[192.168.1.2/24]"
+                }
+            }
+        },
+        {
+            "ipv4Addr": {
+                "attributes": {
+                    "addr": "192.168.1.3/24",
+                    "dn": "topology/pod-1/node-1105/sys/ipv4/inst/dom-t0:ctx3/if-[vlan371]/addr-[192.168.1.3/24]"
+                }
+            }
+        },
+        {
+            "ipv4Addr": {
+                "attributes": {
+                    "addr": "192.168.1.6/24",
+                    "dn": "topology/pod-2/node-1109/sys/ipv4/inst/dom-t0:ctx1/if-[vlan50]/addr-[192.168.1.2/24]"
+                }
+            }
+        },
+        {
+            "ipv4Addr": {
+                "attributes": {
+                    "addr": "192.168.1.7/24",
+                    "dn": "topology/pod-2/node-1109/sys/ipv4/inst/dom-t0:ctx1/if-[vlan372]/addr-[192.168.1.4/24]"
+                }
+            }
+        }
+]

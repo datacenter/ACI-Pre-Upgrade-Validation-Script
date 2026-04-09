@@ -1,0 +1,42 @@
+[
+        {
+            "ipv6Addr": {
+                "attributes": {
+                    "addr": "2001:56:29::1/64",
+                    "dn": "topology/pod-1/node-1105/sys/ipv6/inst/dom-t0:ctx1/if-[vlan302]/addr-[2001:56:29::1/64]"
+                }
+            }
+        },
+        {
+            "ipv6Addr": {
+                "attributes": {
+                    "addr": "2001:56:28::1/64",
+                    "dn": "topology/pod-1/node-1105/sys/ipv6/inst/dom-t0:ctx2/if-[vlan50]/addr-[2001:56:28::1/64]"
+                }
+            }
+        },
+        {
+            "ipv6Addr": {
+                "attributes": {
+                    "addr": "2002:1:1:b::1/64",
+                    "dn": "topology/pod-1/node-1105/sys/ipv6/inst/dom-t0:ctx3/if-[vlan371]/addr-[2002:1:1:b::1/64]"
+                }
+            }
+        },
+        {
+            "ipv6Addr": {
+                "attributes": {
+                    "addr": "2001:56:28::1/64",
+                    "dn": "topology/pod-2/node-1109/sys/ipv6/inst/dom-t0:ctx1/if-[vlan50]/addr-[2001:56:28::1/64]"
+                }
+            }
+        },
+        {
+            "ipv6Addr": {
+                "attributes": {
+                    "addr": "2002:1:1:b::1/64",
+                    "dn": "topology/pod-2/node-1109/sys/ipv6/inst/dom-t0:ctx2/if-[vlan371]/addr-[2002:1:1:b::1/64]"
+                }
+            }
+        }
+]
