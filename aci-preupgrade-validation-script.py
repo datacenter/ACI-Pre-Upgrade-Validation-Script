@@ -6464,6 +6464,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
+        n9300_switch_memory_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -6542,7 +6543,6 @@ class CheckManager:
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
-        n9300_switch_memory_check,
     ]
     ssh_checks = [
         # General
