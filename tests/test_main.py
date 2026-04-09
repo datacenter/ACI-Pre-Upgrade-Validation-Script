@@ -13,7 +13,7 @@ CheckManager = script.CheckManager
 # ----------------------------
 @pytest.fixture
 def mock_query_common_data(monkeypatch, expected_common_data):
-    def _mock_query_common_data(api_only, args_cversion, args_tversion):
+    def _mock_query_common_data(api_only, args_cversion, args_tversion, username, password):
         return expected_common_data
 
     monkeypatch.setattr(script, "query_common_data", _mock_query_common_data)

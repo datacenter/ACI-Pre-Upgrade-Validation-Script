@@ -18,10 +18,13 @@ def test_no_args():
     assert args.api_only is False
     assert args.tversion is None
     assert args.cversion is None
+    assert args.username is None
+    assert args.password is None
     assert args.debug_function is None
     assert args.no_cleanup is False
     assert args.version is False
     assert args.total_checks is False
+    assert args.max_threads is None
 
 
 @pytest.mark.parametrize(
@@ -79,6 +82,32 @@ def test_cversion(args, expected_result):
     "args, expected_result",
     [
         ([], None),
+        (["-u", "myusername"], "myusername"),
+        (["--username", "myusername"], "myusername"),
+    ],
+)
+def test_username(args, expected_result):
+    args = script.parse_args(args)
+    assert args.username == expected_result
+
+
+@pytest.mark.parametrize(
+    "args, expected_result",
+    [
+        ([], None),
+        (["-p", "mypassword"], "mypassword"),
+        (["--password", "mypassword"], "mypassword"),
+    ],
+)
+def test_password(args, expected_result):
+    args = script.parse_args(args)
+    assert args.password == expected_result
+
+
+@pytest.mark.parametrize(
+    "args, expected_result",
+    [
+        ([], None),
         (["-d", "pbr_high_scale_check"], "pbr_high_scale_check"),
         (["-d", "made_up_func"], "made_up_func"),
         (["--debug-func", "pbr_high_scale_check"], "pbr_high_scale_check"),
@@ -127,3 +156,15 @@ def test_version(args, expected_result):
 def test_total_checks(args, expected_result):
     args = script.parse_args(args)
     assert args.total_checks == expected_result
+
+
+@pytest.mark.parametrize(
+    "args, expected_result",
+    [
+        ([], None),
+        (["--max-threads", "4"], 4),
+    ],
+)
+def test_max_threads(args, expected_result):
+    args = script.parse_args(args)
+    assert args.max_threads == expected_result
