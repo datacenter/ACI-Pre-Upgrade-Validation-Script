@@ -6293,7 +6293,42 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-# ---- Script Execution ----
+@check_wrapper(check_title='BGP Timer Policy Already Existing (F0467 bgpProt-policy-already-existing)')
+def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
+    result = FAIL_O
+    headers = ['Fault', 'Tenant', 'L3Out', 'changeSet']
+    data = []
+    unformatted_headers = ['Fault', 'Affected', 'changeSet']
+    unformatted_data = []
+    recommended_action = 'Remove the fault by keeping Single bgp timer policy per vrf for different l3out.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgpProto-timer-policy-already-existing'
+
+    if tversion.newer_than("6.2(1g)") or (
+        tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    
+    affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
+    filter = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.code,"F0467"),wcard(faultDelegate.changeSet,"bgpProt-policy-already-existing"))'
+    fault_delegates = icurl('class', filter)
+
+    for fault_delegate in fault_delegates:
+        attributes = fault_delegate['faultDelegate']['attributes']
+        fault_code = attributes.get('code', '')
+        affected = attributes.get('affected', '')
+        change_set = attributes.get('changeSet', '')
+        affected_array = re.search(affected_regex, affected)
+        if affected_array:
+            data.append([fault_code, affected_array.group('tenant'), affected_array.group('l3out'), change_set])
+        else:
+            unformatted_data.append([fault_code, affected, change_set])
+
+    if not data and not unformatted_data:
+        result = PASS
+
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+# ---- Script Execution ----.
 
 
 def parse_args(args):
@@ -6461,7 +6496,8 @@ class CheckManager:
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
-        n9k_c9408_model_lem_count_check,
+        n9k_c9408_model_lem_count_check, 
+        bgpProto_timer_policy_already_existing_check,
     ]
     ssh_checks = [
         # General
