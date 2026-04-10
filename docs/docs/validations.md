@@ -2758,34 +2758,7 @@ To avoid this issue, change the target version to another version. Or verify tha
 
 ### BgpProto Timer Policy Already Existing
 
-This bug [CSCwt78235][67] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'.
-The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node.
-
-Resolve these faults before upgrade by reviewing the affected L3Out BGP proto timer policy.
-
-Example:
-
-    # fault.Delegate
-    affected         : resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues
-    code             : F0467
-    ack              : no
-    cause            : configuration-failed
-    changeSet        : configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no
-    childAction      :
-    created          : 2026-03-25T11:31:16.724+00:00
-    descr            : Fault delegate: Configuration failed for uni/tn-common/out-L3outY due to A specific leaf node can hold only a single bgpProtP config; this fault is raised when inconsistent configuration is detected, debug message:
-    dn               : uni/tn-common/out-L3outY/fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
-    domain           : tenant
-    highestSeverity  : critical
-    lc               : raised
-    occur            : 1
-    origSeverity     : critical
-    prevSeverity     : critical
-    rn               : fd-[resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues]-fault-F0467
-    rule             : fv-nw-issues-config-failed
-    severity         : critical
-    subject          : management
-    type             : config
+This bug [CSCwt78235][67] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the upgrade.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
