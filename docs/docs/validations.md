@@ -2389,7 +2389,7 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 
 ### Link Level Flow Control
 
-Due to the defect CSCvo27498, after upgrade of first ACI leaf switch in a VPC pair to newer 15.2.7f version from older 14.x version, downstream VPC might be down due to `vpc port channel mis-config due to vpc links in the 2 switches connected to different partners` even though they are connected to same device. 
+Due to the defect CSCvo27498[67], after upgrade of first ACI leaf switch in a VPC pair to newer 15.2.7f version from older 14.x version, downstream VPC might be down due to `vpc port channel mis-config due to vpc links in the 2 switches connected to different partners` even though they are connected to same device. 
 
 By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control. if far end device transmit(send) flow control  in auto or desirable mode, it will enable transmit flow control.
 
@@ -2820,3 +2820,4 @@ To avoid this issue, change the target version to another version. Or verify tha
 [64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
 [65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
 [66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
+[67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
