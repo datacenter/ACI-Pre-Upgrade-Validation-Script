@@ -3915,10 +3915,7 @@ def llfc_susceptibility_check(cversion, tversion, vpc_node_ids, **kwargs):
     data = []
     sx_affected = t_affected = False
     recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498'
-
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#link-level-flow-control'
 
     if not vpc_node_ids:
         return Result(result=PASS, msg="No VPC Nodes found. Not susceptible.")
@@ -3928,7 +3925,8 @@ def llfc_susceptibility_check(cversion, tversion, vpc_node_ids, **kwargs):
         sx_affected = True
 
     # Check for Copper 1000base-T, CSCvj67507 fixed by CSCwd37387
-    if cversion.older_than("4.1(1i)") and tversion.newer_than("4.1(1h)") and tversion.older_than("5.2(7f)"):
+    if ((cversion.older_than("4.1(1i)") or cversion.same_as("4.1(1i)")) and tversion.older_than("5.2(7f)") and tversion.newer_than("4.0(1h")) or (cversion.older_than("5.2(7f)") and tversion.newer_than("5.2(7f)")
+        or (tversion.older_than("5.2(7f)") and cversion.same_as(tversion))):
         t_affected = True
 
     if sx_affected or t_affected:

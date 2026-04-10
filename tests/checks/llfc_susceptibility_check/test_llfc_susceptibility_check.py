@@ -20,6 +20,27 @@ ethpmFcots = 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq
     [
         (
             {ethpmFcots: read_data(dir, "ethpmFcot.json")},
+            "5.2(5c)",
+            "6.1(5e)",
+            ["101", "103", "204", "206"],
+            script.MANUAL,
+        ),
+        (
+            {ethpmFcots: read_data(dir, "ethpmFcot.json")},
+            "4.1(1i)",
+            "5.2(2a)",
+            ["101", "103", "204", "206"],
+            script.MANUAL,
+        ),
+         (
+            {ethpmFcots: read_data(dir, "ethpmFcot.json")},
+            "5.2(7f)",
+            "6.1(5c)",
+            ["101", "103", "204", "206"],
+            script.PASS,
+        ),
+        (
+            {ethpmFcots: read_data(dir, "ethpmFcot.json")},
             "4.2(1b)",
             "5.2(2a)",
             ["101", "103", "204", "206"],
@@ -52,13 +73,6 @@ ethpmFcots = 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq
             "2.2(4r)",
             ["101", "103", "204", "206"],
             script.PASS,
-        ),
-        (
-            {ethpmFcots: read_data(dir, "ethpmFcot.json")},
-            "5.2(1a)",
-            None,
-            ["101", "103", "204", "206"],
-            script.MANUAL,
         ),
         (
             {ethpmFcots: read_data(dir, "ethpmFcot.json")},
