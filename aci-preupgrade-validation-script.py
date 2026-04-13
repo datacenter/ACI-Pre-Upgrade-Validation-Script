@@ -6298,32 +6298,18 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node ID", "Node Name", "Source", "Model"]
     data = []
-    recommended_action = (
-        'Detected affected node(s) with WRED enabled. '
-        'Review software fix options and engage TAC.'
-    )
-    doc_url = 'https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713'
+    recommended_action = 'Disable WRED on the affected nodes or move to a fixed release (6.1(6a) or later, 6.2(2a) or later).'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-leaflcfm-models'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     version_affected = (
-        (tversion.major1 == '6' and tversion.major2 == '1' and tversion.older_than('6.1(6a)'))
-        or (tversion.major1 == '6' and tversion.major2 == '2' and tversion.older_than('6.2(2a)'))
+        (tversion.major1 == '6' and tversion.major2 == '1' and (tversion.older_than('6.1(5e)') or tversion.same_as('6.1(5e)')))
+        or (tversion.major1 == '6' and tversion.major2 == '2' and (tversion.older_than('6.2(1g)') or tversion.same_as('6.2(1g)')))
     )
     if not version_affected:
-        return Result(result=PASS, msg=VER_NOT_AFFECTED)
-
-    qosCong = icurl('class', 'qosCong.json')
-    wred_enabled = False
-    for cong in qosCong:
-        algo = cong.get('qosCong', {}).get('attributes', {}).get('algo', '')
-        if algo.lower() == 'wred':
-            wred_enabled = True
-            break
-
-    if not wred_enabled:
-        return Result(result=PASS, msg='WRED not enabled. Skipping.')
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     affected_models = {
         'N9K-C9236C',
@@ -6336,53 +6322,54 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     }
 
     def is_affected_model(model):
-        m = (model or '').upper()
-        return m in affected_models or 'LACROSSE' in m
+        return model in affected_models or 'LACROSSE' in (model or '')
 
     node_name_map = {}
     for node in fabric_nodes:
-        attr = node.get('fabricNode', {}).get('attributes', {})
-        if attr.get('id'):
-            node_name_map[attr.get('id')] = attr.get('name', '')
+        node_id = node['fabricNode']['attributes']['id']
+        node_name_map[node_id] = node['fabricNode']['attributes']['name']
 
     impacted = set()
 
+    def add_if_affected(obj_class, obj_list, source_label):
+        for obj in obj_list:
+            model = obj[obj_class]['attributes']['model']
+            if not is_affected_model(model):
+                continue
+            dn = obj[obj_class]['attributes']['dn']
+            dn_match = re.search(node_regex, dn)
+            if not dn_match:
+                continue
+            node_id = dn_match.group('node')
+            impacted.add((node_id, node_name_map.get(node_id, ''), source_label, model))
+
     # Leaf model gate
     for node in fabric_nodes:
-        attr = node.get('fabricNode', {}).get('attributes', {})
-        if attr.get('role') != 'leaf':
+        if node['fabricNode']['attributes']['role'] != 'leaf':
             continue
-        model = attr.get('model', '')
+        model = node['fabricNode']['attributes']['model']
         if is_affected_model(model):
-            impacted.add((attr.get('id', ''), attr.get('name', ''), 'Leaf', model))
+            impacted.add((node['fabricNode']['attributes']['id'], node['fabricNode']['attributes']['name'], 'Leaf', model))
 
     # LC model gate
-    eqptLC = icurl('class', 'eqptLC.json')
-    for card in eqptLC:
-        attr = card.get('eqptLC', {}).get('attributes', {})
-        model = attr.get('model', '')
-        if not is_affected_model(model):
-            continue
-        dn = attr.get('dn', '')
-        m = re.search(node_regex, dn)
-        if not m:
-            continue
-        node_id = m.group('node')
-        impacted.add((node_id, node_name_map.get(node_id, ''), 'LC', model))
+    add_if_affected('eqptLC', icurl('class', 'eqptLC.json'), 'LC')
 
     # FM model gate
-    eqptFC = icurl('class', 'eqptFC.json')
-    for card in eqptFC:
-        attr = card.get('eqptFC', {}).get('attributes', {})
-        model = attr.get('model', '')
-        if not is_affected_model(model):
-            continue
-        dn = attr.get('dn', '')
-        m = re.search(node_regex, dn)
-        if not m:
-            continue
-        node_id = m.group('node')
-        impacted.add((node_id, node_name_map.get(node_id, ''), 'FM', model))
+    add_if_affected('eqptFC', icurl('class', 'eqptFC.json'), 'FM')
+
+    if not impacted:
+        return Result(result=PASS, msg='No affected hardware models found. Skipping.')
+
+    qosCong = icurl('class', 'qosCong.json')
+    wred_enabled = False
+    for cong in qosCong:
+        algo = cong.get('qosCong', {}).get('attributes', {}).get('algo', '')
+        if algo == 'wred':
+            wred_enabled = True
+            break
+
+    if not wred_enabled:
+        return Result(result=PASS, msg='WRED not enabled. Skipping.')
 
     if impacted:
         def sort_key(row):

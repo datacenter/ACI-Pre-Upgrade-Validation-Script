@@ -1,0 +1,13 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001",
+        "id": "1001",
+        "name": "spine1001",
+        "role": "spine",
+        "model": "N9K-C9504"
+      }
+    }
+  }
+]

@@ -198,6 +198,7 @@ Items                                           | Defect       | This Script    
 [Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
+[WRED with Affected Leaf/LC/FM Models][d33]     | CSCwt50713   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -231,6 +232,7 @@ Items                                           | Defect       | This Script    
 [d30]: #rogue-ep-exception-list-missing-on-switches
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
+[d33]: #wred-with-affected-leaflcfm-models
 
 ## General Check Details
 
@@ -2753,6 +2755,17 @@ This issue happens only when the target version is specifically 6.1(4h).
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
+### WRED with Affected Leaf/LC/FM Models
+
+Due to [CSCwt50713][67], when WRED (Weighted Random Early Detection) is enabled and specific Leaf, Line Card (LC), or Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range.
+
+Affected versions: ACI 6.1(x) older than 6.1(6a), and ACI 6.2(x) older than 6.2(2a).
+
+Affected hardware models: N9K-C9236C, N9K-C92300YC, N9K-C9272Q, N9K-C92304QC (Leaf/LC), N9K-C9504-FM-E, N9K-C9508-FM-E, N9K-C9516-FM-E (FM).
+
+To avoid this issue, disable WRED on the affected nodes or move to a fixed release (6.1(6a) or later, 6.2(2a) or later).
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2820,3 +2833,4 @@ To avoid this issue, change the target version to another version. Or verify tha
 [64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
 [65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
 [66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
+[67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
