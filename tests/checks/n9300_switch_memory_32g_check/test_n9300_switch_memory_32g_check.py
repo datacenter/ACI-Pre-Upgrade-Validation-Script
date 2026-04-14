@@ -102,7 +102,7 @@ proc_mem_query = 'procMemUsage.json'
             "6.0(3c)",
             script.FAIL_O,
             '',
-            [["101", "leaf101", "N9K-C93180YC-FX3", 25.31]],
+            [["101", "leaf101", "N9K-C93180YC-FX3", 16.0]],
         ),
     ],
 )

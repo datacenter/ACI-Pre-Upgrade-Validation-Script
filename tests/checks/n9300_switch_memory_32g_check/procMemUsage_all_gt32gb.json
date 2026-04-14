@@ -4,7 +4,7 @@
             "attributes": {
                 "dn": "topology/pod-1/node-101/sys/procmem/memusage-sup",
                 "Modname": "sup",
-                "Total": "33554432"
+                "Total": "32676092"
             }
         }
     },
@@ -13,7 +13,7 @@
             "attributes": {
                 "dn": "topology/pod-1/node-102/sys/procmem/memusage-sup",
                 "Modname": "sup",
-                "Total": "33554432"
+                "Total": "32676092"
             }
         }
     }
