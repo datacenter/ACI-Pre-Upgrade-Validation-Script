@@ -6300,7 +6300,7 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
     data = []
     recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3 switches.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
-    min_memory_kb = 32 * 1024 * 1024
+    min_memory_kb = 32 * 1000 * 1000
     msg = ''
 
     affected_nodes = [
@@ -6355,7 +6355,7 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
                     continue
 
                 if total_kb < min_memory_kb:
-                    memory_in_gb = round(total_kb / 1048576, 2)
+                    memory_in_gb = round(total_kb / 1000000, 2)
                     result = FAIL_O
                     data.append([
                         node_id,
