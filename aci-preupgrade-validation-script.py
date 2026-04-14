@@ -6294,23 +6294,23 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
 
 
 @check_wrapper(check_title='N9300 Switch Memory')
-def n9300_switch_memory_check(tversion, fabric_nodes, **kwargs):
+def n9300_switch_memory_check(fabric_nodes, **kwargs):
     result = PASS
     headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
     data = []
-    recommended_action = 'Increase the switch memory to at least 24GB on affected N9300-series switches.'
+    recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3 switches.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
-    min_memory_kb = 24 * 1024 * 1024
+    min_memory_kb = 32 * 1024 * 1024
     msg = ''
 
     affected_nodes = [
         node for node in fabric_nodes
-        if node.get('fabricNode', {}).get('attributes', {}).get('model', '').startswith('N9K-C93')
+        if node.get('fabricNode', {}).get('attributes', {}).get('model', '') == 'N9K-C93180YC-FX3'
     ]
 
     if not affected_nodes:
         result = NA
-        msg = 'No N9300 switches found. Skipping.'
+        msg = 'No N9K-C93180YC-FX3 switches found. Skipping.'
     else:
         proc_mem_mos = icurl('class', 'procMemUsage.json')
         node_total_kb = {}
@@ -6366,7 +6366,7 @@ def n9300_switch_memory_check(tversion, fabric_nodes, **kwargs):
 
             if missing_nodes:
                 result = ERROR
-                msg = 'Missing procMemUsage data for one or more affected N9300 nodes.'
+                msg = 'Missing procMemUsage data for one or more affected N9K-C93180YC-FX3 nodes.'
                 headers = ['NodeId', 'Name', 'Model']
                 data = missing_nodes
 

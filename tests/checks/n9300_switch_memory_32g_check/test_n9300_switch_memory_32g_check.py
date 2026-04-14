@@ -53,7 +53,7 @@ proc_mem_query = 'procMemUsage.json'
         (
             read_data(dir, "fabricNode_two.json"),
             {
-                proc_mem_query: read_data(dir, "procMemUsage_all_gt24gb.json"),
+                proc_mem_query: read_data(dir, "procMemUsage_all_gt32gb.json"),
             },
             "6.0(3c)",
             script.PASS,

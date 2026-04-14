@@ -2729,11 +2729,11 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 ### N9300 Switch Memory
 
-This check applies to N9300-series switches only. It reviews `procMemUsage` and flags nodes with less than 24GB memory installed.
+This check applies to N9K-C93180YC-FX3 switches only. It reviews `procMemUsage` and flags nodes with less than 32GB memory installed. This check is not version dependent and runs for all upgrade versions.
 
-Impact: Running an N9300-series switch with less than 24GB memory can lead to memory pressure and increase the risk of service instability.
+Impact: Running an N9K-C93180YC-FX3 switch with less than 32GB memory can lead to memory pressure and increase the risk of service instability.
 
-If any N9300-series switch is flagged by this check, increase the switch memory to at least 24GB.
+If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memory to at least 32GB.
 
 
 ### Rogue EP Exception List missing on switches
