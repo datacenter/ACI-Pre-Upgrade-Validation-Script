@@ -6293,6 +6293,77 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='WRED with Affected FM Models')
+def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Node Name", "Source", "Model"]
+    data = []
+    recommended_action = 'Disable WRED on the affected nodes or move to a release newer than 6.1(5e) in the 6.1(x) train or newer than 6.2(1g) in the 6.2(x) train.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-fm-models'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    version_affected = (
+        (tversion.major1 == '6' and tversion.major2 == '1' and (tversion.older_than('6.1(5e)') or tversion.same_as('6.1(5e)')))
+        or (tversion.major1 == '6' and tversion.major2 == '2' and (tversion.older_than('6.2(1g)') or tversion.same_as('6.2(1g)')))
+    )
+    if not version_affected:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    affected_models = {
+        'N9K-C9504-FM-E',
+        'N9K-C9508-FM-E',
+        'N9K-C9516-FM-E',
+    }
+
+    node_name_map = {}
+    for node in fabric_nodes:
+        node_id = node['fabricNode']['attributes']['id']
+        node_name_map[node_id] = node['fabricNode']['attributes']['name']
+
+    impacted = set()
+
+    # FM model gate
+    for obj in icurl('class', 'eqptFC.json'):
+        model = obj['eqptFC']['attributes']['model']
+        if model not in affected_models:
+            continue
+        dn = obj['eqptFC']['attributes']['dn']
+        dn_match = re.search(node_regex, dn)
+        if not dn_match:
+            continue
+        node_id = dn_match.group('node')
+        impacted.add((node_id, node_name_map.get(node_id, ''), 'FM', model))
+
+    if not impacted:
+        return Result(result=PASS, msg='No affected hardware models found. Skipping.')
+
+    qosCong = icurl('class', 'qosCong.json')
+    wred_enabled = False
+    for cong in qosCong:
+        algo = cong.get('qosCong', {}).get('attributes', {}).get('algo', '')
+        if algo == 'wred':
+            wred_enabled = True
+            break
+
+    if not wred_enabled:
+        return Result(result=PASS, msg='WRED not enabled. Skipping.')
+
+    def sort_key(row):
+        node_id = row[0]
+        try:
+            node_key = int(node_id)
+        except (TypeError, ValueError):
+            node_key = node_id
+        return (node_key, row[2], row[3])
+
+    data = [list(row) for row in sorted(impacted, key=sort_key)]
+    result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6474,6 +6545,7 @@ class CheckManager:
         # Bugs
         observer_db_size_check,
         multipod_modular_spine_bootscript_check,
+        wred_affected_model_check,
     ]
     cli_checks = [
         # General
