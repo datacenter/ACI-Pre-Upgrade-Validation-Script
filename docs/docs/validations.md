@@ -2799,15 +2799,16 @@ Administrators may be unable to access or operate the APIC GUI, potentially impa
 
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
 
-### WRED with Affected Leaf/LC/FM Models
 
-Due to [CSCwt50713][72], when WRED (Weighted Random Early Detection) is enabled and specific Leaf, Line Card (LC), or Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range.
+### WRED with Affected FM Models
 
-Affected versions: ACI 6.1(x) older than 6.1(6a), and ACI 6.2(x) older than 6.2(2a).
+Due to [CSCwt50713][72], when WRED (Weighted Random Early Detection) is enabled and specific Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range.
 
-Affected hardware models: N9K-C9236C, N9K-C92300YC, N9K-C9272Q, N9K-C92304QC (Leaf/LC), N9K-C9504-FM-E, N9K-C9508-FM-E, N9K-C9516-FM-E (FM).
+Affected versions: ACI 6.1(x) up to and including 6.1(5e), and ACI 6.2(x) up to and including 6.2(1g).
 
-To avoid this issue, disable WRED on the affected nodes or move to a fixed release (6.1(6a) or later, 6.2(2a) or later).
+Affected hardware models: N9K-C9504-FM-E, N9K-C9508-FM-E, N9K-C9516-FM-E.
+
+To avoid this issue, disable WRED on the affected nodes or move to a release newer than 6.1(5e) in the 6.1(x) train or newer than 6.2(1g) in the 6.2(x) train.
 
 
 ### BgpProto Timer Policy Already Existing
