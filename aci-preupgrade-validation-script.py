@@ -6340,6 +6340,7 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
             msg = 'Failed to parse procMemUsage Total for one or more nodes.'
             headers = ['DN', 'Total']
             data = parse_errors
+            recommended_action = ''
         else:
             missing_nodes = []
 
@@ -6382,6 +6383,7 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
                 msg = 'Missing procMemUsage data for one or more affected N9K-C93180YC-FX3 nodes.'
                 headers = ['NodeId', 'Name', 'Model']
                 data = missing_nodes
+                recommended_action = ''
 
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
