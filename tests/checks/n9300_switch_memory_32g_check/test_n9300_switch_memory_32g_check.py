@@ -104,6 +104,22 @@ proc_mem_query = 'procMemUsage.json'
             '',
             [["101", "leaf101", "N9K-C93180YC-FX3", 16.0]],
         ),
+        # One FX3 node fails memory check, another FX3 node has missing procMemUsage data
+        (
+            read_data(dir, "fabricNode_two_fx3.json"),
+            {
+                proc_mem_query: read_data(dir, "procMemUsage_fail_and_missing.json"),
+            },
+            "6.0(3c)",
+            script.MANUAL,
+            (
+                'Some N9K-C93180YC-FX3 nodes have insufficient memory and others are missing '
+                'procMemUsage data. Please manually verify the memory on all affected nodes.\n'
+                'Nodes with insufficient memory: 101\n'
+                'Nodes with missing data: 102'
+            ),
+            [["101", "leaf101", "N9K-C93180YC-FX3", 16.0], ["102", "leaf102", "N9K-C93180YC-FX3", "N/A"]],
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, fabric_nodes, tversion, expected_result, expected_msg, expected_data):

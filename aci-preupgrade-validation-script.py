@@ -6364,7 +6364,20 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
                         memory_in_gb,
                     ])
 
-            if missing_nodes:
+            if missing_nodes and data:
+                result = MANUAL
+                msg = (
+                    'Some N9K-C93180YC-FX3 nodes have insufficient memory and others are missing '
+                    'procMemUsage data. Please manually verify the memory on all affected nodes.\n'
+                    'Nodes with insufficient memory: {}\n'
+                    'Nodes with missing data: {}'.format(
+                        ', '.join(str(row[0]) for row in data),
+                        ', '.join(str(row[0]) for row in missing_nodes),
+                    )
+                )
+                headers = ['NodeId', 'Name', 'Model', 'Memory Detected (GB)']
+                data = data + [row + ['N/A'] for row in missing_nodes]
+            elif missing_nodes:
                 result = ERROR
                 msg = 'Missing procMemUsage data for one or more affected N9K-C93180YC-FX3 nodes.'
                 headers = ['NodeId', 'Name', 'Model']
