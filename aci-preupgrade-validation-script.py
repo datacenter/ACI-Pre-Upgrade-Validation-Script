@@ -6293,13 +6293,13 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='WRED with Affected Leaf/LC/FM Models')
+@check_wrapper(check_title='WRED with Affected FM Models')
 def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     result = PASS
     headers = ["Node ID", "Node Name", "Source", "Model"]
     data = []
-    recommended_action = 'Disable WRED on the affected nodes or move to a fixed release (6.1(6a) or later, 6.2(2a) or later).'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-leaflcfm-models'
+    recommended_action = 'Disable WRED on the affected nodes or move to a release newer than 6.1(5e) in the 6.1(x) train or newer than 6.2(1g) in the 6.2(x) train.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-fm-models'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
@@ -6312,17 +6312,10 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     affected_models = {
-        'N9K-C9236C',
-        'N9K-C92300YC',
-        'N9K-C9272Q',
-        'N9K-C92304QC',
         'N9K-C9504-FM-E',
         'N9K-C9508-FM-E',
         'N9K-C9516-FM-E',
     }
-
-    def is_affected_model(model):
-        return model in affected_models or 'LACROSSE' in (model or '')
 
     node_name_map = {}
     for node in fabric_nodes:
@@ -6331,31 +6324,17 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
 
     impacted = set()
 
-    def add_if_affected(obj_class, obj_list, source_label):
-        for obj in obj_list:
-            model = obj[obj_class]['attributes']['model']
-            if not is_affected_model(model):
-                continue
-            dn = obj[obj_class]['attributes']['dn']
-            dn_match = re.search(node_regex, dn)
-            if not dn_match:
-                continue
-            node_id = dn_match.group('node')
-            impacted.add((node_id, node_name_map.get(node_id, ''), source_label, model))
-
-    # Leaf model gate
-    for node in fabric_nodes:
-        if node['fabricNode']['attributes']['role'] != 'leaf':
-            continue
-        model = node['fabricNode']['attributes']['model']
-        if is_affected_model(model):
-            impacted.add((node['fabricNode']['attributes']['id'], node['fabricNode']['attributes']['name'], 'Leaf', model))
-
-    # LC model gate
-    add_if_affected('eqptLC', icurl('class', 'eqptLC.json'), 'LC')
-
     # FM model gate
-    add_if_affected('eqptFC', icurl('class', 'eqptFC.json'), 'FM')
+    for obj in icurl('class', 'eqptFC.json'):
+        model = obj['eqptFC']['attributes']['model']
+        if model not in affected_models:
+            continue
+        dn = obj['eqptFC']['attributes']['dn']
+        dn_match = re.search(node_regex, dn)
+        if not dn_match:
+            continue
+        node_id = dn_match.group('node')
+        impacted.add((node_id, node_name_map.get(node_id, ''), 'FM', model))
 
     if not impacted:
         return Result(result=PASS, msg='No affected hardware models found. Skipping.')
@@ -6371,17 +6350,16 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     if not wred_enabled:
         return Result(result=PASS, msg='WRED not enabled. Skipping.')
 
-    if impacted:
-        def sort_key(row):
-            node_id = row[0]
-            try:
-                node_key = int(node_id)
-            except (TypeError, ValueError):
-                node_key = node_id
-            return (node_key, row[2], row[3])
+    def sort_key(row):
+        node_id = row[0]
+        try:
+            node_key = int(node_id)
+        except (TypeError, ValueError):
+            node_key = node_id
+        return (node_key, row[2], row[3])
 
-        data = [list(row) for row in sorted(impacted, key=sort_key)]
-        result = FAIL_O
+    data = [list(row) for row in sorted(impacted, key=sort_key)]
+    result = FAIL_O
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
