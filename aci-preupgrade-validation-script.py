@@ -6357,7 +6357,7 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
 
                 if total_kb < min_memory_kb:
                     memory_in_gb = round(total_kb / 1000000, 2)
-                    result = FAIL_O
+                    result = MANUAL
                     data.append([
                         node_id,
                         node['fabricNode']['attributes'].get('name', ''),
@@ -6384,6 +6384,11 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
                 headers = ['NodeId', 'Name', 'Model']
                 data = missing_nodes
                 recommended_action = ''
+            elif data:
+                msg = (
+                    'One or more N9K-C93180YC-FX3 switches have less than 32GB of memory. '
+                    'An outage is not guaranteed but can occur. Please verify and upgrade the memory on affected nodes.'
+                )
 
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
