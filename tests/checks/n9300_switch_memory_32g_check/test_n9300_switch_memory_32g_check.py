@@ -100,8 +100,11 @@ proc_mem_query = 'procMemUsage.json'
                 proc_mem_query: read_data(dir, "procMemUsage_lt32gb.json"),
             },
             "6.0(3c)",
-            script.FAIL_O,
-            '',
+            script.MANUAL,
+            (
+                'One or more N9K-C93180YC-FX3 switches have less than 32GB of memory. '
+                'An outage is not guaranteed but can occur. Please verify and upgrade the memory on affected nodes.'
+            ),
             [["101", "leaf101", "N9K-C93180YC-FX3", 16.0]],
         ),
         # One FX3 node fails memory check, another FX3 node has missing procMemUsage data
