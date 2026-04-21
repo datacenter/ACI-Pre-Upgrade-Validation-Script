@@ -6445,7 +6445,7 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         data.append([node_id, node_name_map.get(node_id, ""), "FM", model])
 
     if not data:
-        return Result(result=NA, msg="No affected FM hardware models found.")
+        return Result(result=NA, msg="No affected Fabric module found.")
 
     wred_enabled = any(
         cong.get("qosCong", {}).get("attributes", {}).get("algo") == "wred"
