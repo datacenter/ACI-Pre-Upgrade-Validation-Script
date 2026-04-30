@@ -8,28 +8,28 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "svccore_excessive_data_check"
-svccoreClassEntry = 'svccoreCtrlr.json?&rsp-subtree-include=count'
-svccoreNodeEntry = 'svccoreNode.json?&rsp-subtree-include=count'
+svccoreClassEntry = 'svccoreCtrlr.json?query-target=self&rsp-subtree-include=count'
+svccoreNodeEntry = 'svccoreNode.json?query-target=self&rsp-subtree-include=count'
 
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result",
     [
         # No excessive class entries
         (
-            {svccoreClassEntry: read_data(dir, "svccore_positive.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_positive.json")},
+            {svccoreClassEntry: read_data(dir, "svccore_negative.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_negative.json")},
             script.PASS,
         ),
         # Excessive class entries found
         (
-            {svccoreClassEntry: read_data(dir, "svccore_negative.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_positive.json")},
-            script.MANUAL,
-        ),
-        (
-            {svccoreClassEntry: read_data(dir, "svccoreNode_negative.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_negative.json")},
-            script.MANUAL,
-        ),
-        (
             {svccoreClassEntry: read_data(dir, "svccore_positive.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_negative.json")},
+            script.MANUAL,
+        ),    
+        (
+            {svccoreClassEntry: read_data(dir, "svccore_positive.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_positive.json")},
+            script.MANUAL,
+        ),
+        (
+            {svccoreClassEntry: read_data(dir, "svccore_negative.json"),svccoreNodeEntry: read_data(dir, "svccoreNode_positive.json")},
             script.MANUAL,
         )
     ],
