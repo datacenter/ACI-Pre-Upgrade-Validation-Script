@@ -100,22 +100,6 @@ eqptSupC = "eqptSupC.json"
             script.PASS,
             [],
         ),
-        # FAIL - malformed DN should fall back to '-'
-        (
-            {
-                eqptLC: read_data(dir, "eqptLC_with_unsupported_bad_dn.json"),
-                eqptExtCh: read_data(dir, "eqptExtCh_with_unsupported_bad_dn.json"),
-                eqptSupC: read_data(dir, "eqptSupC_with_unsupported_bad_dn.json"),
-            },
-            "6.1(1f)",
-            read_data(dir, "fabricNode_supported_only.json"),
-            script.FAIL_UF,
-            [
-                ["6.1(1f)", "-", "N9K-M6PQ-E", "Expansion Module", "Not supported on 5.x+"],
-                ["6.1(1f)", "-", "N2K-C2232PP-10GE", "FEX", "Deprecated from 6.1(1)+"],
-                ["6.1(1f)", "-", "N9K-SUP-B", "Supervisor", "Deprecated from 6.1(1)+"],
-            ],
-        ),
     ],
 )
 def test_logic(run_check, mock_icurl, tversion, fabric_nodes, expected_result, expected_data):

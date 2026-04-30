@@ -3871,6 +3871,8 @@ def supported_hardware_check(tversion, fabric_nodes, **kwargs):
     result = FAIL_UF
     headers = ["Target Version", "Node ID", "Model", "Type", "Warning"]
     data = []
+    unformatted_headers = ["Target Version", "DN", "Model", "Type", "Warning"]
+    unformatted_data = []
     gen1_models = ["N9K-C9336PQ", "N9K-X9736PQ", "N9K-C9504-FM", "N9K-C9508-FM", "N9K-C9516-FM", "N9K-C9372PX-E",
                    "N9K-C9372TX-E", "N9K-C9332PQ", "N9K-C9372PX", "N9K-C9372TX", "N9K-C9396PX", "N9K-C9396TX",
                    "N9K-C93128TX"]
@@ -3893,8 +3895,10 @@ def supported_hardware_check(tversion, fabric_nodes, **kwargs):
             model = eqptLC['eqptLC']['attributes']['model']
             if model in unsupported_5_0_1_exp_module_models:
                 dn = re.search(node_regex, eqptLC['eqptLC']['attributes']['dn'])
-                node_id = dn.group('node') if dn else '-'
-                data.append([str(tversion), node_id, model, 'Expansion Module', 'Not supported on 5.x+'])
+                if dn:
+                    data.append([str(tversion), dn.group('node'), model, 'Expansion Module', 'Not supported on 5.x+'])
+                else:
+                    unformatted_data.append([str(tversion), eqptLC['eqptLC']['attributes']['dn'], model, 'Expansion Module', 'Not supported on 5.x+'])
 
     if not tversion.older_than("6.0(1a)"):
         for node in fabric_nodes:
@@ -3913,20 +3917,32 @@ def supported_hardware_check(tversion, fabric_nodes, **kwargs):
             model = eqptExtCh['eqptExtCh']['attributes']['model']
             if model in unsupported_6_1_1_fex_models:
                 dn = re.search(node_regex, eqptExtCh['eqptExtCh']['attributes']['dn'])
-                node_id = dn.group('node') if dn else '-'
-                data.append([str(tversion), node_id, model, 'FEX', 'Deprecated from 6.1(1)+'])
+                if dn:
+                    data.append([str(tversion), dn.group('node'), model, 'FEX', 'Deprecated from 6.1(1)+'])
+                else:
+                    unformatted_data.append([str(tversion), eqptExtCh['eqptExtCh']['attributes']['dn'], model, 'FEX', 'Deprecated from 6.1(1)+'])
 
         eqptSupCs = icurl('class', 'eqptSupC.json')
         for eqptSupC in eqptSupCs:
             model = eqptSupC['eqptSupC']['attributes']['model']
             if model in unsupported_6_1_1_sup_models:
                 dn = re.search(node_regex, eqptSupC['eqptSupC']['attributes']['dn'])
-                node_id = dn.group('node') if dn else '-'
-                data.append([str(tversion), node_id, model, 'Supervisor', 'Deprecated from 6.1(1)+'])
+                if dn:
+                    data.append([str(tversion), dn.group('node'), model, 'Supervisor', 'Deprecated from 6.1(1)+'])
+                else:
+                    unformatted_data.append([str(tversion), eqptSupC['eqptSupC']['attributes']['dn'], model, 'Supervisor', 'Deprecated from 6.1(1)+'])
 
-    if not data:
+    if not data and not unformatted_data:
         result = PASS
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
 @check_wrapper(check_title="Contract Port 22 Defect")

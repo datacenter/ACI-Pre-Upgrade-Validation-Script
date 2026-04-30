@@ -58,7 +58,7 @@ Items                                                        | This Script      
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
-[g20]: #Supported-hardware-compatibility
+[g20]: #supported-hardware-compatibility
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -265,7 +265,7 @@ The script checks the presence of generation one switches when the upgrade is cr
 Or you can check the [Release Note 15.0(1) of ACI switches][3] to see the list of generation one switches, typically the one without any suffix such as N9K-C9372PX, that are no longer supported from 15.0(1) release.
 
 
-### Supported hardware compatibility
+### Supported Hardware Compatibility
 
 The script checks the presence of deprecated hardware in the fabric.
 
