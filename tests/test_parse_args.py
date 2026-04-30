@@ -22,6 +22,7 @@ def test_no_args():
     assert args.no_cleanup is False
     assert args.version is False
     assert args.total_checks is False
+    assert args.max_threads is None
 
 
 @pytest.mark.parametrize(
@@ -127,3 +128,15 @@ def test_version(args, expected_result):
 def test_total_checks(args, expected_result):
     args = script.parse_args(args)
     assert args.total_checks == expected_result
+
+
+@pytest.mark.parametrize(
+    "args, expected_result",
+    [
+        ([], None),
+        (["--max-threads", "4"], 4),
+    ],
+)
+def test_max_threads(args, expected_result):
+    args = script.parse_args(args)
+    assert args.max_threads == expected_result

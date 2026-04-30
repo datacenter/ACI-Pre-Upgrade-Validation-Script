@@ -1,0 +1,54 @@
+[
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "available (Old: 37868344, New: 37859228), inodesFree (Old: 810163, New: 479339), inodesUsed (Old: 1811277, New: 2142101), inodesUtilized (Old: 70, New: 82), used (Old: 976092, New: 985208)",
+                    "code": "F4388",
+                    "created": "2026-03-06T11:58:43.579+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /data/admin/bin/avread on Node 1 mounted at /data/admin/bin/avread is 82% full for Inodes",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/data/admin/bin/avread]-f-[overlayfs]/fault-F4388",
+                    "domain": "infra",
+                    "highestSeverity": "warning",
+                    "lastTransition": "2026-03-06T11:58:43.579+00:00",
+                    "lc": "cleared",
+                    "occur": "1",
+                    "origSeverity": "warning",
+                    "prevSeverity": "warning",
+                    "rule": "eqpt-storage-inode-warning",
+                    "severity": "warning",
+                    "subject": "equipment-full",
+                    "type": "operational"
+                }
+            }
+        },
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "available (Old: 37868344, New: 37859228), inodesFree (Old: 810163, New: 479339), inodesUsed (Old: 1811277, New: 2142101), inodesUtilized (Old: 70, New: 82), used (Old: 976092, New: 985208)",
+                    "code": "F4388",
+                    "created": "2026-03-06T11:58:43.587+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /etc/hosts on Node 1 mounted at /etc/hosts is 82% full for Inodes",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/etc/hosts]-f-[overlayfs]/fault-F4388",
+                    "domain": "infra",
+                    "highestSeverity": "warning",
+                    "lastTransition": "2026-03-06T11:58:43.587+00:00",
+                    "lc": "retaining",
+                    "occur": "1",
+                    "origSeverity": "warning",
+                    "prevSeverity": "warning",
+                    "rule": "eqpt-storage-inode-warning",
+                    "severity": "warning",
+                    "subject": "equipment-full",
+                    "type": "operational"
+                }
+            }
+        }
+]
