@@ -6461,7 +6461,6 @@ def bgpProto_timer_policy_already_existing_check(tversion, cversion, **kwargs):
 
 @check_wrapper(check_title="WRED with Affected FM Models")
 def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
-    result = PASS
     headers = ["Node ID", "Node Name", "Source", "Model"]
     data = []
     recommended_action = "Disable WRED in fabric or upgrade to a release newer than 6.1(5e) or 6.2(1g)."
@@ -6504,9 +6503,8 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         return Result(result=PASS, msg="WRED not enabled.")
 
     data.sort(key=lambda row: (int(row[0]) if row[0].isdigit() else row[0], row[3]))
-    result = FAIL_O
 
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
