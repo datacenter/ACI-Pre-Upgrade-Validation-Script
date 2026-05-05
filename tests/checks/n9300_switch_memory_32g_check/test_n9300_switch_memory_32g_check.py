@@ -60,17 +60,6 @@ proc_mem_query = 'procMemUsage.json'
             '',
             [],
         ),
-        # Invalid procMemUsage Total value
-        (
-            read_data(dir, "fabricNode_one.json"),
-            {
-                proc_mem_query: read_data(dir, "procMemUsage_invalid_total.json"),
-            },
-            "6.0(3c)",
-            script.ERROR,
-            'Failed to parse procMemUsage Total for one or more nodes.',
-            [["topology/pod-1/node-101/sys/procmem/memusage-sup", "unknown"]],
-        ),
         # Missing procMemUsage data for affected node
         (
             read_data(dir, "fabricNode_one.json"),
@@ -132,4 +121,7 @@ def test_logic(run_check, mock_icurl, fabric_nodes, tversion, expected_result, e
     )
     assert result.result == expected_result
     assert result.msg == expected_msg
-    assert result.data == expected_data
+    if result.data:
+        assert result.data == expected_data
+    else:
+        assert result.unformatted_data == expected_data

@@ -6415,6 +6415,8 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
     result = PASS
     headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
     data = []
+    unformatted_headers = ['DN', 'Total']
+    unformatted_data = []
     recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3 switches.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
     min_memory_kb = 32 * 1000 * 1000
@@ -6431,7 +6433,6 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
     else:
         proc_mem_mos = icurl('class', 'procMemUsage.json')
         node_total_kb = {}
-        parse_errors = []
 
         for memory_mo in proc_mem_mos:
             attrs = memory_mo.get('procMemUsage', {}).get('attributes', {})
@@ -6445,69 +6446,62 @@ def n9300_switch_memory_check(fabric_nodes, **kwargs):
             try:
                 total_kb = int(total)
             except (TypeError, ValueError):
-                parse_errors.append([mem_dn, total])
+                unformatted_data.append([mem_dn, total])
                 continue
 
             node_id = dn_match.group('node')
             if node_id not in node_total_kb:
                 node_total_kb[node_id] = total_kb
 
-        if parse_errors:
-            result = ERROR
-            msg = 'Failed to parse procMemUsage Total for one or more nodes.'
-            headers = ['DN', 'Total']
-            data = parse_errors
-            recommended_action = ''
-        else:
-            missing_nodes = []
+        missing_nodes = []
 
-            for node in affected_nodes:
-                node_id = node['fabricNode']['attributes']['id']
-                total_kb = node_total_kb.get(node_id)
-                if total_kb is None:
-                    missing_nodes.append([
-                        node_id,
-                        node['fabricNode']['attributes'].get('name', ''),
-                        node['fabricNode']['attributes'].get('model', ''),
-                    ])
-                    continue
+        for node in affected_nodes:
+            node_id = node['fabricNode']['attributes']['id']
+            total_kb = node_total_kb.get(node_id)
+            if total_kb is None:
+                missing_nodes.append([
+                    node_id,
+                    node['fabricNode']['attributes'].get('name', ''),
+                    node['fabricNode']['attributes'].get('model', ''),
+                ])
+                continue
 
-                if total_kb < min_memory_kb:
-                    memory_in_gb = round(total_kb / 1000000, 2)
-                    result = MANUAL
-                    data.append([
-                        node_id,
-                        node['fabricNode']['attributes'].get('name', ''),
-                        node['fabricNode']['attributes'].get('model', ''),
-                        memory_in_gb,
-                    ])
-
-            if missing_nodes and data:
+            if total_kb < min_memory_kb:
+                memory_in_gb = round(total_kb / 1000000, 2)
                 result = MANUAL
-                msg = (
-                    'Some N9K-C93180YC-FX3 nodes have insufficient memory and others are missing '
-                    'procMemUsage data. Please manually verify the memory on all affected nodes.\n'
-                    'Nodes with insufficient memory: {}\n'
-                    'Nodes with missing data: {}'.format(
-                        ', '.join(str(row[0]) for row in data),
-                        ', '.join(str(row[0]) for row in missing_nodes),
-                    )
-                )
-                headers = ['NodeId', 'Name', 'Model', 'Memory Detected (GB)']
-                data = data + [row + ['N/A'] for row in missing_nodes]
-            elif missing_nodes:
-                result = ERROR
-                msg = 'Missing procMemUsage data for one or more affected N9K-C93180YC-FX3 nodes.'
-                headers = ['NodeId', 'Name', 'Model']
-                data = missing_nodes
-                recommended_action = ''
-            elif data:
-                msg = (
-                    'One or more N9K-C93180YC-FX3 switches have less than 32GB of memory. '
-                    'An outage is not guaranteed but can occur. Please verify and upgrade the memory on affected nodes.'
-                )
+                data.append([
+                    node_id,
+                    node['fabricNode']['attributes'].get('name', ''),
+                    node['fabricNode']['attributes'].get('model', ''),
+                    memory_in_gb,
+                ])
 
-    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+        if missing_nodes and data:
+            result = MANUAL
+            msg = (
+                'Some N9K-C93180YC-FX3 nodes have insufficient memory and others are missing '
+                'procMemUsage data. Please manually verify the memory on all affected nodes.\n'
+                'Nodes with insufficient memory: {}\n'
+                'Nodes with missing data: {}'.format(
+                    ', '.join(str(row[0]) for row in data),
+                    ', '.join(str(row[0]) for row in missing_nodes),
+                )
+            )
+            headers = ['NodeId', 'Name', 'Model', 'Memory Detected (GB)']
+            data = data + [row + ['N/A'] for row in missing_nodes]
+        elif missing_nodes:
+            result = ERROR
+            msg = 'Missing procMemUsage data for one or more affected N9K-C93180YC-FX3 nodes.'
+            headers = ['NodeId', 'Name', 'Model']
+            data = missing_nodes
+            recommended_action = ''
+        elif data:
+            msg = (
+                'One or more N9K-C93180YC-FX3 switches have less than 32GB of memory. '
+                'An outage is not guaranteed but can occur. Please verify and upgrade the memory on affected nodes.'
+            )
+
+    return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
