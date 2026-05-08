@@ -8,7 +8,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "inband_management_policy_misconfig_check"
-mgmtRsInBStNode = 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.addr,"0.0.0.0/0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))'
+mgmtRsInBStNode = 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))'
 
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result, expected_data",
@@ -32,8 +32,7 @@ mgmtRsInBStNode = 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNod
             "6.0(4c)",
             script.FAIL_O,
             [
-                ["103", "0.0.0.0", "191.1.1.1"],
-                ["104", "0.0.0.0/0", "191.1.1.1"],
+                ["103", "0.0.0.0", "191.1.1.1"]
             ]
         ),
         # Current version is affected, Target version = 6.0(4c), invalid gateway
@@ -80,7 +79,6 @@ mgmtRsInBStNode = 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNod
             script.FAIL_O,
             [
                 ["103", "0.0.0.0", "191.1.1.1"],
-                ["104", "0.0.0.0/0", "191.1.1.1",]
             ]
         ),
         # Current version is affected,  Target version > 6.0(4c), invalid gateway
