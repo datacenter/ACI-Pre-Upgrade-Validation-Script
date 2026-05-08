@@ -2757,23 +2757,18 @@ To avoid this issue, change the target version to another version. Or verify tha
 
 ### Inband Management Policy Misconfiguration
 
-RCA:
-
-Due to the defect [CSCwh80837][67], starting from version 6.0(4c), an implicit deletion of `fvRsCustQosPol` was introduced under InBand EPG as QoS configuration is not applicable to management inband EPG and it was raising an invalid fault under it. This implicit deletion triggers a re-processing and pushes updates to `fvInBEpP` (Inband Endpoint Profile) on leaf nodes where the inband management policy is deployed.
+Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
 
 Impact:
 
-When upgrading from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (`mgmtRsInBStNode`) with invalid values, the re-processing triggered by [CSCwh80837][67] will expose the underlying [CSCwd40071][68] defect. This results in continuous policyelem core dumps and switch reboot when attempting to add any access policies configuration to a leaf switch (such as VLANs tied to leaf profiles via physical domain, AAEP, interface policy group, or port selector).
+When upgrading Apic from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (mgmtRsInBStNode) with invalid values, the re-processing triggered by [CSCwh80837][67] will expose the underlying [CSCwd40071][68] defect. This results in continuous policyelem core dumps and switch reboot if Switch are running impacted version of [CSCwd40071][68].
 
-The invalid configuration occurs when `mgmtRsInBStNode` has "0.0.0.0" values (with no mask) for either the "addr" or "gw" fields.
+The invalid configuration occurs when mgmtRsInBStNode has "0.0.0.0" values ( with or without mask) for either the "addr" or "gw" fields.
 
 Suggestion:
 
-This check identifies misconfigured `mgmtRsInBStNode` objects where either "addr" or "gw" attributes are set to "0.0.0.0" when the upgrade crosses the 6.0(4c) release boundary. Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
-
-!!! note
-    The [CSCwd40071][68] defect affects versions 5.2(5c) and later, with a fix available in 6.0(1g). However, the issue will only be triggered during upgrades crossing 6.0(4c) due to [CSCwh80837][67].
-
+Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
+The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix available in 6.0(1g). However, the issue will only be triggered during Apic upgrades crossing 6.0(4c) due to [CSCwh80837][67].
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
