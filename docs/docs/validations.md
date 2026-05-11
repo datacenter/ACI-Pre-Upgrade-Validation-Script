@@ -2759,6 +2759,10 @@ To avoid this issue, change the target version to another version. Or verify tha
 
 Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
 
+svccoreCtrlr objects are responsible for managing the control plane functions of the APIC cluster. They coordinate and oversee the overall control operations, including policy enforcement, fabric management, and orchestration tasks. The controller-level service core manages the centralized automation and management of the Cisco ACI fabric, ensuring consistent policy application and health monitoring across the multitenant fabric. 
+
+svccoreNode objects manage node-specific service operations. Each node in the APIC cluster runs these service core components to handle local tasks such as fabric activation, switch firmware management, network policy instantiation, and telemetry collection. The node-level service core ensures that each APIC appliance operates efficiently and maintains synchronization with the cluster, contributing to high availability and performance.
+
 Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
 

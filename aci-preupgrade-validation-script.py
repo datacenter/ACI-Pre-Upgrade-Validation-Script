@@ -6294,17 +6294,21 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
 @check_wrapper(check_title="svccore excessive data check")
 def svccore_excessive_data_check(**kwargs):
     result = PASS
-    headers = ['svccoreCtrlr Object Count','svccoreNode Object Count']
+    headers = ['Class Name','Count']
     data = []
     recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore_excessive_data_check"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore-excessive-data-check"
     try:
         svccoreCtrlr_classes_count = icurl('class', 'svccoreCtrlr.json?query-target=self&rsp-subtree-include=count')
         svccoreNode_classes_count = icurl('class', 'svccoreNode.json?query-target=self&rsp-subtree-include=count')
-        if(int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240 or int(svccoreNode_classes_count[0]['moCount']['attributes']['count']) > 240):
-            data.append([svccoreCtrlr_classes_count[0]['moCount']['attributes']['count'], svccoreNode_classes_count[0]['moCount']['attributes']['count']])
+        
+        if int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240:
+           data.append(['svccoreCtrlr', svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']])
+        if int(svccoreNode_classes_count[0]['moCount']['attributes']['count']) > 240:
+            data.append(['svccoreNode', svccoreNode_classes_count[0]['moCount']['attributes']['count']])
         if data:
             result = MANUAL
+        
         return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
     except Exception as e:
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
