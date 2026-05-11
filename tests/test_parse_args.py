@@ -18,6 +18,8 @@ def test_no_args():
     assert args.api_only is False
     assert args.tversion is None
     assert args.cversion is None
+    assert args.username is None
+    assert args.password is None
     assert args.debug_function is None
     assert args.no_cleanup is False
     assert args.version is False
@@ -74,6 +76,32 @@ def test_cversion(args, expected_result):
     if args.cversion is not None:
         assert isinstance(args.cversion, str)
     assert str(args.cversion) == str(expected_result)
+
+
+@pytest.mark.parametrize(
+    "args, expected_result",
+    [
+        ([], None),
+        (["-u", "myusername"], "myusername"),
+        (["--username", "myusername"], "myusername"),
+    ],
+)
+def test_username(args, expected_result):
+    args = script.parse_args(args)
+    assert args.username == expected_result
+
+
+@pytest.mark.parametrize(
+    "args, expected_result",
+    [
+        ([], None),
+        (["-p", "mypassword"], "mypassword"),
+        (["--password", "mypassword"], "mypassword"),
+    ],
+)
+def test_password(args, expected_result):
+    args = script.parse_args(args)
+    assert args.password == expected_result
 
 
 @pytest.mark.parametrize(

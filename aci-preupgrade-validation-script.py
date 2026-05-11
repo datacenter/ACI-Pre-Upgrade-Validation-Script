@@ -1812,9 +1812,11 @@ def get_vpc_nodes():
     return vpc_nodes
 
 
-def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None):
-    username = password = None
-    if not api_only:
+def query_common_data(api_only=False, arg_cversion=None, arg_tversion=None, username=None, password=None):
+    if api_only:
+        username = None
+        password = None
+    elif not username or not password:
         username, password = get_credentials()
 
     try:
@@ -6291,6 +6293,30 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
   
+@check_wrapper(check_title="Inband Management Policy Misconfiguration")
+def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Node_ID", "Address", "Gateway"]
+    data = []
+    recommended_action = "Contact Cisco TAC to remove any identified misconfigured 'mgmtRsInBStNode' objects"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
+    
+    if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
+        mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))')
+        for mgmtRsInBStNode in mgmtRsInBStNodes:
+            attrs = mgmtRsInBStNode["mgmtRsInBStNode"]["attributes"]
+            addr = attrs['addr']
+            gw = attrs['gw']
+            node_match = re.search(node_regex, attrs['dn'])
+            node_id = node_match.group("node")
+            data.append([node_id, addr, gw])
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    if data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    
+    
 @check_wrapper(check_title="svccore excessive data check")
 def svccore_excessive_data_check(**kwargs):
     result = PASS
@@ -6319,6 +6345,8 @@ def svccore_excessive_data_check(**kwargs):
 
 def parse_args(args):
     parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-u", "--username", action="store", type=str, help="Username used for SSH. If not provied it will prompt for")
+    parser.add_argument("-p", "--password", action="store", type=str, help="Password used for SSH. If not provied it will prompt for")
     parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
     parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
     parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
@@ -6482,6 +6510,7 @@ class CheckManager:
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
+        inband_management_policy_misconfig_check,
     ]
     ssh_checks = [
         # General
@@ -6613,7 +6642,7 @@ def main(_args=None):
     prints('    ==== %s%s, Script Version %s  ====\n' % (ts, tz, SCRIPT_VERSION))
     prints('!!!! Check https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script for Latest Release !!!!\n')
 
-    common_data = query_common_data(args.api_only, args.cversion, args.tversion)
+    common_data = query_common_data(args.api_only, args.cversion, args.tversion, args.username, args.password)
     write_script_metadata(args.api_only, args.timeout, cm.total_checks, common_data)
 
     cm.run_checks(common_data)
