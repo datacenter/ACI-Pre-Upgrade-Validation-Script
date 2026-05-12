@@ -15,7 +15,7 @@ eqptExtCh = "eqptExtCh.json"
 eqptSupC = "eqptSupC.json"
 
 @pytest.mark.parametrize(
-    "icurl_outputs, tversion, fabric_nodes, expected_result, expected_data",
+    "icurl_outputs, tversion, fabric_nodes, expected_result, expected_data, expected_unformatted_data",
     [
         # FAIL - unsupported Gen1 and 6.1(1)+ deprecated hardware found
         (
@@ -34,6 +34,7 @@ eqptSupC = "eqptSupC.json"
                 ["6.1(1f)", "101", "N2K-C2232PP-10GE", "FEX", "Deprecated from 6.1(1)+"],
                 ["6.1(1f)", "1001", "N9K-SUP-B", "Supervisor", "Deprecated from 6.1(1)+"],
             ],
+            [],
         ),
         # PASS - no unsupported hardware found
         (
@@ -46,6 +47,7 @@ eqptSupC = "eqptSupC.json"
             read_data(dir, "fabricNode_supported_only.json"),
             script.PASS,
             [],
+            [],
         ),
         # FAIL - pre 6.1(1f): only Gen1 hit should be reported
         (
@@ -56,6 +58,7 @@ eqptSupC = "eqptSupC.json"
             read_data(dir, "fabricNode_with_unsupported_hardware.json"),
             script.FAIL_UF,
             [["6.1(1a)", "101", "N9K-C9372TX-E", "Switch", "Not supported on 5.x+"]],
+            [],
         ),
         # PASS - pre 5.x: unsupported hardware checks should not trigger
         (
@@ -67,6 +70,7 @@ eqptSupC = "eqptSupC.json"
             "4.2(7r)",
             read_data(dir, "fabricNode_with_unsupported_hardware.json"),
             script.PASS,
+            [],
             [],
         ),
         # FAIL - 6.0(1)+ unsupported switch model
@@ -87,6 +91,7 @@ eqptSupC = "eqptSupC.json"
             ],
             script.FAIL_UF,
             [["6.0(1a)", "201", "N9K-C93120TX", "Switch", "Deprecated from 6.0(1)+"]],
+            [],
         ),
         # PASS - empty fabric nodes and supported inventory
         (
@@ -99,10 +104,23 @@ eqptSupC = "eqptSupC.json"
             [],
             script.PASS,
             [],
+            [],
+        ),
+        # FAIL - expansion module with unformatted DN (no topology/pod-X/node-Y prefix);
+        # the entry should appear in unformatted_data with the raw DN, not in data
+        (
+            {
+                eqptLC: read_data(dir, "eqptLC_with_unformatted_dn.json"),
+            },
+            "5.0(1a)",
+            [],
+            script.FAIL_UF,
+            [],
+            [["5.0(1a)", "sys/ch/lcslot-1/lc", "N9K-M6PQ", "Expansion Module", "Not supported on 5.x+"]],
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, tversion, fabric_nodes, expected_result, expected_data):
+def test_logic(run_check, mock_icurl, tversion, fabric_nodes, expected_result, expected_data, expected_unformatted_data):
     result = run_check(
         tversion=script.AciVersion(tversion) if tversion else None,
         fabric_nodes=fabric_nodes,
@@ -110,3 +128,4 @@ def test_logic(run_check, mock_icurl, tversion, fabric_nodes, expected_result, e
 
     assert result.result == expected_result
     assert result.data == expected_data
+    assert result.unformatted_data == expected_unformatted_data

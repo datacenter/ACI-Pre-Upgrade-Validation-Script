@@ -269,6 +269,8 @@ Or you can check the [Release Note 15.0(1) of ACI switches][3] to see the list o
 
 The script checks the presence of deprecated hardware in the fabric.
 
+The list of supported and unsupported hardware is populated from the Release Notes across all ACI releases. This means the check covers hardware compatibility changes introduced in any version, not just the most recent release. As new release notes are published and hardware is deprecated, this list is updated accordingly.
+
 Refer the [Release Note 15.0(1) of ACI switches][3] to see the list of unsuporrted hardware for your desired target versions. Prior upgrading to target version, replace the unsupported hardware elements in your fabric with other supported hardware.
 
 Contact cisco TAC for further assistance.
