@@ -6316,7 +6316,41 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
         result = FAIL_O
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
     
-    
+
+@check_wrapper(check_title='Micron SSD Lifetime Validation')
+def micron_ssd_lifetime_check(tversion, **kwargs):
+    result = PASS
+    headers = ['Pod', 'Node', 'Model', 'Serial Number']
+    data = []
+    recommended_action = (
+        '\n\tRun the SSD Lifetime Validation script on all identified nodes before upgrading.\n'
+        '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#micron-ssd-lifetime-validation'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if not tversion.same_as('6.1(5e)') and not tversion.same_as('6.2(1g)'):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    eqptFlashs = icurl('class','eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")')
+    if not eqptFlashs:
+        return Result(result=PASS, msg='No Micron drives found in fabric.')
+
+    for eqptFlash in eqptFlashs:
+        attr = eqptFlash['eqptFlash']['attributes']
+        dn = re.search(node_regex, attr.get("dn", ""))
+        pod_id = dn.group("pod") if dn else "Unknown"
+        node_id = dn.group('node') if dn else "Unknown"
+        data.append([pod_id, node_id, attr.get('model',''), attr.get('ser','')])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6487,6 +6521,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
+        micron_ssd_lifetime_check,
     ]
     ssh_checks = [
         # General

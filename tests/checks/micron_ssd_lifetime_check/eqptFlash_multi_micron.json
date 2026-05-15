@@ -1,0 +1,22 @@
+[
+    {
+        "eqptFlash": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101/sys/ch/p-[1]/disk-1",
+                "vendor": "Micron",
+                "model": "MTFDDAK240MBB",
+                "ser": "SN0001"
+            }
+        }
+    },
+    {
+        "eqptFlash": {
+            "attributes": {
+                "dn": "topology/pod-2/node-201/sys/ch/p-[1]/disk-1",
+                "vendor": "Micron",
+                "model": "MTFDDAK480MBB",
+                "ser": "SN0002"
+            }
+        }
+    }
+]

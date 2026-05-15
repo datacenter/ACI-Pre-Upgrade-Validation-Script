@@ -199,6 +199,7 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
+[Micron SSD Lifetime Validation][d34]           | CSCwt38698   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -2770,6 +2771,14 @@ Suggestion:
 Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
 The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix available in 6.0(1g). However, the issue will only be triggered during Apic upgrades crossing 6.0(4c) due to [CSCwh80837][67].
 
+### Micron SSD Lifetime Validation
+
+Due to [CSCwt38698][69], certain Micron SSDs present in the fabric may experience premature end-of-life failures after upgrading to `6.1(5e)` or `6.2(1g)`.
+
+To avoid this issue, change the target version to another version. Or run the **SSD Lifetime Validation** script on all nodes with identified Micron SSDs prior to upgrading to determine the remaining SSD lifetime. If the SSD lifetime is critically low, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. In case you already upgraded your node and are experiencing unavailability due to this issue, contact Cisco TAC for the SSD replacement procedure to restore the node.
+
+- Script location: [SSD Lifetime Validation](https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation)
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2839,3 +2848,4 @@ The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix availa
 [66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
+[69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
