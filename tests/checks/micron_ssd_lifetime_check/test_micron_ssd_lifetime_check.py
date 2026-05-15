@@ -47,14 +47,14 @@ micron_drives_multi  = read_data(dir, "eqptFlash_multi_micron.json")
             {eqptflash_micron: micron_drives_single},
             "6.1(5e)",
             script.FAIL_O,
-            [["1", "101", "MTFDDAK240MBB", "SN0001"]],
+            [["1", "101", "MTFDDAK240MBB"]],
         ),
         # Test 6: FAIL_O - affected version 6.2(1g) with single Micron drive
         (
             {eqptflash_micron: micron_drives_single},
             "6.2(1g)",
             script.FAIL_O,
-            [["1", "101", "MTFDDAK240MBB", "SN0001"]],
+            [["1", "101", "MTFDDAK240MBB"]],
         ),
         # Test 7: FAIL_O - multiple Micron drives across pods and nodes
         (
@@ -62,8 +62,8 @@ micron_drives_multi  = read_data(dir, "eqptFlash_multi_micron.json")
             "6.1(5e)",
             script.FAIL_O,
             [
-                ["1", "101", "MTFDDAK240MBB", "SN0001"],
-                ["2", "201", "MTFDDAK480MBB", "SN0002"],
+                ["1", "101", "MTFDDAK240MBB"],
+                ["2", "201", "MTFDDAK480MBB"],
             ],
         ),
     ],

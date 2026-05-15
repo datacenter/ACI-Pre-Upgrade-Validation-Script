@@ -6320,7 +6320,7 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title='Micron SSD Lifetime Validation')
 def micron_ssd_lifetime_check(tversion, **kwargs):
     result = PASS
-    headers = ['Pod', 'Node', 'Model', 'Serial Number']
+    headers = ['Pod', 'Node', 'Model']
     data = []
     recommended_action = (
         '\n\tRun the SSD Lifetime Validation script on all identified nodes before upgrading.\n'
@@ -6343,7 +6343,7 @@ def micron_ssd_lifetime_check(tversion, **kwargs):
         dn = re.search(node_regex, attr.get("dn", ""))
         pod_id = dn.group("pod") if dn else "Unknown"
         node_id = dn.group('node') if dn else "Unknown"
-        data.append([pod_id, node_id, attr.get('model',''), attr.get('ser','')])
+        data.append([pod_id, node_id, attr.get('model','')])
 
     if data:
         result = FAIL_O
