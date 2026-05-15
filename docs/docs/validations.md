@@ -203,6 +203,7 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
+[Stale dbgacEpgSummaryTask Objects][d34]        | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -237,6 +238,7 @@ Items                                           | Defect       | This Script    
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
+[d34]: #stale-dbgacepgsummarytask-objects
 
 ## General Check Details
 
@@ -2792,13 +2794,22 @@ Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck
 
 The svccoreCtrlr and svccoreNode objects represent core files related to Apic and Leaf/Spines process respectively.
 
-Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
+Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous "Loading…"state.
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
 
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
 
+### Stale dbgacEpgSummaryTask Objects
+
+Due to [CSCwt69100][70], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
+
+Affected versions: version <= 6.1(5e) or version <= 6.2(1g).
+
+The check queries for `dbgacEpgSummaryTask` objects with `operSt="processing"` and `startTs` older than 24 hours. Such objects are considered stale and unexpected. If found, delete them before proceeding with the upgrade to prevent policymgr from crashing on restart.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
 [3]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/release-notes/cisco-aci-nx-os-release-notes-1501.html#_Toc140580685
@@ -2868,3 +2879,4 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
