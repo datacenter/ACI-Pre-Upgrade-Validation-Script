@@ -6317,21 +6317,21 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
     
 
-@check_wrapper(check_title='Micron SSD Lifetime Validation')
-def micron_ssd_lifetime_check(tversion, **kwargs):
+@check_wrapper(check_title='False Micron SSD failure_fault')
+def false_micron_ssd_failure_fault_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ['Pod', 'Node', 'Model']
     data = []
     recommended_action = (
-        '\n\tRun the SSD Lifetime Validation script on all identified nodes before upgrading.\n'
+        '\n\tRun the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
         '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
     )
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#micron-ssd-lifetime-validation'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#false-micron-ssd-failure_fault'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    if not tversion.same_as('6.1(5e)') and not tversion.same_as('6.2(1g)'):
+    if not tversion.same_as('6.1(5e)') and not tversion.same_as('6.2(1g)') and not cversion.same_as('6.1(5e)') and not cversion.same_as('6.2(1g)'):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     eqptFlashs = icurl('class','eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")')
@@ -6521,7 +6521,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
-        micron_ssd_lifetime_check,
+        false_micron_ssd_failure_fault_check,
     ]
     ssh_checks = [
         # General

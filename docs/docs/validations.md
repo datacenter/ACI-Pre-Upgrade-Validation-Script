@@ -199,7 +199,7 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
-[Micron SSD Lifetime Validation][d34]           | CSCwt38698   | :white_check_mark: | :no_entry_sign:
+[False Micron SSD failure_fault][d34]           | CSCwt38698   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -234,6 +234,7 @@ Items                                           | Defect       | This Script    
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
+[d34]: #false-micron-ssd-failure_fault
 
 ## General Check Details
 
@@ -2771,7 +2772,7 @@ Suggestion:
 Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
 The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix available in 6.0(1g). However, the issue will only be triggered during Apic upgrades crossing 6.0(4c) due to [CSCwh80837][67].
 
-### Micron SSD Lifetime Validation
+### False Micron SSD failure_fault
 
 Due to [CSCwt38698][69], certain Micron SSDs present in the fabric may experience premature end-of-life failures after upgrading to `6.1(5e)` or `6.2(1g)`.
 
