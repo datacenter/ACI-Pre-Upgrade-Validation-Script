@@ -1,0 +1,18 @@
+[
+    {
+        "mgmtRsInBStNode": {
+            "attributes": {
+                "tDn": "topology/pod-1/node-103",
+                "addr": "0.0.0.0",
+                "configurationMode": "static",
+                "dn": "uni/tn-mgmt/mgmtp-default/inb-inb/rsinBStNode-[topology/pod-1/node-103]",
+                "gw": "191.1.1.1",
+                "modTs": "2024-12-20T07:45:21.454+00:00",
+                "rType": "mo",
+                "rn": "rsinBStNode-[topology/pod-1/node-103]",
+                "stateQual": "none",
+                "tType": "mo"
+            }
+        }
+    }
+]
