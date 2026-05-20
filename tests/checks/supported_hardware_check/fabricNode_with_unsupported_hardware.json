@@ -25,5 +25,14 @@
         "role": "leaf"
       }
     }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "104",
+        "model": "N9K-C9332PQ",
+        "role": "leaf"
+      }
+    }
   }
 ]

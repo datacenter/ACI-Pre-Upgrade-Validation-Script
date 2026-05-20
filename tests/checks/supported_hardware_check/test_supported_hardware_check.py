@@ -29,6 +29,7 @@ eqptSupC = "eqptSupC.json"
             script.FAIL_UF,
             [
                 ["6.1(1f)", "101", "N9K-C9372TX-E", "Switch", "Not supported on 5.x+"],
+                ["6.1(1f)", "104", "N9K-C9332PQ", "Switch", "Not supported on 5.x+"],
                 ["6.1(1f)", "1001", "N9K-M6PQ", "Expansion Module", "Not supported on 5.x+"],
                 ["6.1(1f)", "102", "N9K-C93180LC-EX", "Switch", "Deprecated from 6.1(1)+"],
                 ["6.1(1f)", "101", "N2K-C2232PP-10GE", "FEX", "Deprecated from 6.1(1)+"],
@@ -57,7 +58,8 @@ eqptSupC = "eqptSupC.json"
             "6.1(1a)",
             read_data(dir, "fabricNode_with_unsupported_hardware.json"),
             script.FAIL_UF,
-            [["6.1(1a)", "101", "N9K-C9372TX-E", "Switch", "Not supported on 5.x+"]],
+            [["6.1(1a)", "101", "N9K-C9372TX-E", "Switch", "Not supported on 5.x+"],
+             ["6.1(1a)", "104", "N9K-C9332PQ", "Switch", "Not supported on 5.x+"]],
             [],
         ),
         # PASS - pre 5.x: unsupported hardware checks should not trigger
