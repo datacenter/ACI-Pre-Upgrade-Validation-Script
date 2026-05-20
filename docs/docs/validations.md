@@ -37,7 +37,8 @@ Items                                                        | This Script      
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
-[Supported hardware compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
+[Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
+[Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -59,6 +60,7 @@ Items                                                        | This Script      
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
+[g21]: #svccore-excessive-data-check
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -200,6 +202,7 @@ Items                                           | Defect       | This Script    
 [Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
+[Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -233,6 +236,7 @@ Items                                           | Defect       | This Script    
 [d30]: #rogue-ep-exception-list-missing-on-switches
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
+[d33]: #inband-management-policy-misconfiguration
 
 ## General Check Details
 
@@ -2766,6 +2770,34 @@ This issue happens only when the target version is specifically 6.1(4h).
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
+### Inband Management Policy Misconfiguration
+
+Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
+
+Impact:
+
+When upgrading Apic from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (mgmtRsInBStNode) with invalid values, the re-processing triggered by [CSCwh80837][67] will expose the underlying [CSCwd40071][68] defect. This results in continuous policyelem core dumps and switch reboot if Switch are running impacted version of [CSCwd40071][68].
+
+The invalid configuration occurs when mgmtRsInBStNode has "0.0.0.0" values ( with or without mask) for either the "addr" or "gw" fields.
+
+Suggestion:
+
+Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
+The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix available in 6.0(1g). However, the issue will only be triggered during Apic upgrades crossing 6.0(4c) due to [CSCwh80837][67].
+
+
+### Svccore Excessive Data Check
+
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
+
+The svccoreCtrlr and svccoreNode objects represent core files related to Apic and Leaf/Spines process respectively.
+
+Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
+Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
+
+This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2833,3 +2865,6 @@ To avoid this issue, change the target version to another version. Or verify tha
 [64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
 [65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
 [66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
+[67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
+[68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
+[69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
