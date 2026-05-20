@@ -3917,6 +3917,9 @@ def llfc_susceptibility_check(cversion, tversion, vpc_node_ids, **kwargs):
     recommended_action = 'Manually change Peer devices Transmit(send) Flow Control to off prior to switch Upgrade'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#link-level-flow-control'
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
     if not vpc_node_ids:
         return Result(result=PASS, msg="No VPC Nodes found. Not susceptible.")
 

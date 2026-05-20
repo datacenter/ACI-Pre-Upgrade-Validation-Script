@@ -76,6 +76,13 @@ ethpmFcots = 'ethpmFcot.json?query-target-filter=and(eq(ethpmFcot.type,"sfp"),eq
         ),
         (
             {ethpmFcots: read_data(dir, "ethpmFcot.json")},
+            "5.2(1a)",
+            None,
+            ["101", "103", "204", "206"],
+            script.MANUAL,
+        ),
+        (
+            {ethpmFcots: read_data(dir, "ethpmFcot.json")},
             "4.1(1a)",
             "5.2(7f)",
             ["101", "103", "204", "206"],
