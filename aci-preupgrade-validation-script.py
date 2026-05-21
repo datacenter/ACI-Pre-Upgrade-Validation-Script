@@ -6294,7 +6294,7 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
 
 
 @check_wrapper(check_title='BGP Timer Policy Already Existing (F0467 bgpProt-policy-already-existing)')
-def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
+def bgpProto_timer_policy_already_existing_check(tversion, cversion, **kwargs):
     result = FAIL_O
     headers = ['Fault', 'Tenant', 'L3Out', 'changeSet']
     data = []
@@ -6303,7 +6303,13 @@ def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
     recommended_action = 'Remove the fault by keeping Single bgp timer policy per vrf for different l3out.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgpProto-timer-policy-already-existing'
 
-    if tversion.newer_than("6.2(1g)") or (
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if cversion.newer_than("6.2(1g)") or (
+        cversion.major1 == "6" and cversion.major2 == "1" and cversion.newer_than("6.1(5e)")) and cversion.same_as(tversion):
+        result=MANUAL
+    elif tversion.newer_than("6.2(1g)") or (
         tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     
@@ -6324,7 +6330,9 @@ def bgpProto_timer_policy_already_existing_check(tversion, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
-
+    elif result == MANUAL:
+        return Result(result=result, msg="Clear the fault code F0467 for bgp timer policy", headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+        
     return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
