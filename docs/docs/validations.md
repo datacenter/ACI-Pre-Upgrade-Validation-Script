@@ -2790,7 +2790,7 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 ### BgpProto Timer Policy Already Existing
 
-This bug [CSCwt78235][70] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the upgrade.
+This bug [CSCwt78235][70] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
