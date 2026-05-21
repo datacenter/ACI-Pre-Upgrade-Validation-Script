@@ -6552,7 +6552,6 @@ class CheckManager:
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
-        n9k_c9408_model_lem_count_check,        
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
