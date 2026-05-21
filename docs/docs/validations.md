@@ -109,7 +109,6 @@ Items                                         | Faults         | This Script    
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
 
-
 ### Configuration Checks
 
  Items                                                | This Script        | APIC built-in
