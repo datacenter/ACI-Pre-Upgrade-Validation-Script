@@ -9,7 +9,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "n9300_switch_memory_check"
+test_function = "n9k_c93180yc_fx3_switch_memory_check"
 
 # icurl queries
 proc_mem_query = 'procMemUsage.json'

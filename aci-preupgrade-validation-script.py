@@ -6410,15 +6410,15 @@ def svccore_excessive_data_check(**kwargs):
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
 
 
-@check_wrapper(check_title='N9300 Switch Memory')
-def n9300_switch_memory_check(fabric_nodes, **kwargs):
+@check_wrapper(check_title='N9K-C93180YC-FX3 Switch Memory')
+def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
     result = PASS
     headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
     data = []
     unformatted_headers = ['DN', 'Total']
     unformatted_data = []
     recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3 switches.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9300-switch-memory'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c93180yc-fx3-switch-memory'
     min_memory_kb = 32 * 1000 * 1000
     msg = ''
 
@@ -6595,7 +6595,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
-        n9300_switch_memory_check,
+        n9k_c93180yc_fx3_switch_memory_check,
         svccore_excessive_data_check,
 
         # Faults
