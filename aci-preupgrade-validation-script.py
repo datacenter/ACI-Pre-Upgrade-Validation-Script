@@ -6292,6 +6292,53 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+  
+@check_wrapper(check_title="Inband Management Policy Misconfiguration")
+def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Node_ID", "Address", "Gateway"]
+    data = []
+    recommended_action = "Contact Cisco TAC to remove any identified misconfigured 'mgmtRsInBStNode' objects"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
+    
+    if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
+        mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))')
+        for mgmtRsInBStNode in mgmtRsInBStNodes:
+            attrs = mgmtRsInBStNode["mgmtRsInBStNode"]["attributes"]
+            addr = attrs['addr']
+            gw = attrs['gw']
+            node_match = re.search(node_regex, attrs['dn'])
+            node_id = node_match.group("node")
+            data.append([node_id, addr, gw])
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    if data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    
+    
+@check_wrapper(check_title="svccore excessive data check")
+def svccore_excessive_data_check(**kwargs):
+    result = PASS
+    headers = ['Class Name','Count']
+    data = []
+    recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore-excessive-data-check"
+    try:
+        svccoreCtrlr_classes_count = icurl('class', 'svccoreCtrlr.json?query-target=self&rsp-subtree-include=count')
+        svccoreNode_classes_count = icurl('class', 'svccoreNode.json?query-target=self&rsp-subtree-include=count')
+        
+        if int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240:
+           data.append(['svccoreCtrlr', svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']])
+        if int(svccoreNode_classes_count[0]['moCount']['attributes']['count']) > 240:
+            data.append(['svccoreNode', svccoreNode_classes_count[0]['moCount']['attributes']['count']])
+        if data:
+            result = MANUAL
+        
+        return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
+    except Exception as e:
+        return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
+
 
 @check_wrapper(check_title='BGP Timer Policy Already Existing (F0467 bgpProt-policy-already-existing)')
 def bgpProto_timer_policy_already_existing_check(tversion, cversion, **kwargs):
@@ -6427,6 +6474,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
+        svccore_excessive_data_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -6504,7 +6552,9 @@ class CheckManager:
         configpush_shard_check,
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
-        n9k_c9408_model_lem_count_check, 
+        n9k_c9408_model_lem_count_check,        
+        n9k_c9408_model_lem_count_check,
+        inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
     ]
     ssh_checks = [
