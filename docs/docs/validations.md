@@ -37,7 +37,8 @@ Items                                                        | This Script      
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
-[Svccore Excessive Data Check][g20]                          | :white_check_mark: | :no_entry_sign:
+[Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
+[Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -58,7 +59,8 @@ Items                                                        | This Script      
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
-[g20]: #svccore-excessive-data-check
+[g20]: #supported-hardware-compatibility
+[g21]: #svccore-excessive-data-check
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -265,6 +267,17 @@ This is mainly for downgrades because all switches operating in one ACI version 
 The script checks the presence of generation one switches when the upgrade is crossing 5.0(1)/15.0(1).
 
 Or you can check the [Release Note 15.0(1) of ACI switches][3] to see the list of generation one switches, typically the one without any suffix such as N9K-C9372PX, that are no longer supported from 15.0(1) release.
+
+
+### Supported Hardware Compatibility
+
+The script checks the presence of deprecated hardware in the fabric.
+
+The list of supported and unsupported hardware is populated from the Release Notes across all ACI releases. This means the check covers hardware compatibility changes introduced in any version, not just the most recent release. As new release notes are published and hardware is deprecated, this list is updated accordingly.
+
+Refer the [Release Note 15.0(1) of ACI switches][3] to see the list of unsuporrted hardware for your desired target versions. Prior upgrading to target version, replace the unsupported hardware elements in your fabric with other supported hardware.
+
+Contact cisco TAC for further assistance.
 
 
 ### Compatibility (Remote Leaf Switch)
