@@ -3989,7 +3989,7 @@ def llfc_susceptibility_check(cversion, tversion, vpc_node_ids, **kwargs):
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
-    
+
     if not vpc_node_ids:
         return Result(result=PASS, msg="No VPC Nodes found. Not susceptible.")
 
