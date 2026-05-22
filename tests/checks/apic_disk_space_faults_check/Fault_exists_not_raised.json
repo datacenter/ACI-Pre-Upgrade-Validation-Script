@@ -87,5 +87,65 @@
                     "type": "operational"
                 }
             }
+        },
+
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "inodesFree (Old: 12167881, New: 12167880), inodesUsed (Old: 64, New: 65)",
+                    "childAction": "",
+                    "code": "F1529",
+                    "created": "2026-03-13T11:46:02.307+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /tmp on node 1 with hostname fab3-apic1 mounted at /tmp is 100% full",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/tmp]-f-[tmpfs]/fault-F1529",
+                    "domain": "infra",
+                    "highestSeverity": "critical",
+                    "lastTransition": "2026-03-13T11:48:02.867+00:00",
+                    "lc": "retaining",
+                    "occur": "1",
+                    "origSeverity": "critical",
+                    "prevSeverity": "critical",
+                    "rule": "eqpt-storage-full-critical",
+                    "severity": "cleared",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        },
+
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "inodesFree (Old: 12167881, New: 12167880), inodesUsed (Old: 64, New: 65)",
+                    "childAction": "",
+                    "code": "F1528",
+                    "created": "2026-03-13T11:46:02.307+00:00",
+                    "delegated": "no",
+                    "descr": "Storage unit /tmp on node 1 with hostname fab3-apic1 mounted at /tmp is 89% full",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/tmp]-f-[tmpfs]/fault-F1528",
+                    "domain": "infra",
+                    "highestSeverity": "major",
+                    "lastTransition": "2026-03-13T11:48:02.867+00:00",
+                    "lc": "soaking-clearing",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqpt-storage-full-major",
+                    "severity": "major",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
         }
     ]

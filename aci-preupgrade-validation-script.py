@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.1.0-dev"
+SCRIPT_VERSION = "v4.2.0-dev"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -3010,17 +3010,19 @@ def scalability_faults_check(**kwargs):
 
 
 @check_wrapper(check_title="APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)")
-def apic_disk_space_faults_check(cversion, **kwargs):
+def apic_disk_space_faults_check(cversion, tversion, **kwargs):
     result = FAIL_UF
     headers = ['Fault', 'Pod', 'Node', 'Mount Point', 'Current Usage %', 'Recommended Action']
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Recommended Action']
     unformatted_data = []
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-disk-space-usage"
+    # we are checking /tmp utilization because high usage can lead to snaphshot corruption during an upgrade. After the fix version, snapshot storage location moved to /data.
     recommended_action = {
         '/firmware': 'Remove unneeded images',
         '/techsupport': 'Remove unneeded techsupports/cores',
-        '/data/log': 'Remove unneeded logs in var/log/dme/log'
+        '/data/log': 'Remove unneeded logs in var/log/dme/log',
+        '/tmp': 'Remove unneeded logs in /tmp directory'
     }
     default_action = 'Contact Cisco TAC.'
     if cversion.same_as('4.0(1h)') or cversion.older_than('3.2(6i)'):
@@ -3029,6 +3031,8 @@ def apic_disk_space_faults_check(cversion, **kwargs):
     dn_regex = node_regex + r'/.+p-\[(?P<mountpoint>.+)\]-f'
     desc_regex = r'is (?P<usage>\d{2,3}%) full'
 
+    tmp_faults_skip_versions = ["6.0(9f)", "6.1(4h)", "6.2(1g)"]
+    tmp_faults_skipped = False  # Track if we skip /tmp faults for CSCwo96334 versions
     faultInsts = icurl('class',
                        'faultInst.json?query-target-filter=or(eq(faultInst.code,"F1527"),eq(faultInst.code,"F1528"),eq(faultInst.code,"F1529"))')
     for faultInst in faultInsts:
@@ -3038,14 +3042,24 @@ def apic_disk_space_faults_check(cversion, **kwargs):
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         desc = re.search(desc_regex, faultInst['faultInst']['attributes']['descr'])
-        if dn and desc:
-            data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
+        if dn:
+            mountpoint = dn.group('mountpoint')
+            # CSCwo96334: Skip /tmp faults when target is >= 6.1(4h) or any unaffected versions
+            if mountpoint == '/tmp' and (not tversion.older_than("6.1(4h)") or any(tversion.same_as(version) for version in tmp_faults_skip_versions)):
+                tmp_faults_skipped = True
+                continue
+            if desc:
+                data.append([fc, dn.group('pod'), dn.group('node'), dn.group('mountpoint'),
                         desc.group('usage'),
                         recommended_action.get(dn.group('mountpoint'), default_action)])
-        else:
-            unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
+            else:
+                unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'], default_action])
     if not data and not unformatted_data:
-        result = PASS
+        # If we only found /tmp faults that were skipped (CSCwo96334 fixed target versions), return NA
+        if tmp_faults_skipped:
+            result = NA
+        else:
+            result = PASS
     return Result(
         result=result,
         headers=headers,
@@ -3866,27 +3880,83 @@ def target_version_compatibility_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title="Gen 1 switch compatibility")
-def gen1_switch_compatibility_check(tversion, fabric_nodes, **kwargs):
+@check_wrapper(check_title="Supported hardware compatibility")
+def supported_hardware_check(tversion, fabric_nodes, **kwargs):
     result = FAIL_UF
-    headers = ["Target Version", "Node ID", "Model", "Warning"]
+    headers = ["Target Version", "Node ID", "Model", "Type", "Warning"]
+    data = []
+    unformatted_headers = ["Target Version", "DN", "Model", "Type", "Warning"]
+    unformatted_data = []
     gen1_models = ["N9K-C9336PQ", "N9K-X9736PQ", "N9K-C9504-FM", "N9K-C9508-FM", "N9K-C9516-FM", "N9K-C9372PX-E",
                    "N9K-C9372TX-E", "N9K-C9332PQ", "N9K-C9372PX", "N9K-C9372TX", "N9K-C9396PX", "N9K-C9396TX",
                    "N9K-C93128TX"]
-    data = []
+    unsupported_6_0_1_switch_models = ["N9K-C93120TX"]
+    unsupported_6_1_1_switch_models = ["N9K-C93180LC-EX"]
+    unsupported_5_0_1_exp_module_models = ["N9K-M12PQ", "N9K-M6PQ", "N9K-M6PQ-E"]
+    unsupported_6_1_1_fex_models = ["N2K-C2332TQ-10GT", "N2K-C2348TQ-10GE", "N2K-C2232PP-10GE", "N2K-C2232TM-E-10GE", "N2K-C2348TQ-10G-E"]
+    unsupported_6_1_1_sup_models = ["N9K-SUP-A", "N9K-SUP-B"]
     recommended_action = 'Select supported target version or upgrade hardware'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-switch-hardware-gen1'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#supported-hardware-compatibility'
 
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-    if tversion.newer_than("5.0(1a)"):
+    if not tversion.older_than("5.0(1a)"):
         for node in fabric_nodes:
-            if node['fabricNode']['attributes']['model'] in gen1_models:
-                data.append([str(tversion), node['fabricNode']['attributes']['id'],
-                            node['fabricNode']['attributes']['model'], 'Not supported on 5.x+'])
-    if not data:
+            model = node['fabricNode']['attributes']['model']
+            if model in gen1_models:
+                data.append([str(tversion), node['fabricNode']['attributes']['id'], model, 'Switch', 'Not supported on 5.x+'])
+
+        eqptLCs = icurl('class', 'eqptLC.json')
+        for eqptLC in eqptLCs:
+            model = eqptLC['eqptLC']['attributes']['model']
+            if model in unsupported_5_0_1_exp_module_models:
+                dn = re.search(node_regex, eqptLC['eqptLC']['attributes']['dn'])
+                if dn:
+                    data.append([str(tversion), dn.group('node'), model, 'Expansion Module', 'Not supported on 5.x+'])
+                else:
+                    unformatted_data.append([str(tversion), eqptLC['eqptLC']['attributes']['dn'], model, 'Expansion Module', 'Not supported on 5.x+'])
+
+    if not tversion.older_than("6.0(1a)"):
+        for node in fabric_nodes:
+            model = node['fabricNode']['attributes']['model']
+            if model in unsupported_6_0_1_switch_models:
+                data.append([str(tversion), node['fabricNode']['attributes']['id'], model, 'Switch', 'Deprecated from 6.0(1)+'])
+
+    if not tversion.older_than("6.1(1f)"):
+        for node in fabric_nodes:
+            model = node['fabricNode']['attributes']['model']
+            if model in unsupported_6_1_1_switch_models:
+                data.append([str(tversion), node['fabricNode']['attributes']['id'], model, 'Switch', 'Deprecated from 6.1(1)+'])
+
+        eqptExtChs = icurl('class', 'eqptExtCh.json')
+        for eqptExtCh in eqptExtChs:
+            model = eqptExtCh['eqptExtCh']['attributes']['model']
+            if model in unsupported_6_1_1_fex_models:
+                dn = re.search(node_regex, eqptExtCh['eqptExtCh']['attributes']['dn'])
+                if dn:
+                    data.append([str(tversion), dn.group('node'), model, 'FEX', 'Deprecated from 6.1(1)+'])
+                else:
+                    unformatted_data.append([str(tversion), eqptExtCh['eqptExtCh']['attributes']['dn'], model, 'FEX', 'Deprecated from 6.1(1)+'])
+
+        eqptSupCs = icurl('class', 'eqptSupC.json')
+        for eqptSupC in eqptSupCs:
+            model = eqptSupC['eqptSupC']['attributes']['model']
+            if model in unsupported_6_1_1_sup_models:
+                dn = re.search(node_regex, eqptSupC['eqptSupC']['attributes']['dn'])
+                if dn:
+                    data.append([str(tversion), dn.group('node'), model, 'Supervisor', 'Deprecated from 6.1(1)+'])
+                else:
+                    unformatted_data.append([str(tversion), eqptSupC['eqptSupC']['attributes']['dn'], model, 'Supervisor', 'Deprecated from 6.1(1)+'])
+
+    if not data and not unformatted_data:
         result = PASS
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 
 @check_wrapper(check_title="Contract Port 22 Defect")
@@ -6293,7 +6363,7 @@ def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, pa
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-
+  
 @check_wrapper(check_title="Inband Management Policy Misconfiguration")
 def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     result = PASS
@@ -6318,6 +6388,29 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
     
     
+@check_wrapper(check_title="svccore excessive data check")
+def svccore_excessive_data_check(**kwargs):
+    result = PASS
+    headers = ['Class Name','Count']
+    data = []
+    recommended_action = "Delete the core files before proceeding with upgrade. Please refer to the document linked below and contact Cisco TAC for assistance if needed."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#svccore-excessive-data-check"
+    try:
+        svccoreCtrlr_classes_count = icurl('class', 'svccoreCtrlr.json?query-target=self&rsp-subtree-include=count')
+        svccoreNode_classes_count = icurl('class', 'svccoreNode.json?query-target=self&rsp-subtree-include=count')
+        
+        if int(svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']) > 240:
+           data.append(['svccoreCtrlr', svccoreCtrlr_classes_count[0]['moCount']['attributes']['count']])
+        if int(svccoreNode_classes_count[0]['moCount']['attributes']['count']) > 240:
+            data.append(['svccoreNode', svccoreNode_classes_count[0]['moCount']['attributes']['count']])
+        if data:
+            result = MANUAL
+        
+        return Result(result=result,headers=headers,data=data,recommended_action=recommended_action,doc_url=doc_url)
+    except Exception as e:
+        return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6395,7 +6488,7 @@ class CheckManager:
     api_checks = [
         # General Checks
         target_version_compatibility_check,
-        gen1_switch_compatibility_check,
+        supported_hardware_check,
         r_leaf_compatibility_check,
         cimc_compatibilty_check,
         apic_cluster_health_check,
@@ -6409,6 +6502,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
+        svccore_excessive_data_check,
 
         # Faults
         apic_disk_space_faults_check,
