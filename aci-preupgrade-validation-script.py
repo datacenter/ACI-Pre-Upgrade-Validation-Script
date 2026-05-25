@@ -6412,6 +6412,7 @@ def svccore_excessive_data_check(**kwargs):
 
 @check_wrapper(check_title="WRED with Affected FM Models")
 def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
     headers = ["Node ID", "Node Name", "Source", "Model"]
     data = []
     recommended_action = "Disable WRED in fabric or upgrade to a release newer than 6.1(5e) or 6.2(1g)."
@@ -6431,7 +6432,6 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         for node in fabric_nodes
     }
 
-    # FM model gate
     for obj in icurl("class", "eqptFC.json"):
         attr = obj["eqptFC"]["attributes"]
         model = attr.get("model", "")
@@ -6446,16 +6446,19 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     if not data:
         return Result(result=NA, msg="No affected Fabric module found.")
 
-    wred_enabled = any(
-        cong.get("qosCong", {}).get("attributes", {}).get("algo") == "wred"
-        for cong in icurl("class", "qosCong.json")
-    )
-    if not wred_enabled:
-        return Result(result=PASS, msg="WRED not enabled.")
+    wred_enabled = False
+    for cong in icurl("class", "qosCong.json"):
+        if cong.get("qosCong", {}).get("attributes", {}).get("algo") == "wred":
+            wred_enabled = True
+            break
 
-    data.sort(key=lambda row: (int(row[0]) if row[0].isdigit() else row[0], row[3]))
+    if wred_enabled:
+        data.sort(key=lambda row: (int(row[0]) if row[0].isdigit() else row[0], row[3]))
+        result = FAIL_O
+    else:
+        data = []
 
-    return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
