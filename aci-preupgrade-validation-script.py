@@ -6424,7 +6424,7 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
 
     affected_nodes = [
         node for node in fabric_nodes
-        if node.get('fabricNode', {}).get('attributes', {}).get('model', '') == 'N9K-C93180YC-FX3'
+        if node['fabricNode']['attributes']['model'] == 'N9K-C93180YC-FX3'
     ]
 
     if not affected_nodes:
@@ -6461,8 +6461,8 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
             if total_kb is None:
                 missing_nodes.append([
                     node_id,
-                    node['fabricNode']['attributes'].get('name', ''),
-                    node['fabricNode']['attributes'].get('model', ''),
+                    node['fabricNode']['attributes']['name'],
+                    node['fabricNode']['attributes']['model'],
                 ])
                 continue
 
@@ -6471,8 +6471,8 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
                 result = MANUAL
                 data.append([
                     node_id,
-                    node['fabricNode']['attributes'].get('name', ''),
-                    node['fabricNode']['attributes'].get('model', ''),
+                    node['fabricNode']['attributes']['name'],
+                    node['fabricNode']['attributes']['model'],
                     memory_in_gb,
                 ])
 
