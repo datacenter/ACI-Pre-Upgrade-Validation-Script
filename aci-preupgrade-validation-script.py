@@ -3898,6 +3898,9 @@ def supported_hardware_check(tversion, fabric_nodes, **kwargs):
     recommended_action = 'Select supported target version or upgrade hardware'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#supported-hardware-compatibility'
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
     if not tversion.older_than("5.0(1a)"):
         for node in fabric_nodes:
             model = node['fabricNode']['attributes']['model']
