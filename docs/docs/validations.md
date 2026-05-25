@@ -37,6 +37,8 @@ Items                                                        | This Script      
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
+[Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
+[Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -57,6 +59,8 @@ Items                                                        | This Script      
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
+[g20]: #supported-hardware-compatibility
+[g21]: #svccore-excessive-data-check
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -265,6 +269,17 @@ This is mainly for downgrades because all switches operating in one ACI version 
 The script checks the presence of generation one switches when the upgrade is crossing 5.0(1)/15.0(1).
 
 Or you can check the [Release Note 15.0(1) of ACI switches][3] to see the list of generation one switches, typically the one without any suffix such as N9K-C9372PX, that are no longer supported from 15.0(1) release.
+
+
+### Supported Hardware Compatibility
+
+The script checks the presence of deprecated hardware in the fabric.
+
+The list of supported and unsupported hardware is populated from the Release Notes across all ACI releases. This means the check covers hardware compatibility changes introduced in any version, not just the most recent release. As new release notes are published and hardware is deprecated, this list is updated accordingly.
+
+Refer the [Release Note 15.0(1) of ACI switches][3] to see the list of unsuporrted hardware for your desired target versions. Prior upgrading to target version, replace the unsupported hardware elements in your fabric with other supported hardware.
+
+Contact cisco TAC for further assistance.
 
 
 ### Compatibility (Remote Leaf Switch)
@@ -2772,13 +2787,26 @@ Suggestion:
 Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
 The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix available in 6.0(1g). However, the issue will only be triggered during Apic upgrades crossing 6.0(4c) due to [CSCwh80837][67].
 
+
+### Svccore Excessive Data Check
+
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
+
+The svccoreCtrlr and svccoreNode objects represent core files related to Apic and Leaf/Spines process respectively.
+
+Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
+Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
+
+This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
 ### False Micron SSD failure_fault
 
-Due to [CSCwt38698][69], certain Micron SSDs present in the fabric may experience premature end-of-life failures after upgrading to `6.1(5e)` or `6.2(1g)`.
+Due to [CSCwt38698][70], certain Micron SSDs present in the fabric may experience premature end-of-life failures after upgrading to `6.1(5e)` or `6.2(1g)`.
 
 To avoid this issue, change the target version to another version. Or run the **SSD Lifetime Validation** script on all nodes with identified Micron SSDs prior to upgrading to determine the remaining SSD lifetime. If the SSD lifetime is critically low, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. In case you already upgraded your node and are experiencing unavailability due to this issue, contact Cisco TAC for the SSD replacement procedure to restore the node.
 
 - Script location: [SSD Lifetime Validation](https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation)
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2849,4 +2877,5 @@ To avoid this issue, change the target version to another version. Or run the **
 [66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
-[69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+[69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
