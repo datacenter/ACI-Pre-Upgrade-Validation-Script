@@ -6455,7 +6455,6 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     if not data:
         return Result(result=NA, msg="No affected Fabric module found.")
 
-    data.sort(key=lambda row: (int(row[0]) if row[0].isdigit() else row[0], row[3]))
     result = FAIL_O
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
