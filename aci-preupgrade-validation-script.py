@@ -6631,6 +6631,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
+        wred_affected_model_check,
     ]
     ssh_checks = [
         # General
@@ -6643,7 +6644,6 @@ class CheckManager:
         # Bugs
         observer_db_size_check,
         multipod_modular_spine_bootscript_check,
-        wred_affected_model_check,
     ]
     cli_checks = [
         # General
