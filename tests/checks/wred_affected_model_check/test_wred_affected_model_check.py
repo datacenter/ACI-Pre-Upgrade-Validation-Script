@@ -72,7 +72,7 @@ eqptFC_api = "eqptFC.json"
             script.PASS,
             [],
         ),
-        # Case 5: Multiple FM objects — one affected (N9K-C9508-FM-E), one unaffected (N9K-C9504-FM-G).
+        # Case 5: Multiple FM objects - one affected (N9K-C9508-FM-E), one unaffected (N9K-C9504-FM-G).
         # WRED is enabled. Only the affected FM should be reported.
         # Expected: FAIL_O with only the affected FM row reported.
         (
