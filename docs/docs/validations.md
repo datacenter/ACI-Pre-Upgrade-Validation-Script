@@ -39,6 +39,7 @@ Items                                                        | This Script      
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
 [Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
 [Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
+[N9K-C93180YC-FX3 Switch Memory][g22]                        | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -61,6 +62,7 @@ Items                                                        | This Script      
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
+[g22]: #n9k-c93180yc-fx3-switch-memory
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -2741,6 +2743,14 @@ To avoid this risk, consider disabling Auto Firmware Update before upgrading to 
 
 !!! note
     This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+### N9K-C93180YC-FX3 Switch Memory
+
+This check applies to N9K-C93180YC-FX3 switches only. It checks whether the switch is using 16GB or 32GB of memory and flags switches running on 16GB memory. This check is not version dependent and runs for all upgrade versions.
+
+Impact: Running an N9K-C93180YC-FX3 switch with less than 32GB memory can lead to memory pressure and increase the risk of service instability.
+
+If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memory to at least 32GB.
 
 
 ### Rogue EP Exception List missing on switches
