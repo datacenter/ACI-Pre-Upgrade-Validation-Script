@@ -16,13 +16,12 @@ proc_mem_query = 'procMemUsage.json'
 
 
 @pytest.mark.parametrize(
-    "fabric_nodes, icurl_outputs, tversion, expected_result, expected_msg, expected_data",
+    "fabric_nodes, icurl_outputs, expected_result, expected_msg, expected_data",
     [
         # No nodes returned
         (
             [],
             {},
-            "6.0(3c)",
             script.NA,
             'No N9K-C93180YC-FX3 switches found. Skipping.',
             [],
@@ -33,7 +32,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_node201_gt32gb.json"),
             },
-            "6.0(3c)",
             script.NA,
             'No N9K-C93180YC-FX3 switches found. Skipping.',
             [],
@@ -44,7 +42,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_gt32gb.json"),
             },
-            "6.0(3c)",
             script.PASS,
             '',
             [],
@@ -55,7 +52,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_all_gt32gb.json"),
             },
-            "6.0(3c)",
             script.PASS,
             '',
             [],
@@ -66,7 +62,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_missing_affected_node.json"),
             },
-            "6.0(3c)",
             script.ERROR,
             'Missing procMemUsage data for one or more affected N9K-C93180YC-FX3 nodes.',
             [["101", "leaf101", "N9K-C93180YC-FX3"]],
@@ -77,7 +72,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_mixed.json"),
             },
-            "6.0(3c)",
             script.PASS,
             '',
             [],
@@ -88,7 +82,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_lt32gb.json"),
             },
-            "6.0(3c)",
             script.MANUAL,
             (
                 'One or more N9K-C93180YC-FX3 switches have less than 32GB of memory. '
@@ -102,7 +95,6 @@ proc_mem_query = 'procMemUsage.json'
             {
                 proc_mem_query: read_data(dir, "procMemUsage_fail_and_missing.json"),
             },
-            "6.0(3c)",
             script.MANUAL,
             (
                 'Some N9K-C93180YC-FX3 nodes have insufficient memory and others are missing '
@@ -114,9 +106,8 @@ proc_mem_query = 'procMemUsage.json'
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, fabric_nodes, tversion, expected_result, expected_msg, expected_data):
+def test_logic(run_check, mock_icurl, fabric_nodes, expected_result, expected_msg, expected_data):
     result = run_check(
-        tversion=script.AciVersion(tversion),
         fabric_nodes=fabric_nodes,
     )
     assert result.result == expected_result

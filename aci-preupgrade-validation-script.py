@@ -6595,7 +6595,6 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
-        n9k_c93180yc_fx3_switch_memory_check,
         svccore_excessive_data_check,
 
         # Faults
@@ -6676,6 +6675,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
+        n9k_c93180yc_fx3_switch_memory_check,
     ]
     ssh_checks = [
         # General
