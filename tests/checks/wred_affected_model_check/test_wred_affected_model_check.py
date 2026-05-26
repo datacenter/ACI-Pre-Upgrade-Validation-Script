@@ -97,6 +97,19 @@ eqptFC_api = "eqptFC.json"
             script.NA,
             [],
         ),
+        # Case 7: Same node has two FM slots with the same affected model (duplicate eqptFC objects).
+        # Deduplication by (node_id, model) must result in only one row.
+        # Expected: FAIL_O with a single row for node 1001.
+        (
+            "6.2(1g)",
+            read_data(dir, "fabricNode_spine.json"),
+            {
+                qosCong_api: read_data(dir, "qosCong_wred.json"),
+                eqptFC_api: read_data(dir, "eqptFC_duplicate.json"),
+            },
+            script.FAIL_O,
+            [["1001", "spine1001", "FM", "N9K-C9508-FM-E"]],
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, tversion, fabric_nodes, expected_result, expected_data):
