@@ -6418,6 +6418,9 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     recommended_action = "Disable WRED in fabric or upgrade to a release newer than 6.1(5e) or 6.2(1g)."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-fm-models"
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
     version_affected = (
         (tversion.major1 == "6" and tversion.major2 == "1" and (tversion.older_than("6.1(5e)") or tversion.same_as("6.1(5e)")))
         or (tversion.major1 == "6" and tversion.major2 == "2" and (tversion.older_than("6.2(1g)") or tversion.same_as("6.2(1g)")))
@@ -6431,6 +6434,12 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         node["fabricNode"]["attributes"]["id"]: node["fabricNode"]["attributes"]["name"]
         for node in fabric_nodes
     }
+
+    for cong in icurl("class", "qosCong.json"):
+        if cong.get("qosCong", {}).get("attributes", {}).get("algo") == "wred":
+            break
+    else:
+        return Result(result=PASS, msg="WRED not enabled.")
 
     for obj in icurl("class", "eqptFC.json"):
         attr = obj["eqptFC"]["attributes"]
@@ -6446,17 +6455,8 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     if not data:
         return Result(result=NA, msg="No affected Fabric module found.")
 
-    wred_enabled = False
-    for cong in icurl("class", "qosCong.json"):
-        if cong.get("qosCong", {}).get("attributes", {}).get("algo") == "wred":
-            wred_enabled = True
-            break
-
-    if wred_enabled:
-        data.sort(key=lambda row: (int(row[0]) if row[0].isdigit() else row[0], row[3]))
-        result = FAIL_O
-    else:
-        data = []
+    data.sort(key=lambda row: (int(row[0]) if row[0].isdigit() else row[0], row[3]))
+    result = FAIL_O
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
