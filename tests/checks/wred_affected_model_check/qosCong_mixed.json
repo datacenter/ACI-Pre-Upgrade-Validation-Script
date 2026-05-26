@@ -1,0 +1,16 @@
+[
+  {
+    "qosCong": {
+      "attributes": {
+        "algo": "tail-drop"
+      }
+    }
+  },
+  {
+    "qosCong": {
+      "attributes": {
+        "algo": "wred"
+      }
+    }
+  }
+]

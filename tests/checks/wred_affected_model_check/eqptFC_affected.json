@@ -1,0 +1,10 @@
+[
+  {
+    "eqptFC": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001/sys/ch/fcslot-1/fc",
+        "model": "N9K-C9508-FM-E"
+      }
+    }
+  }
+]

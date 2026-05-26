@@ -6410,6 +6410,58 @@ def svccore_excessive_data_check(**kwargs):
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
 
 
+@check_wrapper(check_title="WRED with Affected FM Models")
+def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "Node Name", "Source", "Model"]
+    data = []
+    recommended_action = "Disable WRED in fabric or upgrade to a release newer than 6.1(5e) or 6.2(1g)."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-fm-models"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    version_affected = (
+        (tversion.major1 == "6" and tversion.major2 == "1" and (tversion.older_than("6.1(5e)") or tversion.same_as("6.1(5e)")))
+        or (tversion.major1 == "6" and tversion.major2 == "2" and (tversion.older_than("6.2(1g)") or tversion.same_as("6.2(1g)")))
+    )
+    if not version_affected:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    affected_models = {"N9K-C9504-FM-E", "N9K-C9508-FM-E", "N9K-C9516-FM-E"}
+
+    node_name_map = {
+        node["fabricNode"]["attributes"]["id"]: node["fabricNode"]["attributes"]["name"]
+        for node in fabric_nodes
+    }
+
+    for cong in icurl("class", "qosCong.json"):
+        if cong.get("qosCong", {}).get("attributes", {}).get("algo") == "wred":
+            break
+    else:
+        return Result(result=PASS, msg="WRED not enabled.")
+
+    unique_list = {}
+    for obj in icurl("class", "eqptFC.json"):
+        attr = obj["eqptFC"]["attributes"]
+        model = attr.get("model", "")
+        if model not in affected_models:
+            continue
+        dn_match = re.search(node_regex, attr.get("dn", ""))
+        if not dn_match:
+            continue
+        node_id = dn_match.group("node")
+        unique_list[(node_id, model)] = [node_id, node_name_map.get(node_id, ""), "FM", model]
+    data = list(unique_list.values())
+
+    if not data:
+        return Result(result=NA, msg="No affected Fabric module found.")
+
+    result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6581,6 +6633,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
+        wred_affected_model_check,
     ]
     ssh_checks = [
         # General
