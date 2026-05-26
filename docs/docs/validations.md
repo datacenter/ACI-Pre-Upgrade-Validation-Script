@@ -2801,9 +2801,9 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 ### False Micron SSD failure fault
 
-Due to [CSCwt38698][70], certain Micron SSDs present in the fabric may experience premature end-of-life failures after upgrading to `6.1(5e)` or `6.2(1g)`.
+Due to [CSCwt38698][70], Micron SSDs present in the fabric may give false end-of-life failures after upgrading to 6.1(5e) or 6.2(1g).
 
-To avoid this issue, change the target version to non-impacted version. TO confirm if this is genuine or false alarm run the SSD Lifetime Validation script on all nodes with identified actual failure case. If the SSD lifetime is critically low after manually running the script, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. In case you already upgraded your node and experiencing unavailability due to this issue, contact Cisco TAC for the SSD replacement procedure to restore the node.
+To confirm if this is genuine or false alarm run the SSD Lifetime Validation script on all nodes with identified actual failure case. If the SSD lifetime is critically low after manually running the script, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. To avoid this false alarm you can choose non-impacted target version.
 
 - Script location: [SSD Lifetime Validation](https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation)
 
