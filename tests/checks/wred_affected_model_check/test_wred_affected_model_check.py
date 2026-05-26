@@ -17,7 +17,15 @@ eqptFC_api = "eqptFC.json"
 @pytest.mark.parametrize(
     "tversion, fabric_nodes, icurl_outputs, expected_result, expected_data",
     [
-        # Case 1: Target version 6.2(2a) is the first fixed release and not in the affected range.
+        # Case 1: Target version not supplied. Expected: MANUAL.
+        (
+            None,
+            read_data(dir, "fabricNode_spine.json"),
+            {},
+            script.MANUAL,
+            [],
+        ),
+        # Case 2: Target version 6.2(2a) is the first fixed release and not in the affected range.
         # Version gate fails. Expected: NA without any API calls.
         (
             "6.2(2a)",
@@ -40,11 +48,13 @@ eqptFC_api = "eqptFC.json"
             [["1001", "spine1001", "FM", "N9K-C9508-FM-E"]],
         ),
         # Case 3: Version is affected but no affected FM hardware found.
-        # Hardware gate fails before WRED is checked. Expected: NA - issue is model-specific.
+        # WRED is enabled so the script proceeds to the FM check, which finds nothing.
+        # Hardware gate fails. Expected: NA - issue is model-specific.
         (
             "6.1(5e)",
             read_data(dir, "fabricNode_spine.json"),
             {
+                qosCong_api: read_data(dir, "qosCong_wred.json"),
                 eqptFC_api: read_data(dir, "eqptFC_empty.json"),
             },
             script.NA,
@@ -75,11 +85,23 @@ eqptFC_api = "eqptFC.json"
             script.FAIL_O,
             [["1001", "spine1001", "FM", "N9K-C9508-FM-E"]],
         ),
+        # Case 6: Version is affected, WRED is enabled, but no affected FM models found.
+        # FM gate fails. Expected: NA.
+        (
+            "6.2(1g)",
+            read_data(dir, "fabricNode_spine.json"),
+            {
+                qosCong_api: read_data(dir, "qosCong_wred.json"),
+                eqptFC_api: read_data(dir, "eqptFC_empty.json"),
+            },
+            script.NA,
+            [],
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, tversion, fabric_nodes, expected_result, expected_data):
     result = run_check(
-        tversion=script.AciVersion(tversion),
+        tversion=script.AciVersion(tversion) if tversion else None,
         fabric_nodes=fabric_nodes,
     )
     assert result.result == expected_result
