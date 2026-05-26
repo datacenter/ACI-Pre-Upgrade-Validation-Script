@@ -205,7 +205,6 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
-[N9300 Switch Memory][d34]                      | -            | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -240,7 +239,6 @@ Items                                           | Defect       | This Script    
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
-[d34]: #n9300-switch-memory
 
 ## General Check Details
 
@@ -2725,6 +2723,7 @@ In ACI, there are internal objects which track the underlying transactions which
 Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
+
 
 ### Auto Firmware Update on Switch Discovery
 
