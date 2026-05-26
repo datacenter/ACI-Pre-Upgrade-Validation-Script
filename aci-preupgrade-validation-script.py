@@ -6441,6 +6441,7 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     else:
         return Result(result=PASS, msg="WRED not enabled.")
 
+    unique_list = {}
     for obj in icurl("class", "eqptFC.json"):
         attr = obj["eqptFC"]["attributes"]
         model = attr.get("model", "")
@@ -6450,7 +6451,8 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         if not dn_match:
             continue
         node_id = dn_match.group("node")
-        data.append([node_id, node_name_map.get(node_id, ""), "FM", model])
+        unique_list[(node_id, model)] = [node_id, node_name_map.get(node_id, ""), "FM", model]
+    data = list(unique_list.values())
 
     if not data:
         return Result(result=NA, msg="No affected Fabric module found.")
