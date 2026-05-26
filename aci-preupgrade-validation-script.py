@@ -6410,7 +6410,7 @@ def svccore_excessive_data_check(**kwargs):
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
 
 
-@check_wrapper(check_title='False Micron SSD failure_fault')
+@check_wrapper(check_title='False Micron SSD failure fault')
 def false_micron_ssd_failure_fault_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ['Pod', 'Node', 'Model']
@@ -6419,7 +6419,7 @@ def false_micron_ssd_failure_fault_check(cversion, tversion, **kwargs):
         '\n\tRun the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
         '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
     )
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#false-micron-ssd-failure_fault'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#false-micron-ssd-failure-fault'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
@@ -6439,7 +6439,7 @@ def false_micron_ssd_failure_fault_check(cversion, tversion, **kwargs):
         data.append([pod_id, node_id, attr.get('model','')])
 
     if data:
-        result = FAIL_O
+        result = MANUAL
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

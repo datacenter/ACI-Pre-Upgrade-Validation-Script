@@ -56,32 +56,32 @@ micron_drives_multi  = read_data(dir, "eqptFlash_multi_micron.json")
             script.PASS,
             [],
         ),
-        # Test 7: FAIL_O - tversion affected 6.1(5e), cversion not affected, single Micron drive
+        # Test 7: MANUAL - tversion affected 6.1(5e), cversion not affected, single Micron drive
         (
             {eqptflash_micron: micron_drives_single},
             "6.1(5e)", "6.0(2h)",
-            script.FAIL_O,
+            script.MANUAL,
             [["1", "101", "MTFDDAK240MBB"]],
         ),
-        # Test 8: FAIL_O - tversion affected 6.2(1g), cversion not affected, single Micron drive
+        # Test 8: MANUAL - tversion affected 6.2(1g), cversion not affected, single Micron drive
         (
             {eqptflash_micron: micron_drives_single},
             "6.2(1g)", "6.0(2h)",
-            script.FAIL_O,
+            script.MANUAL,
             [["1", "101", "MTFDDAK240MBB"]],
         ),
-        # Test 9: FAIL_O - tversion not affected, cversion affected 6.1(5e), single Micron drive
+        # Test 9: MANUAL - tversion not affected, cversion affected 6.1(5e), single Micron drive
         (
             {eqptflash_micron: micron_drives_single},
             "6.2(2a)", "6.1(5e)",
-            script.FAIL_O,
+            script.MANUAL,
             [["1", "101", "MTFDDAK240MBB"]],
         ),
-        # Test 10: FAIL_O - multiple Micron drives across pods and nodes
+        # Test 10: MANUAL - multiple Micron drives across pods and nodes
         (
             {eqptflash_micron: micron_drives_multi},
             "6.1(5e)", "6.0(2h)",
-            script.FAIL_O,
+            script.MANUAL,
             [
                 ["1", "101", "MTFDDAK240MBB"],
                 ["2", "201", "MTFDDAK480MBB"],
