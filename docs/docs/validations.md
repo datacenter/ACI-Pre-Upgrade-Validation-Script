@@ -2794,7 +2794,7 @@ Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck
 
 The svccoreCtrlr and svccoreNode objects represent core files related to Apic and Leaf/Spines process respectively.
 
-Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous "Loading…"state.
+Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
 
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
@@ -2803,13 +2803,10 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 Due to [CSCwt69100][70], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
 
-Affected versions: version <= 6.1(5e) or version <= 6.2(1g).
-
-The check queries for `dbgacEpgSummaryTask` objects with `operSt="processing"` and `startTs` older than 24 hours. Such objects are considered stale and unexpected. If found, delete them before proceeding with the upgrade to prevent policymgr from crashing on restart.
+Delete any stale `dbgacEpgSummaryTask` objects before proceeding to prevent policymgr from crashing on restart.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
-[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
 [3]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/release-notes/cisco-aci-nx-os-release-notes-1501.html#_Toc140580685

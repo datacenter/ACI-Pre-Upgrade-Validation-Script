@@ -43,10 +43,17 @@ def mock_datetime(monkeypatch):
 @pytest.mark.parametrize(
     "tversion, icurl_outputs, expected_result, expected_data",
     [
-        # Case 1: Target version 6.2(2a) is beyond both affected ranges (6.1(5e) and 6.2(1g)).
+        # Case 1: tversion is missing. Expected: MANUAL.
+        (
+            None,
+            {},
+            script.MANUAL,
+            [],
+        ),
+        # Case 2: Target version 6.2(1h) is beyond both affected ranges (6.1(5e) and 6.2(1g)).
         # The target binary has the fix so version gate fails. Expected: NA without any API calls.
         (
-            "6.2(2a)",
+            "6.2(1h)",
             {},
             script.NA,
             [],
@@ -103,11 +110,36 @@ def mock_datetime(monkeypatch):
                 ]
             ],
         ),
+        # Case 6: Task started exactly 24 hours ago (startTs == threshold).
+        # Boundary condition: task_dt < threshold is False when equal. Expected: PASS.
+        (
+            "6.1(5e)",
+            {
+                task_api: read_data(dir, "dbgacEpgSummaryTask_exactly_24h.json"),
+            },
+            script.PASS,
+            [],
+        ),
+        # Case 7: Two tasks — one at 25 hours (stale) and one at 23h59m (not stale).
+        # Only the 25h task crosses the threshold. Expected: FAIL_O with one row.
+        (
+            "6.1(5e)",
+            {
+                task_api: read_data(dir, "dbgacEpgSummaryTask_boundary_combo.json"),
+            },
+            script.FAIL_O,
+            [
+                [
+                    "action/policymgrsubj-[uni/tn-TN_PROD/epgToEpg-EPG_PROD_FE_TO_EPG_PROD_BE/dstepg-[uni/tn-TN_PROD/ap-AP_PROD/epg-EPG_PROD_BE]]/dbgacEpgSummaryTask-ReportODACDef",
+                    "2026-01-14T11:00:00.000+00:00",
+                ]
+            ],
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, mock_datetime, tversion, icurl_outputs, expected_result, expected_data):
     result = run_check(
-        tversion=script.AciVersion(tversion),
+        tversion=script.AciVersion(tversion) if tversion else None,
     )
     assert result.result == expected_result
     assert result.data == expected_data
