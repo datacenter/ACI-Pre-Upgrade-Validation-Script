@@ -38,6 +38,7 @@ Items                                                        | This Script      
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
 [Svccore Excessive Data Check][g20]                          | :white_check_mark: | :no_entry_sign:
+[Spine/Leaf Cert Validation][g21]                            | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -59,6 +60,7 @@ Items                                                        | This Script      
 [g18]: #apic-database-size
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #svccore-excessive-data-check
+[g21]: #spineleaf-cert-validation
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -2783,6 +2785,11 @@ Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with 
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
 
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
+
+### Spine/Leaf Cert Validation
+
+The script checks the expiration date of SSL certificates on spine and leaf switches (nodes with roles `spine` or `leaf`) via the `pkiFabricNodeSSLCertificate` class. If any certificate has already expired, it will be highlighted. Expired node certificates can prevent switches from successfully joining the fabric or communicating securely with the APIC controllers.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
