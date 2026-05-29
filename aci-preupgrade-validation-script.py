@@ -4120,6 +4120,78 @@ def apic_ca_cert_validation(**kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Spine/Leaf Cert Validation")
+def switch_cert_validation(fabric_nodes, **kwargs):
+    result = FAIL_O
+    headers = ["Pod-ID", "Node-ID", "Node Name", "Role", "Expiry Date"]
+    data = []
+    recommended_action = "Renew the expired node SSL certificate before proceeding with the upgrade."
+
+    if not fabric_nodes:
+        return Result(result=PASS)
+
+    switch_nodes = {}
+    for fn in fabric_nodes:
+        fn_attrs = fn.get('fabricNode', {}).get('attributes', {})
+        role = fn_attrs.get('role')
+        if role in ['spine', 'leaf']:
+            node_id = fn_attrs.get('id')
+            if node_id:
+                switch_nodes[node_id] = fn_attrs
+
+    if not switch_nodes:
+        return Result(result=PASS)
+
+    pki_certs = icurl('class', 'pkiFabricNodeSSLCertificate.json')
+    if not pki_certs:
+        return Result(result=PASS)
+
+    for pki_cert in pki_certs:
+        attrs = pki_cert.get('pkiFabricNodeSSLCertificate', {}).get('attributes', {})
+        node_id = attrs.get('nodeId')
+        if not node_id or node_id not in switch_nodes:
+            continue
+
+        node_info = switch_nodes[node_id]
+        node_name = node_info.get('name', 'N/A')
+        role = node_info.get('role', 'N/A')
+        dn_match = re.search(node_regex, node_info.get('dn', ''))
+        pod_id = dn_match.group('pod') if dn_match else 'N/A'
+
+        not_after_str = attrs.get('validityNotAfter', '')
+        if not not_after_str:
+            log.debug("node %s: empty validityNotAfter, skipping", node_id)
+            continue
+
+        try:
+            expiry_dt = datetime.strptime(not_after_str[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            log.debug("node %s: cannot parse validityNotAfter=%r, skipping",
+                      node_id, not_after_str)
+            continue
+
+        if expiry_dt > datetime.utcnow():
+            continue
+
+        data.append([
+            pod_id,
+            node_id,
+            node_name,
+            role,
+            not_after_str,
+        ])
+
+    if not data:
+        result = PASS
+
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        recommended_action=recommended_action,
+    )
+
+
 @check_wrapper(check_title="FabricDomain Name")
 def fabricdomain_name_check(cversion, tversion, fabric_nodes, **kwargs):
     result = FAIL_O
@@ -6432,6 +6504,7 @@ class CheckManager:
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
         svccore_excessive_data_check,
+        switch_cert_validation,
 
         # Faults
         apic_disk_space_faults_check,
