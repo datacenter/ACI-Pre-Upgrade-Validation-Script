@@ -71,7 +71,7 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
             "6.2(1g)",
             read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
-            [["101", "N9K-C9408", "N9K-X9400-16W", 6]],
+            [["101", "N9K-C9408", "N9K-X9400-16W", "6"]],
             "",
         ),
         # Applicable mid-train version 6.1(5e), less than 6 LEMs on C9408 -> PASS
@@ -89,7 +89,7 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
             "6.1(5e)",
             read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
-            [["101", "N9K-C9408", "N9K-X9400-16W", 6]],
+            [["101", "N9K-C9408", "N9K-X9400-16W", "6"]],
             "",
         ),
         # Version not affected (fixed in 6.1(6)+)
@@ -107,7 +107,7 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
             "6.1(2f)",
             read_data(dir, "fabricNode_n9k_c9408.json"),
             script.FAIL_O,
-            [["101", "N9K-C9408", "N9K-X9400-16W", 6]],
+            [["101", "N9K-C9408", "N9K-X9400-16W", "6"]],
             "",
         ),
         # Count only C9408 nodes and only matching LEM model
@@ -117,8 +117,8 @@ eqptLC_api = 'eqptLC.json?query-target-filter=eq(eqptLC.model,"N9K-X9400-16W")'
             read_data(dir, "fabricNode_mixed.json"),
             script.FAIL_O,
             [
-                ["101", "N9K-C9408", "N9K-X9400-16W", 6],
-                ["102", "N9K-C9408", "N9K-X9400-16W", 6],
+                ["101", "N9K-C9408", "N9K-X9400-16W", "6"],
+                ["102", "N9K-C9408", "N9K-X9400-16W", "6"],
             ],
             "",
         ),

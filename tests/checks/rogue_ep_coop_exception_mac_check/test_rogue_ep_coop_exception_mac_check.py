@@ -66,14 +66,14 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "5.2(3e)",
             script.FAIL_O,
-            [[5, "N/A"]],
+            [["5", "N/A"]],
         ),
         (
             {exception_mac_api: read_data(dir, "rogue_mac_response.json")},
             "6.1(3g)",
             "5.2(3e)",
             script.FAIL_O,
-            [[5, "N/A"]],
+            [["5", "N/A"]],
         ),
         # Affected (post-APIC upgrade, pre-switch upgrade) cases
         # tversion == cversion (affected target), no exception MACs
@@ -121,7 +121,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 31 found out of 32"]],
+            [["5", "only 31 found out of 32"]],
         ),
         (
             {
@@ -131,7 +131,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 31 found out of 32"]],
+            [["5", "only 31 found out of 32"]],
         ),
         (
             {
@@ -141,7 +141,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 27 found out of 32"]],
+            [["5", "only 27 found out of 32"]],
         ),
         (
             {
@@ -151,7 +151,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 27 found out of 32"]],
+            [["5", "only 27 found out of 32"]],
         ),
         (
             {
@@ -161,7 +161,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 1 found out of 32"]],
+            [["5", "only 1 found out of 32"]],
         ),
         (
             {
@@ -171,7 +171,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 1 found out of 32"]],
+            [["5", "only 1 found out of 32"]],
         ),
         (
             {
@@ -181,7 +181,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 0 found out of 32"]],
+            [["5", "only 0 found out of 32"]],
         ),
         (
             {
@@ -191,7 +191,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 0 found out of 32"]],
+            [["5", "only 0 found out of 32"]],
         ),
     ],
 )
