@@ -1,0 +1,26 @@
+[
+    {
+        "l3IfPol": {
+            "attributes": {
+                "bfdIsis": "disabled",
+                "dn": "uni/fabric/l3IfP-default"
+            }
+        }
+    },
+    {
+        "l3IfPol": {
+            "attributes": {
+                "bfdIsis": "enabled",
+                "dn": "uni/fabric/l3IfP-custom1"
+            }
+        }
+    },
+    {
+        "l3IfPol": {
+            "attributes": {
+                "bfdIsis": "enabled",
+                "dn": "uni/fabric/l3IfP-custom2"
+            }
+        }
+    }
+]
