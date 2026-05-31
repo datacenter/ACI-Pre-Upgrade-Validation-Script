@@ -3756,6 +3756,25 @@ def isis_redis_metric_mpod_msite_check(**kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Fabric BFD on ISIS")
+def fabric_bfd_isis_check(**kwargs):
+    result = PASS
+    headers = ["L3 Interface Policy DN"]
+    data = []
+    recommended_action = 'Prior to upgrade or downgrade, disable Fabric BFD on ISIS.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fabric-bfd-on-isis'
+
+    l3IfPols = icurl('class', 'l3IfPol.json')
+    for pol in l3IfPols:
+        if pol['l3IfPol']['attributes'].get('bfdIsis') == 'enabled':
+            data.append([pol['l3IfPol']['attributes']['dn']])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="BGP route target type for GOLF over L2EVPN")
 def bgp_golf_route_target_type_check(cversion, tversion, **kwargs):
     result = FAIL_O
@@ -6465,6 +6484,7 @@ class CheckManager:
         l3out_overlapping_loopback_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
+        fabric_bfd_isis_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
         uplink_limit_check,
