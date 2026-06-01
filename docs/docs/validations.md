@@ -2772,25 +2772,6 @@ This issue happens only when the target version is specifically 6.1(4h).
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
-### Cleanup vnsRsCIfAtt usage in services
-
-Due to [CSCwr51759][70], when targeting 6.0(3)+, having only `vnsRsCIfAtt` without the corresponding `vnsRsCIfAttN` under the same `vnsLIf` can leave service graph interface attachment in an inconsistent state.
-
-Impact:
-
-Upgrade can be outage-risky for service graph traffic if stale legacy-only interface attachment relations remain.
-
-How this check works:
-
-It compares configured `vnsRsCIfAtt` and `vnsRsCIfAttN` relations by the same cluster interface parent (`vnsLIf`) and same concrete interface target (`tDn`).
-
-If any `vnsRsCIfAtt` relation exists without a matching `vnsRsCIfAttN` for the same concrete interface target (`tDn`), the upgrade is outage-risky and should be treated as affected.
-
-Suggestion:
-
-Before the upgrade, add the missing `vnsRsCIfAttN` relation under the same cluster interface (`vnsLIf`) with the same concrete interface target (`tDn`).
-
-
 ### Inband Management Policy Misconfiguration
 
 Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
@@ -2817,6 +2798,19 @@ Due to [CSCws84232][67], the APIC GUI may become unresponsive after login, with 
 Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
 
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
+### Cleanup vnsRsCIfAtt usage in services
+
+Due to [CSCwr51759][70], when targeting 6.0(3)+, having only `vnsRsCIfAtt` without the corresponding `vnsRsCIfAttN` under the same `vnsLIf` can leave service graph interface attachment in an inconsistent state.
+
+Impact:
+
+If any `vnsRsCIfAtt` relation exists without a matching `vnsRsCIfAttN` for the same concrete interface target (`tDn`), the upgrade is outage-risky and should be treated as affected.
+
+Suggestion:
+
+Before the upgrade, add the missing `vnsRsCIfAttN` relation under the same cluster interface (`vnsLIf`) with the same concrete interface target (`tDn`).
+
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
