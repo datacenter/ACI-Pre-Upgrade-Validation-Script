@@ -203,6 +203,7 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
+[Cleanup vnsRsCIfAtt usage in services][d34]    | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -237,6 +238,7 @@ Items                                           | Defect       | This Script    
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
+[d34]: #cleanup-vnsrscifatt-usage-in-services
 
 ## General Check Details
 
@@ -2770,6 +2772,25 @@ This issue happens only when the target version is specifically 6.1(4h).
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
 
+### Cleanup vnsRsCIfAtt usage in services
+
+Due to [CSCwr51759][70], when targeting 6.0(3)+, having only `vnsRsCIfAtt` without the corresponding `vnsRsCIfAttN` under the same `vnsLIf` can leave service graph interface attachment in an inconsistent state.
+
+Impact:
+
+Upgrade can be outage-risky for service graph traffic if stale legacy-only interface attachment relations remain.
+
+How this check works:
+
+It compares configured `vnsRsCIfAtt` and `vnsRsCIfAttN` relations by the same cluster interface parent (`vnsLIf`) and same concrete interface target (`tDn`).
+
+If any `vnsRsCIfAtt` relation exists without a matching `vnsRsCIfAttN` for the same concrete interface target (`tDn`), the upgrade is outage-risky and should be treated as affected.
+
+Suggestion:
+
+Before the upgrade, add the missing `vnsRsCIfAttN` relation under the same cluster interface (`vnsLIf`) with the same concrete interface target (`tDn`).
+
+
 ### Inband Management Policy Misconfiguration
 
 Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
@@ -2868,3 +2889,4 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759

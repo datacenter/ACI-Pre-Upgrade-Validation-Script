@@ -1,0 +1,78 @@
+import os
+import pytest
+import importlib
+from helpers.utils import read_data
+
+script = importlib.import_module("aci-preupgrade-validation-script")
+
+dir = os.path.dirname(os.path.abspath(__file__))
+
+test_function = "vns_rscifatt_cleanup_check"
+
+# icurl queries
+vnsRsCIfAtt_api = "vnsRsCIfAtt.json?rsp-prop-include=config-only"
+vnsRsCIfAttN_api = "vnsRsCIfAttN.json?rsp-prop-include=config-only"
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs, tversion, expected_result, expected_data",
+    [
+        # Target version missing
+        (
+            {},
+            None,
+            script.MANUAL,
+            [],
+        ),
+        # Target version is not affected (< 6.0(3d))
+        (
+            {},
+            "6.0(2h)",
+            script.NA,
+            [],
+        ),
+        # No user-configured vnsRsCIfAtt payload
+        (
+            {
+                vnsRsCIfAtt_api: read_data(dir, "vnsRsCIfAtt_empty.json"),
+            },
+            "6.1(5e)",
+            script.PASS,
+            [],
+        ),
+        # All vnsRsCIfAtt relations have matching vnsRsCIfAttN relations
+        (
+            {
+                vnsRsCIfAtt_api: read_data(dir, "vnsRsCIfAtt_match.json"),
+                vnsRsCIfAttN_api: read_data(dir, "vnsRsCIfAttN_match.json"),
+            },
+            "6.1(5e)",
+            script.PASS,
+            [],
+        ),
+        # One vnsRsCIfAtt relation (cons) missing in vnsRsCIfAttN
+        (
+            {
+                vnsRsCIfAtt_api: read_data(dir, "vnsRsCIfAtt_match.json"),
+                vnsRsCIfAttN_api: read_data(dir, "vnsRsCIfAttN_missing_cons.json"),
+            },
+            "6.1(5e)",
+            script.FAIL_O,
+            [
+                [
+                    "CSCwj49418",
+                    "test",
+                    "intf-cons",
+                    "cons",
+                    "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-cons/rscIfAtt-[uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[cons]]",
+                ]
+            ],
+        ),
+    ],
+)
+def test_logic(run_check, mock_icurl, tversion, expected_result, expected_data):
+    result = run_check(
+        tversion=script.AciVersion(tversion) if tversion else None,
+    )
+    assert result.result == expected_result
+    assert result.data == expected_data
