@@ -6411,11 +6411,11 @@ def svccore_excessive_data_check(**kwargs):
 
 
 @check_wrapper(check_title="Stale dbgacEpgSummaryTask Objects")
-def stale_epg_summary_task_check(tversion, **kwargs):
+def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     result = PASS
     headers = ["DN", "Start Time"]
     data = []
-    recommended_action = "Delete the listed stale dbgacEpgSummaryTask objects before the upgrade to prevent policymgr crash."
+    recommended_action = "Contact Cisco TAC to delete the offending dbgacEpgSummaryTask objects before the upgrade. For more details, refer to the workaround in [CSCwt69100](https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100)."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-dbgacepgsummarytask-objects"
 
     if not tversion:
@@ -6441,7 +6441,7 @@ def stale_epg_summary_task_check(tversion, **kwargs):
             data.append([dn, start_ts])
 
     if data:
-        result = FAIL_O
+        result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 # ---- Script Execution ----
@@ -6615,7 +6615,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
-        stale_epg_summary_task_check,
+        stale_dbgacEpgSummaryTask_check,
     ]
     ssh_checks = [
         # General

@@ -8,14 +8,14 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "stale_epg_summary_task_check"
+test_function = "stale_dbgacEpgSummaryTask_check"
 
 # icurl query key
 task_api = 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'
 
 # Fixed "now" used by mock_datetime fixture: 2026-01-15 12:00:00 UTC
 # Stale threshold = 2026-01-14 12:00:00 UTC (24h before fixed now)
-# dbgacEpgSummaryTask_stale.json  -> startTs 2024-01-01 (way before threshold) -> FAIL_O
+# dbgacEpgSummaryTask_stale.json  -> startTs 2024-01-01 (way before threshold) -> FAIL_UF
 # dbgacEpgSummaryTask_recent.json -> startTs 2026-01-15 11:30 UTC (30 min before fixed now) -> PASS
 FIXED_NOW = datetime(2026, 1, 15, 12, 0, 0)
 
@@ -81,13 +81,13 @@ def mock_datetime(monkeypatch):
         ),
         # Case 4: Target version 6.1(5e) is affected, one task stuck in processing with startTs
         # from 2024 (way older than 24 hours). Stale task detected.
-        # Expected: FAIL_O with the offending DN and startTs reported.
+        # Expected: FAIL_UF with the offending DN and startTs reported.
         (
             "6.1(5e)",
             {
                 task_api: read_data(dir, "dbgacEpgSummaryTask_stale.json"),
             },
-            script.FAIL_O,
+            script.FAIL_UF,
             [
                 [
                     "action/policymgrsubj-[uni/tn-TN_PROD/epgToEpg-EPG_PROD_FE_TO_EPG_PROD_BE/dstepg-[uni/tn-TN_PROD/ap-AP_PROD/epg-EPG_PROD_BE]]/dbgacEpgSummaryTask-ReportODACDef",
@@ -96,13 +96,13 @@ def mock_datetime(monkeypatch):
             ],
         ),
         # Case 5: Target version 6.2(1g) is affected, two tasks — one stale (2024), one recent.
-        # Only the stale task should be reported. Expected: FAIL_O with one row.
+        # Only the stale task should be reported. Expected: FAIL_UF with one row.
         (
             "6.2(1g)",
             {
                 task_api: read_data(dir, "dbgacEpgSummaryTask_mixed.json"),
             },
-            script.FAIL_O,
+            script.FAIL_UF,
             [
                 [
                     "action/policymgrsubj-[uni/tn-TN_PROD/epgToEpg-EPG_PROD_FE_TO_EPG_PROD_BE/dstepg-[uni/tn-TN_PROD/ap-AP_PROD/epg-EPG_PROD_BE]]/dbgacEpgSummaryTask-ReportODACDef",
@@ -121,13 +121,13 @@ def mock_datetime(monkeypatch):
             [],
         ),
         # Case 7: Two tasks — one at 25 hours (stale) and one at 23h59m (not stale).
-        # Only the 25h task crosses the threshold. Expected: FAIL_O with one row.
+        # Only the 25h task crosses the threshold. Expected: FAIL_UF with one row.
         (
             "6.1(5e)",
             {
                 task_api: read_data(dir, "dbgacEpgSummaryTask_boundary_combo.json"),
             },
-            script.FAIL_O,
+            script.FAIL_UF,
             [
                 [
                     "action/policymgrsubj-[uni/tn-TN_PROD/epgToEpg-EPG_PROD_FE_TO_EPG_PROD_BE/dstepg-[uni/tn-TN_PROD/ap-AP_PROD/epg-EPG_PROD_BE]]/dbgacEpgSummaryTask-ReportODACDef",
