@@ -2803,7 +2803,7 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 Due to [CSCwt69100][70], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
 
-Delete any stale `dbgacEpgSummaryTask` objects before proceeding to prevent policymgr from crashing on restart.
+Delete any stale `dbgacEpgSummaryTask` objects before proceeding with the upgrade to prevent policymgr from crashing on restart.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

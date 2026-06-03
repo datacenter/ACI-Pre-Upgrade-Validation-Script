@@ -6415,7 +6415,7 @@ def stale_epg_summary_task_check(tversion, **kwargs):
     result = PASS
     headers = ["DN", "Start Time"]
     data = []
-    recommended_action = "Delete the listed stale dbgacEpgSummaryTask objects to prevent policymgr crash."
+    recommended_action = "Delete the listed stale dbgacEpgSummaryTask objects before the upgrade to prevent policymgr crash."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-dbgacepgsummarytask-objects"
 
     if not tversion:
