@@ -6410,15 +6410,15 @@ def svccore_excessive_data_check(**kwargs):
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
 
 
-@check_wrapper(check_title="Cleanup vnsRsCIfAtt usage in services")
-def vns_rscifatt_cleanup_check(tversion, **kwargs):
+@check_wrapper(check_title="Check missing vnsRsCIfAttN")
+def vns_rscifattn_missing_check(tversion, **kwargs):
     result = PASS
     headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
     data = []
     recommended_action = (
-        "Mo vnsRsCIfAtt is deprecated >=6.0(3d). Before upgrade, under Services, add the missing concrete interface as vnsRsCIfAttN under the same cluster interface"
+        "From 6.0(3) release, Mo vnsRsCIfAtt is deprecated. Before upgrade, re-add any missing concrete interface mapping under the same L4-L7 device cluster interface so the corresponding vnsRsCIfAttN relation exists."
     )
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#cleanup-vnsrscifatt-usage-in-services"
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#check-missing-vnsrscifattn"
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
@@ -6432,23 +6432,11 @@ def vns_rscifatt_cleanup_check(tversion, **kwargs):
 
     vnsRsCIfAttNs = icurl("class", "vnsRsCIfAttN.json?rsp-prop-include=config-only")
 
-    def get_target_dn(relation_attributes):
-        target_dn = relation_attributes["tDn"].strip() if "tDn" in relation_attributes else ""
-        if target_dn:
-            return target_dn
-        if "dn" not in relation_attributes:
-            return ""
-        relation_dn = relation_attributes["dn"]
-        target_dn_match = re.search(r"\[(.*)\]$", relation_dn)
-        return target_dn_match.group(1).strip() if target_dn_match else ""
-
-    def get_parent_dn(relation_dn):
+    def get_common_relation_dn(relation_dn):
         relation_dn = relation_dn.strip()
-        if "/rscIfAtt-[" in relation_dn:
-            return relation_dn.split("/rscIfAtt-[", 1)[0]
         if "/rscIfAttN-[" in relation_dn:
-            return relation_dn.split("/rscIfAttN-[", 1)[0]
-        return relation_dn.rsplit("/", 1)[0] if "/" in relation_dn else ""
+            return relation_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1)
+        return relation_dn
 
     def parse_relation_context(relation_dn):
         tenant_name = ""
@@ -6481,10 +6469,7 @@ def vns_rscifatt_cleanup_check(tversion, **kwargs):
         relation_dn = relation_attributes["dn"].strip()
         if not relation_dn:
             continue
-        target_dn = get_target_dn(relation_attributes)
-        if not target_dn:
-            continue
-        relation_key = (get_parent_dn(relation_dn), target_dn)
+        relation_key = get_common_relation_dn(relation_dn)
         old_relation_dn_by_key[relation_key] = relation_dn
 
     if not old_relation_dn_by_key:
@@ -6492,21 +6477,10 @@ def vns_rscifatt_cleanup_check(tversion, **kwargs):
 
     new_relation_keys = set()
     for vnsRsCIfAttN in vnsRsCIfAttNs:
-        if "vnsRsCIfAttN" not in vnsRsCIfAttN:
-            continue
-        if "attributes" not in vnsRsCIfAttN["vnsRsCIfAttN"]:
-            continue
-        relation_attributes = vnsRsCIfAttN["vnsRsCIfAttN"]["attributes"]
-        if "dn" not in relation_attributes:
-            continue
-
-        relation_dn = relation_attributes["dn"].strip()
+        relation_dn = vnsRsCIfAttN["vnsRsCIfAttN"]["attributes"].get("dn", "").strip()
         if not relation_dn:
             continue
-        target_dn = get_target_dn(relation_attributes)
-        if not target_dn:
-            continue
-        relation_key = (get_parent_dn(relation_dn), target_dn)
+        relation_key = get_common_relation_dn(relation_dn)
         new_relation_keys.add(relation_key)
 
     for relation_key in sorted(old_relation_dn_by_key.keys()):
@@ -6614,6 +6588,7 @@ class CheckManager:
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
         svccore_excessive_data_check,
+        vns_rscifattn_missing_check,
 
         # Faults
         apic_disk_space_faults_check,
@@ -6693,7 +6668,6 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
-        vns_rscifatt_cleanup_check,
     ]
     ssh_checks = [
         # General

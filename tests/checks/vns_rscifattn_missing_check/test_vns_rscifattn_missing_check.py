@@ -7,7 +7,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "vns_rscifatt_cleanup_check"
+test_function = "vns_rscifattn_missing_check"
 
 # icurl queries
 vnsRsCIfAtt_api = "vnsRsCIfAtt.json?rsp-prop-include=config-only"
