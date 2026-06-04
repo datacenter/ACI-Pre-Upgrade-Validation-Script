@@ -59,7 +59,7 @@ def mock_datetime(monkeypatch):
             [],
         ),
         # Case 2: Target version 6.1(5e) is affected, no dbgacEpgSummaryTask objects found.
-        # No stale tasks present — system is safe. Expected: PASS.
+        # No stale tasks present -- system is safe. Expected: PASS.
         (
             "6.1(5e)",
             {
@@ -95,7 +95,7 @@ def mock_datetime(monkeypatch):
                 ]
             ],
         ),
-        # Case 5: Target version 6.2(1g) is affected, two tasks — one stale (2024), one recent.
+        # Case 5: Target version 6.2(1g) is affected, two tasks -- one stale (2024), one recent.
         # Only the stale task should be reported. Expected: FAIL_UF with one row.
         (
             "6.2(1g)",
@@ -120,7 +120,7 @@ def mock_datetime(monkeypatch):
             script.PASS,
             [],
         ),
-        # Case 7: Two tasks — one at 25 hours (stale) and one at 23h59m (not stale).
+        # Case 7: Two tasks -- one at 25 hours (stale) and one at 23h59m (not stale).
         # Only the 25h task crosses the threshold. Expected: FAIL_UF with one row.
         (
             "6.1(5e)",
