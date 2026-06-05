@@ -6411,7 +6411,7 @@ def svccore_excessive_data_check(**kwargs):
 
 
 @check_wrapper(check_title="Check missing vnsRsCIfAttN")
-def vns_rscifattn_missing_check(tversion, **kwargs):
+def vnsrscifattn_missing_check(tversion, **kwargs):
     result = PASS
     headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
     data = []
@@ -6588,7 +6588,7 @@ class CheckManager:
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
         svccore_excessive_data_check,
-        vns_rscifattn_missing_check,
+        vnsrscifattn_missing_check,
 
         # Faults
         apic_disk_space_faults_check,

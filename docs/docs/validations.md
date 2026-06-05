@@ -2801,10 +2801,11 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 ### Check missing vnsRsCIfAttN
 
-When upgrading to 6.0(3) and above, 'vnsRsCIfAtt' get deleted and without creating the corresponding 'vnsRsCIfAttN' under the same vnsLIf will leave the service graph interface attachment in an inconsistent state
+When upgrading to 6.0(3) and above, 'vnsRsCIfAtt' is deleted without creating 'vnsRsCIfAttN' under 'vnsLIf'. This leaves the service graph interface attachment in an inconsistent state.
 
-Before the upgrade, in APIC GUI navigate to Tenant > Services > L4-L7 > Device and open cluster interface `intf-prov`. If concrete interface `cons` is missing, re-add concrete interface `cons` under the same cluster interface. so the corresponding `vnsRsCIfAttN` relation exists.
+For all impacted DNs in this check, reattach the Concrete interfaces associated with the cluster interface under Devices in the Services > L4-L7 tab.
 
+Tenant --> Services --> L4-L7 --> Devices (Device_name) --> cluster interface --> Concrete interfaces
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
