@@ -25,6 +25,7 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from argparse import ArgumentParser
 from itertools import chain
+from operator import itemgetter
 import threading
 import functools
 import shutil
@@ -6410,6 +6411,69 @@ def svccore_excessive_data_check(**kwargs):
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
 
 
+@check_wrapper(check_title="Check missing vnsRsCIfAttN")
+def vnsrscifattn_missing_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
+    data = []
+    recommended_action = (
+        "From 6.0(3) release, Mo vnsRsCIfAtt is deprecated. Before upgrade, re-add any missing concrete interface mapping under the same L4-L7 device cluster interface so the corresponding vnsRsCIfAttN relation exists."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#check-missing-vnsrscifattn"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    if tversion.older_than("6.0(3d)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    vnsRsCIfAtts = icurl("class", "vnsRsCIfAtt.json?rsp-prop-include=config-only")
+    if not vnsRsCIfAtts:
+        return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
+
+    vnsRsCIfAttNs = icurl("class", "vnsRsCIfAttN.json?rsp-prop-include=config-only")
+
+    new_dn_keys = set()
+    for new_mo in vnsRsCIfAttNs:
+        try:
+            dn = new_mo["vnsRsCIfAttN"]["attributes"]["dn"].strip()
+        except (KeyError, TypeError, AttributeError):
+            continue
+        if dn:
+            new_dn_keys.add(dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1))
+
+    for old_mo in vnsRsCIfAtts:
+        try:
+            old_dn = old_mo["vnsRsCIfAtt"]["attributes"]["dn"].strip()
+        except (KeyError, TypeError, AttributeError):
+            continue
+        if not old_dn:
+            continue
+
+        if old_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1) in new_dn_keys:
+            continue
+
+        match = re.search(
+            r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)/"
+            r"rscIfAtt-\[.*?/cIf-\[(?P<cif>[^\]]+)\]\]",
+            old_dn,
+        )
+        data.append([
+            match.group("tenant") if match else "",
+            match.group("device") if match else "",
+            match.group("lif") if match else "",
+            match.group("cif") if match else "",
+            old_dn,
+        ])
+
+    data.sort(key=itemgetter(-1))
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6502,6 +6566,7 @@ class CheckManager:
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
         svccore_excessive_data_check,
+        vnsrscifattn_missing_check,
 
         # Faults
         apic_disk_space_faults_check,

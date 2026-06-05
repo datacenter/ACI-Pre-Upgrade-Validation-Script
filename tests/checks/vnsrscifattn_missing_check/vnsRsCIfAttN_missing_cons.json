@@ -1,0 +1,10 @@
+[
+  {
+    "vnsRsCIfAttN": {
+      "attributes": {
+        "dn": "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-prov/rscIfAttN-[uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[prov]]",
+        "tDn": "uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[prov]"
+      }
+    }
+  }
+]

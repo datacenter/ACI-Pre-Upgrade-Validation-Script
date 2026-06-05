@@ -1,0 +1,18 @@
+[
+  {
+    "vnsRsCIfAttN": {
+      "attributes": {
+        "dn": "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-prov/rscIfAttN-[uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[prov]]",
+        "tDn": "uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[prov]"
+      }
+    }
+  },
+  {
+    "vnsRsCIfAttN": {
+      "attributes": {
+        "dn": "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-cons/rscIfAttN-[uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[cons]]",
+        "tDn": "uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[cons]"
+      }
+    }
+  }
+]

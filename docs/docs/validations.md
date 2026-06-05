@@ -39,6 +39,7 @@ Items                                                        | This Script      
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
 [Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
 [Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
+[Check missing vnsRsCIfAttN][g22]                            | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -61,6 +62,7 @@ Items                                                        | This Script      
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
+[g22]: #check-missing-vnsrscifattn
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -237,7 +239,6 @@ Items                                           | Defect       | This Script    
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
-
 ## General Check Details
 
 ### Compatibility (Target ACI Version)
@@ -2769,7 +2770,6 @@ This issue happens only when the target version is specifically 6.1(4h).
 
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
-
 ### Inband Management Policy Misconfiguration
 
 Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
@@ -2797,6 +2797,13 @@ Administrators may be unable to access or operate the APIC GUI, potentially impa
 
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
 
+### Check missing vnsRsCIfAttN
+
+When upgrading to 6.0(3) and above, 'vnsRsCIfAtt' is deleted without creating 'vnsRsCIfAttN' under 'vnsLIf'. This leaves the service graph interface attachment in an inconsistent state.
+
+For all impacted DNs in this check, reattach the Concrete interfaces associated with the cluster interface under Devices in the Services > L4-L7 tab.
+
+Tenant --> Services --> L4-L7 --> Devices (Device_name) --> cluster interface --> Concrete interfaces
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
