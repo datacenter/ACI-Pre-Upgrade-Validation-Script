@@ -67,6 +67,31 @@ vnsRsCIfAttN_api = "vnsRsCIfAttN.json?rsp-prop-include=config-only"
                 ]
             ],
         ),
+        # vnsRsCIfAttN is empty; all vnsRsCIfAtt relations are missing
+        (
+            {
+                vnsRsCIfAtt_api: read_data(dir, "vnsRsCIfAtt_match.json"),
+                vnsRsCIfAttN_api: [],
+            },
+            "6.1(5e)",
+            script.FAIL_O,
+            [
+                [
+                    "CSCwj49418",
+                    "test",
+                    "intf-cons",
+                    "cons",
+                    "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-cons/rscIfAtt-[uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[cons]]",
+                ],
+                [
+                    "CSCwj49418",
+                    "test",
+                    "intf-prov",
+                    "prov",
+                    "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-prov/rscIfAtt-[uni/tn-CSCwj49418/lDevVip-test/cDev-cdev/cIf-[prov]]",
+                ],
+            ],
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, tversion, expected_result, expected_data):

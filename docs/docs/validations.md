@@ -41,7 +41,6 @@ Items                                                        | This Script      
 [Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
 [Check missing vnsRsCIfAttN][g22]                            | :white_check_mark: | :no_entry_sign:
 
-
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
 [g3]: #compatibility-switch-hardware
@@ -206,7 +205,6 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
-
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility

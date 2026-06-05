@@ -25,6 +25,7 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from argparse import ArgumentParser
 from itertools import chain
+from operator import itemgetter
 import threading
 import functools
 import shutil
@@ -6432,63 +6433,40 @@ def vnsrscifattn_missing_check(tversion, **kwargs):
 
     vnsRsCIfAttNs = icurl("class", "vnsRsCIfAttN.json?rsp-prop-include=config-only")
 
-    def get_common_relation_dn(relation_dn):
-        relation_dn = relation_dn.strip()
-        if "/rscIfAttN-[" in relation_dn:
-            return relation_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1)
-        return relation_dn
+    new_dn_keys = set()
+    for new_mo in vnsRsCIfAttNs:
+        try:
+            dn = new_mo["vnsRsCIfAttN"]["attributes"]["dn"].strip()
+        except (KeyError, TypeError, AttributeError):
+            continue
+        if dn:
+            new_dn_keys.add(dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1))
 
-    def parse_relation_context(relation_dn):
-        tenant_name = ""
-        device_name = ""
-        logical_interface = ""
-        concrete_interface = ""
+    for old_mo in vnsRsCIfAtts:
+        try:
+            old_dn = old_mo["vnsRsCIfAtt"]["attributes"]["dn"].strip()
+        except (KeyError, TypeError, AttributeError):
+            continue
+        if not old_dn:
+            continue
 
-        dn_match = re.search(
+        if old_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1) in new_dn_keys:
+            continue
+
+        match = re.search(
             r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)/"
             r"rscIfAtt-\[.*?/cIf-\[(?P<cif>[^\]]+)\]\]",
-            relation_dn,
+            old_dn,
         )
-        if dn_match:
-            tenant_name = dn_match.group("tenant")
-            device_name = dn_match.group("device")
-            logical_interface = dn_match.group("lif")
-            concrete_interface = dn_match.group("cif")
-        return tenant_name, device_name, logical_interface, concrete_interface
+        data.append([
+            match.group("tenant") if match else "",
+            match.group("device") if match else "",
+            match.group("lif") if match else "",
+            match.group("cif") if match else "",
+            old_dn,
+        ])
 
-    old_relation_dn_by_key = {}
-    for vnsRsCIfAtt in vnsRsCIfAtts:
-        if "vnsRsCIfAtt" not in vnsRsCIfAtt:
-            continue
-        if "attributes" not in vnsRsCIfAtt["vnsRsCIfAtt"]:
-            continue
-        relation_attributes = vnsRsCIfAtt["vnsRsCIfAtt"]["attributes"]
-        if "dn" not in relation_attributes:
-            continue
-
-        relation_dn = relation_attributes["dn"].strip()
-        if not relation_dn:
-            continue
-        relation_key = get_common_relation_dn(relation_dn)
-        old_relation_dn_by_key[relation_key] = relation_dn
-
-    if not old_relation_dn_by_key:
-        return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
-
-    new_relation_keys = set()
-    for vnsRsCIfAttN in vnsRsCIfAttNs:
-        relation_dn = vnsRsCIfAttN["vnsRsCIfAttN"]["attributes"].get("dn", "").strip()
-        if not relation_dn:
-            continue
-        relation_key = get_common_relation_dn(relation_dn)
-        new_relation_keys.add(relation_key)
-
-    for relation_key in sorted(old_relation_dn_by_key.keys()):
-        if relation_key in new_relation_keys:
-            continue
-        missing_dn = old_relation_dn_by_key[relation_key]
-        tenant_name, device_name, logical_interface, concrete_interface = parse_relation_context(missing_dn)
-        data.append([tenant_name, device_name, logical_interface, concrete_interface, missing_dn])
+    data.sort(key=itemgetter(-1))
 
     if data:
         result = FAIL_O
