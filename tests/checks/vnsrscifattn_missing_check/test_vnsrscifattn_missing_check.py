@@ -7,12 +7,11 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "vns_rscifattn_missing_check"
+test_function = "vnsrscifattn_missing_check"
 
 # icurl queries
 vnsRsCIfAtt_api = "vnsRsCIfAtt.json?rsp-prop-include=config-only"
 vnsRsCIfAttN_api = "vnsRsCIfAttN.json?rsp-prop-include=config-only"
-
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result, expected_data",
