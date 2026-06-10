@@ -1,0 +1,18 @@
+[
+  {
+      "compatRsSuppHw": {
+          "attributes": {
+            "cimcVersion": "4.0(2g)",
+            "dn": "uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4]"
+          }
+      }
+  },
+  {
+      "compatRsSuppHw": {
+          "attributes": {
+            "cimcVersion": "4.0(2g)",
+            "dn": "uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4]"
+          }
+      }
+  }
+]

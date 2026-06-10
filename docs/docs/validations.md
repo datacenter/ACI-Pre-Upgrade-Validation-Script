@@ -253,6 +253,8 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
+Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later from APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][70].
+
 !!! note
     Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
 
@@ -2868,3 +2870,4 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
+[70]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/advisory/sw-advisory-CSCwo74485.html
