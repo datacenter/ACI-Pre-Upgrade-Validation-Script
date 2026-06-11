@@ -2406,11 +2406,9 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 
 ### Link Level Flow Control
 
-Due to the defect CSCvo27498, after upgrade of first ACI leaf switch in a VPC pair to newer 15.x version from older 13.x version, downstream VPC might be down due to `vpc port channel mis-config due to vpc links in the 2 switches connected to different partners` even though they are connected to same device. 
+Due to the defect CSCvo27498[70], after upgrade of first ACI leaf switch in a VPC pair to newer 15.2(7f) version, some of vpc member port on upgrading device may go down. By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control.  If far end device transmit(send) flow control in auto or desirable mode, it will enable transmit flow control.
 
-By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control. if far end device transmit(send) flow control  in auto or desirable mode, it will enable transmit flow control.
-
-After the first switch in VPC pair is upgraded to newer 15.x code, the  incorrect flow control signalling is fixed. But due to mismatched software versions in ACI during upgrade, the far end device port-channel member interfaces will end up with mismatched send flow control. When this happens. they could send a different LACP operational key causing the ACI leaf to interpret that it is connected to different partners. 
+After the first switch in VPC pair is upgraded to 15.2(7f) the incorrect flow control signalling is fixed. But due to mismatched software versions in ACI during upgrade, the far end device port-channel member interfaces will end up with mismatched send flow control. When this happens. they could send a different LACP operational key causing the ACI leaf to interpret that it is connected to different partners.
 
 The script checks if the version is susceptible to the default along with the specific 1G SFPs that are affected by the defect.
 
@@ -2868,3 +2866,4 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
