@@ -53,7 +53,7 @@ infraSetPol = "uni/infra/settings.json"
             "4.1(2a)",
             "4.2(2a)",
             script.FAIL_O,
-            [["4.2(2a)", "Present", True]],
+            [["4.2(2a)", "Present", "True"]],
         ),
         # PASS - bug version upgrade, no RL
         (
@@ -80,7 +80,7 @@ infraSetPol = "uni/infra/settings.json"
             "4.2(3a)",
             "5.2(3a)",
             script.FAIL_O,
-            [["5.2(3a)", "Present", False]],
+            [["5.2(3a)", "Present", "False"]],
         ),
         # PASS - Fix ver to 5.x, no RL
         (

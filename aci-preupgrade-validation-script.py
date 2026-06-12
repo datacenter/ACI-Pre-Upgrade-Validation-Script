@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.1.0"
+SCRIPT_VERSION = "v4.1.1"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -1333,13 +1333,26 @@ class Result:
     """Class to hold the result of a check."""
     __slots__ = ("result", "msg", "headers", "data", "unformatted_headers", "unformatted_data", "recommended_action", "doc_url")
 
+    @staticmethod
+    def _stringify_table_rows(rows):
+        """Convert every table cell value to string for stable sorting/printing."""
+        if rows is None:
+            return []
+        normalized = []
+        for row in rows:
+            if isinstance(row, (list, tuple)):
+                normalized.append([str(col) for col in row])
+            else:
+                normalized.append([str(row)])
+        return normalized
+
     def __init__(self, result=PASS, msg="", headers=None, data=None, unformatted_headers=None, unformatted_data=None, recommended_action="", doc_url=""):
         self.result = result
         self.msg = msg
         self.headers = headers if headers is not None else []
-        self.data = data if data is not None else []
+        self.data = self._stringify_table_rows(data)
         self.unformatted_headers = unformatted_headers if unformatted_headers is not None else []
-        self.unformatted_data = unformatted_data if unformatted_data is not None else []
+        self.unformatted_data = self._stringify_table_rows(unformatted_data)
         self.recommended_action = recommended_action
         self.doc_url = doc_url
 
