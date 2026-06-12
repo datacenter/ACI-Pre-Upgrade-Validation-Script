@@ -14,23 +14,49 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, cversion, expected_result, expected_data, expected_msg",
     [
-        # target release not affected (> 6.2(1g))
+        # target release beyond affected range with existing fault: manual clearance required
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
             "6.2(2a)",
             "6.1(1a)",
-            script.NA,
-            [],
-            None,
+            script.MANUAL,
+            [
+                [
+                    "F0467",
+                    "common",
+                    "L3outY",
+                    "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
+                ],
+                [
+                    "F0467",
+                    "prod",
+                    "L3outA",
+                    "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
+                ],
+            ],
+            "Clear the fault code F0467 for bgp timer policy",
         ),
-        # target release not affected on 6.1 train (> 6.1(5e))
+        # target release beyond affected range on 6.1 train with existing fault: manual clearance required
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
             "6.1(5f)",
             "6.1(1a)",
-            script.NA,
-            [],
-            None,
+            script.MANUAL,
+            [
+                [
+                    "F0467",
+                    "common",
+                    "L3outY",
+                    "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
+                ],
+                [
+                    "F0467",
+                    "prod",
+                    "L3outA",
+                    "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
+                ],
+            ],
+            "Clear the fault code F0467 for bgp timer policy",
         ),
         # boundary version is still affected for strict newer_than check
         (
@@ -123,6 +149,15 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         (
             {faultDelegates: read_data(dir, "faultDelegate_NEG.json")},
             "6.1(5a)",
+            "6.1(1a)",
+            script.PASS,
+            [],
+            None,
+        ),
+        # target release beyond affected range with no fault entries
+        (
+            {faultDelegates: read_data(dir, "faultDelegate_NEG.json")},
+            "6.2(2a)",
             "6.1(1a)",
             script.PASS,
             [],

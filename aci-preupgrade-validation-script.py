@@ -6427,12 +6427,14 @@ def bgpProto_timer_policy_already_existing_check(tversion, cversion, **kwargs):
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    if cversion.newer_than("6.2(1g)") or (
-        cversion.major1 == "6" and cversion.major2 == "1" and cversion.newer_than("6.1(5e)")) and cversion.same_as(tversion):
+    cversion_check = (cversion.newer_than("6.2(1g)") or (
+        cversion.major1 == "6" and cversion.major2 == "1" and cversion.newer_than("6.1(5e)")) and cversion.same_as(tversion))
+
+    tversion_check = (tversion.newer_than("6.2(1g)") or (
+        tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")))
+
+    if cversion_check or tversion_check:
         result=MANUAL
-    elif tversion.newer_than("6.2(1g)") or (
-        tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")):
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
     
     affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
     filter = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.code,"F0467"),wcard(faultDelegate.changeSet,"bgpProt-policy-already-existing"))'
