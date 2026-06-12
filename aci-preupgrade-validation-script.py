@@ -25,7 +25,6 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime
 from argparse import ArgumentParser
 from itertools import chain
-from operator import itemgetter
 import threading
 import functools
 import shutil
@@ -6415,9 +6414,10 @@ def svccore_excessive_data_check(**kwargs):
 def vnsrscifattn_missing_check(tversion, **kwargs):
     result = PASS
     headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
+    manual_headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsLIf DN"]
     data = []
     recommended_action = (
-        "From 6.0(3) release, Mo vnsRsCIfAtt is deprecated. Before upgrade, re-add any missing concrete interface mapping under the same L4-L7 device cluster interface so the corresponding vnsRsCIfAttN relation exists."
+        "From 6.0(3) release, Mo vnsRsCIfAtt is deprecated. Before upgrade, reattach any missing concrete interface mapping under the same L4-L7 device cluster interface so the corresponding vnsRsCIfAttN relation exists."
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#check-missing-vnsrscifattn"
 
@@ -6428,10 +6428,47 @@ def vnsrscifattn_missing_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
 
     vnsRsCIfAtts = icurl("class", "vnsRsCIfAtt.json?rsp-prop-include=config-only")
+    vnsRsCIfAttNs = icurl("class", "vnsRsCIfAttN.json?rsp-prop-include=config-only")
+
+    if not vnsRsCIfAtts and not vnsRsCIfAttNs:
+        vnsLIfs = icurl("class", "vnsLIf.json?rsp-prop-include=config-only")
+        for vnsLIf in vnsLIfs:
+            try:
+                lif_dn = vnsLIf["vnsLIf"]["attributes"]["dn"].strip()
+            except (KeyError, TypeError, AttributeError):
+                continue
+            if not lif_dn:
+                continue
+
+            match = re.search(
+                r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)$",
+                lif_dn,
+            )
+            data.append([
+                match.group("tenant") if match else "",
+                match.group("device") if match else "",
+                match.group("lif") if match else "",
+                "N/A",
+                lif_dn,
+            ])
+
+        data.sort(key=lambda row: row[-1])
+
+        if data:
+            msg = "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Manual verification required to avoid service graph inconsistency."
+            manual_action = (
+                "Under each impacted L4-L7 device cluster interface, manually verify and reattach concrete interfaces as needed."
+            )
+            return Result(result=MANUAL, msg=msg, headers=manual_headers, data=data, recommended_action=manual_action, doc_url=doc_url)
+
+        msg = "Both vnsRsCIfAtt and vnsRsCIfAttN are missing. Manual verification required for service graph interface attachments."
+        manual_action = (
+            "Validate L4-L7 device cluster interfaces and reattach concrete interfaces where needed."
+        )
+        return Result(result=MANUAL, msg=msg, recommended_action=manual_action, doc_url=doc_url)
+
     if not vnsRsCIfAtts:
         return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
-
-    vnsRsCIfAttNs = icurl("class", "vnsRsCIfAttN.json?rsp-prop-include=config-only")
 
     new_dn_keys = set()
     for new_mo in vnsRsCIfAttNs:
@@ -6466,7 +6503,7 @@ def vnsrscifattn_missing_check(tversion, **kwargs):
             old_dn,
         ])
 
-    data.sort(key=itemgetter(-1))
+    data.sort(key=lambda row: row[-1])
 
     if data:
         result = FAIL_O

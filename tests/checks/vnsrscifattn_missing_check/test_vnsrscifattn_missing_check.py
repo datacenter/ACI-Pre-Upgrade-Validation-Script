@@ -12,6 +12,7 @@ test_function = "vnsrscifattn_missing_check"
 # icurl queries
 vnsRsCIfAtt_api = "vnsRsCIfAtt.json?rsp-prop-include=config-only"
 vnsRsCIfAttN_api = "vnsRsCIfAttN.json?rsp-prop-include=config-only"
+vnsLIf_api = "vnsLIf.json?rsp-prop-include=config-only"
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, expected_result, expected_data",
@@ -30,14 +31,42 @@ vnsRsCIfAttN_api = "vnsRsCIfAttN.json?rsp-prop-include=config-only"
             script.NA,
             [],
         ),
-        # No user-configured vnsRsCIfAtt payload
+        # Both vnsRsCIfAtt and vnsRsCIfAttN are missing (no vnsLIf rows)
         (
             {
                 vnsRsCIfAtt_api: read_data(dir, "vnsRsCIfAtt_empty.json"),
+                vnsRsCIfAttN_api: read_data(dir, "vnsRsCIfAtt_empty.json"),
+                vnsLIf_api: [],
             },
             "6.1(5e)",
-            script.PASS,
+            script.MANUAL,
             [],
+        ),
+        # Both vnsRsCIfAtt and vnsRsCIfAttN are missing while vnsLIf exists
+        (
+            {
+                vnsRsCIfAtt_api: read_data(dir, "vnsRsCIfAtt_empty.json"),
+                vnsRsCIfAttN_api: read_data(dir, "vnsRsCIfAtt_empty.json"),
+                vnsLIf_api: read_data(dir, "vnsLIf_only.json"),
+            },
+            "6.1(5e)",
+            script.MANUAL,
+            [
+                [
+                    "CSCwj49418",
+                    "test",
+                    "intf-cons",
+                    "N/A",
+                    "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-cons",
+                ],
+                [
+                    "CSCwj49418",
+                    "test",
+                    "intf-prov",
+                    "N/A",
+                    "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-prov",
+                ],
+            ],
         ),
         # All vnsRsCIfAtt relations have matching vnsRsCIfAttN relations
         (

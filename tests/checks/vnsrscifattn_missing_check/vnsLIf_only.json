@@ -1,0 +1,18 @@
+[
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-cons",
+        "name": "intf-cons"
+      }
+    }
+  },
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-CSCwj49418/lDevVip-test/lIf-intf-prov",
+        "name": "intf-prov"
+      }
+    }
+  }
+]
