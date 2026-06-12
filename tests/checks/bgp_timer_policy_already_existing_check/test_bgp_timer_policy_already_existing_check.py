@@ -17,8 +17,8 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         # target release beyond affected range with existing fault: manual clearance required
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
-            "6.2(2a)",
-            "6.1(1a)",
+            "6.2(2e)",
+            "6.1(1f)",
             script.MANUAL,
             [
                 [
@@ -39,8 +39,8 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         # target release beyond affected range on 6.1 train with existing fault: manual clearance required
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
-            "6.1(5f)",
-            "6.1(1a)",
+            "6.1(6a)",
+            "6.1(1f)",
             script.MANUAL,
             [
                 [
@@ -62,7 +62,7 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
             "6.2(1g)",
-            "6.1(1a)",
+            "6.1(1f)",
             script.FAIL_O,
             [
                 [
@@ -84,7 +84,7 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
             "6.1(5e)",
-            "6.1(1a)",
+            "6.1(1f)",
             script.FAIL_O,
             [
                 [
@@ -105,8 +105,8 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         # target release affected on 6.1 train (< 6.1(5e))
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
-            "6.1(5a)",
-            "6.1(1a)",
+            "6.1(4h)",
+            "6.1(1f)",
             script.FAIL_O,
             [
                 [
@@ -127,8 +127,8 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         # current and target versions both beyond affected range: manual clearance required
         (
             {faultDelegates: read_data(dir, "faultDelegate_POS.json")},
-            "6.2(2a)",
-            "6.2(2a)",
+            "6.2(2e)",
+            "6.2(2e)",
             script.MANUAL,
             [
                 [
@@ -148,8 +148,8 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         ),
         (
             {faultDelegates: read_data(dir, "faultDelegate_NEG.json")},
-            "6.1(5a)",
-            "6.1(1a)",
+            "6.1(5e)",
+            "6.1(1f)",
             script.PASS,
             [],
             None,
@@ -157,8 +157,8 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
         # target release beyond affected range with no fault entries
         (
             {faultDelegates: read_data(dir, "faultDelegate_NEG.json")},
-            "6.2(2a)",
-            "6.1(1a)",
+            "6.2(2e)",
+            "6.1(1f)",
             script.PASS,
             [],
             None,
