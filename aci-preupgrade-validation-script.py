@@ -6373,7 +6373,7 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
     
     if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
-        mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))')
+        mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0")),or(eq(mgmtRsInBStNode.v6Addr,"::"),eq(mgmtRsInBStNode.v6Gw,"::")))')
         for mgmtRsInBStNode in mgmtRsInBStNodes:
             attrs = mgmtRsInBStNode["mgmtRsInBStNode"]["attributes"]
             addr = attrs['addr']
