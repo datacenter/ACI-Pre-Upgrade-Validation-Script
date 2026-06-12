@@ -2802,13 +2802,14 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 ### WRED with Affected FM Models
 
-Due to [CSCwt50713][70], when WRED (Weighted Random Early Detection) is enabled and specific Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range.
+Due to [CSCwt50713][70], when WRED (Weighted Random Early Detection) is enabled and specific Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range. The crash is specifically triggered by running a tech-support collection or QoS-related commands on the affected spine.
 
-Affected versions: version <= 6.1(5e) or version <= 6.2(1g).
+Affected versions: 
+version <= 6.1(5e) or version < 6.2(2e).
 
 Affected hardware models: N9K-C9504-FM-E, N9K-C9508-FM-E, N9K-C9516-FM-E.
 
-To avoid this issue, disable WRED on the affected nodes or upgrade to a release newer than 6.1(5e) in the 6.1(x) train or newer than 6.2(1g) in the 6.2(x) train.
+To avoid this issue, disable WRED on the affected nodes or upgrade to a release newer than 6.1(5e) in the 6.1(x) train or 6.2(2e) or later in the 6.2(x) train.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

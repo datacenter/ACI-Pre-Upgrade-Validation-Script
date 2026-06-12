@@ -6413,9 +6413,9 @@ def svccore_excessive_data_check(**kwargs):
 @check_wrapper(check_title="WRED with Affected FM Models")
 def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     result = PASS
-    headers = ["Node ID", "Node Name", "Source", "Model"]
+    headers = ["Node ID", "Node Name", "Model"]
     data = []
-    recommended_action = "Disable WRED in fabric or upgrade to a release newer than 6.1(5e) or 6.2(1g)."
+    recommended_action = "Disable WRED in fabric or upgrade to a release newer than 6.1(5e) or 6.2(2d)."
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#wred-with-affected-fm-models"
 
     if not tversion:
@@ -6423,7 +6423,7 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
 
     version_affected = (
         (tversion.major1 == "6" and tversion.major2 == "1" and (tversion.older_than("6.1(5e)") or tversion.same_as("6.1(5e)")))
-        or (tversion.major1 == "6" and tversion.major2 == "2" and (tversion.older_than("6.2(1g)") or tversion.same_as("6.2(1g)")))
+        or (tversion.major1 == "6" and tversion.major2 == "2" and tversion.older_than("6.2(2e)"))
     )
     if not version_affected:
         return Result(result=NA, msg=VER_NOT_AFFECTED)
@@ -6447,19 +6447,20 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         model = attr.get("model", "")
         if model not in affected_models:
             continue
-        dn_match = re.search(node_regex, attr.get("dn", ""))
+        dn = attr.get("dn", "")
+        if not dn.startswith("topology/"):
+            continue
+        dn_match = re.search(node_regex, dn)
         if not dn_match:
             continue
         node_id = dn_match.group("node")
-        unique_list[(node_id, model)] = [node_id, node_name_map.get(node_id, ""), "FM", model]
+        unique_list[(node_id, model)] = [node_id, node_name_map.get(node_id, ""), model]
     data = list(unique_list.values())
 
-    if not data:
-        return Result(result=NA, msg="No affected Fabric module found.")
+    if data:
+        return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-    result = FAIL_O
-
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(result=NA, msg="No affected Fabric module found.")
 
 
 # ---- Script Execution ----
