@@ -25,10 +25,10 @@ eqptFC_api = "eqptFC.json"
             script.MANUAL,
             [],
         ),
-        # Case 2: Target version 6.2(2a) is the first fixed release and not in the affected range.
+        # Case 2: Target version 6.2(2e) is the first fixed release and not in the affected range.
         # Version gate fails. Expected: NA without any API calls.
         (
-            "6.2(2a)",
+            "6.2(2e)",
             read_data(dir, "fabricNode_spine.json"),
             {},
             script.NA,
@@ -36,7 +36,7 @@ eqptFC_api = "eqptFC.json"
         ),
         # Case 2: All 3 gates triggered via an affected FM on a spine node.
         # Version 6.2(1g) is in affected range, WRED is enabled, FM model N9K-C9508-FM-E is affected.
-        # Expected: FAIL_O with node 1001 reported under Source=FM.
+        # Expected: FAIL_O with node 1001 reported.
         (
             "6.2(1g)",
             read_data(dir, "fabricNode_spine.json"),
@@ -45,7 +45,7 @@ eqptFC_api = "eqptFC.json"
                 eqptFC_api: read_data(dir, "eqptFC_affected.json"),
             },
             script.FAIL_O,
-            [["1001", "spine1001", "FM", "N9K-C9508-FM-E"]],
+            [["1001", "spine1001", "N9K-C9508-FM-E"]],
         ),
         # Case 3: Version is affected but no affected FM hardware found.
         # WRED is enabled so the script proceeds to the FM check, which finds nothing.
@@ -83,7 +83,7 @@ eqptFC_api = "eqptFC.json"
                 eqptFC_api: read_data(dir, "eqptFC_mixed.json"),
             },
             script.FAIL_O,
-            [["1001", "spine1001", "FM", "N9K-C9508-FM-E"]],
+            [["1001", "spine1001", "N9K-C9508-FM-E"]],
         ),
         # Case 6: Version is affected, WRED is enabled, but no affected FM models found.
         # FM gate fails. Expected: NA.
@@ -108,7 +108,7 @@ eqptFC_api = "eqptFC.json"
                 eqptFC_api: read_data(dir, "eqptFC_duplicate.json"),
             },
             script.FAIL_O,
-            [["1001", "spine1001", "FM", "N9K-C9508-FM-E"]],
+            [["1001", "spine1001", "N9K-C9508-FM-E"]],
         ),
     ],
 )
