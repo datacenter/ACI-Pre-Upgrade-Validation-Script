@@ -253,7 +253,7 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
-Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later from APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][70].
+Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later from APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][71].
 
 !!! note
     Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
@@ -2408,11 +2408,9 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 
 ### Link Level Flow Control
 
-Due to the defect CSCvo27498, after upgrade of first ACI leaf switch in a VPC pair to newer 15.x version from older 13.x version, downstream VPC might be down due to `vpc port channel mis-config due to vpc links in the 2 switches connected to different partners` even though they are connected to same device. 
+Due to the defect CSCvo27498[70], after upgrade of first ACI leaf switch in a VPC pair to newer 15.2(7f) version, some of vpc member port on upgrading device may go down. By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control.  If far end device transmit(send) flow control in auto or desirable mode, it will enable transmit flow control.
 
-By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control. if far end device transmit(send) flow control  in auto or desirable mode, it will enable transmit flow control.
-
-After the first switch in VPC pair is upgraded to newer 15.x code, the  incorrect flow control signalling is fixed. But due to mismatched software versions in ACI during upgrade, the far end device port-channel member interfaces will end up with mismatched send flow control. When this happens. they could send a different LACP operational key causing the ACI leaf to interpret that it is connected to different partners. 
+After the first switch in VPC pair is upgraded to 15.2(7f) the incorrect flow control signalling is fixed. But due to mismatched software versions in ACI during upgrade, the far end device port-channel member interfaces will end up with mismatched send flow control. When this happens. they could send a different LACP operational key causing the ACI leaf to interpret that it is connected to different partners.
 
 The script checks if the version is susceptible to the default along with the specific 1G SFPs that are affected by the defect.
 
@@ -2870,4 +2868,5 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 [67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
 [68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
-[70]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/advisory/sw-advisory-CSCwo74485.html
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
+[71]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/advisory/sw-advisory-CSCwo74485.html
