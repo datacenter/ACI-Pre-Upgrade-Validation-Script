@@ -201,6 +201,7 @@ Items                                           | Defect       | This Script    
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
+[Fabric BFD on ISIS][d34]                       | N/A          | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -235,6 +236,7 @@ Items                                           | Defect       | This Script    
 [d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
+[d34]: #fabric-bfd-on-isis
 
 ## General Check Details
 
@@ -2699,6 +2701,16 @@ Do not upgrade to any affected ACI software release if this check fails.
 
 !!! note
     Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
+
+
+### Fabric BFD on ISIS
+
+Enabling Fabric BFD (BFD on ISIS) is not recommended. The operational benefit is minimal to none, while the potential adverse impact is significantly higher:
+
+* In a leaf-spine fabric, ISIS peers are directly connected sub-interfaces. If a peer device goes down, the physical link also goes down, which triggers Layer-1 convergence. In such scenarios — the vast majority of failure cases — BFD provides no additional convergence benefit.
+* BFD is susceptible to false flaps when BFD packets do not receive sufficient CPU cycles (for example, during periods of high CPU utilization such as tech-support collections). False BFD flaps directly impact ISIS adjacencies, which can destabilize the entire fabric control plane.
+
+This check fails if any `l3IfPol` (Fabric > Fabric Policies > Policies > Interface > L3 Interface) has `bfdIsis` set to `enabled`. Disable Fabric BFD on ISIS before upgrade or downgrade.
 
 
 ### Policydist configpushShardCont crash
