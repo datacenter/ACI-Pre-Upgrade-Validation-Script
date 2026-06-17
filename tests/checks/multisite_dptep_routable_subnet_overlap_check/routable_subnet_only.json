@@ -1,0 +1,11 @@
+[
+    {
+        "fabricExtRoutablePodSubnet": {
+            "attributes": {
+                "dn": "uni/controller/setuppol/setupp-1/extrtpodsubnet-[10.0.0.0/24]",
+                "pool": "10.0.0.0/24",
+                "reserveAddressCount": "16"
+            }
+        }
+    }
+]
