@@ -1,0 +1,28 @@
+[
+  {
+    "pkiFabricNodeSSLCertificate": {
+      "attributes": {
+        "nodeId": "101",
+        "validCertificate": "yes",
+        "validityNotAfter": "2035-05-26T19:19:27.000+00:00",
+        "validityNotBefore": "2015-05-26T19:19:27.000+00:00",
+        "message": "",
+        "subject": "/CN=SAL1948U33K",
+        "serialNumber": "SAL1948U33K"
+      }
+    }
+  },
+  {
+    "pkiFabricNodeSSLCertificate": {
+      "attributes": {
+        "nodeId": "102",
+        "validCertificate": "yes",
+        "validityNotAfter": "2035-05-26T19:19:27.000+00:00",
+        "validityNotBefore": "2015-05-26T19:19:27.000+00:00",
+        "message": "",
+        "subject": "/CN=SAL1948U35D",
+        "serialNumber": "SAL1948U35D"
+      }
+    }
+  }
+]

@@ -1,0 +1,54 @@
+[
+  {
+    "pkiFabricNodeSSLCertificate": {
+      "attributes": {
+        "nodeId": "1",
+        "validCertificate": "yes",
+        "validityNotAfter": "2020-01-01T00:00:00.000+00:00",
+        "validityNotBefore": "2010-01-01T00:00:00.000+00:00",
+        "message": "",
+        "subject": "/CN=APIC1",
+        "serialNumber": "APIC1SERIAL"
+      }
+    }
+  },
+  {
+    "pkiFabricNodeSSLCertificate": {
+      "attributes": {
+        "nodeId": "101",
+        "validCertificate": "no",
+        "validityNotAfter": "2099-05-26T19:19:27.000+00:00",
+        "validityNotBefore": "2019-05-26T19:19:27.000+00:00",
+        "message": "Failed to parse the subject line as a valid ACI fabric certificate AND invalid serial",
+        "subject": "/CN=SAL1948U33K",
+        "serialNumber": "SAL1948U33K"
+      }
+    }
+  },
+  {
+    "pkiFabricNodeSSLCertificate": {
+      "attributes": {
+        "nodeId": "102",
+        "validCertificate": "yes",
+        "validityNotAfter": "2020-01-01T00:00:00.000+00:00",
+        "validityNotBefore": "2010-01-01T00:00:00.000+00:00",
+        "message": "",
+        "subject": "/CN=SAL1948U35D",
+        "serialNumber": "SAL1948U35D"
+      }
+    }
+  },
+  {
+    "pkiFabricNodeSSLCertificate": {
+      "attributes": {
+        "nodeId": "999",
+        "validCertificate": "yes",
+        "validityNotAfter": "2020-01-01T00:00:00.000+00:00",
+        "validityNotBefore": "2010-01-01T00:00:00.000+00:00",
+        "message": "",
+        "subject": "/CN=GHOST",
+        "serialNumber": "GHOST"
+      }
+    }
+  }
+]

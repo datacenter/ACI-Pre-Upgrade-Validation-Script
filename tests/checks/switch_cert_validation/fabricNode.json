@@ -1,0 +1,38 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1",
+        "fabricSt": "commissioned",
+        "id": "1",
+        "name": "apic1",
+        "role": "controller",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101",
+        "fabricSt": "active",
+        "id": "101",
+        "name": "leaf101",
+        "role": "leaf",
+        "nodeType": "unspecified"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-102",
+        "fabricSt": "active",
+        "id": "102",
+        "name": "spine102",
+        "role": "spine",
+        "nodeType": "unspecified"
+      }
+    }
+  }
+]
