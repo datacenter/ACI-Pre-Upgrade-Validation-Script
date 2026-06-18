@@ -19,8 +19,8 @@ compatRsSuppHwM1_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[
 
 compatRsSuppHwL4_605_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4].json'
 compatRsSuppHwM4_605_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
-compatRsSuppHwL4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4].json'
-compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
+compatRsSuppHwL4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4].json'
+compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, cversion, expected_result",
@@ -30,8 +30,8 @@ compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[
             {eqptCh_api: read_data(dir, "eqptCh_m4l4_model_old_cimc.json"),
             compatRsSuppHwL4_605_api: read_data(dir, "compatRsSuppHw_605_M4L4.json"),
             compatRsSuppHwM4_605_api: read_data(dir, "compatRsSuppHw_605_M4L4.json")},
-            "6.0(5a)",
-            "5.3(1a)",
+            "6.0(5h)",
+            "5.3(1d)",
             script.FAIL_UF,
         ),
         #m4/l4 with other apic server model and check targeting affect version and cversion affected and cimc < 4.3.5
@@ -42,17 +42,17 @@ compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[
             compatRsSuppHwM4_605_api: read_data(dir, "compatRsSuppHw_605_M4L4.json"),
             compatRsSuppHwL2_api: read_data(dir, "compatRsSuppHw_605_L2.json"),
             compatRsSuppHwM1_api: read_data(dir, "compatRsSuppHw_605_M1.json")},
-            "6.0(5a)",
-            "5.3(1a)",
+            "6.0(5h)",
+            "5.3(1d)",
             script.FAIL_UF,
         ),
         # current cimc > 3.4.5 (known issue) but APIC current version is not affected
         (
             {eqptCh_api: read_data(dir, "eqptCh_m4l4_model_new_cimc.json"),
-            compatRsSuppHwL4_api: read_data(dir, "compatRsSuppHw_616_M4L4.json"),
-            compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_616_M4L4.json")},
-            "6.1(6a)",
-            "6.1(5a)",
+            compatRsSuppHwL4_api: read_data(dir, "compatRsSuppHw_615_M4L4.json"),
+            compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M4L4.json")},
+            "6.1(5e)",
+            "6.1(4h)",
             script.PASS,
         ),
         #version affected and cimc version > 4.3.5
@@ -60,8 +60,8 @@ compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(6)/rssuppHw-[
             {eqptCh_api: read_data(dir, "eqptCh_m4l4_model_new_cimc.json"),
             compatRsSuppHwL4_605_api: read_data(dir, "compatRsSuppHw_605_M4L4.json"),
             compatRsSuppHwM4_605_api: read_data(dir, "compatRsSuppHw_605_M4L4.json")},
-            "6.0(5a)",
-            "5.3(1a)",
+            "6.0(5h)",
+            "5.3(1d)",
             script.PASS,
         ),
         (

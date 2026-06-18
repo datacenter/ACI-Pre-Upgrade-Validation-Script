@@ -3670,6 +3670,21 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     apic_model = eqptCh['eqptCh']['attributes']['descr']
                     model = "apic" + apic_model.split('-')[2].lower()
                     current_cimc = eqptCh['eqptCh']['attributes']['cimcVersion']
+                   
+                    #defect CSCwo74485 cimc compatibility check for M4/L4 model.
+                    if model in ("apicm4", "apicl4") and cversion:
+                        is_affected_apic_version = (
+                            (cversion.major1 == "5" and cversion.major2 == "3")
+                            or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
+                            or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
+                        )
+                        if is_affected_apic_version:
+                            if not is_firstver_gt_secondver(current_cimc, "4.3(5)"):
+                                warning = "Upgrade the APIC software to 6.0.9e and above 6.1.4h and above, then proceed with the CIMC upgrade to 4.3.5 and above. Please refer to the CSCwo74485 advisory in the release notes."
+                                nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
+                                data.append([nodeid, apic_model, current_cimc, "", warning])
+                                continue
+
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
@@ -3679,19 +3694,6 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
                     warning = ""
                     if compatMo and recommended_cimc:
-                        #defect CSCwo74485 cimc compatibility check for M4/L4 model.
-                        if model in ("apicm4", "apicl4") and cversion:
-                            is_affected_apic_version = (
-                                (cversion.major1 == "5" and cversion.major2 == "3")
-                                or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
-                                or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
-                            )
-                            if is_affected_apic_version:
-                                if not is_firstver_gt_secondver(current_cimc, "4.3(5)"):
-                                    warning = "Upgrade the APIC software to 6.0.9e and above 6.1.4h and above, then proceed with the CIMC upgrade to 4.3.5 and above. Please refer to the CSCwo74485 advisory in the release notes."
-                                    nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                                    data.append([nodeid, apic_model, current_cimc, "", warning])
-                                    continue
                         if not is_firstver_gt_secondver(current_cimc, "3.0(3a)"):
                             warning = "Multi-step Upgrade may be required, check UCS CIMC Matrix."
                         if not is_firstver_gt_secondver(current_cimc, recommended_cimc):
