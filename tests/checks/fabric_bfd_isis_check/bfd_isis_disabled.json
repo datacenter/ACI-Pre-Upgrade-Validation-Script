@@ -1,0 +1,10 @@
+[
+    {
+        "l3IfPol": {
+            "attributes": {
+                "bfdIsis": "disabled",
+                "dn": "uni/fabric/l3IfP-default"
+            }
+        }
+    }
+]
