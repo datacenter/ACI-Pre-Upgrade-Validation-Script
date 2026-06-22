@@ -3898,6 +3898,9 @@ def supported_hardware_check(tversion, fabric_nodes, **kwargs):
     recommended_action = 'Select supported target version or upgrade hardware'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#supported-hardware-compatibility'
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
     if not tversion.older_than("5.0(1a)"):
         for node in fabric_nodes:
             model = node['fabricNode']['attributes']['model']
@@ -6373,7 +6376,7 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
     
     if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
-        mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0"))')
+        mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0")),or(eq(mgmtRsInBStNode.v6Addr,"::"),eq(mgmtRsInBStNode.v6Gw,"::")))')
         for mgmtRsInBStNode in mgmtRsInBStNodes:
             attrs = mgmtRsInBStNode["mgmtRsInBStNode"]["attributes"]
             addr = attrs['addr']
@@ -6411,41 +6414,52 @@ def svccore_excessive_data_check(**kwargs):
         return Result(result=ERROR, msg="Error occurred while fetching svccore object counts: {}".format(str(e)), doc_url=doc_url)
 
 
-@check_wrapper(check_title='False Micron SSD failure fault')
-def false_micron_ssd_failure_fault_check(cversion, tversion, **kwargs):
-    result = PASS
-    headers = ['Pod', 'Node', 'Model']
+@check_wrapper(check_title='BGP Timer Policy Already Existing (F0467 bgpProt-policy-already-existing)')
+def bgpProto_timer_policy_already_existing_check(tversion, cversion, **kwargs):
+    result = FAIL_O
+    headers = ['Fault', 'Tenant', 'L3Out', 'changeSet']
     data = []
-    recommended_action = (
-        '\n\tRun the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
-        '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
-    )
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#false-micron-ssd-failure-fault'
+    unformatted_headers = ['Fault', 'Affected', 'changeSet']
+    unformatted_data = []
+    recommended_action = 'Remove the fault by keeping Single bgp timer policy per vrf for different l3out.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#bgpProto-timer-policy-already-existing'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    if not tversion.same_as('6.1(5e)') and not tversion.same_as('6.2(1g)') and not cversion.same_as('6.1(5e)') and not cversion.same_as('6.2(1g)'):
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
+    cversion_check = (cversion.newer_than("6.2(1g)") or (
+        cversion.major1 == "6" and cversion.major2 == "1" and cversion.newer_than("6.1(5e)")) and cversion.same_as(tversion))
 
-    eqptFlashs = icurl('class','eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")')
-    if not eqptFlashs:
-        return Result(result=PASS, msg='No Micron drives found in fabric.')
+    tversion_check = (tversion.newer_than("6.2(1g)") or (
+        tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")))
 
-    for eqptFlash in eqptFlashs:
-        attr = eqptFlash['eqptFlash']['attributes']
-        dn = re.search(node_regex, attr.get("dn", ""))
-        pod_id = dn.group("pod") if dn else "Unknown"
-        node_id = dn.group('node') if dn else "Unknown"
-        data.append([pod_id, node_id, attr.get('model','')])
+    if cversion_check or tversion_check:
+        result=MANUAL
+    
+    affected_regex = r'uni/tn-(?P<tenant>[^/]+)/out-(?P<l3out>[^\]]+)'
+    filter = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.code,"F0467"),wcard(faultDelegate.changeSet,"bgpProt-policy-already-existing"))'
+    fault_delegates = icurl('class', filter)
 
-    if data:
-        result = MANUAL
+    for fault_delegate in fault_delegates:
+        attributes = fault_delegate['faultDelegate']['attributes']
+        fault_code = attributes.get('code', '')
+        affected = attributes.get('affected', '')
+        change_set = attributes.get('changeSet', '')
+        affected_array = re.search(affected_regex, affected)
+        if affected_array:
+            data.append([fault_code, affected_array.group('tenant'), affected_array.group('l3out'), change_set])
+        else:
+            unformatted_data.append([fault_code, affected, change_set])
 
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    if not data and not unformatted_data:
+        result = PASS
+    elif result == MANUAL:
+        return Result(result=result, msg="Clear the fault code F0467 for bgp timer policy", headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+        
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-# ---- Script Execution ----
+# ---- Script Execution ----.
 
 
 def parse_args(args):
@@ -6616,7 +6630,7 @@ class CheckManager:
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
         inband_management_policy_misconfig_check,
-        false_micron_ssd_failure_fault_check,
+        bgpProto_timer_policy_already_existing_check,
     ]
     ssh_checks = [
         # General
