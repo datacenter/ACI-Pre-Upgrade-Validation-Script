@@ -3680,7 +3680,7 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                         )
                         if is_affected_apic_version:
                             if not is_firstver_gt_secondver(current_cimc, "4.3(5)"):
-                                warning = "Upgrade the APIC software to 6.0.9e and above 6.1.4h and above, then proceed with the CIMC upgrade to 4.3.5 and above. Please refer to the CSCwo74485 advisory in the release notes."
+                                warning = "Upgrade the APIC software to 6.0.9e and above 6.1.4h and above, then proceed with the CIMC upgrade. Refer to the release notes for the recommended CIMC version and CSCwo74485 advisory for further detail"
                                 nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
                                 data.append([nodeid, apic_model, current_cimc, "", warning])
                                 continue
