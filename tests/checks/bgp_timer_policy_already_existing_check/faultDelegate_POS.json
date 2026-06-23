@@ -1,0 +1,20 @@
+[
+  {
+    "faultDelegate": {
+      "attributes": {
+        "affected": "resPolCont/rtdOutCont/rtdOutDef-[uni/tn-common/out-L3outY]/nwissues",
+        "code": "F0467",
+        "changeSet": "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no"
+      }
+    }
+  },
+  {
+    "faultDelegate": {
+      "attributes": {
+        "affected": "resPolCont/rtdOutCont/rtdOutDef-[uni/tn-prod/out-L3outA]/nwissues",
+        "code": "F0467",
+        "changeSet": "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no"
+      }
+    }
+  }
+]
