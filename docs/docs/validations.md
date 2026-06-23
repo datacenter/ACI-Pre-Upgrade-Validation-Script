@@ -2877,4 +2877,4 @@ This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'b
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
 [70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
 [71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
-[72]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/advisory/sw-advisory-CSCwo74485.html
+[72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
