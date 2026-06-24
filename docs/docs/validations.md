@@ -204,6 +204,7 @@ Items                                           | Defect       | This Script    
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
 [BgpProto timer policy already existing][d34]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
+[WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -239,6 +240,7 @@ Items                                           | Defect       | This Script    
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
 [d34]: #bgpProto-timer-policy-already-existing
+[d35]: #wred-with-affected-fm-models
 
 ## General Check Details
 
@@ -2798,6 +2800,18 @@ Administrators may be unable to access or operate the APIC GUI, potentially impa
 This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
 
 
+### WRED with Affected FM Models
+
+Due to [CSCwt50713][72], when WRED (Weighted Random Early Detection) is enabled and specific Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range. The crash is specifically triggered by running a tech-support collection or QoS-related commands on the affected spine.
+
+Affected versions: 
+version <= 6.1(5e) or version < 6.2(2e).
+
+Affected hardware models: N9K-C9504-FM-E, N9K-C9508-FM-E, N9K-C9516-FM-E.
+
+To avoid this issue, disable WRED on the affected nodes or upgrade to a release newer than 6.1(5e) in the 6.1(x) train or 6.2(2e) or later in the 6.2(x) train.
+
+
 ### BgpProto Timer Policy Already Existing
 
 This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
@@ -2875,3 +2889,4 @@ This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'b
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
 [70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
 [71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
+[72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
