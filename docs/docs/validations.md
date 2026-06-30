@@ -204,6 +204,7 @@ Items                                           | Defect       | This Script    
 [Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
 [BgpProto timer policy already existing][d34]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
+[vzany_svcgraph_stretched_vrf_check][d35]       | CSCwt14573   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -239,6 +240,7 @@ Items                                           | Defect       | This Script    
 [d32]: #multi-pod-modular-spine-bootscript-file
 [d33]: #inband-management-policy-misconfiguration
 [d34]: #bgpProto-timer-policy-already-existing
+[d35]: #vzany-service-graph-stretched-vrf
 
 ## General Check Details
 
@@ -2802,6 +2804,27 @@ This check will verify the count of the `svccoreCtrlr` Managed Object and raise 
 
 This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
 
+### vzAny Service Graph on Stretched VRF
+
+Due to [CSCwn95571], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
+
+The validation checks whether `vnsEpgDefXlate` translation entries exist for the first node's consumer leg of the service graph. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail.
+
+This check detects configurations where **all** of the following conditions are true:
+
+1. The VRF is stretched across multiple sites (has `fvSiteAssociated` with `fvRemoteId` children)
+2. vzAny is used as either consumer **or** provider on the stretched VRF
+3. The contract has a service graph attached (any type — PBR is **not** required)
+4. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
+
+!!! note
+    The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
+
+!!! note
+    This applies to **all** service graph types including firewalls with PBR, load balancers without PBR, and any other L4-L7 service devices.
+
+Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][72].
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2875,3 +2898,4 @@ This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'b
 [69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
 [70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
 [71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
+[72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
