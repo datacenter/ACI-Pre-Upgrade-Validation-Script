@@ -257,6 +257,8 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
+Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
+
 !!! note
     Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
 
@@ -805,7 +807,7 @@ See the [ACI Switch Node SSD Lifetime Explained technote][9] for more details.
     --- omit ---
     ```
 
-Due to [CSCwt38698][73], Micron SSDs present in the fabric may give false end-of-life failures after upgrading to 6.1(5e) or 6.2(1g).
+Due to [CSCwt38698][74], Micron SSDs present in the fabric may give false end-of-life failures after upgrading to 6.1(5e) or 6.2(1g).
 
 To confirm if this is genuine or false alarm, run the SSD Lifetime Validation script on all nodes with identified actual failure case. If the SSD lifetime is critically low after manually running the script, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. To avoid this false alarm you can choose non-impacted target version.
 
@@ -2896,4 +2898,5 @@ This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'b
 [70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
 [71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
 [72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
-[73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+[73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
+[74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698

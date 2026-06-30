@@ -3737,12 +3737,14 @@ def vpc_paired_switches_check(vpc_node_ids, fabric_nodes, **kwargs):
 
 
 @check_wrapper(check_title="APIC CIMC Compatibility")
-def cimc_compatibilty_check(tversion, **kwargs):
+def cimc_compatibilty_check(tversion, cversion, **kwargs):
     result = FAIL_UF
     headers = ["Node ID", "Model", "Current CIMC version", "Catalog Recommended CIMC Version", "Warning"]
     data = []
     recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
+
+    m4l4_model_affected_version_found = False
 
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
@@ -3752,6 +3754,21 @@ def cimc_compatibilty_check(tversion, **kwargs):
                     apic_model = eqptCh['eqptCh']['attributes']['descr']
                     model = "apic" + apic_model.split('-')[2].lower()
                     current_cimc = eqptCh['eqptCh']['attributes']['cimcVersion']
+                   
+                    #defect CSCwo74485 cimc compatibility check for M4/L4 model.
+                    if model in ("apicm4", "apicl4") and cversion:
+                        is_affected_apic_version = (
+                            (cversion.major1 == "5" and cversion.major2 == "3")
+                            or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
+                            or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
+                        )
+                        if is_affected_apic_version:
+                            if not is_firstver_gt_secondver(current_cimc, "4.3(5)"):
+                                m4l4_model_affected_version_found = True
+                                nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
+                                data.append([nodeid, apic_model, current_cimc, "-", "-"])
+                                continue
+
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
@@ -3769,6 +3786,9 @@ def cimc_compatibilty_check(tversion, **kwargs):
 
             if not data:
                 result = PASS
+
+            if m4l4_model_affected_version_found:
+                recommended_action = 'Intentionally Upgrade your APICs to a fixed target version [6.0(9e)+ or (6.1(4h)+] BEFORE upgrading CIMC to avoid hitting CSCwo74485.'
 
         except KeyError:
             return Result(result=MANUAL, msg="eqptCh does not have cimcVersion parameter on this version", headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
