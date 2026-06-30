@@ -6458,7 +6458,7 @@ def bgpProto_timer_policy_already_existing_check(tversion, cversion, **kwargs):
         
     return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
-
+  
 @check_wrapper(check_title="WRED with Affected FM Models")
 def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     result = PASS
@@ -6510,7 +6510,163 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
         return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
     return Result(result=NA, msg="No affected Fabric module found.")
+  
+  
+@check_wrapper(check_title='vzAny Service Graph on Stretched VRF')
+def vzany_svcgraph_stretched_vrf_check(tversion, **kwargs):
+    result = PASS
+    headers = ['Tenant', 'VRF', 'Contract', 'Graph', 'Issue']
+    data = []
+    recommended_action = 'Migrate vzAny service graph configuration to NDO before upgrade using brownfield import. See documentation for detailed migration steps.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-service-graph-stretched-vrf'
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    if not tversion.newer_than("6.1(3g)"):
+        return Result(result=PASS, msg="Target version does not trigger CSCwn95571 validation", doc_url=doc_url)
+
+    has_error = False
+
+    try:
+        graph_insts = icurl('class', 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")&rsp-subtree=full')
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying applied service graphs: {}'.format(str(e)), doc_url=doc_url)
+
+    if not graph_insts:
+        return Result(result=PASS, msg="No applied service graphs found", doc_url=doc_url)
+
+    sg_by_contract = {}
+    for graph_inst_mo in graph_insts:
+        gi_attrs = graph_inst_mo.get('vnsGraphInst', {}).get('attributes', {})
+        gi_dn = gi_attrs.get('dn', '')
+        contract_dn = gi_attrs.get('ctrctDn', '')
+        if not contract_dn:
+            continue
+
+        graph_name_match = re.search(r'-G-\[uni/tn-[^/]+/AbsGraph-([^\]]+)\]', gi_dn)
+        graph_name = graph_name_match.group(1) if graph_name_match else ''
+        scope_match = re.search(r'-S-\[(.*?)\]', gi_dn)
+        scope_dn = scope_match.group(1) if scope_match else ''
+
+        first_node_name = None
+        for graph_component_mo in graph_inst_mo.get('vnsGraphInst', {}).get('children', []):
+            if 'vnsTermNodeInst' not in graph_component_mo:
+                continue
+            term_attrs = graph_component_mo['vnsTermNodeInst'].get('attributes', {})
+            if term_attrs.get('type') != 'consumer':
+                continue
+            for term_connection_mo in graph_component_mo['vnsTermNodeInst'].get('children', []):
+                if 'vnsConnectionInst' not in term_connection_mo:
+                    continue
+                for conn_rel_mo in term_connection_mo['vnsConnectionInst'].get('children', []):
+                    if 'vnsRsConnectionInstConns' not in conn_rel_mo:
+                        continue
+                    node_tDn = conn_rel_mo['vnsRsConnectionInstConns'].get('attributes', {}).get('tDn', '')
+                    node_match = re.search(r'/NodeInst-([^\]]+)', node_tDn)
+                    if node_match:
+                        first_node_name = node_match.group(1)
+                        break
+                if first_node_name:
+                    break
+            if first_node_name:
+                break
+
+        sg_by_contract[contract_dn] = {
+            'gi_dn': gi_dn,
+            'graph_name': graph_name,
+            'scope_dn': scope_dn,
+            'first_node': first_node_name,
+        }
+
+    if not sg_by_contract:
+        return Result(result=PASS, msg="No applied service graphs with contracts found", doc_url=doc_url)
+
+    stretched_vrf_dns = set()
+    try:
+        fvctx_list = icurl('class', 'fvCtx.json?rsp-subtree=children&rsp-subtree-class=fvSiteAssociated&rsp-subtree-include=required')
+        for vrf_ctx_mo in fvctx_list:
+            ctx_dn = vrf_ctx_mo.get('fvCtx', {}).get('attributes', {}).get('dn', '')
+            for site_assoc_mo in vrf_ctx_mo.get('fvCtx', {}).get('children', []):
+                if 'fvSiteAssociated' not in site_assoc_mo:
+                    continue
+                for remote_id_mo in site_assoc_mo['fvSiteAssociated'].get('children', []):
+                    if 'fvRemoteId' in remote_id_mo:
+                        stretched_vrf_dns.add(ctx_dn)
+                        break
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying stretched VRFs: {}'.format(str(e)), doc_url=doc_url)
+
+    if not stretched_vrf_dns:
+        return Result(result=PASS, msg="No stretched VRFs found", doc_url=doc_url)
+
+    vzany_on_stretched = {}
+    for rel_class in ('vzRsAnyToCons', 'vzRsAnyToProv'):
+        try:
+            rels = icurl('class', '{}.json'.format(rel_class))
+        except Exception as e:
+            has_error = True
+            data.append(['-', '-', '-', '-', 'Error querying {}: {}'.format(rel_class, str(e))])
+            continue
+        for rel in rels:
+            rel_attrs = rel.get(rel_class, {}).get('attributes', {})
+            contract_dn = rel_attrs.get('tDn', '')
+            if contract_dn not in sg_by_contract:
+                continue
+            rel_dn = rel_attrs.get('dn', '')
+            vrf_dn_match = re.match(r'(uni/tn-[^/]+/ctx-[^/]+)', rel_dn)
+            if not vrf_dn_match:
+                continue
+            vrf_dn = vrf_dn_match.group(1)
+            if vrf_dn not in stretched_vrf_dns:
+                continue
+            vrf_name_match = re.search(r'ctx-([^/]+)', vrf_dn)
+            vrf_name = vrf_name_match.group(1) if vrf_name_match else vrf_dn
+            vzany_on_stretched[contract_dn] = {'vrf_name': vrf_name}
+
+    if not vzany_on_stretched and not has_error:
+        return Result(result=PASS, msg="No vzAny service graph contracts on stretched VRFs", doc_url=doc_url)
+
+    for contract_dn, vrf_info in vzany_on_stretched.items():
+        sg_info = sg_by_contract[contract_dn]
+        first_node_name = sg_info['first_node']
+        if not first_node_name:
+            continue
+
+        contract_match = re.match(r'uni/tn-([^/]+)/brc-([^/]+)', contract_dn)
+        if not contract_match:
+            continue
+        tenant = contract_match.group(1)
+        contract = contract_match.group(2)
+        graph_name = sg_info['graph_name']
+        scope_dn = sg_info['scope_dn']
+        vrf_name = vrf_info['vrf_name']
+
+        epg_def_dn = (
+            "uni/tn-{}/GraphInst_C-[uni/tn-{}/brc-{}]"
+            "-G-[uni/tn-{}/AbsGraph-{}]-S-[{}]"
+            "/NodeInst-{}/LegVNode-0/EPgDef-consumer"
+        ).format(tenant, tenant, contract, tenant, graph_name, scope_dn, first_node_name)
+        xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
+
+        try:
+            result_query = icurl('mo', '{}.json'.format(xlate_dn))
+            has_xlate = len(result_query) > 0
+        except Exception:
+            has_xlate = False
+            has_error = True
+            data.append([tenant, vrf_name, contract, graph_name, 'Error querying vnsEpgDefXlate'])
+            continue
+
+        if not has_xlate:
+            data.append([tenant, vrf_name, contract, graph_name, 'Missing vnsEpgDefXlate for 1st node consumer leg'])
+
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+  
 
 # ---- Script Execution ----
 
@@ -6685,6 +6841,7 @@ class CheckManager:
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
         wred_affected_model_check,
+        vzany_svcgraph_stretched_vrf_check, 
     ]
     ssh_checks = [
         # General

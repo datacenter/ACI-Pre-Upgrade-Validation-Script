@@ -1,0 +1,8 @@
+[
+    {
+        "fvCtx": {
+            "attributes": {"dn": "uni/tn-Tenant1/ctx-VRF1", "name": "VRF1"},
+            "children": []
+        }
+    }
+]

@@ -1,0 +1,10 @@
+[
+    {
+        "vzRsAnyToCons": {
+            "attributes": {
+                "dn": "uni/tn-Tenant1/ctx-VRF1/rsanyToCons-[uni/tn-Tenant1/brc-Contract1]",
+                "tDn": "uni/tn-Tenant1/brc-Contract1"
+            }
+        }
+    }
+]

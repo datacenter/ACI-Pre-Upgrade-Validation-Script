@@ -1,0 +1,33 @@
+[
+    {
+        "vnsGraphInst": {
+            "attributes": {
+                "dn": "uni/tn-Tenant1/GraphInst_C-[uni/tn-Tenant1/brc-Contract1]-G-[uni/tn-Tenant1/AbsGraph-Graph1]-S-[uni/tn-Tenant1/ctx-VRF1]",
+                "configSt": "applied",
+                "ctrctDn": "uni/tn-Tenant1/brc-Contract1"
+            },
+            "children": [
+                {
+                    "vnsTermNodeInst": {
+                        "attributes": {"type": "consumer"},
+                        "children": [
+                            {
+                                "vnsConnectionInst": {
+                                    "children": [
+                                        {
+                                            "vnsRsConnectionInstConns": {
+                                                "attributes": {
+                                                    "tDn": "uni/tn-Tenant1/GraphInst/NodeInst-FirstNode"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+]
