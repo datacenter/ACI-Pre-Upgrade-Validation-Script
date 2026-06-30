@@ -39,7 +39,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "90%",
-                    "Contact Cisco TAC for replacement procedure",
                 ],
                 [
                     "F3074",
@@ -47,7 +46,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "80%",
-                    "Monitor (no impact to upgrades)",
                 ],
             ],
         ),
@@ -91,7 +89,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "103",
                     "MTFDDAK240MBB",
                     "N/A",
-                    "",
                 ],
             ],
         ),
@@ -107,7 +104,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "N/A",
-                    "",
                 ],
                 [
                     "CSCwt38698 (False Fault Micron SSD defect)",
@@ -115,7 +111,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "N/A",
-                    "",
                 ],
             ],
         ),
@@ -134,7 +129,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "N/A",
-                    "",
                 ],
                 [
                     "CSCwt38698 (False Fault Micron SSD defect)",
@@ -142,7 +136,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "N/A",
-                    "",
                 ],
             ],
         ),
@@ -161,7 +154,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "90%",
-                    "Contact Cisco TAC for replacement procedure",
                 ],
                 [
                     "F3074",
@@ -169,7 +161,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "80%",
-                    "Monitor (no impact to upgrades)",
                 ],
             ],
         ),
@@ -188,7 +179,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "90%",
-                    "Contact Cisco TAC for replacement procedure",
                 ],
                 [
                     "F3074",
@@ -196,7 +186,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "80%",
-                    "Monitor (no impact to upgrades)",
                 ],
             ],
         ),
@@ -215,7 +204,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "N/A",
-                    "",
                 ],
                 [
                     "CSCwt38698 (False Fault Micron SSD defect)",
@@ -223,7 +211,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "N/A",
-                    "",
                 ],
             ],
         ),
@@ -242,7 +229,6 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "90%",
-                    "Contact Cisco TAC for replacement procedure",
                 ],
                 [
                     "F3074",
@@ -250,26 +236,24 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "101",
                     "Micron_M600_MTFDDAT064MBF",
                     "80%",
-                    "Monitor (no impact to upgrades)",
                 ],
             ],
         ),
-        # FAIL_O - Genuine + false fault present + cversion matched + Micron drive found
+        # MANUAL - Genuine + false fault present + cversion matched + Micron drive found
         (
             {
                 faultInst: read_data(dir, "faultInst.json"),
                 eqptFlash: read_data(dir, "eqptFlash_single_micron_withFault.json"),
             },
             "6.2(2a)", "6.1(5e)",
-            script.FAIL_O,
+            script.MANUAL,
             [
                 [
                     'F3074', 
                     '1', 
                     '101', 
                     'Micron_M600_MTFDDAT064MBF', 
-                    '80%', 
-                    'Monitor (no impact to upgrades)'
+                    '80%',
                 ],
                 [
                     "CSCwt38698 (False Fault Micron SSD defect)",
@@ -277,11 +261,10 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "N/A",
-                    "",
                 ],
             ],
         ),
-        # FAIL_O - Same node (205), different slots: genuine fault (Intel SSD) + false fault (Micron SSD)
+        # FAIL_O - Same node (205), different slots: genuine fault (Intel SSD)
         (
             {
                 faultInst: read_data(dir, "faultInst.json"),
@@ -296,15 +279,13 @@ eqptFlash = 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")'
                     "205",
                     "Micron_M550_MTFDDAT256MAY",
                     "90%",
-                    "Contact Cisco TAC for replacement procedure",
                 ],
                 [
                     'F3074', 
                     '1', 
                     '101', 
                     'Micron_M600_MTFDDAT064MBF', 
-                    '80%', 
-                    'Monitor (no impact to upgrades)'
+                    '80%',
                 ],
             ],
         ), 
