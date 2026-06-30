@@ -6938,4 +6938,4 @@ if __name__ == "__main__":
         msg = "Abort due to unexpected error - {}".format(e)
         prints(msg)
         log.error(msg, exc_info=True)
-        sys.exit(1)
+        sys.exit(1) 
