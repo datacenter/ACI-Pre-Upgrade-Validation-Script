@@ -3662,6 +3662,8 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
     recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
 
+    m4l4_model_affected_version_found = False
+
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
         try:
@@ -3680,9 +3682,9 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                         )
                         if is_affected_apic_version:
                             if not is_firstver_gt_secondver(current_cimc, "4.3(5)"):
-                                warning = "Upgrade the APIC software to 6.0.9e and above 6.1.4h and above, then proceed with the CIMC upgrade. Refer to the release notes for the recommended CIMC version and CSCwo74485 advisory for further detail"
+                                m4l4_model_affected_version_found = True
                                 nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                                data.append([nodeid, apic_model, current_cimc, "", warning])
+                                data.append([nodeid, apic_model, current_cimc, "-", "-"])
                                 continue
 
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
@@ -3702,6 +3704,9 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
 
             if not data:
                 result = PASS
+
+            if m4l4_model_affected_version_found:
+                recommended_action = 'Intentionally Upgrade your APICs to a fixed target version [6.0(9e)+ or (6.1(4h)+] BEFORE upgrading CIMC to avoid hitting CSCwo74485.'
 
         except KeyError:
             return Result(result=MANUAL, msg="eqptCh does not have cimcVersion parameter on this version", headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
