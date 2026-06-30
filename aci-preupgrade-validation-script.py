@@ -2613,25 +2613,22 @@ def hw_program_fail_check(cversion, **kwargs):
 @check_wrapper(check_title="Switch SSD Health (F3073, F3074 equipment-flash-warning)")
 def switch_ssd_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed"]
     data = []
-    unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed", "Recommended Action"]
+    unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed"]
     unformatted_data = []
     thresh = {'F3073': '90%', 'F3074': '80%'}
-    recommended_action = {
-        'F3073': 'Contact Cisco TAC for replacement procedure',
-        'F3074': 'Monitor (no impact to upgrades)'
-    }
     overall_ra = ""
     micron_ra = (
-        '\n\tFor Micron SSDs: Run the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
+        '\n\tRun the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
         '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
     )
-    fault_ra = "Resolve the SSD-wear faults above. See per-row Recommended Action."
+    fault_ra = "Contact Cisco TAC for replacement procedure"
     mixed_ra = (
         "Mixed SSD faults detected:"
-        "\n\tFor non-Micron SSDs (F3073/F3074 rows): Contact Cisco TAC for replacement procedure."
-        + micron_ra
+        "\n\tFor non-Micron SSDs (F3073/F3074 rows): Contact Cisco TAC for replacement procedure.\n"
+        "\tFor Micron SSD: Run the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n"
+        "\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n"
     )
 
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-ssd-health"
@@ -2654,12 +2651,10 @@ def switch_ssd_check(cversion, tversion, **kwargs):
             ssd_model = cs_array.group("model")
             data.append([fc, dn_array.group("pod"), dn_array.group("node"),
                          cs_array.group("model"),
-                         thresh.get(fc, ''),
-                         recommended_action.get(fc, 'Resolve the fault')])
+                         thresh.get(fc, '')])
         else:
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'],
-                                     thresh.get(fc, ''),
-                                     recommended_action.get(fc, 'Resolve the fault')])
+                                     thresh.get(fc, '')])
 
     has_fault_data = bool(data or unformatted_data)
     
@@ -2681,7 +2676,7 @@ def switch_ssd_check(cversion, tversion, **kwargs):
             micron_ssds_per_node[node_id].add(model)
             micron_rows.append(['CSCwt38698 (False Fault Micron SSD defect)',
                                 pod_id,
-                                node_id, model, 'N/A', ''])
+                                node_id, model, 'N/A'])
         
         if classify:
             genuine_faults = []
@@ -2705,19 +2700,18 @@ def switch_ssd_check(cversion, tversion, **kwargs):
             del unformatted_data[:]
             data.extend(genuine_faults)
             data.extend(micron_false_faults)
-            return True, bool(genuine_faults)
+            return bool(micron_false_faults), bool(genuine_faults)
         else:
             data.extend(micron_rows)
             return True, False
 
     if cver_affected:
-        has_micron, has_genuine_fault = collect_micron(classify=True)
-        if has_micron:
+        has_micron_faults, has_genuine_fault = collect_micron(classify=True)
+        if has_micron_faults:
+            result = MANUAL
             if has_genuine_fault:
-                result = FAIL_O
                 overall_ra = mixed_ra
             else:
-                result = MANUAL
                 overall_ra = micron_ra
         elif has_fault_data:
             result = FAIL_O
