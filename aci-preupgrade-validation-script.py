@@ -6532,6 +6532,66 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=NA, msg="No affected Fabric module found.")
 
 
+@check_wrapper(check_title='N9K-C93180YC-FX3 Switch Memory Less Than 32GB')
+def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
+    data = []
+    recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c93180yc-fx3-switch-memory-less-than-32gb'
+    min_memory_kb = 32 * 1000 * 1000
+    msg = ''
+
+    affected_nodes = [
+        node for node in fabric_nodes
+        if node['fabricNode']['attributes']['model'] == 'N9K-C93180YC-FX3'
+    ]
+
+    if not affected_nodes:
+        result = NA
+        msg = 'No N9K-C93180YC-FX3 switches found. Skipping.'
+    else:
+        node_ids = [node['fabricNode']['attributes']['id'] for node in affected_nodes]
+        node_filter = 'or({})'.format(','.join(
+            'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in node_ids
+        ))
+        query = 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
+            node_filter, min_memory_kb
+        )
+        proc_mem_mos = icurl('class', query)
+
+        node_id_to_attrs = {
+            node['fabricNode']['attributes']['id']: node['fabricNode']['attributes']
+            for node in affected_nodes
+        }
+
+        for memory_mo in proc_mem_mos:
+            attrs = memory_mo['procMemUsage']['attributes']
+            dn_match = re.search(node_regex, attrs['dn'])
+            if not dn_match:
+                continue
+            node_id = dn_match.group('node')
+            if node_id not in node_id_to_attrs:
+                continue
+            memory_in_gb = round(int(attrs['Total']) / 1000000, 2)
+            result = FAIL_O
+            data.append([
+                node_id,
+                node_id_to_attrs[node_id]['name'],
+                node_id_to_attrs[node_id]['model'],
+                memory_in_gb,
+            ])
+
+        if data:
+            msg = (
+                'N9K-C93180YC-FX3 requires a minimum of 32GB RAM for proper operation in ACI mode. '
+                'One or more switches with less than 32GB of memory may experience service instability. '
+                'Upgrade the switch memory to at least 32GB.'
+            )
+
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6705,6 +6765,7 @@ class CheckManager:
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
         wred_affected_model_check,
+        n9k_c93180yc_fx3_switch_memory_check,
     ]
     ssh_checks = [
         # General
