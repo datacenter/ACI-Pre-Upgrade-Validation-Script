@@ -6532,34 +6532,6 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=NA, msg="No affected Fabric module found.")
 
 
-@check_wrapper(check_title="Stale dbgacEpgSummaryTask Objects")
-def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
-    result = PASS
-    headers = ["DN", "Start Time"]
-    data = []
-    recommended_action = "Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100](https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100)."
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-dbgacepgsummarytask-objects"
-
-    if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
-        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
-
-    threshold = datetime.utcnow() - timedelta(hours=24)
-    for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
-        attr = obj["dbgacEpgSummaryTask"]["attributes"]
-        dn = attr.get("dn", "")
-        start_ts = attr.get("startTs", "")
-        try:
-            task_dt = datetime.strptime(start_ts[:19], "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            continue
-        if task_dt < threshold:
-            data.append([dn, start_ts])
-
-    if data:
-        result = FAIL_UF
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
 @check_wrapper(check_title='N9K-C93180YC-FX3 Switch Memory Less Than 32GB')
 def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
     result = PASS
@@ -6618,6 +6590,34 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
             )
 
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="Stale dbgacEpgSummaryTask Objects")
+def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
+    result = PASS
+    headers = ["DN", "Start Time"]
+    data = []
+    recommended_action = "Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100](https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100)."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-dbgacepgsummarytask-objects"
+
+    if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    threshold = datetime.utcnow() - timedelta(hours=24)
+    for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
+        attr = obj["dbgacEpgSummaryTask"]["attributes"]
+        dn = attr.get("dn", "")
+        start_ts = attr.get("startTs", "")
+        try:
+            task_dt = datetime.strptime(start_ts[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            continue
+        if task_dt < threshold:
+            data.append([dn, start_ts])
+
+    if data:
+        result = FAIL_UF
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -6793,8 +6793,9 @@ class CheckManager:
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
         wred_affected_model_check,
-        stale_dbgacEpgSummaryTask_check,
         n9k_c93180yc_fx3_switch_memory_check,
+        stale_dbgacEpgSummaryTask_check,
+
     ]
     ssh_checks = [
         # General
