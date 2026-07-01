@@ -2833,7 +2833,7 @@ If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memo
 
 ### Stale dbgacEpgSummaryTask Objects
 
-Due to [CSCwt69100][74], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
+Due to [CSCwt69100][75], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
 
 Affected versions: 6.1(5e) and below, or 6.2(1g).
 
