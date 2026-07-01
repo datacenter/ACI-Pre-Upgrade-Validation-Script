@@ -140,7 +140,6 @@ Items                                         | Faults         | This Script    
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 
-
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
 [c3]: #vnid-mismatch
@@ -206,6 +205,7 @@ Items                                           | Defect       | This Script    
 [BgpProto timer policy already existing][d34]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
 [WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
+[Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -243,6 +243,7 @@ Items                                           | Defect       | This Script    
 [d34]: #bgpProto-timer-policy-already-existing
 [d35]: #wred-with-affected-fm-models
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
+[d37]: #stale-dbgacepgsummarytask-objects
 
 ## General Check Details
 
@@ -2830,6 +2831,15 @@ This check applies to N9K-C93180YC-FX3 switches only. It checks whether the swit
 If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memory to at least 32GB before proceeding with the upgrade.
 
 
+### Stale dbgacEpgSummaryTask Objects
+
+Due to [CSCwt69100][75], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
+
+Affected versions: 6.1(5e) and below, or 6.2(1g).
+
+Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2905,3 +2915,4 @@ If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memo
 [72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
 [73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
+[75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
