@@ -2611,18 +2611,34 @@ def hw_program_fail_check(cversion, **kwargs):
 
 
 @check_wrapper(check_title="Switch SSD Health (F3073, F3074 equipment-flash-warning)")
-def switch_ssd_check(**kwargs):
+def switch_ssd_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed"]
     data = []
-    unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed", "Recommended Action"]
+    unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed"]
     unformatted_data = []
     thresh = {'F3073': '90%', 'F3074': '80%'}
-    recommended_action = {
-        'F3073': 'Contact Cisco TAC for replacement procedure',
-        'F3074': 'Monitor (no impact to upgrades)'
-    }
+    overall_ra = ""
+    micron_ra = (
+        '\n\tRun the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
+        '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
+    )
+    fault_ra = "Contact Cisco TAC for replacement procedure"
+    mixed_ra = (
+        "Mixed SSD faults detected:"
+        "\n\tFor non-Micron SSDs (F3073/F3074 rows): Contact Cisco TAC for replacement procedure.\n"
+        "\tFor Micron SSD: Run the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n"
+        "\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n"
+    )
+
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-ssd-health"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    affected = ['6.1(5e)', '6.2(1g)']
+    cver_affected = any(cversion.same_as(v) for v in affected)
+    tver_affected = any(tversion.same_as(v) for v in affected)
 
     cs_regex = r"model:(?P<model>\w+),"
     faultInsts = icurl('class',
@@ -2632,25 +2648,91 @@ def switch_ssd_check(**kwargs):
         dn_array = re.search(node_regex, faultInst['faultInst']['attributes']['dn'])
         cs_array = re.search(cs_regex, faultInst['faultInst']['attributes']['changeSet'])
         if dn_array and cs_array:
+            ssd_model = cs_array.group("model")
             data.append([fc, dn_array.group("pod"), dn_array.group("node"),
                          cs_array.group("model"),
-                         thresh.get(fc, ''),
-                         recommended_action.get(fc, 'Resolve the fault')])
+                         thresh.get(fc, '')])
         else:
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'],
-                                     thresh.get(fc, ''),
-                                     recommended_action.get(fc, 'Resolve the fault')])
-    if not data and not unformatted_data:
-        result = PASS
-    return Result(
-        result=result,
-        headers=headers,
-        data=data,
-        unformatted_headers=unformatted_headers,
-        unformatted_data=unformatted_data,
-        doc_url=doc_url,
-    )
+                                     thresh.get(fc, '')])
 
+    has_fault_data = bool(data or unformatted_data)
+    
+    def collect_micron(classify):
+        eqptFlashs = icurl('class', 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")')
+        if not eqptFlashs:
+            return False, False
+
+        micron_ssds_per_node = defaultdict(set)
+        micron_rows = []
+
+        for eqptFlash in eqptFlashs:
+            attr = eqptFlash['eqptFlash']['attributes']
+            dn = re.search(node_regex, attr.get("dn", ""))
+            node_id = dn.group("node")
+            pod_id = dn.group("pod")
+            model = attr.get('model', '')
+            
+            micron_ssds_per_node[node_id].add(model)
+            micron_rows.append(['CSCwt38698 (False Fault Micron SSD defect)',
+                                pod_id,
+                                node_id, model, 'N/A'])
+        
+        if classify:
+            genuine_faults = []
+            micron_false_faults = []
+
+            for fault_row in data:
+                node_id = fault_row[2]
+                ssd_model = fault_row[3]
+
+                is_micron_fault = (node_id in micron_ssds_per_node and ssd_model in micron_ssds_per_node[node_id])
+
+                if not is_micron_fault:
+                    genuine_faults.append(fault_row)
+                else:
+                    for micron_row in micron_rows:
+                        if micron_row[2] == node_id and micron_row[3] == ssd_model:
+                            micron_false_faults.append(micron_row)
+                            break
+
+            del data[:]
+            del unformatted_data[:]
+            data.extend(genuine_faults)
+            data.extend(micron_false_faults)
+            return bool(micron_false_faults), bool(genuine_faults)
+        else:
+            data.extend(micron_rows)
+            return True, False
+
+    if cver_affected:
+        has_micron_faults, has_genuine_fault = collect_micron(classify=True)
+        if has_micron_faults:
+            result = MANUAL
+            if has_genuine_fault:
+                overall_ra = mixed_ra
+            else:
+                overall_ra = micron_ra
+        elif has_fault_data:
+            result = FAIL_O
+            overall_ra = fault_ra
+        else:
+            result = PASS
+    elif tver_affected:
+        if has_fault_data:
+            result = FAIL_O
+            overall_ra = fault_ra
+        elif collect_micron(classify=False)[0]:
+            result = MANUAL
+            overall_ra = micron_ra
+        else:
+            result = PASS
+    else:
+        result = FAIL_O if has_fault_data else PASS
+        if has_fault_data:
+            overall_ra = fault_ra
+
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=overall_ra, doc_url=doc_url)
 
 # Connection Based Check
 @check_wrapper(check_title="APIC SSD Health")

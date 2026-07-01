@@ -810,6 +810,12 @@ See the [ACI Switch Node SSD Lifetime Explained technote][9] for more details.
     --- omit ---
     ```
 
+Due to [CSCwt38698][76], Micron SSDs present in the fabric may give false end-of-life failures after upgrading to 6.1(5e) or 6.2(1g).
+
+To confirm if this is genuine or false alarm, run the SSD Lifetime Validation script on all nodes with identified actual failure case. If the SSD lifetime is critically low after manually running the script, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. To avoid this false alarm you can choose non-impacted target version.
+
+- Script location: [SSD Lifetime Validation](https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation)
+
 
 ### Config On APIC Connected Port
 
@@ -2916,3 +2922,5 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
+[76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+
