@@ -140,7 +140,6 @@ Items                                         | Faults         | This Script    
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 
-
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
 [c3]: #vnid-mismatch
@@ -208,7 +207,6 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 
-
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
 [d3]: #contract-port-22-defect
@@ -246,7 +244,6 @@ Items                                           | Defect       | This Script    
 [d35]: #wred-with-affected-fm-models
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
-
 
 ## General Check Details
 
