@@ -6532,6 +6532,64 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=NA, msg="No affected Fabric module found.")
 
 
+@check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
+def infravlan_overlap_access_policy_check(tversion, **kwargs):
+    result = PASS
+    headers = ["InfraVLAN", "VLAN Pool", "Encap Block"]
+    data = []
+    recommended_action = (
+        "Ensure InfraVLAN is not part of any access VLAN pool range. "
+        "Remove the overlapping InfraVLAN or adjust VLAN pool blocks."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infravlan-overlap-access-policy-check"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if (tversion.same_as("6.2(1g)") or tversion.same_as("6.1(3f)") or
+        (tversion.newer_than("6.1(3f)") and tversion.older_than("6.1(5e)")) or tversion.same_as("6.1(5e)")): 
+
+        infra_vlan = None
+        lldpInsts = icurl('class', 'lldpInst.json')
+        for lldpInst in lldpInsts:
+            infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
+            if not infra_vlan_id:
+                continue
+            match = re.search(r'\d+', str(infra_vlan_id))
+            if match:
+                infra_vlan = int(match.group(0))
+                break
+
+        encap_blocks = icurl('class', 'fvnsEncapBlk.json')
+        dn_pool_re = re.compile(r'vlanns-\[(?P<pool>[^\]]+)\]')
+        for obj in encap_blocks:
+
+            blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
+            dn = blk_attr.get('dn', '')
+            from_encap = blk_attr.get('from')
+            to_encap = blk_attr.get('to')
+            if not dn or not from_encap or not to_encap:
+                continue
+
+            pool_match = dn_pool_re.search(dn)
+            pool_name = pool_match.group('pool') if pool_match else '-'
+
+            try:
+                from_vlan = int(str(from_encap).split('-')[-1])
+                to_vlan = int(str(to_encap).split('-')[-1])
+            except (ValueError, TypeError):
+                continue
+
+            if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
+                result = FAIL_O
+                data.append([str(infra_vlan), pool_name, "{} to {}".format(from_encap, to_encap)])
+
+    else:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -6705,6 +6763,7 @@ class CheckManager:
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
         wred_affected_model_check,
+        infravlan_overlap_access_policy_check,
     ]
     ssh_checks = [
         # General

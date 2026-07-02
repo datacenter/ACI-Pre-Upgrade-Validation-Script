@@ -205,6 +205,7 @@ Items                                           | Defect       | This Script    
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
 [BgpProto timer policy already existing][d34]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
 [WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
+[InfraVLAN Overlap in Access Policy VLAN Pools][d36] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -241,6 +242,7 @@ Items                                           | Defect       | This Script    
 [d33]: #inband-management-policy-misconfiguration
 [d34]: #bgpProto-timer-policy-already-existing
 [d35]: #wred-with-affected-fm-models
+[d36]: #infravlan-overlap-access-policy-check
 
 ## General Check Details
 
@@ -2819,6 +2821,13 @@ To avoid this issue, disable WRED on the affected nodes or upgrade to a release 
 This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
 
 
+#### Infravlan Overlap Access Policy Check
+
+Due to [CSCwt58626][74], when targeting APIC version 6.1(3f) to 6.1(5e) or 6.2(1g) , if the InfraVLAN overlaps with any user-configured VLAN pool range in Access Policies, fault `F4701` is raised for VLAN pools that include the InfraVLAN. After the upgrade, domains linked to those VLAN pools cannot be associated with new EPGs, although existing EPGs continue to function.
+
+To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block or select the fixed version as a target release.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2893,3 +2902,4 @@ This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'b
 [71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
 [72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
 [73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
+[74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626

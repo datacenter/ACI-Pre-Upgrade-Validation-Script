@@ -1,0 +1,10 @@
+[
+  {
+    "lldpInst": {
+      "attributes": {
+        "adminSt": "enabled",
+        "infraVlan": "vlan-4093"
+      }
+    }
+  }
+]
