@@ -2611,18 +2611,34 @@ def hw_program_fail_check(cversion, **kwargs):
 
 
 @check_wrapper(check_title="Switch SSD Health (F3073, F3074 equipment-flash-warning)")
-def switch_ssd_check(**kwargs):
+def switch_ssd_check(cversion, tversion, **kwargs):
     result = FAIL_O
-    headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed", "Recommended Action"]
+    headers = ["Fault", "Pod", "Node", "SSD Model", "% Threshold Crossed"]
     data = []
-    unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed", "Recommended Action"]
+    unformatted_headers = ["Fault", "Fault DN", "% Threshold Crossed"]
     unformatted_data = []
     thresh = {'F3073': '90%', 'F3074': '80%'}
-    recommended_action = {
-        'F3073': 'Contact Cisco TAC for replacement procedure',
-        'F3074': 'Monitor (no impact to upgrades)'
-    }
+    overall_ra = ""
+    micron_ra = (
+        '\n\tRun the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n'
+        '\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n'
+    )
+    fault_ra = "Contact Cisco TAC for replacement procedure"
+    mixed_ra = (
+        "Mixed SSD faults detected:"
+        "\n\tFor non-Micron SSDs (F3073/F3074 rows): Contact Cisco TAC for replacement procedure.\n"
+        "\tFor Micron SSD: Run the SSD Lifetime Validation script manually on all identified nodes before upgrading.\n"
+        "\tScript location: https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation\n"
+    )
+
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-ssd-health"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    affected = ['6.1(5e)', '6.2(1g)']
+    cver_affected = any(cversion.same_as(v) for v in affected)
+    tver_affected = any(tversion.same_as(v) for v in affected)
 
     cs_regex = r"model:(?P<model>\w+),"
     faultInsts = icurl('class',
@@ -2632,25 +2648,91 @@ def switch_ssd_check(**kwargs):
         dn_array = re.search(node_regex, faultInst['faultInst']['attributes']['dn'])
         cs_array = re.search(cs_regex, faultInst['faultInst']['attributes']['changeSet'])
         if dn_array and cs_array:
+            ssd_model = cs_array.group("model")
             data.append([fc, dn_array.group("pod"), dn_array.group("node"),
                          cs_array.group("model"),
-                         thresh.get(fc, ''),
-                         recommended_action.get(fc, 'Resolve the fault')])
+                         thresh.get(fc, '')])
         else:
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn'],
-                                     thresh.get(fc, ''),
-                                     recommended_action.get(fc, 'Resolve the fault')])
-    if not data and not unformatted_data:
-        result = PASS
-    return Result(
-        result=result,
-        headers=headers,
-        data=data,
-        unformatted_headers=unformatted_headers,
-        unformatted_data=unformatted_data,
-        doc_url=doc_url,
-    )
+                                     thresh.get(fc, '')])
 
+    has_fault_data = bool(data or unformatted_data)
+    
+    def collect_micron(classify):
+        eqptFlashs = icurl('class', 'eqptFlash.json?query-target-filter=eq(eqptFlash.vendor,"Micron")')
+        if not eqptFlashs:
+            return False, False
+
+        micron_ssds_per_node = defaultdict(set)
+        micron_rows = []
+
+        for eqptFlash in eqptFlashs:
+            attr = eqptFlash['eqptFlash']['attributes']
+            dn = re.search(node_regex, attr.get("dn", ""))
+            node_id = dn.group("node")
+            pod_id = dn.group("pod")
+            model = attr.get('model', '')
+            
+            micron_ssds_per_node[node_id].add(model)
+            micron_rows.append(['CSCwt38698 (False Fault Micron SSD defect)',
+                                pod_id,
+                                node_id, model, 'N/A'])
+        
+        if classify:
+            genuine_faults = []
+            micron_false_faults = []
+
+            for fault_row in data:
+                node_id = fault_row[2]
+                ssd_model = fault_row[3]
+
+                is_micron_fault = (node_id in micron_ssds_per_node and ssd_model in micron_ssds_per_node[node_id])
+
+                if not is_micron_fault:
+                    genuine_faults.append(fault_row)
+                else:
+                    for micron_row in micron_rows:
+                        if micron_row[2] == node_id and micron_row[3] == ssd_model:
+                            micron_false_faults.append(micron_row)
+                            break
+
+            del data[:]
+            del unformatted_data[:]
+            data.extend(genuine_faults)
+            data.extend(micron_false_faults)
+            return bool(micron_false_faults), bool(genuine_faults)
+        else:
+            data.extend(micron_rows)
+            return True, False
+
+    if cver_affected:
+        has_micron_faults, has_genuine_fault = collect_micron(classify=True)
+        if has_micron_faults:
+            result = MANUAL
+            if has_genuine_fault:
+                overall_ra = mixed_ra
+            else:
+                overall_ra = micron_ra
+        elif has_fault_data:
+            result = FAIL_O
+            overall_ra = fault_ra
+        else:
+            result = PASS
+    elif tver_affected:
+        if has_fault_data:
+            result = FAIL_O
+            overall_ra = fault_ra
+        elif collect_micron(classify=False)[0]:
+            result = MANUAL
+            overall_ra = micron_ra
+        else:
+            result = PASS
+    else:
+        result = FAIL_O if has_fault_data else PASS
+        if has_fault_data:
+            overall_ra = fault_ra
+
+    return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=overall_ra, doc_url=doc_url)
 
 # Connection Based Check
 @check_wrapper(check_title="APIC SSD Health")
@@ -6620,6 +6702,94 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='N9K-C93180YC-FX3 Switch Memory Less Than 32GB')
+def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
+    data = []
+    recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c93180yc-fx3-switch-memory-less-than-32gb'
+    min_memory_kb = 32 * 1000 * 1000
+    msg = ''
+
+    affected_nodes = [
+        node for node in fabric_nodes
+        if node['fabricNode']['attributes']['model'] == 'N9K-C93180YC-FX3'
+    ]
+
+    if not affected_nodes:
+        result = NA
+        msg = 'No N9K-C93180YC-FX3 switches found. Skipping.'
+    else:
+        node_ids = [node['fabricNode']['attributes']['id'] for node in affected_nodes]
+        node_filter = 'or({})'.format(','.join(
+            'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in node_ids
+        ))
+        query = 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
+            node_filter, min_memory_kb
+        )
+        proc_mem_mos = icurl('class', query)
+
+        node_id_to_attrs = {
+            node['fabricNode']['attributes']['id']: node['fabricNode']['attributes']
+            for node in affected_nodes
+        }
+
+        for memory_mo in proc_mem_mos:
+            attrs = memory_mo['procMemUsage']['attributes']
+            dn_match = re.search(node_regex, attrs['dn'])
+            if not dn_match:
+                continue
+            node_id = dn_match.group('node')
+            if node_id not in node_id_to_attrs:
+                continue
+            memory_in_gb = round(int(attrs['Total']) / 1000000, 2)
+            result = FAIL_O
+            data.append([
+                node_id,
+                node_id_to_attrs[node_id]['name'],
+                node_id_to_attrs[node_id]['model'],
+                memory_in_gb,
+            ])
+
+        if data:
+            msg = (
+                'N9K-C93180YC-FX3 requires a minimum of 32GB RAM for proper operation in ACI mode. '
+                'One or more switches with less than 32GB of memory may experience service instability. '
+                'Upgrade the switch memory to at least 32GB.'
+            )
+
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="Stale dbgacEpgSummaryTask Objects")
+def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
+    result = PASS
+    headers = ["DN", "Start Time"]
+    data = []
+    recommended_action = "Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100](https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100)."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-dbgacepgsummarytask-objects"
+
+    if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    threshold = datetime.utcnow() - timedelta(hours=24)
+    for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
+        attr = obj["dbgacEpgSummaryTask"]["attributes"]
+        dn = attr.get("dn", "")
+        start_ts = attr.get("startTs", "")
+        try:
+            task_dt = datetime.strptime(start_ts[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            continue
+        if task_dt < threshold:
+            data.append([dn, start_ts])
+
+    if data:
+        result = FAIL_UF
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
 def infravlan_overlap_access_policy_check(tversion, **kwargs):
     result = PASS
@@ -6852,6 +7022,9 @@ class CheckManager:
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
         wred_affected_model_check,
+        n9k_c93180yc_fx3_switch_memory_check,
+        stale_dbgacEpgSummaryTask_check,
+
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,

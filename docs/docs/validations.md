@@ -140,7 +140,6 @@ Items                                         | Faults         | This Script    
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 
-
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
 [c3]: #vnid-mismatch
@@ -205,7 +204,9 @@ Items                                           | Defect       | This Script    
 [Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
 [BgpProto timer policy already existing][d34]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
 [WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
-[InfraVLAN Overlap in Access Policy VLAN Pools][d36] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
+[N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
+[Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
+[InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -242,7 +243,9 @@ Items                                           | Defect       | This Script    
 [d33]: #inband-management-policy-misconfiguration
 [d34]: #bgpProto-timer-policy-already-existing
 [d35]: #wred-with-affected-fm-models
-[d36]: #infravlan-overlap-access-policy-check
+[d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
+[d37]: #stale-dbgacepgsummarytask-objects
+[d38]: #infravlan-overlap-access-policy-check
 
 ## General Check Details
 
@@ -808,6 +811,12 @@ See the [ACI Switch Node SSD Lifetime Explained technote][9] for more details.
     type             : operational
     --- omit ---
     ```
+
+Due to [CSCwt38698][76], Micron SSDs present in the fabric may give false end-of-life failures after upgrading to 6.1(5e) or 6.2(1g).
+
+To confirm if this is genuine or false alarm, run the SSD Lifetime Validation script on all nodes with identified actual failure case. If the SSD lifetime is critically low after manually running the script, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. To avoid this false alarm you can choose non-impacted target version.
+
+- Script location: [SSD Lifetime Validation](https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation)
 
 
 ### Config On APIC Connected Port
@@ -2821,9 +2830,27 @@ To avoid this issue, disable WRED on the affected nodes or upgrade to a release 
 This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
 
 
+### N9K-C93180YC-FX3 Switch Memory Less Than 32GB
+
+This check applies to N9K-C93180YC-FX3 switches only. It checks whether the switch has less than 32GB of memory. The minimum RAM requirement for the N9K-C93180YC-FX3 to operate properly in ACI mode is 32GB. This check is not version dependent and runs for all upgrade versions.
+
+[CSCwm42741][74] tracks this issue. N9K-C93180YC-FX3 switches running in ACI mode with less than 32GB of memory will not perform well and are at risk of service instability. With fix of CSCwm42741, a critical fault F4680 (`eqpt-low-memory-device`) is raised on affected switches.
+
+If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memory to at least 32GB before proceeding with the upgrade.
+
+
+### Stale dbgacEpgSummaryTask Objects
+
+Due to [CSCwt69100][75], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
+
+Affected versions: 6.1(5e) and below, or 6.2(1g).
+
+Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
+
+
 ### Infravlan Overlap Access Policy Check
 
-Due to [CSCwt58626][74], when targeting APIC version 6.1(3f) to 6.1(5e) or 6.2(1g) , if the InfraVLAN overlaps with any user-configured VLAN pool range in Access Policies, fault `F4701` is raised for VLAN pools that include the InfraVLAN. After the upgrade, domains linked to those VLAN pools cannot be associated with new EPGs, although existing EPGs continue to function.
+Due to [CSCwt58626][77], when targeting APIC version 6.1(3f) to 6.1(5e) or 6.2(1g) , if the InfraVLAN overlaps with any user-configured VLAN pool range in Access Policies, fault `F4701` is raised for VLAN pools that include the InfraVLAN. After the upgrade, domains linked to those VLAN pools cannot be associated with new EPGs, although existing EPGs continue to function.
 
 To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block or select target version with fix.
 
@@ -2902,4 +2929,7 @@ To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not
 [71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
 [72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
 [73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
-[74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
+[75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
+[76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+[77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
