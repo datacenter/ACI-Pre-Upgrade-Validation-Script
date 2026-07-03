@@ -1,0 +1,12 @@
+[
+  {
+    "lldpInst": {
+      "attributes": {
+				"adminSt": "enabled",
+				"dn": "topology/pod-1/node-201/sys/lldp/inst",
+				"infraVlan": "vlan-4093",
+				"sysDesc": "topology/pod-1/node-201"
+			}
+    }
+  }
+]

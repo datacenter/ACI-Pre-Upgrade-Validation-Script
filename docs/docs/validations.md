@@ -2821,11 +2821,11 @@ To avoid this issue, disable WRED on the affected nodes or upgrade to a release 
 This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
 
 
-#### Infravlan Overlap Access Policy Check
+### Infravlan Overlap Access Policy Check
 
 Due to [CSCwt58626][74], when targeting APIC version 6.1(3f) to 6.1(5e) or 6.2(1g) , if the InfraVLAN overlaps with any user-configured VLAN pool range in Access Policies, fault `F4701` is raised for VLAN pools that include the InfraVLAN. After the upgrade, domains linked to those VLAN pools cannot be associated with new EPGs, although existing EPGs continue to function.
 
-To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block or select the fixed version as a target release.
+To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block or select target version with fix.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

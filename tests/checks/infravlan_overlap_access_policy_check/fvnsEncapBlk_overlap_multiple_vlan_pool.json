@@ -1,0 +1,20 @@
+[
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "from": "vlan-100",
+        "to": "vlan-4094",
+        "dn": "uni/infra/vlanns-[vlan_pool1]-static/from-[vlan-100]-to-[vlan-4094]"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "from": "vlan-4000",
+        "to": "vlan-4094",
+        "dn": "uni/infra/vlanns-[vlan_pool2]-static/from-[vlan-4000]-to-[vlan-4094]"
+      }
+    }
+  }
+]

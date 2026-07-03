@@ -6532,60 +6532,149 @@ def wred_affected_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=NA, msg="No affected Fabric module found.")
 
 
+@check_wrapper(check_title='N9K-C93180YC-FX3 Switch Memory Less Than 32GB')
+def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["NodeId", "Name", "Model", "Memory Detected (GB)"]
+    data = []
+    recommended_action = 'Increase the switch memory to at least 32GB on affected N9K-C93180YC-FX3.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#n9k-c93180yc-fx3-switch-memory-less-than-32gb'
+    min_memory_kb = 32 * 1000 * 1000
+    msg = ''
+
+    affected_nodes = [
+        node for node in fabric_nodes
+        if node['fabricNode']['attributes']['model'] == 'N9K-C93180YC-FX3'
+    ]
+
+    if not affected_nodes:
+        result = NA
+        msg = 'No N9K-C93180YC-FX3 switches found. Skipping.'
+    else:
+        node_ids = [node['fabricNode']['attributes']['id'] for node in affected_nodes]
+        node_filter = 'or({})'.format(','.join(
+            'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in node_ids
+        ))
+        query = 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
+            node_filter, min_memory_kb
+        )
+        proc_mem_mos = icurl('class', query)
+
+        node_id_to_attrs = {
+            node['fabricNode']['attributes']['id']: node['fabricNode']['attributes']
+            for node in affected_nodes
+        }
+
+        for memory_mo in proc_mem_mos:
+            attrs = memory_mo['procMemUsage']['attributes']
+            dn_match = re.search(node_regex, attrs['dn'])
+            if not dn_match:
+                continue
+            node_id = dn_match.group('node')
+            if node_id not in node_id_to_attrs:
+                continue
+            memory_in_gb = round(int(attrs['Total']) / 1000000, 2)
+            result = FAIL_O
+            data.append([
+                node_id,
+                node_id_to_attrs[node_id]['name'],
+                node_id_to_attrs[node_id]['model'],
+                memory_in_gb,
+            ])
+
+        if data:
+            msg = (
+                'N9K-C93180YC-FX3 requires a minimum of 32GB RAM for proper operation in ACI mode. '
+                'One or more switches with less than 32GB of memory may experience service instability. '
+                'Upgrade the switch memory to at least 32GB.'
+            )
+
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="Stale dbgacEpgSummaryTask Objects")
+def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
+    result = PASS
+    headers = ["DN", "Start Time"]
+    data = []
+    recommended_action = "Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100](https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100)."
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#stale-dbgacepgsummarytask-objects"
+
+    if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    threshold = datetime.utcnow() - timedelta(hours=24)
+    for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
+        attr = obj["dbgacEpgSummaryTask"]["attributes"]
+        dn = attr.get("dn", "")
+        start_ts = attr.get("startTs", "")
+        try:
+            task_dt = datetime.strptime(start_ts[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            continue
+        if task_dt < threshold:
+            data.append([dn, start_ts])
+
+    if data:
+        result = FAIL_UF
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
 def infravlan_overlap_access_policy_check(tversion, **kwargs):
     result = PASS
     headers = ["InfraVLAN", "VLAN Pool", "Encap Block"]
     data = []
-    recommended_action = (
-        "Ensure InfraVLAN is not part of any access VLAN pool range. "
-        "Remove the overlapping InfraVLAN or adjust VLAN pool blocks."
-    )
+    recommended_action = "Remove InfraVLAN from VLAN pool block highligted or upgrade to fix version"
+    
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infravlan-overlap-access-policy-check"
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    if (tversion.same_as("6.2(1g)") or tversion.same_as("6.1(3f)") or
-        (tversion.newer_than("6.1(3f)") and tversion.older_than("6.1(5e)")) or tversion.same_as("6.1(5e)")): 
-
-        infra_vlan = None
-        lldpInsts = icurl('class', 'lldpInst.json')
-        for lldpInst in lldpInsts:
-            infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
-            if not infra_vlan_id:
-                continue
-            match = re.search(r'\d+', str(infra_vlan_id))
-            if match:
-                infra_vlan = int(match.group(0))
-                break
-
-        encap_blocks = icurl('class', 'fvnsEncapBlk.json')
-        dn_pool_re = re.compile(r'vlanns-\[(?P<pool>[^\]]+)\]')
-        for obj in encap_blocks:
-
-            blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
-            dn = blk_attr.get('dn', '')
-            from_encap = blk_attr.get('from')
-            to_encap = blk_attr.get('to')
-            if not dn or not from_encap or not to_encap:
-                continue
-
-            pool_match = dn_pool_re.search(dn)
-            pool_name = pool_match.group('pool') if pool_match else '-'
-
-            try:
-                from_vlan = int(str(from_encap).split('-')[-1])
-                to_vlan = int(str(to_encap).split('-')[-1])
-            except (ValueError, TypeError):
-                continue
-
-            if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
-                result = FAIL_O
-                data.append([str(infra_vlan), pool_name, "{} to {}".format(from_encap, to_encap)])
-
-    else:
+    if not (tversion.same_as("6.2(1g)") or (
+        not tversion.older_than("6.1(3f)") and not tversion.newer_than("6.1(5e)")
+    )):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    infra_vlan = None
+    lldpInsts = icurl('class', 'lldpInst.json')
+    for lldpInst in lldpInsts:
+        infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
+        if not infra_vlan_id:
+            continue
+        match = re.search(r'\d+', str(infra_vlan_id))
+        if match:
+            infra_vlan = int(match.group(0))
+            break
+
+    if infra_vlan is None:
+        return Result(result=NA, msg="Unable to determine InfraVLAN from lldpInst.")
+
+    encap_blocks = icurl('class', 'fvnsEncapBlk.json')
+    dn_pool_re = re.compile(r'vlanns-\[(?P<vlan_pool>[^\]]+)\]')
+    for obj in encap_blocks:
+        blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
+        dn = blk_attr.get('dn', '')
+        from_encap = blk_attr.get('from')
+        to_encap = blk_attr.get('to')
+        if not dn or not from_encap or not to_encap:
+            continue
+
+        pool_match = dn_pool_re.search(dn)
+        pool_name = pool_match.group('vlan_pool') if pool_match else '-'
+
+        try:
+            from_vlan = int(str(from_encap).split('-')[-1])
+            to_vlan = int(str(to_encap).split('-')[-1])
+        except (ValueError, TypeError):
+            continue
+
+        if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
+            data.append([str(infra_vlan), pool_name, "{} to {}".format(from_encap, to_encap)])
+
+    if data:
+        result = FAIL_O
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
@@ -6763,6 +6852,8 @@ class CheckManager:
         inband_management_policy_misconfig_check,
         bgpProto_timer_policy_already_existing_check,
         wred_affected_model_check,
+        n9k_c93180yc_fx3_switch_memory_check,
+        stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,
     ]
     ssh_checks = [
