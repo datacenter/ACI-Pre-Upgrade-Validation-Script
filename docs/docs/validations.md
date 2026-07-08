@@ -2852,7 +2852,7 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 
 Due to [CSCwt58626][77], when targeting APIC version 6.1(3f) to 6.1(5e) or 6.2(1g) , if the InfraVLAN overlaps with any user-configured VLAN pool range in Access Policies, fault `F4701` is raised for VLAN pools that include the InfraVLAN. After the upgrade, domains linked to those VLAN pools cannot be associated with new EPGs, although existing EPGs continue to function.
 
-To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block or select target version with fix.
+To avoid this issue, modify user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block or select target fixed version 6.2(2e) or above.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

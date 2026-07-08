@@ -6720,7 +6720,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     infra_vlan = None
-    lldpInsts = icurl('class', 'lldpInst.json')
+    lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
     for lldpInst in lldpInsts:
         infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
         if not infra_vlan_id:
