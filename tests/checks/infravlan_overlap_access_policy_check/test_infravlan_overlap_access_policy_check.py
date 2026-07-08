@@ -12,7 +12,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "infravlan_overlap_access_policy_check"
 
 # icurl queries
-lldpInst_api = "lldpInst.json"
+lldpInst_api = "lldpInst.json?query-target-filter=wcard(lldpInst.dn,\"/node-1/\")"
 fvnsEncapBlk_api = "fvnsEncapBlk.json"
 
 
