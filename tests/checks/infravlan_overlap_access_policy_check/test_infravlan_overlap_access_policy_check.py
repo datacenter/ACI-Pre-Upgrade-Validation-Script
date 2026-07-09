@@ -47,54 +47,54 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			script.NA,
 			[],
 		),
-		# Case 5: lldpInst returns no data so infraVlan cannot be determined. Expected: NA.
+		# Case 5: lldpInst returns no data so infraVlan cannot be determined. Expected: ERROR.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_empty.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_single_vlan_pool.json"),
 			},
 			"6.2(1g)",
-			script.NA,
+			script.ERROR,
 			[],
 		),
-		# Case 6: InfraVLAN overlaps on lower boundary version 6.1(3f). Expected: FAIL_O.
+		# Case 6: InfraVLAN overlaps on lower boundary version 6.1(3f). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_single_vlan_pool.json"),
 			},
 			"6.1(3f)",
-			script.FAIL_O,
+			script.FAIL_UF,
 			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
 		),
-		# Case 7: InfraVLAN overlaps on a mid-range version 6.1(4a). Expected: FAIL_O.
+		# Case 7: InfraVLAN overlaps on a mid-range version 6.1(4a). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_single_vlan_pool.json"),
 			},
 			"6.1(4a)",
-			script.FAIL_O,
+			script.FAIL_UF,
 			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
 		),
-		# Case 8: InfraVLAN overlaps on upper boundary version 6.1(5e). Expected: FAIL_O.
+		# Case 8: InfraVLAN overlaps on upper boundary version 6.1(5e). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_single_vlan_pool.json"),
 			},
 			"6.1(5e)",
-			script.FAIL_O,
+			script.FAIL_UF,
 			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
 		),
-		# Case 9: InfraVLAN overlaps on standalone affected version 6.2(1g). Expected: FAIL_O.
+		# Case 9: InfraVLAN overlaps on standalone affected version 6.2(1g). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_single_vlan_pool.json"),
 			},
 			"6.2(1g)",
-			script.FAIL_O,
+			script.FAIL_UF,
 			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
 		),
 		# Case 10: InfraVLAN does not overlap on affected version 6.2(1g). Expected: PASS.
@@ -107,24 +107,24 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			script.PASS,
 			[],
 		),
-		# Case 11: Single lldpInst entry with overlap on affected version 6.2(1g). Expected: FAIL_O.
+		# Case 11: Single lldpInst entry with overlap on affected version 6.2(1g). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_single_entry.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_single_vlan_pool.json"),
 			},
 			"6.2(1g)",
-			script.FAIL_O,
+			script.FAIL_UF,
 			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
 		),
-		# Case 12: InfraVLAN overlaps on multiple vlan pools on standalone affected version 6.2(1g). Expected: FAIL_O.
+		# Case 12: InfraVLAN overlaps on multiple vlan pools on standalone affected version 6.2(1g). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_multiple_vlan_pool.json"),
 			},
 			"6.2(1g)",
-			script.FAIL_O,
+			script.FAIL_UF,
 			[
 				["4093", "vlan_pool1", "vlan-100 to vlan-4094"],
 				["4093", "vlan_pool2", "vlan-4000 to vlan-4094"],

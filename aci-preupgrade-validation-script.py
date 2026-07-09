@@ -6731,7 +6731,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
             break
 
     if infra_vlan is None:
-        return Result(result=NA, msg="Unable to determine InfraVLAN from lldpInst.")
+        return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
 
     encap_blocks = icurl('class', 'fvnsEncapBlk.json')
     dn_pool_re = re.compile(r'vlanns-\[(?P<vlan_pool>[^\]]+)\]')
@@ -6756,7 +6756,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
             data.append([str(infra_vlan), pool_name, "{} to {}".format(from_encap, to_encap)])
 
     if data:
-        result = FAIL_O
+        result = FAIL_UF
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
