@@ -146,6 +146,3 @@ def test_logic(run_check, mock_icurl, tversion, expected_result, expected_data):
 	result = run_check(tversion=script.AciVersion(tversion) if tversion else None)
 	assert result.result == expected_result
 	assert result.data == expected_data
-
-
-

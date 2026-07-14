@@ -6685,7 +6685,12 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
 
-    threshold = datetime.utcnow() - timedelta(hours=24)
+    try:
+        from datetime import timezone 
+        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24) 
+    except ImportError:
+        threshold = datetime.utcnow() - timedelta(hours=24) 
+
     for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
         attr = obj["dbgacEpgSummaryTask"]["attributes"]
         dn = attr.get("dn", "")
