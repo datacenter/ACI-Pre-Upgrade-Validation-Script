@@ -6710,18 +6710,18 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
     recommended_action = ""
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#certificate-expiration-check'
 
-    fault_min_versions = {
-        "F4501": "6.0(4c)", "F4502": "6.0(4c)",  # KeyRing cert expiring/expired
-        "F4503": "6.1(1e)", "F4617": "6.1(1e)",  # TP cert expired/expiring
-        "F3081": "3.1(2f)", "F3082": "3.1(2f)",  # SAML encryption cert expiring/expired
-        "F4752": "6.1(5e)", "F4753": "6.1(5e)",  # Factory certificate expired/expiring
-    }
+    fault_min_versions = [
+        ("F4501", "6.0(4c)"), ("F4502", "6.0(4c)"),  # KeyRing cert expiring/expired
+        ("F4503", "6.1(1e)"), ("F4617", "6.1(1e)"),  # TP cert expired/expiring
+        ("F3081", "3.1(2f)"), ("F3082", "3.1(2f)"),  # SAML encryption cert expiring/expired
+        ("F4752", "6.1(5e)"), ("F4753", "6.1(5e)"),  # Factory certificate expired/expiring
+    ]
     FACTORY_CERT_MIN_VERSION = "6.1(5e)"
     FACTORY_CERT_EXPIRING_DAYS = 30
 
     has_critical = has_major = has_error = False
 
-    applicable_codes = [code for code, ver in fault_min_versions.items() if not cversion.older_than(ver)]
+    applicable_codes = [code for code, ver in fault_min_versions if not cversion.older_than(ver)]
     if applicable_codes:
         fault_filter = ",".join('eq(faultInst.code,"{}")'.format(code) for code in applicable_codes)
         for faultInst in icurl('class', 'faultInst.json?query-target-filter=or({})'.format(fault_filter)):
