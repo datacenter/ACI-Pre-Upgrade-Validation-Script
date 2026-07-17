@@ -87,6 +87,7 @@ Items                                         | Faults         | This Script    
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 [APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
+[Certificate Expiration Check][f23]           | F4501/F4502: KeyRing expiring/expired<br>F4617/F4503: TP expiring/expired<br>F3081/F3082: SAML expiring/expired<br>F4752/F4753: Factory expiring/expired | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -110,6 +111,7 @@ Items                                         | Faults         | This Script    
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
+[f23]: #certificate-expiration-check
 
 ### Configuration Checks
 
@@ -1639,7 +1641,115 @@ To recover from this fault, try the following action
     type            : operational
     ```
     
-    
+### Certificate Expiration Check
+
+ACI uses various X.509 certificates for security and authentication purposes. If these certificates expire or are about to expire, it can cause service disruptions or failures. The fabric will raise different faults depending on the certificate type.
+
+**Expiring Certificates (Major Severity):**
+
+* **F4501**: KeyRing X.509 Certificate expiring - This fault occurs when a custom KeyRing X.509 Certificate is going to expire in one month.
+
+* **F3081**: SAML X.509 Certificate expiring - This fault occurs when the SAML X.509 Certificate is going to expire in one month.
+
+* **F4617**: TP X.509 Certificate expiring - This fault occurs when a Trust Point X.509 Certificate is expiring.
+
+* **F4752**: Factory X.509 Certificate expiring - This fault occurs when the factory Certificate is expiring.
+
+
+**Expired Certificates (Critical Severity):**
+
+* **F4502**: KeyRing X.509 Certificate expired - This fault occurs when a custom KeyRing X.509 Certificate has expired.
+
+* **F4503**: TP X.509 Certificate expired - This fault occurs when a Trust Point X.509 Certificate has expired.
+
+* **F3082**: SAML X.509 Certificate expired - This fault occurs when the SAML Encryption X.509 Certificate has expired.
+
+* **F4753**: Factory X.509 Certificate expired - This fault occurs when the factory Certificate has expired.
+
+
+**Recommended Actions:**
+
+* For expiring certificates (F4501, F3081, F4617, F4572): Renew the certificate(s) before they expire to avoid service disruption.
+
+* For expired certificates (F4502, F4503, F3082, F4573): Renew the certificate(s) immediately to restore functionality.
+
+!!! example "Fault Example (F4502: Expired KeyRing Certificate)"
+    The following shows an example of an expired KeyRing certificate:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4502"'
+    Total Objects shown: 1
+     
+    # fault.Inst
+    code             : F4502
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : cert-expired
+    changeSet        :
+    childAction      :
+    created          : 2026-05-12T05:23:26.549+00:00
+    delegated        : no
+    descr            : KeyRing Certificate THD_KEYRING expired
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4502
+    domain           : security
+    extMngdBy        : undefined
+    highestSeverity  : critical
+    lastTransition   : 2026-05-12T05:25:51.231+00:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : critical
+    prevSeverity     : critical
+    rn               : fault-F4502
+    rule             : pki-key-ring-custom-key-ring-expired
+    severity         : critical
+    status           :
+    subject          : security-provider
+    title            :
+    type             : operational
+    uid              :
+    userdom          : all
+    ```
+
+!!! example "Fault Example (F4501: Expiring KeyRing Certificate)"
+    The following shows an example of a KeyRing certificate expiring in one month:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4501"'
+    Total Objects shown: 1
+     
+    # fault.Inst
+    code             : F4501
+    ack              : no
+    alert            : no
+    annotation       :
+    cause            : cert-expiring
+    changeSet        :
+    childAction      :
+    created          : 2026-04-12T05:23:26.549+00:00
+    delegated        : no
+    descr            : KeyRing Certificate THD_KEYRING expiring in one month
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4501
+    domain           : security
+    extMngdBy        : undefined
+    highestSeverity  : major
+    lastTransition   : 2026-04-12T05:25:51.231+00:00
+    lc               : raised
+    modTs            : never
+    occur            : 1
+    origSeverity     : major
+    prevSeverity     : major
+    rn               : fault-F4501
+    rule             : pki-key-ring-custom-key-ring-expiring
+    severity         : major
+    status           :
+    subject          : security-provider
+    title            :
+    type             : operational
+    uid              :
+    userdom          : all
+    ```
+
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       

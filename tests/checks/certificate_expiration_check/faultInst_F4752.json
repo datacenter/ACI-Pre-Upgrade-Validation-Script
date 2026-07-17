@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4752",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "Factory certificate expiring",
+                "dn": "topology/pod-1/node-1/sys/ch/fault-F4752"
+            }
+        }
+    }
+]

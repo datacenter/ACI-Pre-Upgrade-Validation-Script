@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4617",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "TP Certificate expiring",
+                "dn": "uni/fabric/comm-default/https/fault-F4617"
+            }
+        }
+    }
+]
