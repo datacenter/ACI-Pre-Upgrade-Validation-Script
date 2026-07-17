@@ -26,10 +26,10 @@ def fault_query(codes):
 
 
 # icurl queries per applicable version range
-faultInst = fault_query(MASTER_ORDER)                                    # cversion >= 6.1(5e)
-faultInst_pre_factory = fault_query(["F4501", "F4502", "F4503", "F4617", "F3081", "F3082"])  # 6.1(1e)–6.1(5e)
-faultInst_keyring_saml = fault_query(["F4501", "F4502", "F3081", "F3082"])                    # 6.0(4c)–6.1(1e)
-faultInst_saml = fault_query(["F3081", "F3082"])                                              # 3.1(2f)–6.0(4c)
+faultInst = fault_query(MASTER_ORDER)
+faultInst_pre_factory = fault_query(["F4501", "F4502", "F4503", "F4617", "F3081", "F3082"])
+faultInst_keyring_saml = fault_query(["F4501", "F4502", "F3081", "F3082"])
+faultInst_saml = fault_query(["F3081", "F3082"])
 
 
 # --- Factory certificate (F4752/F4753) SSH check test data ---
@@ -367,7 +367,7 @@ def ssh_cmds(outputs):
             script.FAIL_O,
             [
                 ["N/A", "critical",
-                 "APIC 1 (apic1): manufacturing certificate expired on 2024-05-14 20:25:42 UTC"],
+                 "APIC 1 (apic1): factory certificate expired on 2024-05-14 20:25:42 UTC"],
             ],
         ),
         # MANUAL - manufacturing certificate expiring within threshold (30 days)
@@ -380,7 +380,7 @@ def ssh_cmds(outputs):
             script.MANUAL,
             [
                 ["N/A", "major",
-                 "APIC 1 (apic1): manufacturing certificate expiring on 2026-08-01 06:57:40 UTC"],
+                 "APIC 1 (apic1): factory certificate expiring on 2026-08-01 06:57:40 UTC"],
             ],
         ),
         # ERROR - SSH connection failure while verifying manufacturing certificate
@@ -395,7 +395,7 @@ def ssh_cmds(outputs):
             script.ERROR,
             [
                 ["N/A", "error",
-                 "APIC 1 (apic1): unable to verify manufacturing certificate - Simulated exception at connect()"],
+                 "APIC 1 (apic1): unable to verify factory certificate - Simulated exception at connect()"],
             ],
         ),
         # FAIL_O - combined: a raised fault AND an expired manufacturing cert (both reported)
@@ -409,7 +409,7 @@ def ssh_cmds(outputs):
             [
                 ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
                 ["N/A", "critical",
-                 "APIC 1 (apic1): manufacturing certificate expired on 2024-05-14 20:25:42 UTC"],
+                 "APIC 1 (apic1): factory certificate expired on 2024-05-14 20:25:42 UTC"],
             ],
         ),
         # FAIL_O - 3 APICs, only apic2 has an expired manufacturing cert
@@ -426,7 +426,7 @@ def ssh_cmds(outputs):
             script.FAIL_O,
             [
                 ["N/A", "critical",
-                 "APIC 2 (apic2): manufacturing certificate expired on 2024-05-14 20:25:42 UTC"],
+                 "APIC 2 (apic2): factory certificate expired on 2024-05-14 20:25:42 UTC"],
             ],
         ),
     ],

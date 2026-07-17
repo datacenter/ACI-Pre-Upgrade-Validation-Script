@@ -1669,9 +1669,9 @@ ACI uses various X.509 certificates for security and authentication purposes. If
 
 **Recommended Actions:**
 
-* For expiring certificates (F4501, F3081, F4617, F4572): Renew the certificate(s) before they expire to avoid service disruption.
+* For expiring certificates (F4501, F3081, F4617, F4752): Renew the certificate(s) before they expire to avoid service disruption.
 
-* For expired certificates (F4502, F4503, F3082, F4573): Renew the certificate(s) immediately to restore functionality.
+* For expired certificates (F4502, F4503, F3082, F4753): Renew the certificate(s) immediately to restore functionality.
 
 !!! example "Fault Example (F4502: Expired KeyRing Certificate)"
     The following shows an example of an expired KeyRing certificate:
