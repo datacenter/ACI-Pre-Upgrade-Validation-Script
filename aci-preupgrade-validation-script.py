@@ -5550,7 +5550,11 @@ def out_of_service_ports_check(**kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#out-of-service-ports'
 
     ethpmPhysIf_api = 'ethpmPhysIf.json'
-    ethpmPhysIf_api += '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),bw(ethpmPhysIf.usage,"32","34"))'
+    ethpmPhysIf_api += (
+        '?query-target-filter=and(eq(ethpmPhysIf.operSt,"2"),'
+        'or(eq(ethpmPhysIf.usage,"32"),eq(ethpmPhysIf.usage,"34"),'
+        'eq(ethpmPhysIf.usage,"36"),eq(ethpmPhysIf.usage,"292")))'
+    )
 
     ethpmPhysIf = icurl('class', ethpmPhysIf_api)
 
