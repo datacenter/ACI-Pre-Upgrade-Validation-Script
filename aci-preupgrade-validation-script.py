@@ -6102,6 +6102,7 @@ def apic_database_size_check(cversion, **kwargs):
 
     dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
     unique_list = {}
+    collection_errors = []
     apic_id_to_name = {}
     apic_node_mo = icurl('class', 'infraWiNode.json')
     for apic in apic_node_mo:
@@ -6119,15 +6120,49 @@ def apic_database_size_check(cversion, **kwargs):
         for dme in dme_svc_list:
             for id in apic_id_to_name:
                 apic_hostname = apic_id_to_name[id]
-                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3'
-                top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
+                counter_file = '/debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo'
+                collect_stats_cmd = 'cat ' + counter_file + ' 2>/dev/null'
+                try:
+                    class_stats = run_cmd(collect_stats_cmd, splitlines=True)
+                except subprocess.CalledProcessError:
+                    collection_errors.append([id, dme, 'Counter file is unavailable'])
+                    continue
 
-                for svc_stats in top_class_stats[:4]:
-                    if ":" in svc_stats:
-                        class_name = svc_stats.split(":")[0].strip()
-                        mo_count = svc_stats.split(":")[1].strip()
-                        if int(mo_count) > 1000*1000*1.5:
-                            unique_list[class_name] = {"id": id, "dme": dme, "checked_val": mo_count}
+                parsed_class_stats = []
+                malformed_stats = False
+                for stats in class_stats:
+                    stats = stats.strip()
+                    if not stats or 'ALL' in stats:
+                        continue
+                    if ':' not in stats:
+                        malformed_stats = True
+                        continue
+                    class_name, mo_count = stats.split(':', 1)
+                    class_name = class_name.strip()
+                    if not class_name:
+                        malformed_stats = True
+                        continue
+                    try:
+                        mo_count = int(mo_count.strip())
+                    except ValueError:
+                        malformed_stats = True
+                        continue
+                    parsed_class_stats.append((mo_count, class_name))
+
+                if malformed_stats:
+                    collection_errors.append([id, dme, 'Counter data is malformed'])
+                if not parsed_class_stats and not malformed_stats:
+                    collection_errors.append([id, dme, 'Counter file is missing or empty'])
+                    continue
+
+                top_class_stats = sorted(parsed_class_stats, reverse=True)
+                for mo_count, class_name in top_class_stats[:4]:
+                    if mo_count > 1000*1000*1.5:
+                        unique_list[class_name] = {
+                            "id": id,
+                            "dme": dme,
+                            "checked_val": str(mo_count),
+                        }
     else:
         headers = ["APIC ID", "DME", "Shard", "Size"]
         recommended_action = 'Contact Cisco TAC to investigate all flagged large DB sizes'
@@ -6154,6 +6189,21 @@ def apic_database_size_check(cversion, **kwargs):
             dme = details['dme']
             checked_val = details['checked_val']
             data.append([apic_id, dme, unique_key, checked_val])
+
+    if collection_errors:
+        return Result(
+            result=ERROR,
+            msg='Unable to collect APIC database object counters',
+            headers=['APIC ID', 'DME', 'Collection Error'],
+            data=collection_errors,
+            unformatted_headers=headers,
+            unformatted_data=data,
+            recommended_action=(
+                'Retry the check. Contact Cisco TAC to investigate any flagged '
+                'high object counts or persistent collection errors.'
+            ),
+            doc_url=doc_url,
+        )
 
     if data:
         result = FAIL_UF

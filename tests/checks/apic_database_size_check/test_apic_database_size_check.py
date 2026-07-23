@@ -13,25 +13,25 @@ test_function = "apic_database_size_check"
 
 apic_node_api = 'infraWiNode.json'
 
-apic1_pm_cat = "cat /debug/apic1/policymgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic1_pd_cat = "cat /debug/apic1/policydist/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic1_vmm_cat = "cat /debug/apic1/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic1_evm_cat = "cat /debug/apic1/eventmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
+apic1_pm_cat = "cat /debug/apic1/policymgr/mitmocounters/mo 2>/dev/null"
+apic1_pd_cat = "cat /debug/apic1/policydist/mitmocounters/mo 2>/dev/null"
+apic1_vmm_cat = "cat /debug/apic1/vmmmgr/mitmocounters/mo 2>/dev/null"
+apic1_evm_cat = "cat /debug/apic1/eventmgr/mitmocounters/mo 2>/dev/null"
 
-apic2_pm_cat = "cat /debug/apic2/policymgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic2_pd_cat = "cat /debug/apic2/policydist/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic2_vmm_cat = "cat /debug/apic2/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic2_evm_cat = "cat /debug/apic2/eventmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
+apic2_pm_cat = "cat /debug/apic2/policymgr/mitmocounters/mo 2>/dev/null"
+apic2_pd_cat = "cat /debug/apic2/policydist/mitmocounters/mo 2>/dev/null"
+apic2_vmm_cat = "cat /debug/apic2/vmmmgr/mitmocounters/mo 2>/dev/null"
+apic2_evm_cat = "cat /debug/apic2/eventmgr/mitmocounters/mo 2>/dev/null"
 
-apic3_pm_cat = "cat /debug/apic3/policymgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic3_pd_cat = "cat /debug/apic3/policydist/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic3_vmm_cat = "cat /debug/apic3/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic3_evm_cat = "cat /debug/apic3/eventmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
+apic3_pm_cat = "cat /debug/apic3/policymgr/mitmocounters/mo 2>/dev/null"
+apic3_pd_cat = "cat /debug/apic3/policydist/mitmocounters/mo 2>/dev/null"
+apic3_vmm_cat = "cat /debug/apic3/vmmmgr/mitmocounters/mo 2>/dev/null"
+apic3_evm_cat = "cat /debug/apic3/eventmgr/mitmocounters/mo 2>/dev/null"
 
-apic4_pm_cat = "cat /debug/apic4/policymgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic4_pd_cat = "cat /debug/apic4/policydist/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic4_vmm_cat = "cat /debug/apic4/vmmmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
-apic4_evm_cat = "cat /debug/apic4/eventmgr/mitmocounters/mo | grep -v ALL | sort -rn -k3"
+apic4_pm_cat = "cat /debug/apic4/policymgr/mitmocounters/mo 2>/dev/null"
+apic4_pd_cat = "cat /debug/apic4/policydist/mitmocounters/mo 2>/dev/null"
+apic4_vmm_cat = "cat /debug/apic4/vmmmgr/mitmocounters/mo 2>/dev/null"
+apic4_evm_cat = "cat /debug/apic4/eventmgr/mitmocounters/mo 2>/dev/null"
 
 apic1_acidiag = "acidiag dbsize --topshard --apic 1 -f json"
 apic2_acidiag = "acidiag dbsize --topshard --apic 2 -f json"
@@ -334,3 +334,152 @@ def test_permission_logic(run_check, mock_icurl, mock_run_cmd, cversion, expecte
         cversion=script.AciVersion(cversion) if cversion else None
     )
     assert result.result == expected_result
+
+
+@pytest.mark.parametrize(
+    "failure_details,expected_error",
+    [
+        ({"splitlines": True, "output": ""}, "Counter file is missing or empty"),
+        ({"CalledProcessError": True}, "Counter file is unavailable"),
+    ],
+)
+def test_missing_mitmocounters_returns_error(
+    run_check,
+    mock_icurl,
+    mock_run_cmd,
+    icurl_outputs,
+    cmd_outputs,
+    failure_details,
+    expected_error,
+):
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    cmd_outputs.clear()
+    cmd_outputs.update({
+        apic2_pm_cat: failure_details,
+        apic2_pd_cat: failure_details,
+        apic2_vmm_cat: failure_details,
+        apic2_evm_cat: failure_details,
+    })
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.ERROR
+    assert result.msg == "Unable to collect APIC database object counters"
+    assert result.headers == ["APIC ID", "DME", "Collection Error"]
+    assert len(result.data) == 4
+    assert all(row[2] == expected_error for row in result.data)
+
+
+def test_collection_error_preserves_oversized_classes(
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs
+):
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    cmd_outputs.clear()
+    cmd_outputs.update({
+        apic2_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
+        apic2_pm_cat: {"CalledProcessError": True},
+        apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
+        apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
+    })
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.ERROR
+    assert result.data == [["2", "policymgr", "Counter file is unavailable"]]
+    assert result.unformatted_headers == [
+        "APIC ID", "DME", "Class Name", "Object Count"
+    ]
+    assert sorted(result.unformatted_data) == sorted([
+        ["2", "vmmmgr", "compProv", "1800000"],
+        ["2", "vmmmgr", "compatCtlrFw", "1700000"],
+        ["2", "vmmmgr", "aaaIRbacRule", "1600000"],
+    ])
+    assert "high object counts" in result.recommended_action
+
+
+def test_object_counters_are_sorted_before_top_four_and_thresholded(
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs
+):
+    unsorted_counters = """
+belowOne                                 : 1
+atThreshold                             : 1500000
+belowTwo                                : 2
+highest                                 : 1600000
+aboveThreshold                          : 1500001
+"""
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    cmd_outputs.clear()
+    cmd_outputs.update({
+        apic2_vmm_cat: {"splitlines": True, "output": unsorted_counters},
+        apic2_pm_cat: {"splitlines": True, "output": mitcounters_neg},
+        apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
+        apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
+    })
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.FAIL_UF
+    assert result.headers == ["APIC ID", "DME", "Class Name", "Object Count"]
+    assert sorted(result.data) == sorted([
+        ["2", "vmmmgr", "highest", "1600000"],
+        ["2", "vmmmgr", "aboveThreshold", "1500001"],
+    ])
+
+
+def test_malformed_counter_preserves_oversized_classes(
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs
+):
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    cmd_outputs.clear()
+    cmd_outputs.update({
+        apic2_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
+        apic2_pm_cat: {"splitlines": True, "output": "brokenClass :"},
+        apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
+        apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
+    })
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.ERROR
+    assert result.data == [["2", "policymgr", "Counter data is malformed"]]
+    assert sorted(result.unformatted_data) == sorted([
+        ["2", "vmmmgr", "compProv", "1800000"],
+        ["2", "vmmmgr", "compatCtlrFw", "1700000"],
+        ["2", "vmmmgr", "aaaIRbacRule", "1600000"],
+    ])
+
+
+def test_colonless_counter_data_returns_error(
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs
+):
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    cmd_outputs.clear()
+    cmd_outputs.update({
+        apic2_vmm_cat: {
+            "splitlines": True,
+            "output": "validClass : 10\ntruncatedClass",
+        },
+        apic2_pm_cat: {"splitlines": True, "output": mitcounters_neg},
+        apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
+        apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
+    })
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.ERROR
+    assert result.data == [["2", "vmmmgr", "Counter data is malformed"]]
