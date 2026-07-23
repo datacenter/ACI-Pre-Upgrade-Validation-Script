@@ -2,6 +2,7 @@ import os
 import pytest
 import logging
 import importlib
+from subprocess import CalledProcessError
 from helpers.utils import read_data
 
 script = importlib.import_module("aci-preupgrade-validation-script")
@@ -13,25 +14,25 @@ test_function = "apic_database_size_check"
 
 apic_node_api = 'infraWiNode.json'
 
-apic1_pm_cat = "cat /debug/apic1/policymgr/mitmocounters/mo 2>/dev/null"
-apic1_pd_cat = "cat /debug/apic1/policydist/mitmocounters/mo 2>/dev/null"
-apic1_vmm_cat = "cat /debug/apic1/vmmmgr/mitmocounters/mo 2>/dev/null"
-apic1_evm_cat = "cat /debug/apic1/eventmgr/mitmocounters/mo 2>/dev/null"
+apic1_pm_cat = "cat /debug/apic1/policymgr/mitmocounters/mo 2>&1"
+apic1_pd_cat = "cat /debug/apic1/policydist/mitmocounters/mo 2>&1"
+apic1_vmm_cat = "cat /debug/apic1/vmmmgr/mitmocounters/mo 2>&1"
+apic1_evm_cat = "cat /debug/apic1/eventmgr/mitmocounters/mo 2>&1"
 
-apic2_pm_cat = "cat /debug/apic2/policymgr/mitmocounters/mo 2>/dev/null"
-apic2_pd_cat = "cat /debug/apic2/policydist/mitmocounters/mo 2>/dev/null"
-apic2_vmm_cat = "cat /debug/apic2/vmmmgr/mitmocounters/mo 2>/dev/null"
-apic2_evm_cat = "cat /debug/apic2/eventmgr/mitmocounters/mo 2>/dev/null"
+apic2_pm_cat = "cat /debug/apic2/policymgr/mitmocounters/mo 2>&1"
+apic2_pd_cat = "cat /debug/apic2/policydist/mitmocounters/mo 2>&1"
+apic2_vmm_cat = "cat /debug/apic2/vmmmgr/mitmocounters/mo 2>&1"
+apic2_evm_cat = "cat /debug/apic2/eventmgr/mitmocounters/mo 2>&1"
 
-apic3_pm_cat = "cat /debug/apic3/policymgr/mitmocounters/mo 2>/dev/null"
-apic3_pd_cat = "cat /debug/apic3/policydist/mitmocounters/mo 2>/dev/null"
-apic3_vmm_cat = "cat /debug/apic3/vmmmgr/mitmocounters/mo 2>/dev/null"
-apic3_evm_cat = "cat /debug/apic3/eventmgr/mitmocounters/mo 2>/dev/null"
+apic3_pm_cat = "cat /debug/apic3/policymgr/mitmocounters/mo 2>&1"
+apic3_pd_cat = "cat /debug/apic3/policydist/mitmocounters/mo 2>&1"
+apic3_vmm_cat = "cat /debug/apic3/vmmmgr/mitmocounters/mo 2>&1"
+apic3_evm_cat = "cat /debug/apic3/eventmgr/mitmocounters/mo 2>&1"
 
-apic4_pm_cat = "cat /debug/apic4/policymgr/mitmocounters/mo 2>/dev/null"
-apic4_pd_cat = "cat /debug/apic4/policydist/mitmocounters/mo 2>/dev/null"
-apic4_vmm_cat = "cat /debug/apic4/vmmmgr/mitmocounters/mo 2>/dev/null"
-apic4_evm_cat = "cat /debug/apic4/eventmgr/mitmocounters/mo 2>/dev/null"
+apic4_pm_cat = "cat /debug/apic4/policymgr/mitmocounters/mo 2>&1"
+apic4_pd_cat = "cat /debug/apic4/policydist/mitmocounters/mo 2>&1"
+apic4_vmm_cat = "cat /debug/apic4/vmmmgr/mitmocounters/mo 2>&1"
+apic4_evm_cat = "cat /debug/apic4/eventmgr/mitmocounters/mo 2>&1"
 
 apic1_acidiag = "acidiag dbsize --topshard --apic 1 -f json"
 apic2_acidiag = "acidiag dbsize --topshard --apic 2 -f json"
@@ -340,7 +341,17 @@ def test_permission_logic(run_check, mock_icurl, mock_run_cmd, cversion, expecte
     "failure_details,expected_error",
     [
         ({"splitlines": True, "output": ""}, "Counter file is missing or empty"),
-        ({"CalledProcessError": True}, "Counter file is unavailable"),
+        (
+            {
+                "CalledProcessError": True,
+                "returncode": 1,
+                "error_output": b"cat: file: No such file or directory\n",
+            },
+            (
+                "Counter file is unavailable after 3 attempts: "
+                "cat: file: No such file or directory"
+            ),
+        ),
     ],
 )
 def test_missing_mitmocounters_returns_error(
@@ -351,6 +362,7 @@ def test_missing_mitmocounters_returns_error(
     cmd_outputs,
     failure_details,
     expected_error,
+    monkeypatch,
 ):
     icurl_outputs.clear()
     icurl_outputs.update({
@@ -363,6 +375,7 @@ def test_missing_mitmocounters_returns_error(
         apic2_vmm_cat: failure_details,
         apic2_evm_cat: failure_details,
     })
+    monkeypatch.setattr(script.time, "sleep", lambda _: None)
 
     result = run_check(cversion=script.AciVersion("6.0(8f)"))
 
@@ -374,7 +387,7 @@ def test_missing_mitmocounters_returns_error(
 
 
 def test_collection_error_preserves_oversized_classes(
-    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs, monkeypatch
 ):
     icurl_outputs.clear()
     icurl_outputs.update({
@@ -383,15 +396,26 @@ def test_collection_error_preserves_oversized_classes(
     cmd_outputs.clear()
     cmd_outputs.update({
         apic2_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
-        apic2_pm_cat: {"CalledProcessError": True},
+        apic2_pm_cat: {
+            "CalledProcessError": True,
+            "error_output": b"cat: file: No such file or directory\n",
+        },
         apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
         apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
     })
+    monkeypatch.setattr(script.time, "sleep", lambda _: None)
 
     result = run_check(cversion=script.AciVersion("6.0(8f)"))
 
     assert result.result == script.ERROR
-    assert result.data == [["2", "policymgr", "Counter file is unavailable"]]
+    assert result.data == [[
+        "2",
+        "policymgr",
+        (
+            "Counter file is unavailable after 3 attempts: "
+            "cat: file: No such file or directory"
+        ),
+    ]]
     assert result.unformatted_headers == [
         "APIC ID", "DME", "Class Name", "Object Count"
     ]
@@ -401,6 +425,43 @@ def test_collection_error_preserves_oversized_classes(
         ["2", "vmmmgr", "aaaIRbacRule", "1600000"],
     ])
     assert "high object counts" in result.recommended_action
+
+
+def test_transient_counter_read_succeeds_on_retry(
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs, monkeypatch
+):
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    successful_outputs = {
+        apic2_vmm_cat: mitcounters_neg,
+        apic2_pm_cat: mitcounters_neg,
+        apic2_evm_cat: mitcounters_neg,
+        apic2_pd_cat: mitcounters_neg,
+    }
+    call_counts = {}
+    sleep_calls = []
+
+    def transient_run_cmd(cmd, splitlines=False):
+        call_counts[cmd] = call_counts.get(cmd, 0) + 1
+        if call_counts[cmd] == 1:
+            raise CalledProcessError(
+                1,
+                cmd,
+                output=b"cat: file: No such file or directory\n",
+            )
+        output = successful_outputs[cmd]
+        return output.splitlines() if splitlines else output
+
+    monkeypatch.setattr(script, "run_cmd", transient_run_cmd)
+    monkeypatch.setattr(script.time, "sleep", sleep_calls.append)
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.PASS
+    assert all(call_count == 2 for call_count in call_counts.values())
+    assert sleep_calls.count(1) == 4
 
 
 def test_object_counters_are_sorted_before_top_four_and_thresholded(

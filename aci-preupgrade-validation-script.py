@@ -6101,6 +6101,8 @@ def apic_database_size_check(cversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-database-size'
 
     dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
+    counter_read_attempts = 3
+    counter_read_retry_delay = 1
     unique_list = {}
     collection_errors = []
     apic_id_to_name = {}
@@ -6121,11 +6123,39 @@ def apic_database_size_check(cversion, **kwargs):
             for id in apic_id_to_name:
                 apic_hostname = apic_id_to_name[id]
                 counter_file = '/debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo'
-                collect_stats_cmd = 'cat ' + counter_file + ' 2>/dev/null'
-                try:
-                    class_stats = run_cmd(collect_stats_cmd, splitlines=True)
-                except subprocess.CalledProcessError:
-                    collection_errors.append([id, dme, 'Counter file is unavailable'])
+                collect_stats_cmd = 'cat ' + counter_file + ' 2>&1'
+                class_stats = None
+                final_error = None
+                for attempt in range(1, counter_read_attempts + 1):
+                    try:
+                        class_stats = run_cmd(collect_stats_cmd, splitlines=True)
+                        break
+                    except subprocess.CalledProcessError as error:
+                        error_output = error.output
+                        if isinstance(error_output, bytes):
+                            error_output = error_output.decode('utf-8', 'replace')
+                        final_error = (error_output or str(error)).strip()
+                        if attempt < counter_read_attempts:
+                            log.warning(
+                                'Counter read failed for APIC %s %s '
+                                '(attempt %s/%s): %s',
+                                id,
+                                dme,
+                                attempt,
+                                counter_read_attempts,
+                                final_error,
+                            )
+                            time.sleep(counter_read_retry_delay)
+
+                if class_stats is None:
+                    collection_errors.append([
+                        id,
+                        dme,
+                        'Counter file is unavailable after %s attempts: %s' % (
+                            counter_read_attempts,
+                            final_error,
+                        ),
+                    ])
                     continue
 
                 parsed_class_stats = []
