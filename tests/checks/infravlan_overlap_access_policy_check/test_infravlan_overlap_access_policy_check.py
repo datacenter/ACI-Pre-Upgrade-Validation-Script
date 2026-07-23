@@ -13,7 +13,7 @@ test_function = "infravlan_overlap_access_policy_check"
 
 # icurl queries
 lldpInst_api = "lldpInst.json?query-target-filter=wcard(lldpInst.dn,\"/node-1/\")"
-fvnsEncapBlk_api = "fvnsEncapBlk.json"
+fvnsEncapBlk_api = "fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,\"external\")"
 
 
 @pytest.mark.parametrize(
@@ -65,7 +65,7 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			},
 			"6.1(3f)",
 			script.FAIL_UF,
-			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
+			[["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool]-static/from-[vlan-100]-to-[vlan-4094]"]],
 		),
 		# Case 7: InfraVLAN overlaps on a mid-range version 6.1(4a). Expected: FAIL_UF.
 		(
@@ -75,7 +75,7 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			},
 			"6.1(4a)",
 			script.FAIL_UF,
-			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
+			[["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool]-static/from-[vlan-100]-to-[vlan-4094]"]],
 		),
 		# Case 8: InfraVLAN overlaps on upper boundary version 6.1(5e). Expected: FAIL_UF.
 		(
@@ -85,7 +85,7 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			},
 			"6.1(5e)",
 			script.FAIL_UF,
-			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
+			[["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool]-static/from-[vlan-100]-to-[vlan-4094]"]],
 		),
 		# Case 9: InfraVLAN overlaps on standalone affected version 6.2(1g). Expected: FAIL_UF.
 		(
@@ -95,7 +95,7 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			},
 			"6.2(1g)",
 			script.FAIL_UF,
-			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
+			[["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool]-static/from-[vlan-100]-to-[vlan-4094]"]],
 		),
 		# Case 10: InfraVLAN does not overlap on affected version 6.2(1g). Expected: PASS.
 		(
@@ -115,9 +115,9 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			},
 			"6.2(1g)",
 			script.FAIL_UF,
-			[["4093", "vlan_pool", "vlan-100 to vlan-4094"]],
+			[["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool]-static/from-[vlan-100]-to-[vlan-4094]"]],
 		),
-		# Case 12: InfraVLAN overlaps on multiple vlan pools on standalone affected version 6.2(1g). Expected: FAIL_UF.
+		# Case 12: InfraVLAN overlaps on multiple VLAN pools including VMM domain blocks on 6.2(1g). Expected: FAIL_UF.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
@@ -126,8 +126,11 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json"
 			"6.2(1g)",
 			script.FAIL_UF,
 			[
-				["4093", "vlan_pool1", "vlan-100 to vlan-4094"],
-				["4093", "vlan_pool2", "vlan-4000 to vlan-4094"],
+				["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool1]-static/from-[vlan-100]-to-[vlan-4094]"],
+				["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool2]-static/from-[vlan-200]-to-[vlan-4094]"],
+				["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanns-[vlan_pool3]-static/from-[vlan-4000]-to-[vlan-4094]"],
+				["4093", "vlan-1751 to vlan-4094", "uni/vmmp-VMware/dom-k8s-scale-vmm/usrcustomaggr-k8srkesetup1/from-[vlan-1751]-to-[vlan-4094]"],
+				["4093", "vlan-1752 to vlan-4094", "uni/vmmp-VMware/dom-k8s-scale-vmm/usrcustomaggr-k8srkesetup1/from-[vlan-1752]-to-[vlan-4094]"],
 			],
 		),
 		# Case 13: InfraVLAN exists and empty fvnsEncapBlk for vlan pools on standalone affected version 6.2(1g). Expected: PASS.

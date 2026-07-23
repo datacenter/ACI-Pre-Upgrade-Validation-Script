@@ -2,9 +2,39 @@
   {
     "fvnsEncapBlk": {
       "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-100]-to-[vlan-4094]",
+        "role": "external",
         "from": "vlan-100",
         "to": "vlan-4094",
         "dn": "uni/infra/vlanns-[vlan_pool]-static/from-[vlan-100]-to-[vlan-4094]"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-1751]-to-[vlan-1751]",
+        "role": "external",
+        "from": "vlan-1751",
+        "to": "vlan-1751",
+        "dn": "uni/vmmp-VMware/dom-k8s-scale-vmm/usrcustomaggr-k8srkesetup1/from-[vlan-1751]-to-[vlan-1751]"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-1752]-to-[vlan-1752]",
+        "role": "external",
+        "from": "vlan-1752",
+        "to": "vlan-1752",
+        "dn": "uni/vmmp-VMware/dom-k8s-scale-vmm/usrcustomaggr-k8srkesetup1/from-[vlan-1752]-to-[vlan-1752]"
       }
     }
   }

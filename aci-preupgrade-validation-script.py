@@ -6710,7 +6710,7 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
 @check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
 def infravlan_overlap_access_policy_check(tversion, **kwargs):
     result = PASS
-    headers = ["InfraVLAN", "VLAN Pool", "Encap Block"]
+    headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
     data = []
     recommended_action = "Remove InfraVLAN from VLAN pool block highligted or upgrade to fix version"
     
@@ -6738,8 +6738,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     if infra_vlan is None:
         return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
 
-    encap_blocks = icurl('class', 'fvnsEncapBlk.json')
-    dn_pool_re = re.compile(r'vlanns-\[(?P<vlan_pool>[^\]]+)\]')
+    encap_blocks = icurl('class', 'fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,"external")')
     for obj in encap_blocks:
         blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
         dn = blk_attr.get('dn', '')
@@ -6748,9 +6747,6 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
         if not dn or not from_encap or not to_encap:
             continue
 
-        pool_match = dn_pool_re.search(dn)
-        pool_name = pool_match.group('vlan_pool') if pool_match else '-'
-
         try:
             from_vlan = int(str(from_encap).split('-')[-1])
             to_vlan = int(str(to_encap).split('-')[-1])
@@ -6758,7 +6754,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
             continue
 
         if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
-            data.append([str(infra_vlan), pool_name, "{} to {}".format(from_encap, to_encap)])
+            data.append([str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn])
 
     if data:
         result = FAIL_UF
