@@ -260,6 +260,8 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
+The APIC 6.1(5) release notes explicitly support CIMC 4.2(3e) on UCS C220/C240 M5 (APIC-L3/M3) and UCS C225 M6 (APIC-L4/M4). The check accepts that exact release-note-supported combination even when the image catalog recommends a newer CIMC version.
+
 Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
 
 !!! note
@@ -2923,4 +2925,3 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
-

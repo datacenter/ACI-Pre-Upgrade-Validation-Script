@@ -1,0 +1,22 @@
+[
+  {
+    "eqptCh": {
+      "attributes": {
+        "cimcVersion": "4.2(3d)",
+        "descr": "APIC-SERVER-M3",
+        "dn": "topology/pod-1/node-1/sys/ch",
+        "model": "APIC-SERVER-M3"
+      }
+    }
+  },
+  {
+    "eqptCh": {
+      "attributes": {
+        "cimcVersion": "4.2(3d)",
+        "descr": "APIC-SERVER-M4",
+        "dn": "topology/pod-1/node-2/sys/ch",
+        "model": "APIC-SERVER-M4"
+      }
+    }
+  }
+]

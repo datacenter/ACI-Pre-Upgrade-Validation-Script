@@ -21,10 +21,45 @@ compatRsSuppHwL4_605_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssupp
 compatRsSuppHwM4_605_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.0(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
 compatRsSuppHwL4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4].json'
 compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
+compatRsSuppHwL3_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl3].json'
+compatRsSuppHwM3_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm3].json'
+
+release_note_supported_615_outputs = {
+    eqptCh_api: read_data(dir, "eqptCh_615_supported_423e.json"),
+    compatRsSuppHwL3_api: read_data(dir, "compatRsSuppHw_615_M5.json"),
+    compatRsSuppHwM3_api: read_data(dir, "compatRsSuppHw_615_M5.json"),
+    compatRsSuppHwL4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
+    compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
+}
 
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, cversion, expected_result",
     [
+        # CIMC 4.2(3e) is explicitly supported for M5/M6 APICs by the 6.1(5) release notes.
+        (
+            release_note_supported_615_outputs,
+            "6.1(5e)",
+            "5.2(8g)",
+            script.PASS,
+        ),
+        # The release-note exception must not bypass the CSCwo74485 upgrade ordering check.
+        (
+            release_note_supported_615_outputs,
+            "6.1(5e)",
+            "5.3(1d)",
+            script.FAIL_UF,
+        ),
+        # Other CIMC versions below the catalog recommendation remain unsupported.
+        (
+            {
+                eqptCh_api: read_data(dir, "eqptCh_615_unsupported_423d.json"),
+                compatRsSuppHwM3_api: read_data(dir, "compatRsSuppHw_615_M5.json"),
+                compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
+            },
+            "6.1(5e)",
+            "5.2(8g)",
+            script.FAIL_UF,
+        ),
         #m4/l4 model check and targeting affected version and cversion affected and cimc < 4.3.5
         (
             {eqptCh_api: read_data(dir, "eqptCh_m4l4_model_old_cimc.json"),

@@ -3780,7 +3780,12 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     if compatMo and recommended_cimc:
                         if not is_firstver_gt_secondver(current_cimc, "3.0(3a)"):
                             warning = "Multi-step Upgrade may be required, check UCS CIMC Matrix."
-                        if not is_firstver_gt_secondver(current_cimc, recommended_cimc):
+                        release_note_supported = (
+                            tversion.simple_version == "6.1(5)"
+                            and model in ("apicl3", "apicm3", "apicl4", "apicm4")
+                            and current_cimc == "4.2(3e)"
+                        )
+                        if not release_note_supported and not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
                             data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
 
