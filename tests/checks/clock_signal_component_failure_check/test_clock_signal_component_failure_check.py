@@ -56,3 +56,6 @@ eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 def test_logic(run_check, mock_icurl, expected_result):
     result = run_check()
     assert result.result == expected_result
+    if expected_result == script.MANUAL:
+        assert "chat interface embedded in FN64251" in result.recommended_action
+        assert "Serial Number Validation tool" not in result.recommended_action
