@@ -6293,6 +6293,9 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
         in_61 = ver.newer_than("6.1(1a)") and ver.older_than("6.1(4h)")
         return in_60 or in_61
 
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
     pre_apic_upg = is_affected_source(cversion) and is_affected_target(tversion)  # Before APIC upgrade
     post_apic_upg = is_affected_target(cversion) and is_affected_target(tversion) and cversion.same_as(tversion)  # After APIC upgrade (and before switch)
 
@@ -6476,6 +6479,9 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     data = []
     recommended_action = "Contact Cisco TAC to remove any identified misconfigured 'mgmtRsInBStNode' objects"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
+    
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
     
     if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
         mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0")),or(eq(mgmtRsInBStNode.v6Addr,"::"),eq(mgmtRsInBStNode.v6Gw,"::")))')
