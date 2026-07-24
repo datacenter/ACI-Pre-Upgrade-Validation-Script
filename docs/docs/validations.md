@@ -2660,7 +2660,9 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, open [FN64251][39] and use the chat interface embedded in the Field Notice to validate the identified serial numbers.
+If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+
+The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
 
 ### Stale Decommissioned Spine
