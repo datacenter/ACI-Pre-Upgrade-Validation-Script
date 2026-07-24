@@ -6404,6 +6404,59 @@ def apic_storage_inode_check(**kwargs):
     return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Switch RTC Battery Voltage (F2421 equipment-diags-failed)")
+def rtc_battery_voltage_low_check(**kwargs):
+    result = FAIL_UF
+    headers = ['Fault', 'Pod', 'Node', 'Supervisor', 'Severity', 'Lifecycle']
+    data = []
+    unformatted_headers = ['Fault', 'Fault DN', 'Description', 'Severity', 'Lifecycle']
+    unformatted_data = []
+    recommended_action = 'Contact Cisco TAC to replace the RTC battery before upgrading or power cycling the affected switch'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-rtc-battery-voltage'
+    dn_regex = node_regex + r'/.+/supslot-(?P<slot>\d+)/sup\]/fault-F2421$'
+    fault_reason = 'The RTC battery voltage is low'
+    fault_api = 'faultInst.json?query-target-filter=and(eq(faultInst.code,"F2421"),wcard(faultInst.descr,"reason:The RTC battery voltage is low"))'
+
+    faultInsts = icurl('class', fault_api)
+    for faultInst in faultInsts:
+        attributes = faultInst['faultInst']['attributes']
+        lc = attributes['lc']
+        if lc not in ['raised', 'soaking']:
+            continue
+        description = attributes['descr']
+        if 'reason:' not in description or description.split('reason:', 1)[1] != fault_reason:
+            continue
+        dn = re.search(dn_regex, attributes['dn'])
+        if dn:
+            data.append([
+                attributes['code'],
+                dn.group('pod'),
+                dn.group('node'),
+                dn.group('slot'),
+                attributes['severity'],
+                lc,
+            ])
+        else:
+            unformatted_data.append([
+                attributes['code'],
+                attributes['dn'],
+                description,
+                attributes['severity'],
+                lc,
+            ])
+    if not data and not unformatted_data:
+        result = PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
+
 # Connection Based Check
 @check_wrapper(check_title="Multi-Pod Modular Spine Bootscript File")
 def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, password, **kwargs):
@@ -6816,6 +6869,7 @@ class CheckManager:
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
         apic_storage_inode_check,
+        rtc_battery_voltage_low_check,
 
         # Configurations
         vpc_paired_switches_check,

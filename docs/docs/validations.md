@@ -87,6 +87,7 @@ Items                                         | Faults         | This Script    
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 [APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
+[Switch RTC Battery Voltage][f23]              | F2421: RTC battery voltage is low | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -110,6 +111,7 @@ Items                                         | Faults         | This Script    
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
+[f23]: #switch-rtc-battery-voltage
 
 ### Configuration Checks
 
@@ -1638,8 +1640,14 @@ To recover from this fault, try the following action
     subject         : equipment-full
     type            : operational
     ```
-    
-    
+
+### Switch RTC Battery Voltage
+
+This check detects active F2421 equipment diagnostic faults whose reason is `The RTC battery voltage is low`. The RTC battery maintains the switch system clock while the switch is powered off. If the battery voltage is low, a power cycle during an upgrade can reset the clock and prevent certificate validation, which can stop the switch from rejoining the fabric.
+
+The RTC battery should be replaced before upgrading or power cycling an affected switch. Contact Cisco TAC to coordinate replacement and confirm that the fault has cleared.
+
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -2923,4 +2931,3 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
-
