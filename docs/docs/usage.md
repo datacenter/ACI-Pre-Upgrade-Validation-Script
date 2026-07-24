@@ -71,6 +71,12 @@ Each check has a unique result which will help determine how to proceed. The res
 - **N/A** - The check completed successfully, and the ACI fabric is not susceptible because the needed configuration is not deployed.
 - **ERROR** - The check did not complete successfully, and needs further investigation.
 
+### Recommended action in JSON results
+
+The per-check JSON schema was added for the built-in pre-upgrade validation workflow in APIC 6.2 and later. The APIC presentation layer expects `recommended_action` as static rule metadata, so the field can be populated even when `ruleStatus` is `passed`.
+
+Use `ruleStatus` to determine whether the recommendation is actionable. A populated `recommended_action` does not indicate a problem when `ruleStatus` is `passed`; standalone consumers should act on it only when `ruleStatus` is `failed`.
+
 ## Logs
 
 A single log bundle will be generated with each run of the script
