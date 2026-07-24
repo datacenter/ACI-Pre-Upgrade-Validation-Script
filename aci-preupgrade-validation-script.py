@@ -6709,9 +6709,13 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
 
 @check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
 def infravlan_overlap_access_policy_check(tversion, **kwargs):
-    result = PASS
+    result = FAIL_UF
+    msg = ""
     headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
+    unformatted_headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
+
     data = []
+    unformatted_data = []
     recommended_action = "Remove InfraVLAN from VLAN pool block highligted or upgrade to fix version"
     
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infravlan-overlap-access-policy-check"
@@ -6724,7 +6728,12 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     )):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
+    dn_regex1 = r'uni/infra/vlanns-\[.+\]-(static|dynamic)/from-\[vlan-\d+\]-to-\[vlan-\d+\]'
+
+    dn_regex2 = r'uni/vmmp-[^/]+/dom-[^/]+/.+/from-\[vlan-\d+\]-to-\[vlan-\d+\]'
+
     infra_vlan = None
+    has_error = False
     lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
     for lldpInst in lldpInsts:
         infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
@@ -6744,22 +6753,33 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
         dn = blk_attr.get('dn', '')
         from_encap = blk_attr.get('from')
         to_encap = blk_attr.get('to')
+
         if not dn or not from_encap or not to_encap:
-            continue
+            has_error = True
+            break
 
         try:
             from_vlan = int(str(from_encap).split('-')[-1])
             to_vlan = int(str(to_encap).split('-')[-1])
         except (ValueError, TypeError):
-            continue
+            has_error = True
+            break
 
         if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
-            data.append([str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn])
+            row = [str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn]
+            if re.search(dn_regex1, dn) or re.search(dn_regex2, dn):
+                data.append(row)
+            else:
+                unformatted_data.append(row)
 
-    if data:
-        result = FAIL_UF
+    if not data and not unformatted_data:
+        result = PASS
 
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    if has_error or unformatted_data:
+        result = ERROR
+        msg = "Overlap check for InfraVLAN {} could not be determined because one or more VLAN pool blocks contain invalid or improperly formatted data.".format(infra_vlan)
+
+    return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
