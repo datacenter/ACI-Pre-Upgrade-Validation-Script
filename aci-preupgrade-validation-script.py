@@ -6717,10 +6717,11 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
         ("F4752", "6.1(5e)"), ("F4753", "6.1(5e)"),  # Factory certificate expired/expiring
     ]
     FACTORY_CERT_MIN_VERSION = "6.1(5e)"
-    FACTORY_CERT_EXPIRING_DAYS = 30
+    CERT_EXPIRING_DAYS = 30
 
     has_critical = has_major = has_error = False
 
+    # Check for certificate-related faults based on the current version and the minimum versions for each fault code.
     applicable_codes = [code for code, ver in fault_min_versions if not cversion.older_than(ver)]
     if applicable_codes:
         fault_filter = ",".join('eq(faultInst.code,"{}")'.format(code) for code in applicable_codes)
@@ -6734,6 +6735,7 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
             elif fault_attrs['severity'] == 'major':
                 has_major = True
 
+    # Check factory certificate expiration on APICs if the version is older than FACTORY_CERT_MIN_VERSION and credentials are provided.
     if cversion.older_than(FACTORY_CERT_MIN_VERSION) and username and password:
         date_format = "%b %d %H:%M:%S %Y"
         current_date_re = re.compile(
@@ -6743,28 +6745,31 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
             r'notAfter=(?P<date>[A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})'
         )
 
-        controllers = (node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller")
-        controllers = list(controllers)
-        for controller in controllers:
-            node_attrs = controller["fabricNode"]["attributes"]
-            node_id = node_attrs["id"]
-            node_name = node_attrs["name"]
-            node_addr = node_attrs.get("address")
-            if not node_addr:
+        for controller in (node for node in fabric_nodes if node.get("fabricNode", {}).get("attributes", {}).get("role") == "controller"):
+            controller_attrs = controller.get("fabricNode", {}).get("attributes", {})
+            controller_id = controller_attrs.get("id", "N/A")
+            controller_name = controller_attrs.get("name", "N/A")
+            controller_address = controller_attrs.get("address")
+
+            if not controller_address:
+                data.append(["N/A", "error",
+                             "APIC {} ({}): unable to determine controller address".format(controller_id, controller_name)])
+                has_error = True
                 continue
+                
             try:
-                c = Connection(node_addr)
+                c = Connection(controller_address)
                 c.username = username
                 c.password = password
                 c.log = LOG_FILE
                 c.connect()
-                c.cmd("date")
+
+                c.cmd("date; acidiag verifyapic")
                 current_date_match = current_date_re.search(c.output)
-                c.cmd("acidiag verifyapic")
                 cert_expiry_match = cert_expiry_re.search(c.output)
             except Exception as e:
                 data.append(["N/A", "error",
-                             "APIC {} ({}): unable to verify factory certificate - {}".format(node_id, node_name, e)])
+                             "APIC {} ({}): unable to verify factory certificate - {}".format(controller_id, controller_name, e)])
                 has_error = True
                 continue
 
@@ -6774,7 +6779,7 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
                 )
             except (AttributeError, ValueError):
                 data.append(["N/A", "error",
-                             "APIC {} ({}): unable to determine current date".format(node_id, node_name)])
+                             "APIC {} ({}): unable to determine current date".format(controller_id, controller_name)])
                 has_error = True
                 continue
 
@@ -6782,19 +6787,104 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
                 cert_expiry = datetime.strptime(" ".join(cert_expiry_match.group("date").split()), date_format)
             except (AttributeError, ValueError):
                 data.append(["N/A", "error",
-                             "APIC {} ({}): unable to determine factory certificate expiry date".format(node_id, node_name)])
+                             "APIC {} ({}): unable to determine factory certificate expiry date".format(controller_id, controller_name)])
                 has_error = True
                 continue
 
             if cert_expiry <= current_date:
                 data.append(["N/A", "critical",
-                             "APIC {} ({}): factory certificate expired on {} UTC".format(node_id, node_name, cert_expiry)])
+                             "APIC {} ({}): factory certificate expired on {} UTC".format(controller_id, controller_name, cert_expiry)])
                 has_critical = True
-            elif (cert_expiry - current_date).days <= FACTORY_CERT_EXPIRING_DAYS:
+            elif (cert_expiry - current_date).days <= CERT_EXPIRING_DAYS:
                 data.append(["N/A", "major",
-                             "APIC {} ({}): factory certificate expiring on {} UTC".format(node_id, node_name, cert_expiry)])
+                             "APIC {} ({}): factory certificate expiring on {} UTC".format(controller_id, controller_name, cert_expiry)])
                 has_major = True
 
+    # Leaf/spine certificate check via API validityNotAfter.
+    if fabric_nodes:
+        tz = None
+        try:
+            from datetime import timezone as tz
+        except ImportError:
+            pass
+        
+        if tz is not None:
+            now_utc = datetime.now(tz.utc)
+        else:
+            now_utc = datetime.utcnow()
+
+        switch_nodes_by_id = {
+            str(node_attrs.get("id", "")): node_attrs
+            for fabric_node in fabric_nodes
+            for node_attrs in [fabric_node.get("fabricNode", {}).get("attributes", {})]
+            if node_attrs.get("role") in ("leaf", "spine") and node_attrs.get("id")
+        }
+
+        if switch_nodes_by_id:
+            certificate_mos = icurl("class", "pkiFabricNodeSSLCertificate.json") or []
+
+            for certificate_mo in certificate_mos:
+                cert_attrs = certificate_mo.get("pkiFabricNodeSSLCertificate", {}).get("attributes", {})
+                cert_node_id = str(cert_attrs.get("nodeId", ""))
+
+                if cert_node_id not in switch_nodes_by_id:
+                    continue
+
+                node_attrs = switch_nodes_by_id[cert_node_id]
+                node_name = node_attrs.get("name", "N/A")
+
+                validity_not_after = cert_attrs.get("validityNotAfter", "")
+                if not validity_not_after:
+                    data.append([
+                        "N/A",
+                        "error",
+                        "Node {} ({}): unable to determine certificate expiry date".format(cert_node_id, node_name)
+                    ])
+                    has_error = True
+                    continue
+
+                expiry_text = validity_not_after.split("+", 1)[0].split("Z", 1)[0]
+                expiry_utc = None
+                for timestamp_format in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
+                    try:
+                        parsed_dt = datetime.strptime(expiry_text, timestamp_format)
+                        if tz is not None:
+                            expiry_utc = parsed_dt.replace(tzinfo=tz.utc)
+                        else:
+                            expiry_utc = parsed_dt
+                        break
+                    except ValueError:
+                        pass
+
+                if expiry_utc is None:
+                    data.append([
+                        "N/A",
+                        "error",
+                        "Node {} ({}): unable to parse certificate expiry date '{}'".format(
+                            cert_node_id, node_name, validity_not_after
+                        )
+                    ])
+                    has_error = True
+                    continue
+
+                if expiry_utc <= now_utc:
+                    data.append([
+                        "N/A",
+                        "critical",
+                        "Node {} ({}): certificate expired on {} UTC".format(
+                            cert_node_id, node_name, expiry_utc.replace(tzinfo=None)
+                        ),
+                    ])
+                    has_critical = True
+                elif (expiry_utc - now_utc).days <= CERT_EXPIRING_DAYS:
+                    data.append([
+                        "N/A",
+                        "major",
+                        "Node {} ({}): certificate expiring on {} UTC".format(
+                            cert_node_id, node_name, expiry_utc.replace(tzinfo=None)
+                        ),
+                    ])
+                    has_major = True
     if data:
         if has_error:
             result = ERROR

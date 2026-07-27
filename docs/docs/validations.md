@@ -1645,6 +1645,8 @@ To recover from this fault, try the following action
 
 ACI uses various X.509 certificates for security and authentication purposes. If these certificates expire or are about to expire, it can cause service disruptions or failures. The fabric will raise different faults depending on the certificate type.
 
+The script also validates X.509 certificates on all leaf and spine switch nodes by querying the pkiFabricNodeSSLCertificate API. These certificates are used for fabric node authentication and secure communication between switches and APICs.
+
 **Expiring Certificates (Major Severity):**
 
 * **F4501**: KeyRing X.509 Certificate expiring - This fault occurs when a custom KeyRing X.509 Certificate is going to expire in one month.
