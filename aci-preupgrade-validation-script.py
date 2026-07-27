@@ -6702,47 +6702,41 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-def _get_apic_oob_connectivity(topSystems, port):
-    """Helper to test OOB TCP connectivity to all APIC controllers on a given port.
-
-    Returns:
-        data (list): rows of [node_id, ip, port, "Unreachable"] for unreachable peers
-        has_error (bool): True if an unexpected exception occurred during connectivity check
-    """
-    data = []
-    has_error = False
-
-    for topSystem in topSystems:
-        attrs = topSystem['topSystem']['attributes']
-        node_id = attrs.get('id', '')
-
-        if attrs.get('oobMgmtAddr', '0.0.0.0') != '0.0.0.0':
-            ip = attrs.get('oobMgmtAddr')
-        elif attrs.get('oobMgmtAddr6', '::') not in ('', '::', '0:0:0:0:0:0:0:0'):
-            ip = attrs.get('oobMgmtAddr6')
-        else:
-            continue
-
-        try:
-            if subprocess.call(
-                'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip, port),
-                shell=True
-            ) in [7, 28]:
-                data.append([node_id, ip, port, "Unreachable"])
-        except Exception as e:
-            log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
-            has_error = True
-            continue
-
-    return data, has_error
-
-
-@check_wrapper(check_title="APIC OOB Connectivity - Default Port")
-def apic_oob_default_port_check(tversion, **kwargs):
+@check_wrapper(check_title="APIC OOB Connectivity")
+def apic_oob_connectivity_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ["Node ID", "OOB IP", "Port", "Status"]
-    recommended_action = "Restore OOB management connectivity between all APICs and ensure TCP port 443 is reachable across the OOB network."
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity---default-port'
+    recommended_action = "Restore OOB management connectivity between all APICs and ensure the required HTTPS ports are reachable across the OOB network."
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity'
+
+    def _get_apic_oob_connectivity(topSystems, port):
+        data = []
+        has_error = False
+
+        for topSystem in topSystems:
+            attrs = topSystem['topSystem']['attributes']
+            node_id = attrs.get('id', '')
+
+            if attrs.get('oobMgmtAddr', '0.0.0.0') != '0.0.0.0':
+                ip = attrs.get('oobMgmtAddr')
+            elif attrs.get('oobMgmtAddr6', '::') not in ('', '::', '0:0:0:0:0:0:0:0'):
+                ip = attrs.get('oobMgmtAddr6')
+            else:
+                continue
+
+            try:
+                if subprocess.call(
+                    'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip, port),
+                    shell=True
+                ) in [7, 28]:
+                    data.append([node_id, ip, port, "Unreachable"])
+            except Exception as e:
+                log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
+                data.append([node_id, ip, port, "Error"])
+                has_error = True
+                continue
+
+        return data, has_error
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
@@ -6754,42 +6748,31 @@ def apic_oob_default_port_check(tversion, **kwargs):
     if not topSystems:
         return Result(result=NA, msg="No APIC controller nodes found.")
 
-    data, has_error = _get_apic_oob_connectivity(topSystems, 443)
+    data = []
+    has_error = False
 
-    if has_error:
-        result = ERROR
-    elif data:
-        result = FAIL_O
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    # Default port check: APIC bootx uses port 443 from 6.0(2)
+    default_data, default_error = _get_apic_oob_connectivity(topSystems, 443)
+    data.extend(default_data)
+    if default_error:
+        has_error = True
 
+    # Custom HTTPS port check: upgrade fanout uses commHttps port from 6.2(1)
+    if not (cversion.older_than("6.2(1a)") or tversion.older_than("6.2(1a)")):
+        port = 443
+        commHttps = icurl('class', 'commHttps.json')
+        if commHttps:
+            try:
+                port = int(commHttps[0]['commHttps']['attributes'].get('port', 443))
+            except (ValueError, KeyError):
+                log.warning("Could not read commHttps port")
+                return Result(result=ERROR, msg="Could not read commHttps HTTPS port from commHttps MO.")
 
-@check_wrapper(check_title="APIC OOB Connectivity - Custom HTTPS Port")
-def apic_oob_custom_port_check(cversion, tversion, **kwargs):
-    result = PASS
-    headers = ["Node ID", "OOB IP", "Port", "Status"]
-    recommended_action = "Restore OOB management connectivity between all APICs and ensure the configured HTTPS port from commHttps is reachable across the OOB network."
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity---custom-https-port'
-
-    if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
-
-    if cversion.older_than("6.2(1a)") or tversion.older_than("6.2(1a)"):
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
-
-    port = 443
-    commHttps = icurl('class', 'commHttps.json')
-    if commHttps:
-        try:
-            port = int(commHttps[0]['commHttps']['attributes'].get('port', 443))
-        except (ValueError, KeyError):
-            log.warning("Could not read commHttps port")
-            return Result(result=ERROR, msg="Could not read commHttps HTTPS port from commHttps MO.")
-
-    topSystems = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
-    if not topSystems:
-        return Result(result=NA, msg="No APIC controller nodes found.")
-
-    data, has_error = _get_apic_oob_connectivity(topSystems, port)
+        if port != 443:  # Port 443 already covered by default port check above
+            custom_data, custom_error = _get_apic_oob_connectivity(topSystems, port)
+            data.extend(custom_data)
+            if custom_error:
+                has_error = True
 
     if has_error:
         result = ERROR
@@ -6973,8 +6956,7 @@ class CheckManager:
         wred_affected_model_check,
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
-        apic_oob_default_port_check,
-        apic_oob_custom_port_check,
+        apic_oob_connectivity_check,
 
     ]
     ssh_checks = [

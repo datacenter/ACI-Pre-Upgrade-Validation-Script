@@ -9,7 +9,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 
-test_function = "apic_oob_custom_port_check"
+test_function = "apic_oob_connectivity_check"
 
 # icurl queries
 topSystem = 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")'
@@ -22,47 +22,45 @@ commHttps = "commHttps.json"
         # tversion not provided -> MANUAL
         (
             {topSystem: [], commHttps: []},
-            "6.2(1a)",
+            "6.0(2a)",
             None,
             [],
             script.MANUAL,
         ),
-        # cversion < 6.2(1a) -> NA (version not affected)
+        # tversion < 6.0(2a) -> NA (version not affected)
         (
             {topSystem: [], commHttps: []},
-            "6.0(3a)",
-            "6.2(1a)",
+            "5.2(7f)",
+            "5.2(7f)",
             [],
             script.NA,
         ),
-        # tversion < 6.2(1a) -> NA (version not affected)
+        # tversion >= 6.0(2a), no controller nodes found -> NA
         (
             {topSystem: [], commHttps: []},
-            "6.2(1a)",
+            "6.0(2a)",
             "6.0(3a)",
             [],
             script.NA,
         ),
-        # Both >= 6.2, no controller nodes found -> NA
+        # tversion >= 6.0(2a), all APICs have no OOB configured -> PASS
         (
-            {topSystem: [], commHttps: read_data(dir, "commHttps_default_port.json")},
-            "6.2(1a)",
-            "6.2(2a)",
-            [],
-            script.NA,
-        ),
-        # Both >= 6.2, all APICs have no OOB configured -> PASS
-        (
-            {
-                topSystem: read_data(dir, "topSystem_no_oob.json"),
-                commHttps: read_data(dir, "commHttps_default_port.json"),
-            },
-            "6.2(1a)",
-            "6.2(2a)",
+            {topSystem: read_data(dir, "topSystem_no_oob.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
             [],
             script.PASS,
         ),
+        # tversion >= 6.0(2a), all APICs reachable on port 443 -> PASS
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 0, 0],
+            script.PASS,
+        ),
         # Both >= 6.2, default port 443, all APICs reachable -> PASS
+        # (custom port check skipped since commHttps port == 443)
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
@@ -73,7 +71,27 @@ commHttps = "commHttps.json"
             [0, 0, 0],
             script.PASS,
         ),
-        # Both >= 6.2, default port 443, one APIC unreachable (exit code 28) -> FAIL_UF
+        # Both >= 6.2, custom port 8443, all APICs reachable on both ports -> PASS
+        # (default port 443: [0,0,0], custom port 8443: [0,0,0])
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                commHttps: read_data(dir, "commHttps_custom_port.json"),
+            },
+            "6.2(1a)",
+            "6.2(2a)",
+            [0, 0, 0, 0, 0, 0],
+            script.PASS,
+        ),
+        # tversion >= 6.0(2a), one APIC unreachable on port 443 (exit 28) -> FAIL_UF
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 28, 0],
+            script.FAIL_UF,
+        ),
+        # Both >= 6.2, one APIC unreachable on default port 443 (exit 7) -> FAIL_UF
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
@@ -81,21 +99,11 @@ commHttps = "commHttps.json"
             },
             "6.2(1a)",
             "6.2(2a)",
-            [0, 28, 0],
-            script.FAIL_UF,
-        ),
-        # Both >= 6.2, custom port 8443, one APIC unreachable (exit code 7) -> FAIL_UF
-        (
-            {
-                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
-                commHttps: read_data(dir, "commHttps_custom_port.json"),
-            },
-            "6.2(1a)",
-            "6.2(2a)",
             [0, 7, 0],
             script.FAIL_UF,
         ),
-        # Both >= 6.2, custom port 8443, all APICs unreachable -> FAIL_UF
+        # Both >= 6.2, custom port 8443, all unreachable on custom port -> FAIL_UF
+        # (default port 443 all pass: [0,0,0], custom port 8443 all fail: [28,28,28])
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
@@ -103,8 +111,19 @@ commHttps = "commHttps.json"
             },
             "6.2(1a)",
             "6.2(2a)",
-            [28, 28, 28],
+            [0, 0, 0, 28, 28, 28],
             script.FAIL_UF,
+        ),
+        # Both >= 6.2, commHttps returns invalid port value -> ERROR
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                commHttps: read_data(dir, "commHttps_invalid_port.json"),
+            },
+            "6.2(1a)",
+            "6.2(2a)",
+            [0, 0, 0],
+            script.ERROR,
         ),
     ],
 )
