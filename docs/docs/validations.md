@@ -206,6 +206,8 @@ Items                                           | Defect       | This Script    
 [WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
+[APIC OOB Connectivity - Default Port][d38]       | CSCwu91693   | :white_check_mark: | :white_check_mark: 6.2(2)
+[APIC OOB Connectivity - Custom HTTPS Port][d39]  | CSCwu91693   | :white_check_mark: | :white_check_mark: 6.2(2)
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -244,6 +246,8 @@ Items                                           | Defect       | This Script    
 [d35]: #wred-with-affected-fm-models
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
+[d38]: #apic-oob-connectivity---default-port
+[d39]: #apic-oob-connectivity---custom-https-port
 
 ## General Check Details
 
@@ -2846,6 +2850,24 @@ Affected versions: 6.1(5e) and below, or 6.2(1g).
 Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
 
 
+### APIC OOB Connectivity - Default Port
+
+Due to [CSCwu91693][77], when an APIC cluster upgrade is triggered, the orchestrating APIC fans out an HTTPS POST to every peer APIC over the OOB management network on the default port 443 (used by bootx starting from 6.0(2)). If OOB connectivity to any peer APIC is broken at upgrade time, only the reachable APICs receive the trigger and start upgrading. The unreachable APICs are silently skipped, leaving the cluster partially upgraded — a state that cannot be recovered remotely.
+
+This check queries `topSystem` filtered to `role=controller` to collect all APIC OOB management IPs and attempts a TCP connection on port 443 with a 5-second timeout. If any peer is unreachable, the check fails.
+
+Applicable when target version is 6.0(2) or above.
+
+
+### APIC OOB Connectivity - Custom HTTPS Port
+
+Due to [CSCwu91693][77], the APIC upgrade fanout uses the configured HTTPS port from the `commHttps` policy (default 443) to send the upgrade begin request to peer APICs over the OOB management network. If OOB connectivity on this port is broken for any peer, only a subset of APICs start upgrading, leaving the cluster in a partially upgraded and unrecoverable state.
+
+This check queries `commHttps` for the configured HTTPS port, queries `topSystem` filtered to `role=controller` for all APIC OOB management IPs, and attempts a TCP connection on the configured port with a 5-second timeout. If any peer is unreachable, the check fails.
+
+Applicable when both current version and target version are 6.2 or above.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2923,4 +2945,5 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+[77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
 
