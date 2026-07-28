@@ -6888,7 +6888,12 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
     if data:
         if has_error:
             result = ERROR
-            recommended_action = 'Manually verify the factory certificate expiry using `acidiag verifyapic` on the affected APIC(s).'
+            recommended_action = (
+                    "Manually verify certificate expiry for all affected nodes. "
+                    "\n\tFor APIC factory certificates, run `acidiag verifyapic` on each affected APIC. "
+                    "\n\tFor leaf/spine certificates, validate 'moquery -c pkiFabricNodeSSLCertificate' and check 'validityNotAfter' values via APIC API "
+                    "and resolve any connectivity or data parsing issues before upgrade."
+                )
         elif has_critical and has_major:
             result = FAIL_O
             recommended_action = 'Renew expired certificate(s) immediately. For certificate(s) approaching expiry, renew before they expire to avoid service disruption.'
