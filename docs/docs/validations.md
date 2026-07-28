@@ -2850,14 +2850,11 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 
 ### APIC OOB Connectivity
 
-APIC bootx uses HTTPS POST for upgrade starting from 6.0(2). Due to [CSCwu91693][77], if OOB connectivity to any peer APIC is broken during upgrade, only the reachable APICs receive the trigger and start upgrading. The unreachable APICs are silently skipped, leaving the cluster partially upgraded.
+Starting from 6.0(2), APIC firmware upgrades are triggered via an HTTPS POST request (bootx) sent to each peer APIC over its out-of-band (OOB) management interface. Due to [CSCwu91693][77], if OOB connectivity to a peer APIC is unavailable at the time this trigger is sent, that APIC does not receive it and silently fails to start the upgrade, while the remaining reachable APICs proceed normally. This results in a partially upgraded cluster with no explicit error raised at the time of failure.
 
-This check performs two verifications:
+This check verifies OOB reachability between APICs on the port(s) actually used for the upgrade trigger. The default port 443 is validated on all versions from 6.0(2) onward, since it is always used unless a custom HTTPS port is configured. From 6.2(1) onward, the upgrade trigger also honors a custom HTTPS port if one is configured via the `commHttps` policy; this custom port is validated only when the current version is 6.2(1) or later, and only when the configured port differs from 443, which is already covered by the default check.
 
-1. **Default port (443)**: APIC uses bootx starting from 6.0(2). Default HTTPS port used is 443.
-2. **Custom HTTPS port (from `commHttps`)**: Starting from 6.2(1), custom ports are supported. Applicable when current version is 6.2(1) or above.
-
-For each applicable check, the script queries `topSystem` filtered to `role=controller` to collect all APIC OOB management IPs and attempts a TCP connection on the relevant port with a 5-second timeout. If any peer is unreachable, the check fails.
+For each applicable port, the script queries `topSystem` filtered to `role=controller` to collect the OOB management IP of every APIC in the cluster, then attempts an HTTPS connection to each peer on that port with a 5-second timeout. If any APIC is found unreachable on a port used for the upgrade trigger, the check fails.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

@@ -59,26 +59,26 @@ commHttps = "commHttps.json"
             [0, 0, 0],
             script.PASS,
         ),
-        # Both >= 6.2, default port 443, all APICs reachable -> PASS
+        # cversion >= 6.2(1g), default port 443, all APICs reachable -> PASS
         # (custom port check skipped since commHttps port == 443)
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
                 commHttps: read_data(dir, "commHttps_default_port.json"),
             },
-            "6.2(1a)",
+            "6.2(1g)",
             "6.2(2a)",
             [0, 0, 0],
             script.PASS,
         ),
-        # Both >= 6.2, custom port 8443, all APICs reachable on both ports -> PASS
+        # cversion >= 6.2(1g), custom port 8443, all APICs reachable on both ports -> PASS
         # (default port 443: [0,0,0], custom port 8443: [0,0,0])
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
                 commHttps: read_data(dir, "commHttps_custom_port.json"),
             },
-            "6.2(1a)",
+            "6.2(1g)",
             "6.2(2a)",
             [0, 0, 0, 0, 0, 0],
             script.PASS,
@@ -91,36 +91,36 @@ commHttps = "commHttps.json"
             [0, 28, 0],
             script.FAIL_UF,
         ),
-        # Both >= 6.2, one APIC unreachable on default port 443 (exit 7) -> FAIL_UF
+        # cversion >= 6.2(1g), one APIC unreachable on default port 443 (exit 7) -> FAIL_UF
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
                 commHttps: read_data(dir, "commHttps_default_port.json"),
             },
-            "6.2(1a)",
+            "6.2(1g)",
             "6.2(2a)",
             [0, 7, 0],
             script.FAIL_UF,
         ),
-        # Both >= 6.2, custom port 8443, all unreachable on custom port -> FAIL_UF
+        # cversion >= 6.2(1g), custom port 8443, all unreachable on custom port -> FAIL_UF
         # (default port 443 all pass: [0,0,0], custom port 8443 all fail: [28,28,28])
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
                 commHttps: read_data(dir, "commHttps_custom_port.json"),
             },
-            "6.2(1a)",
+            "6.2(1g)",
             "6.2(2a)",
             [0, 0, 0, 28, 28, 28],
             script.FAIL_UF,
         ),
-        # Both >= 6.2, commHttps returns invalid port value -> ERROR
+        # cversion >= 6.2(1g), commHttps returns invalid port value -> ERROR
         (
             {
                 topSystem: read_data(dir, "topSystem_3apics_oob.json"),
                 commHttps: read_data(dir, "commHttps_invalid_port.json"),
             },
-            "6.2(1a)",
+            "6.2(1g)",
             "6.2(2a)",
             [0, 0, 0],
             script.ERROR,

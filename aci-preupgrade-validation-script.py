@@ -6709,7 +6709,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
     recommended_action = "Restore OOB management connectivity between all APICs and ensure the required HTTPS ports are reachable across the OOB network."
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity'
 
-    def _get_apic_oob_connectivity(topSystems, port):
+    def get_apic_oob_connectivity(topSystems, port):
         data = []
         has_error = False
 
@@ -6728,7 +6728,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                 if subprocess.call(
                     'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip, port),
                     shell=True
-                ) not in [0, 22]:
+                ) != 0:
                     data.append([node_id, ip, port, "Unreachable"])
             except Exception as e:
                 log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
@@ -6752,13 +6752,13 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
     has_error = False
 
     # Default port check: APIC bootx uses port 443 from 6.0(2)
-    default_data, default_error = _get_apic_oob_connectivity(topSystems, 443)
+    default_data, default_error = get_apic_oob_connectivity(topSystems, 443)
     data.extend(default_data)
     if default_error:
         has_error = True
 
     # Custom HTTPS port check: upgrade fanout uses commHttps port from 6.2(1)
-    if not cversion.older_than("6.2(1a)"):
+    if not cversion.older_than("6.2(1g)"):
         port = 443
         commHttps = icurl('class', 'commHttps.json')
         if commHttps:
@@ -6769,7 +6769,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                 return Result(result=ERROR, msg="Could not read commHttps HTTPS port from commHttps MO.")
 
         if port != 443:  # Port 443 already covered by default port check above
-            custom_data, custom_error = _get_apic_oob_connectivity(topSystems, port)
+            custom_data, custom_error = get_apic_oob_connectivity(topSystems, port)
             data.extend(custom_data)
             if custom_error:
                 has_error = True
