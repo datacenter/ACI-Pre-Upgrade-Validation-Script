@@ -2850,12 +2850,12 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 
 ### APIC OOB Connectivity
 
-Due to [CSCwu91693][77], when an APIC cluster upgrade is triggered, the orchestrating APIC fans out an HTTPS POST to every peer APIC over the OOB management network. If OOB connectivity to any peer APIC is broken at upgrade time, only the reachable APICs receive the trigger and start upgrading. The unreachable APICs are silently skipped, leaving the cluster partially upgraded — a state that cannot be recovered remotely.
+APIC bootx uses HTTPS POST for upgrade starting from 6.0(2). Due to [CSCwu91693][77], if OOB connectivity to any peer APIC is broken during upgrade, only the reachable APICs receive the trigger and start upgrading. The unreachable APICs are silently skipped, leaving the cluster partially upgraded.
 
 This check performs two verifications:
 
-1. **Default port (443)**: Used by APIC bootx starting from 6.0(2). Applicable when target version is 6.0(2) or above.
-2. **Custom HTTPS port (from `commHttps`)**: Used by the upgrade fanout starting from 6.2(1). Applicable when both current and target versions are 6.2(1) or above. If the configured port is the same as the default (443), this step is skipped as it is already covered above.
+1. **Default port (443)**: APIC uses bootx starting from 6.0(2). Default HTTPS port used is 443.
+2. **Custom HTTPS port (from `commHttps`)**: Starting from 6.2(1), custom ports are supported. Applicable when current version is 6.2(1) or above.
 
 For each applicable check, the script queries `topSystem` filtered to `role=controller` to collect all APIC OOB management IPs and attempts a TCP connection on the relevant port with a 5-second timeout. If any peer is unreachable, the check fails.
 

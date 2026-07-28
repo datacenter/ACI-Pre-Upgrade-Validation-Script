@@ -6728,7 +6728,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                 if subprocess.call(
                     'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip, port),
                     shell=True
-                ) in [7, 28]:
+                ) not in [0, 22]:
                     data.append([node_id, ip, port, "Unreachable"])
             except Exception as e:
                 log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
@@ -6758,7 +6758,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
         has_error = True
 
     # Custom HTTPS port check: upgrade fanout uses commHttps port from 6.2(1)
-    if not (cversion.older_than("6.2(1a)") or tversion.older_than("6.2(1a)")):
+    if not cversion.older_than("6.2(1a)"):
         port = 443
         commHttps = icurl('class', 'commHttps.json')
         if commHttps:
