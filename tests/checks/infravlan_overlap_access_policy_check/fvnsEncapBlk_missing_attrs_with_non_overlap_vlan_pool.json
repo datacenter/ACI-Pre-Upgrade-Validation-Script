@@ -22,5 +22,18 @@
         "to": "vlan-4094"
       }
     }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-10]-to-[vlan-20]",
+        "role": "external",
+        "from": "vlan-10",
+        "to": "vlan-20",
+        "dn": "uni/infra/vlanns-[vlan_pool3]-static/from-[vlan-10]-to-[vlan-20]"
+      }
+    }
   }
 ]

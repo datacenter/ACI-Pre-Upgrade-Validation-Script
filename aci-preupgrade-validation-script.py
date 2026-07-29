@@ -6762,14 +6762,14 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
 
         if not dn or not from_encap or not to_encap:
             has_error = True
-            break
-
+            continue
+    
         try:
             from_vlan = int(str(from_encap).split('-')[-1])
             to_vlan = int(str(to_encap).split('-')[-1])
         except (ValueError, TypeError):
             has_error = True
-            break
+            continue
 
         if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
             row = [str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn]
@@ -6780,10 +6780,10 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
 
     if not data and not unformatted_data:
         result = PASS
+        if has_error:
+            result = ERROR
+            msg = "Overlap check for InfraVLAN {} could not be determined because one or more VLAN pool blocks contain improper data or Error while fetching data.".format(infra_vlan)
 
-    if has_error or unformatted_data:
-        result = ERROR
-        msg = "Overlap check for InfraVLAN {} could not be determined because one or more VLAN pool blocks contain invalid or improperly formatted data.".format(infra_vlan)
 
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 

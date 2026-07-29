@@ -163,15 +163,39 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,\
 				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_malformed_dn.json"),
 			},
 			"6.2(1g)",
-			script.ERROR,
+			script.FAIL_UF,
 			[],
-			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanpool/vlan-4000-4094"]],
+			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanpool/vlan-4000-4094"],
+			["4093", "vlan-400 to vlan-4094", "uni/infra/vlanpool/vlan-400-4094"]],
 		),
-		# Case 15: Missing dn/from/to attributes in fvnsEncapBlk. Expected: ERROR.
+		# Case 15: Overlap found with both valid and malformed DN format. Expected: FAIL_UF with valid in data and malformed in unformatted_data.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
-				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_missing_attrs.json"),
+				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_mixed_valid_malformed_dn.json"),
+			},
+			"6.2(1g)",
+			script.FAIL_UF,
+			[["4093", "vlan-100 to vlan-4094", "uni/infra/vlanns-[vlan_pool1]-static/from-[vlan-100]-to-[vlan-4094]"]],
+			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanpool/vlan-4000-4094"],
+			["4093", "vlan-400 to vlan-4094", "uni/infra/vlanpool/vlan-400-4094"]],
+		),
+		# Case 16: Missing dn/from/to attributes in fvnsEncapBlk. Expected: FAIL_UF when there is overlap found.
+		(
+			{
+				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
+				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_missing_attrs_with_overlap_vlan_pool.json"),
+			},
+			"6.2(1g)",
+			script.FAIL_UF,
+			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanns-[vlan_pool3]-static/from-[vlan-4000]-to-[vlan-4094]"]],
+			[]
+		),
+		#Case 17: Missing dn/from/to attributes in fvnsEncapBlk. Expected: ERROR when there is no overlap found.
+		(
+			{
+				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
+				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_missing_attrs_with_non_overlap_vlan_pool.json"),
 			},
 			"6.2(1g)",
 			script.ERROR,
