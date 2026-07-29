@@ -3,33 +3,8 @@ import pytest
 import logging
 import importlib
 from helpers.utils import read_data
-from datetime import datetime
-
-FIXED_UTC_NOW = datetime(2026, 7, 15, 6, 35, 30)
-DATE_OUTPUT = "Wed Jul 15 06:35:30 UTC 2026\nfab-apic#"
-
-LEAF_SPINE_EXPIRED_TS = "2024-05-14T20:25:42.000+00:00"
-LEAF_SPINE_EXPIRING_TS = "2026-08-01T06:57:40.000+00:00"
-
 
 script = importlib.import_module("aci-preupgrade-validation-script")
-Result = script.Result
-
-@pytest.fixture(autouse=True)
-def hardcode_current_time(monkeypatch):
-    class FrozenDateTime(datetime):
-        @classmethod
-        def utcnow(cls):
-            return FIXED_UTC_NOW
-        
-        @classmethod
-        def now(cls, tz=None):
-            if tz is not None:
-                return FIXED_UTC_NOW.replace(tzinfo=tz)
-            else:
-                return FIXED_UTC_NOW
-    
-    monkeypatch.setattr(script, "datetime", FrozenDateTime)
 
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,8 +29,6 @@ faultInst = fault_query(MASTER_ORDER)
 faultInst_pre_factory = fault_query(["F4501", "F4502", "F4503", "F4617", "F3081", "F3082"])
 faultInst_keyring_saml = fault_query(["F4501", "F4502", "F3081", "F3082"])
 faultInst_saml = fault_query(["F3081", "F3082"])
-pkiFabricNodeSSLCertificate = "pkiFabricNodeSSLCertificate.json"
-
 
 # --- Factory certificate (F4752/F4753) SSH check test data ---
 fabric_nodes_ssh = [
@@ -66,16 +39,6 @@ fabric_nodes_multi = [
     {"fabricNode": {"attributes": {"id": "1", "name": "apic1", "role": "controller", "address": "10.0.0.1"}}},
     {"fabricNode": {"attributes": {"id": "2", "name": "apic2", "role": "controller", "address": "10.0.0.2"}}},
     {"fabricNode": {"attributes": {"id": "3", "name": "apic3", "role": "controller", "address": "10.0.0.3"}}},
-]
-
-fabric_nodes_leaf_spine = [
-    {"fabricNode": {"attributes": {"id": "101", "name": "leaf101", "role": "leaf", "dn": "topology/pod-1/node-101"}}},
-    {"fabricNode": {"attributes": {"id": "201", "name": "spine201", "role": "spine", "dn": "topology/pod-1/node-201"}}},
-]
-
-fabric_nodes_controller_leaf = [
-    {"fabricNode": {"attributes": {"id": "1", "name": "apic1", "role": "controller", "address": "10.0.0.1"}}},
-    {"fabricNode": {"attributes": {"id": "101", "name": "leaf101", "role": "leaf", "dn": "topology/pod-1/node-101"}}},
 ]
 
 DATE_OUTPUT = "Wed Jul 15 06:35:30 UTC 2026\nfab-apic#"
@@ -512,204 +475,6 @@ def ssh_cmds(outputs):
             [
                 ["N/A", "critical",
                  "APIC 2 (apic2): factory certificate expired on 2024-05-14 20:25:42 UTC"],
-            ],
-        ),
-        # MANUAL - leaf/spine cert expiring within threshold
-        (
-            {
-                faultInst: [],
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "101",
-                                "validityNotAfter": LEAF_SPINE_EXPIRING_TS
-                            }
-                        }
-                    }
-                ],
-            },
-            False,
-            {},
-            "6.1(5e)",
-            fabric_nodes_leaf_spine,
-            script.MANUAL,
-            [
-                ["N/A", "major",
-                 "Node 101 (leaf101): certificate expiring on 2026-08-01 06:57:40 UTC"],
-            ],
-        ),
-        # FAIL_O - leaf/spine cert expired via pkiFabricNodeSSLCertificate validityNotAfter
-        (
-            {
-                faultInst: [],
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "101",
-                                "validityNotAfter": "2024-05-14T20:25:42.000+00:00"
-                            }
-                        }
-                    }
-                ],
-            },
-            False,
-            {},
-            "6.1(5e)",
-            fabric_nodes_leaf_spine,
-            script.FAIL_O,
-            [
-                ["N/A", "critical",
-                 "Node 101 (leaf101): certificate expired on 2024-05-14 20:25:42 UTC"],
-            ],
-        ),
-        # FAIL_O - leaf/spine combination: one expired and one expiring
-        (
-            {
-                faultInst: [],
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "101",
-                                "validityNotAfter": LEAF_SPINE_EXPIRED_TS
-                            }
-                        }
-                    },
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "201",
-                                "validityNotAfter": LEAF_SPINE_EXPIRING_TS
-                            }
-                        }
-                    },
-                ],
-            },
-            False,
-            {},
-            "6.1(5e)",
-            fabric_nodes_leaf_spine,
-            script.FAIL_O,
-            [
-                ["N/A", "critical",
-                 "Node 101 (leaf101): certificate expired on 2024-05-14 20:25:42 UTC"],
-                ["N/A", "major",
-                 "Node 201 (spine201): certificate expiring on 2026-08-01 06:57:40 UTC"],
-            ],
-        ),
-        # ERROR - leaf/spine cert missing validityNotAfter
-        (
-            {
-                faultInst: [],
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "201",
-                                "validityNotAfter": ""
-                            }
-                        }
-                    }
-                ],
-            },
-            False,
-            {},
-            "6.1(5e)",
-            fabric_nodes_leaf_spine,
-            script.ERROR,
-            [
-                ["N/A", "error",
-                 "Node 201 (spine201): unable to determine certificate expiry date"],
-            ],
-        ),
-        # ERROR - leaf/spine cert has unparseable validityNotAfter
-        (
-            {
-                faultInst: [],
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "101",
-                                "validityNotAfter": "not-a-date"
-                            }
-                        }
-                    }
-                ],
-            },
-            False,
-            {},
-            "6.1(5e)",
-            fabric_nodes_leaf_spine,
-            script.ERROR,
-            [
-                ["N/A", "error",
-                 "Node 101 (leaf101): unable to parse certificate expiry date 'not-a-date'"],
-            ],
-        ),
-        # FAIL_O - APIC fault + APIC factory cert expired + leaf cert expired
-        (
-            {
-                faultInst_pre_factory: read_data(dir, "faultInst_F4502.json"),
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "101",
-                                "validityNotAfter": LEAF_SPINE_EXPIRED_TS
-                            }
-                        }
-                    }
-                ],
-            },
-            False,
-            ssh_cmds(VERIFYAPIC_EXPIRED),
-            "6.1(4a)",
-            fabric_nodes_controller_leaf,
-            script.FAIL_O,
-            [
-                ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
-                ["N/A", "critical",
-                 "APIC 1 (apic1): factory certificate expired on 2024-05-14 20:25:42 UTC"],
-                ["N/A", "critical",
-                 "Node 101 (leaf101): certificate expired on 2024-05-14 20:25:42 UTC"],
-            ],
-        ),
-        # ERROR - mixed leaf/spine data: one expired + one missing validityNotAfter (error takes priority)
-        (
-            {
-                faultInst: [],
-                pkiFabricNodeSSLCertificate: [
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "101",
-                                "validityNotAfter": LEAF_SPINE_EXPIRED_TS
-                            }
-                        }
-                    },
-                    {
-                        "pkiFabricNodeSSLCertificate": {
-                            "attributes": {
-                                "nodeId": "201",
-                                "validityNotAfter": ""
-                            }
-                        }
-                    },
-                ],
-            },
-            False,
-            {},
-            "6.1(5e)",
-            fabric_nodes_leaf_spine,
-            script.ERROR,
-            [
-                ["N/A", "critical",
-                "Node 101 (leaf101): certificate expired on 2024-05-14 20:25:42 UTC"],
-                ["N/A", "error",
-                "Node 201 (spine201): unable to determine certificate expiry date"],
             ],
         ),
     ],
