@@ -6891,7 +6891,7 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
             recommended_action = (
                     "Manually verify certificate expiry for all affected nodes. "
                     "\n\tFor APIC factory certificates, run `acidiag verifyapic` on each affected APIC. "
-                    "\n\tFor leaf/spine certificates, validate 'moquery -c pkiFabricNodeSSLCertificate' and check 'validityNotAfter' values for affected nodes."
+                    "\n\tFor leaf/spine certificates, run 'moquery -c pkiFabricNodeSSLCertificate' on any APIC and check 'validityNotAfter' value for affected nodes."
                 )
         elif has_critical and has_major:
             result = FAIL_O
