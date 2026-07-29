@@ -125,6 +125,22 @@ commHttps = "commHttps.json"
             [0, 0, 0],
             script.ERROR,
         ),
+        # IPv6 OOB, all APICs reachable -> PASS
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_ipv6.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 0, 0],
+            script.PASS,
+        ),
+        # IPv6 OOB, one APIC unreachable (exit 28) -> FAIL_UF
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_ipv6.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 28, 0],
+            script.FAIL_UF,
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, monkeypatch, cversion, tversion, curl_exit_codes, expected_result):
