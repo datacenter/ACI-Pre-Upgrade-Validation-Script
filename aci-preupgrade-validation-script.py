@@ -6761,7 +6761,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
         from_encap = blk_attr.get('from')
         to_encap = blk_attr.get('to')
 
-        if not dn or not rn or not from_encap or not to_encap:
+        if not dn or not from_encap or not to_encap:
             has_error = True
         
         try:
