@@ -17,9 +17,9 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-2`00]-to-[vlan-4094]",
+        "rn": "from-[vlan-200]-to-[vlan-4094]",
         "role": "internal",
-        "from": "vlan-100",
+        "from": "vlan-200",
         "to": "vlan-4094",
         "dn": "uni/infra/vlanns-[vlan_pool2]-static/from-[vlan-200]-to-[vlan-4094]"
       }

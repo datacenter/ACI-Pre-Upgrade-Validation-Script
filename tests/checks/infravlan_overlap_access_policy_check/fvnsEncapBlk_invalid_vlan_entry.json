@@ -4,22 +4,11 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-100]-to-[vlan-200]",
+        "rn": "from-[vlan-abc]-to-[vlan-4094]",
         "role": "external",
-        "from": "vlan-100",
-        "to": "vlan-200"
-      }
-    }
-  },
-  {
-    "fvnsEncapBlk": {
-      "attributes": {
-        "allocMode": "static",
-        "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-30]-to-[vlan-40]",
-        "role": "external",
-        "from": "",
-        "to": "vlan-40"
+        "from": "vlan-abc",
+        "to": "vlan-4094",
+        "dn": "uni/infra/vlanns-[vlan_pool_invalid]-static/from-[vlan-abc]-to-[vlan-4094]"
       }
     }
   },
@@ -32,7 +21,20 @@
         "role": "external",
         "from": "vlan-10",
         "to": "vlan-20",
-        "dn": "uni/infra/vlanns-[vlan_pool3]-static/from-[vlan-10]-to-[vlan-20]"
+        "dn": "uni/infra/vlanns-[vlan_pool_invalid]-static/from-[vlan-10]-to-[vlan-20]"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-3000]-to-[vlan-4094]",
+        "role": "external",
+        "from": null,
+        "to": "vlan-4094",
+        "dn": "uni/infra/vlanns-[vlan_pool_non_string]-static/from-[vlan-3000]-to-[vlan-4094]"
       }
     }
   }

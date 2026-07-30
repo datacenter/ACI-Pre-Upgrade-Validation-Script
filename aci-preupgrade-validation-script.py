@@ -6718,11 +6718,11 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     result = FAIL_UF
     msg = ""
     headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
-    unformatted_headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
+    unformatted_headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN", "VLAN Pool RN"]
 
     data = []
     unformatted_data = []
-    recommended_action = "Remove InfraVLAN from VLAN pool block highligted or upgrade to fix version"
+    recommended_action = "Select a non-affected target version or contact Cisco TAC for Support before upgrade."
     
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infravlan-overlap-access-policy-check"
 
@@ -6757,13 +6757,13 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     for obj in encap_blocks:
         blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
         dn = blk_attr.get('dn', '')
+        rn = blk_attr.get('rn', '')
         from_encap = blk_attr.get('from')
         to_encap = blk_attr.get('to')
 
-        if not dn or not from_encap or not to_encap:
+        if not dn or not rn or not from_encap or not to_encap:
             has_error = True
-            continue
-    
+        
         try:
             from_vlan = int(str(from_encap).split('-')[-1])
             to_vlan = int(str(to_encap).split('-')[-1])
@@ -6773,10 +6773,10 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
 
         if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
             row = [str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn]
-            if re.search(dn_regex1, dn) or re.search(dn_regex2, dn):
+            if rn and (re.search(dn_regex1, dn) or re.search(dn_regex2, dn)):
                 data.append(row)
             else:
-                unformatted_data.append(row)
+                unformatted_data.append(row + [rn])
 
     if not data and not unformatted_data:
         result = PASS
