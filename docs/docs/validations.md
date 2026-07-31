@@ -206,7 +206,7 @@ Items                                           | Defect       | This Script    
 [WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
-[APIC OOB Connectivity][d38]                      | CSCwu91693   | :white_check_mark: | :white_check_mark: 6.2(2)
+[APIC OOB Connectivity][d38]                      | CSCwu91693   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -2854,7 +2854,7 @@ Starting from 6.0(2), APIC firmware upgrades are triggered via an HTTPS POST req
 
 This check verifies OOB reachability between APICs on the port(s) actually used for the upgrade trigger. The default port 443 is validated on all versions from 6.0(2) onward, since it is always used unless a custom HTTPS port is configured. From 6.2(1) onward, the upgrade trigger also honors a custom HTTPS port if one is configured via the `commHttps` policy; this custom port is validated only when the current version is 6.2(1) or later, and only when the configured port differs from 443, which is already covered by the default check.
 
-For each applicable port, the script queries `topSystem` filtered to `role=controller` to collect the OOB management IP of every APIC in the cluster, then attempts an HTTPS connection to each peer on that port with a 5-second timeout. If any APIC is found unreachable on a port used for the upgrade trigger, the check fails.
+For each applicable port, the script gets OOB management IP of every APIC in the cluster, then attempts an HTTPS connection to each peer on that port with a 5-second timeout. If any APIC is found unreachable on a port used for the upgrade trigger, the check fails.
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script

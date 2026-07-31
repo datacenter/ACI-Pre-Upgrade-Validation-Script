@@ -6766,7 +6766,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                 port = int(commHttps[0]['commHttps']['attributes'].get('port', 443))
             except (ValueError, KeyError):
                 log.warning("Could not read commHttps port")
-                return Result(result=ERROR, msg="Could not read commHttps HTTPS port from commHttps MO.")
+                return Result(result=ERROR, msg="Could not read https port id from commHttps MO.")
 
         if port != 443:  # Port 443 already covered by default port check above
             custom_data, custom_error = get_apic_oob_connectivity(apic_id_ip, port)
