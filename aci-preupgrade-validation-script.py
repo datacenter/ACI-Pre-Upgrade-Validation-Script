@@ -6725,8 +6725,9 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                 continue
 
             try:
+                ip_formatted = '[{}]'.format(ip) if ':' in ip else ip
                 if subprocess.call(
-                    'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip, port),
+                    'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip_formatted, port),
                     shell=True
                 ) != 0:
                     data.append([node_id, ip, port, "Unreachable"])

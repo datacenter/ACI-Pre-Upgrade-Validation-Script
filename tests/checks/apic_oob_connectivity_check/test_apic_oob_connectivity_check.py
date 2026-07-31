@@ -163,6 +163,16 @@ def test_logic(run_check, mock_icurl, monkeypatch, cversion, tversion, curl_exit
     idx = [0]
 
     def mock_subprocess_call(cmd, shell=False):
+        # Verify that IPv6 addresses in the curl URL are wrapped in square brackets
+        import re
+        match = re.search(r'https://([^/]+):', cmd)
+        if match:
+            host = match.group(1)
+            # If host contains a colon (IPv6) it must be wrapped in brackets
+            if ':' in host:
+                assert host.startswith('[') and host.endswith(']'), (
+                    "IPv6 address in curl URL must be wrapped in square brackets, got: {}".format(cmd)
+                )
         code = curl_exit_codes[idx[0]] if idx[0] < len(curl_exit_codes) else 0
         idx[0] += 1
         return code
