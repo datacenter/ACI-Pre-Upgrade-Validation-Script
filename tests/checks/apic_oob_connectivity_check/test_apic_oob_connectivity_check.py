@@ -141,6 +141,22 @@ commHttps = "commHttps.json"
             [0, 28, 0],
             script.FAIL_UF,
         ),
+        # Both IPv4 and IPv6 configured, all reachable -> PASS (IPv4 should be used)
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_both.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 0, 0],
+            script.PASS,
+        ),
+        # Both IPv4 and IPv6 configured, one unreachable -> FAIL_UF (IPv4 should be used)
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_both.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 28, 0],
+            script.FAIL_UF,
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, monkeypatch, cversion, tversion, curl_exit_codes, expected_result):
