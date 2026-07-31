@@ -6773,7 +6773,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
 
         if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
             row = [str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn]
-            if rn and (re.search(dn_regex1, dn) or re.search(dn_regex2, dn)):
+            if (re.search(dn_regex1, dn) or re.search(dn_regex2, dn)):
                 data.append(row)
             else:
                 unformatted_data.append(row + [rn])

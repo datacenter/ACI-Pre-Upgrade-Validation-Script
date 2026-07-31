@@ -4,7 +4,6 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-100]-to-[vlan-4094]",
         "role": "external",
         "from": "vlan-100",
         "to": "vlan-4094",
@@ -17,7 +16,6 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-200]-to-[vlan-4094]",
         "role": "internal",
         "from": "vlan-200",
         "to": "vlan-4094",
@@ -30,7 +28,6 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-4000]-to-[vlan-4094]",
         "role": "external",
         "from": "vlan-4000",
         "to": "vlan-4094",
@@ -43,7 +40,6 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-1751]-to-[vlan-4094]",
         "role": "external",
         "from": "vlan-1751",
         "to": "vlan-4094",
@@ -56,7 +52,6 @@
       "attributes": {
         "allocMode": "static",
         "annotation": "orchestrator:aci-containers-controller",
-        "rn": "from-[vlan-1752]-to-[vlan-4094]",
         "role": "external",
         "from": "vlan-1752",
         "to": "vlan-4094",

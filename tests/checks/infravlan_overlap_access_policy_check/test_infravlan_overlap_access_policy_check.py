@@ -164,10 +164,9 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,\
 			},
 			"6.2(1g)",
 			script.FAIL_UF,
-			[],
+			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanns-[vlan_pool_missing_rn]-static/from-[vlan-4000]-to-[vlan-4094]"]],
 			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanpool/vlan-4000-4094", "from-[vlan-4000]-to-[vlan-4094]"],
-			["4093", "vlan-400 to vlan-4094", "uni/infra/vlanpool/vlan-400-4094", "from-[vlan-400]-to-[vlan-4094]"],
-			["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanns-[vlan_pool_missing_rn]-static/from-[vlan-4000]-to-[vlan-4094]", ""]],
+			["4093", "vlan-400 to vlan-4094", "uni/infra/vlanpool/vlan-400-4094", "from-[vlan-400]-to-[vlan-4094]"]],
 		),
 		# Case 15: Overlap found with both valid and malformed DN format. Expected: FAIL_UF with valid in data and malformed in unformatted_data.
 		(
@@ -203,20 +202,7 @@ fvnsEncapBlk_api = "fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,\
 			[],
 			[],
 		),
-		# Case 18: Missing rn but valid dn/from/to with overlap. Expected: FAIL_UF and row in unformatted_data with empty rn.
-		(
-			{
-				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
-				fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_overlap_malformed_dn.json"),
-			},
-			"6.2(1g)",
-			script.FAIL_UF,
-			[],
-			[["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanpool/vlan-4000-4094", "from-[vlan-4000]-to-[vlan-4094]"],
-			["4093", "vlan-400 to vlan-4094", "uni/infra/vlanpool/vlan-400-4094", "from-[vlan-400]-to-[vlan-4094]"],
-			["4093", "vlan-4000 to vlan-4094", "uni/infra/vlanns-[vlan_pool_missing_rn]-static/from-[vlan-4000]-to-[vlan-4094]", ""]],
-		),
-		# Case 19: invalid vlan from/to types including null. Expected: ERROR due parsing failure path with no overlaps.
+		# Case 18: invalid vlan from/to types including null. Expected: ERROR due parsing failure path with no overlaps.
 		(
 			{
 				lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
@@ -234,18 +220,4 @@ def test_logic(run_check, mock_icurl, tversion, expected_result, expected_data, 
 	assert result.result == expected_result
 	assert result.data == expected_data
 	assert result.unformatted_data == expected_unformatted_data
-
-
-# @pytest.mark.parametrize(
-# 	"icurl_outputs",
-# 	[
-# 		{
-# 			lldpInst_api: read_data(dir, "lldpInst_infra_vlan_multiple_entry.json"),
-# 			fvnsEncapBlk_api: read_data(dir, "fvnsEncapBlk_invalid_from_to_parsing_only.json"),
-# 		}
-# 	],
-# )
-# def test_invalid_from_to_parsing_error_message(run_check, mock_icurl):
-# 	result = run_check(tversion=script.AciVersion("6.2(1g)"))
-# 	assert result.result == script.ERROR
-# 	assert result.msg == "Overlap check for InfraVLAN 4093 could not be determined because one or more VLAN pool blocks contain improper data or Error while fetching data."
+	
