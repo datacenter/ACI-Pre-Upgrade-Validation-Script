@@ -13,10 +13,7 @@ script = importlib.import_module("aci-preupgrade-validation-script")
 log = logging.getLogger(__name__)
 dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "rtc_battery_voltage_low_check"
-faultInst_api = (
-    'faultInst.json?query-target-filter=and(eq(faultInst.code,"F2421"),'
-    'wcard(faultInst.descr,"reason:The RTC battery voltage is low"))'
-)
+faultInst_api = 'faultInst.json?query-target-filter=eq(faultInst.code,"F2421")'
 active_faults = read_data(dir, "f2421.json")["imdata"]
 retaining_faults = copy.deepcopy(active_faults)
 retaining_faults[0]["faultInst"]["attributes"]["lc"] = "retaining"

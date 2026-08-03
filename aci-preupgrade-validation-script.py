@@ -6415,7 +6415,7 @@ def rtc_battery_voltage_low_check(**kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-rtc-battery-voltage'
     dn_regex = node_regex + r'/.+/supslot-(?P<slot>\d+)/sup\]/fault-F2421$'
     fault_reason = 'The RTC battery voltage is low'
-    fault_api = 'faultInst.json?query-target-filter=and(eq(faultInst.code,"F2421"),wcard(faultInst.descr,"reason:The RTC battery voltage is low"))'
+    fault_api = 'faultInst.json?query-target-filter=eq(faultInst.code,"F2421")'
 
     faultInsts = icurl('class', fault_api)
     for faultInst in faultInsts:
