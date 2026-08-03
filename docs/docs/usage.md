@@ -73,7 +73,7 @@ Each check has a unique result which will help determine how to proceed. The res
 
 ### Recommended action in JSON results
 
-The per-check JSON schema was added for the built-in pre-upgrade validation workflow in APIC 6.2 and later. The APIC presentation layer expects `recommended_action` as static rule metadata, so the field can be populated even when `ruleStatus` is `passed`.
+The per-check JSON schema was added for the built-in pre-upgrade validation workflow in APIC 6.2 and later. The APIC presentation layer expects `recommended_action` as static rule metadata, so the field can be populated even when `ruleStatus` is `passed`. See Cisco’s [Pre-upgrade validator examples for APIC 6.2(1)](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-pre-upgrade-checklists/examples-of-pre-upgrade-validator-apic.html#Cisco_Reference.dita_53db0ff6-cc90-4543-80e0-091fc41dc962__section_vq4_5lv_qhc).
 
 Use `ruleStatus` to determine whether the recommendation is actionable. A populated `recommended_action` does not indicate a problem when `ruleStatus` is `passed`; standalone consumers should act on it only when `ruleStatus` is `failed`.
 
