@@ -521,7 +521,7 @@ The script performs 2 different checks depending on the version you are running.
 For current versions below 6.1(3):
 
 - The script checks all APICs' class's object count for a subset of services (DMEs) via a file scan. 
-- If the count is found to be above `150*1000*1000`, then that class will be flagged for further investigation.
+- If the count is found to be above `1000*1000*1.5` (1,500,000), then that class will be flagged for further investigation.
 
 For current version is 6.1(3f):
 
