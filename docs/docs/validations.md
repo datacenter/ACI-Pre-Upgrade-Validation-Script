@@ -1528,6 +1528,8 @@ This fault occurs when the disk usage of a partiton increases beyond its thresho
 
 This fault also occurs when the MTS buffer memory usage increases beyond its threshold. /proc/isan/sw/mts/mem/stats is checked when this scenario occurs.
 
+The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
+
 Recommended Action:
 
 1. Check `df -h` output on affected node to see the usage of the partition.
