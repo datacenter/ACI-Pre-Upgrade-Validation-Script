@@ -82,8 +82,10 @@ test:integration:
     - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key
   artifacts:
     when: always
+    expire_in: 7 days
     paths:
       - $CI_PROJECT_DIR/tests/*.log
+      - $CI_PROJECT_DIR/tests/*.tgz
   cache:
     key:
       files:

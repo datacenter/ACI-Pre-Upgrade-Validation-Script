@@ -6406,7 +6406,7 @@ def apic_storage_inode_check(**kwargs):
 
 @check_wrapper(check_title="Switch RTC Battery Voltage (F2421 equipment-diags-failed)")
 def rtc_battery_voltage_low_check(**kwargs):
-    result = FAIL_UF
+    result = FAIL_O
     headers = ['Fault', 'Pod', 'Node', 'Supervisor', 'Severity', 'Lifecycle']
     data = []
     unformatted_headers = ['Fault', 'Fault DN', 'Description', 'Severity', 'Lifecycle']

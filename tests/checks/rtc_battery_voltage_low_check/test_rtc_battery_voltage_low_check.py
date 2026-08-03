@@ -43,7 +43,7 @@ for reason in [
     [
         (
             {faultInst_api: active_faults},
-            script.FAIL_UF,
+            script.FAIL_O,
             [["F2421", "1", "122", "1", "minor", "raised"]],
             [],
         ),
@@ -52,7 +52,7 @@ for reason in [
         ({faultInst_api: non_exact_reason_faults}, script.PASS, [], []),
         (
             {faultInst_api: active_faults + malformed_faults},
-            script.FAIL_UF,
+            script.FAIL_O,
             [["F2421", "1", "122", "1", "minor", "raised"]],
             [[
                 "F2421",
