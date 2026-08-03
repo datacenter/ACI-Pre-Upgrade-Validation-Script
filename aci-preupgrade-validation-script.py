@@ -5630,7 +5630,12 @@ def clock_signal_component_failure_check(**kwargs):
     result = PASS
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
-    recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251.\n\tSN String:\n\t'
+    recommended_action = (
+        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
+        'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
+        'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
+        'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
+    )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
 
     eqptFC_api = 'eqptFC.json'
