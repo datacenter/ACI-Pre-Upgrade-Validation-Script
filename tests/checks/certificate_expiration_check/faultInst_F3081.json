@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F3081",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "SAML Signing Certificate expiring in one month",
+                "dn": "uni/userext/samlext/samlidp-IDP1/fault-F3081"
+            }
+        }
+    }
+]
