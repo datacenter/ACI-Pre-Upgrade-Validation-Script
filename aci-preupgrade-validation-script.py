@@ -5630,7 +5630,12 @@ def clock_signal_component_failure_check(**kwargs):
     result = PASS
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
-    recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251.\n\tSN String:\n\t'
+    recommended_action = (
+        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
+        'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
+        'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
+        'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
+    )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
 
     eqptFC_api = 'eqptFC.json'
@@ -5845,7 +5850,8 @@ def equipment_disk_limits_exceeded(**kwargs):
     recommended_action = 'Review the reference document for commands to validate disk usage'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#equipment-disk-limits'
 
-    usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
+    avail_regex = r"(?:^|,\s*)avail(?:\s+\(New:\s*|:\s*)(?P<value>\d+)(?:\)|(?=,|$))"
+    used_regex = r"(?:^|,\s*)used(?:\s+\(New:\s*|:\s*)(?P<value>\d+)(?:\)|(?=,|$))"
     f182x_api = 'faultInst.json'
     f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
     faults = icurl('class', f182x_api)
@@ -5854,11 +5860,14 @@ def equipment_disk_limits_exceeded(**kwargs):
         percent = "NA"
         attributes = faultInst['faultInst']['attributes']
 
-        usage_match = re.search(usage_regex, attributes['changeSet'])
-        if usage_match:
-            avail = int(usage_match.group('avail'))
-            used = int(usage_match.group('used'))
-            percent = round((used / (avail + used)) * 100)
+        avail_match = re.search(avail_regex, attributes['changeSet'])
+        used_match = re.search(used_regex, attributes['changeSet'])
+        if avail_match and used_match:
+            avail = int(avail_match.group('value'))
+            used = int(used_match.group('value'))
+            total = avail + used
+            if total:
+                percent = int(round((used / total) * 100))
 
         dn_match = re.search(node_regex, attributes['dn'])
         if dn_match:

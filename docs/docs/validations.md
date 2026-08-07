@@ -523,7 +523,7 @@ The script performs 2 different checks depending on the version you are running.
 For current versions below 6.1(3):
 
 - The script checks all APICs' class's object count for a subset of services (DMEs) via a file scan. 
-- If the count is found to be above `150*1000*1000`, then that class will be flagged for further investigation.
+- If the count is found to be above `1000*1000*1.5` (1,500,000), then that class will be flagged for further investigation.
 
 For current version is 6.1(3f):
 
@@ -1529,6 +1529,8 @@ Failure to do so may lead to outages during switch upgrades due to leaf nodes no
 This fault occurs when the disk usage of a partiton increases beyond its threshold.
 
 This fault also occurs when the MTS buffer memory usage increases beyond its threshold. /proc/isan/sw/mts/mem/stats is checked when this scenario occurs.
+
+The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
 
 Recommended Action:
 
@@ -2647,7 +2649,7 @@ The script checks if your upgrade is susceptible to this defect from both versio
 ### Nexus 950X FM or LC Might Fail to boot after reload
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
-Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are documented in [FN64251][39].
 
 The matching defect is [CSCvg26013][40].
 
@@ -2662,7 +2664,9 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
+If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+
+The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
 
 ### Stale Decommissioned Spine
@@ -2895,7 +2899,6 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [38]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/verified-scalability/cisco-aci-verified-scalability-guide-612.html
 [39]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
 [40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
-[41]: https://snvui.cisco.com/snv/FN64251
 [42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
 [43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
