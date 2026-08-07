@@ -84,6 +84,7 @@ test:integration:
     when: always
     paths:
       - $CI_PROJECT_DIR/tests/*.log
+      - $CI_PROJECT_DIR/tests/*.tgz
   cache:
     key:
       files:
