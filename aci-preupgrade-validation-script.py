@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.2.0-dev"
+SCRIPT_VERSION = "v4.2.0"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -5630,7 +5630,12 @@ def clock_signal_component_failure_check(**kwargs):
     result = PASS
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
-    recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251.\n\tSN String:\n\t'
+    recommended_action = (
+        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
+        'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
+        'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
+        'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
+    )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
 
     eqptFC_api = 'eqptFC.json'
@@ -5845,7 +5850,8 @@ def equipment_disk_limits_exceeded(**kwargs):
     recommended_action = 'Review the reference document for commands to validate disk usage'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#equipment-disk-limits'
 
-    usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
+    avail_regex = r"(?:^|,\s*)avail(?:\s+\(New:\s*|:\s*)(?P<value>\d+)(?:\)|(?=,|$))"
+    used_regex = r"(?:^|,\s*)used(?:\s+\(New:\s*|:\s*)(?P<value>\d+)(?:\)|(?=,|$))"
     f182x_api = 'faultInst.json'
     f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
     faults = icurl('class', f182x_api)
@@ -5854,11 +5860,14 @@ def equipment_disk_limits_exceeded(**kwargs):
         percent = "NA"
         attributes = faultInst['faultInst']['attributes']
 
-        usage_match = re.search(usage_regex, attributes['changeSet'])
-        if usage_match:
-            avail = int(usage_match.group('avail'))
-            used = int(usage_match.group('used'))
-            percent = round((used / (avail + used)) * 100)
+        avail_match = re.search(avail_regex, attributes['changeSet'])
+        used_match = re.search(used_regex, attributes['changeSet'])
+        if avail_match and used_match:
+            avail = int(avail_match.group('value'))
+            used = int(used_match.group('value'))
+            total = avail + used
+            if total:
+                percent = int(round((used / total) * 100))
 
         dn_match = re.search(node_regex, attributes['dn'])
         if dn_match:
@@ -6293,6 +6302,9 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
         in_61 = ver.newer_than("6.1(1a)") and ver.older_than("6.1(4h)")
         return in_60 or in_61
 
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
     pre_apic_upg = is_affected_source(cversion) and is_affected_target(tversion)  # Before APIC upgrade
     post_apic_upg = is_affected_target(cversion) and is_affected_target(tversion) and cversion.same_as(tversion)  # After APIC upgrade (and before switch)
 
@@ -6476,6 +6488,9 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     data = []
     recommended_action = "Contact Cisco TAC to remove any identified misconfigured 'mgmtRsInBStNode' objects"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
+    
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
     
     if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
         mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0")),or(eq(mgmtRsInBStNode.v6Addr,"::"),eq(mgmtRsInBStNode.v6Gw,"::")))')
@@ -6685,7 +6700,12 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
 
-    threshold = datetime.utcnow() - timedelta(hours=24)
+    try:
+        from datetime import timezone 
+        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24) 
+    except ImportError:
+        threshold = datetime.utcnow() - timedelta(hours=24) 
+
     for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
         attr = obj["dbgacEpgSummaryTask"]["attributes"]
         dn = attr.get("dn", "")
@@ -6700,6 +6720,81 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     if data:
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
+def infravlan_overlap_access_policy_check(tversion, **kwargs):
+    result = FAIL_UF
+    msg = ""
+    headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
+    unformatted_headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN", "VLAN Pool RN"]
+
+    data = []
+    unformatted_data = []
+    recommended_action = "Select a non-affected target version or contact Cisco TAC for Support before upgrade."
+    
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infravlan-overlap-access-policy-check"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if not (tversion.same_as("6.2(1g)") or (
+        not tversion.older_than("6.1(3f)") and not tversion.newer_than("6.1(5e)")
+    )):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    dn_regex1 = r'uni/infra/vlanns-\[.+\]-(static|dynamic)/from-\[vlan-\d+\]-to-\[vlan-\d+\]'
+
+    dn_regex2 = r'uni/vmmp-[^/]+/dom-[^/]+/.+/from-\[vlan-\d+\]-to-\[vlan-\d+\]'
+
+    infra_vlan = None
+    has_error = False
+    lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
+    for lldpInst in lldpInsts:
+        infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
+        if not infra_vlan_id:
+            continue
+        match = re.search(r'\d+', str(infra_vlan_id))
+        if match:
+            infra_vlan = int(match.group(0))
+            break
+
+    if infra_vlan is None:
+        return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
+
+    encap_blocks = icurl('class', 'fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,"external")')
+    for obj in encap_blocks:
+        blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
+        dn = blk_attr.get('dn', '')
+        rn = blk_attr.get('rn', '')
+        from_encap = blk_attr.get('from')
+        to_encap = blk_attr.get('to')
+
+        if not dn or not from_encap or not to_encap:
+            has_error = True
+        
+        try:
+            from_vlan = int(str(from_encap).split('-')[-1])
+            to_vlan = int(str(to_encap).split('-')[-1])
+        except (ValueError, TypeError):
+            has_error = True
+            continue
+
+        if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
+            row = [str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn]
+            if (re.search(dn_regex1, dn) or re.search(dn_regex2, dn)):
+                data.append(row)
+            else:
+                unformatted_data.append(row + [rn])
+
+    if not data and not unformatted_data:
+        result = PASS
+        if has_error:
+            result = ERROR
+            msg = "Overlap check for InfraVLAN {} could not be determined because one or more VLAN pool blocks contain improper data or Error while fetching data.".format(infra_vlan)
+
+
+    return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 @check_wrapper(check_title="APIC OOB Connectivity check")
@@ -6959,8 +7054,8 @@ class CheckManager:
         wred_affected_model_check,
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
+        infravlan_overlap_access_policy_check,
         apic_oob_connectivity_check,
-
     ]
     ssh_checks = [
         # General
