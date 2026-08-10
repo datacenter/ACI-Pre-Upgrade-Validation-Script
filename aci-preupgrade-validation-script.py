@@ -22,7 +22,7 @@ from six.moves import input
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict, OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
 from argparse import ArgumentParser
 from itertools import chain
 import threading
@@ -6726,11 +6726,13 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
 
             try:
                 ip_formatted = '[{}]'.format(ip) if ':' in ip else ip
-                if subprocess.call(
-                    'curl --max-time 5 -k -s -o /dev/null https://{}:{} 2>/dev/null'.format(ip_formatted, port),
-                    shell=True
-                ) != 0:
-                    data.append([node_id, ip, port, "Unreachable"])
+                with open(os.devnull, 'wb') as devnull:
+                    if subprocess.call(
+                        ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull,
+                         'https://{}:{}'.format(ip_formatted, port)],
+                        stderr=devnull
+                    ) != 0:
+                        data.append([node_id, ip, port, "Unreachable"])
             except Exception as e:
                 log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
                 data.append([node_id, ip, port, "Error"])
