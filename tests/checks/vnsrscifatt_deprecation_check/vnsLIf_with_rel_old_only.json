@@ -1,0 +1,38 @@
+[
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-user-11/lDevVip-test/lIf-intf-cons",
+        "name": "intf-cons"
+      },
+      "children": [
+        {
+          "vnsRsCIfAtt": {
+            "attributes": {
+              "dn": "uni/tn-user-11/lDevVip-test/lIf-intf-cons/rscIfAtt-[uni/tn-user-11/lDevVip-test/cDev-cdev/cIf-[cons]]",
+              "tDn": "uni/tn-user-11/lDevVip-test/cDev-cdev/cIf-[cons]"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-user-11/lDevVip-test/lIf-intf-prov",
+        "name": "intf-prov"
+      },
+      "children": [
+        {
+          "vnsRsCIfAtt": {
+            "attributes": {
+              "dn": "uni/tn-user-11/lDevVip-test/lIf-intf-prov/rscIfAtt-[uni/tn-user-11/lDevVip-test/cDev-cdev/cIf-[prov]]",
+              "tDn": "uni/tn-user-11/lDevVip-test/cDev-cdev/cIf-[prov]"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

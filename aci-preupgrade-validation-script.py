@@ -51,6 +51,7 @@ POST = 'POST UPGRADE CHECK REQUIRED'
 NA = 'N/A'
 # message constants
 TVER_MISSING = "Target version not supplied. Skipping."
+CVER_MISSING = "Current version not supplied. Skipping."
 VER_NOT_AFFECTED = "Version not affected."
 # regex constants
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
@@ -6701,10 +6702,10 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
 
     try:
-        from datetime import timezone 
-        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24) 
+        from datetime import timezone
+        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
     except ImportError:
-        threshold = datetime.utcnow() - timedelta(hours=24) 
+        threshold = datetime.utcnow() - timedelta(hours=24)
 
     for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
         attr = obj["dbgacEpgSummaryTask"]["attributes"]
@@ -6795,6 +6796,277 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
 
 
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="vnsRsCIfAtt Deprecation Check")
+def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
+    result = PASS
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnsrscifatt-deprecation-check"
+
+    lif_dn_regex = r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)$"
+    ldeviflif_regex = r"^uni/tn-[^/]+/lDevIf-\[(?P<base>uni/tn-[^\]]+/lDevVip-[^\]]+)\]/lDevIfLIf-(?P<lif>[^/]+)$"
+    tn_regex = r"^uni/tn-([^/]+)/"
+
+    def device_dn_from_lif_match(lif_dn_match):
+        return "uni/tn-{}/lDevVip-{}".format(lif_dn_match.group("tenant"), lif_dn_match.group("device"))
+
+    def cif_name_from_lif_name(lif_name):
+        # LIF names may carry a numeric suffix for multi-connector graphs (e.g. "intf-cons-1"),
+        # so the cons/prov role must be matched explicitly rather than taking the last "-" token.
+        role_match = re.search(r"-(cons|prov)(?:-\d+)?$", lif_name)
+        if role_match:
+            return role_match.group(1)
+        return lif_name.rsplit("-", 1)[-1]
+
+    def build_row(lif_dn, lif_dn_match):
+        lif_name = lif_dn_match.group("lif") if lif_dn_match else ""
+        return [
+            lif_dn_match.group("tenant") if lif_dn_match else "",
+            lif_dn_match.group("device") if lif_dn_match else "",
+            lif_name,
+            cif_name_from_lif_name(lif_name),
+            lif_dn,
+        ]
+
+    def safe_extract_attrs(fn):
+        try:
+            return fn()
+        except (KeyError, TypeError, AttributeError):
+            return None
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+    if tversion.older_than("6.0(3d)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+    if not cversion:
+        return Result(result=MANUAL, msg=CVER_MISSING, doc_url=doc_url)
+
+    post_cifatt_delete = cversion.same_as("6.0(3d)") or cversion.newer_than("6.0(3d)")
+    if post_cifatt_delete:
+        headers = ["Tenant", "Device Name", "Cluster Interface"]
+        recommended_action = "Please review the concrete interface attachments under the flagged device cluster interfaces and reattach them using the UI: Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
+    else:
+        headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
+        recommended_action = "Please reattach concrete interfaces again using the UI (without deleting the existing attachment objects): Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
+
+    # ── Step 1: Collect deployed service-graph LIF DNs ──────────────────────
+    # Build (contract_name, graph_name) keys from applied vnsGraphInst objects
+    graph_keys = set()
+    for entry in icurl("class", "vnsGraphInst.json?rsp-prop-include=config-only") or []:
+        attrs = safe_extract_attrs(lambda: (
+            entry["vnsGraphInst"]["attributes"]["ctrctDn"].strip(),
+            entry["vnsGraphInst"]["attributes"]["graphDn"].strip(),
+        ))
+        if attrs is None:
+            continue
+        contract_dn, graph_dn = attrs
+        contract_match = re.search(r"/brc-([^/]+)$", contract_dn)
+        graph_match = re.search(r"/AbsGraph-([^/]+)$", graph_dn)
+        if contract_match and graph_match:
+            graph_keys.add((contract_match.group(1), graph_match.group(1)))
+
+    lif_dns = set()
+    lif_source_tenants = {}    # lif_dn -> set(contract tenants) for implicit-object detection
+    dev_source_tenants = {}    # device-prefix DN -> set(contract tenants)
+
+    ldev_ctx_query = (
+        "vnsLDevCtx.json?rsp-prop-include=config-only"
+        "&rsp-subtree=full"
+        "&rsp-subtree-class=vnsLIfCtx,vnsRsLIfCtxToLIf"
+        "&rsp-subtree-include=required"
+    )
+    for entry in icurl("class", ldev_ctx_query) or []:
+        parsed = safe_extract_attrs(lambda: (
+            entry["vnsLDevCtx"],
+            entry["vnsLDevCtx"]["attributes"]["ctrctNameOrLbl"].strip(),
+            entry["vnsLDevCtx"]["attributes"]["graphNameOrLbl"].strip(),
+            entry["vnsLDevCtx"]["attributes"]["dn"].strip(),
+        ))
+        if parsed is None:
+            continue
+        ldev_ctx_mo, contract, graph, ctx_dn = parsed
+
+        ctx_tenant_match = re.search(tn_regex, ctx_dn)
+        ctx_tenant = ctx_tenant_match.group(1) if ctx_tenant_match else ""
+
+        # Filter to contexts matching an active graph (fall back to all if no graphs found)
+        if graph_keys:
+            c_norm = contract.split("-", 1)[-1] if "-" in contract else contract
+            g_norm = graph[:-9] if graph.endswith("-imported") else graph
+            if not any((c, g) in graph_keys for c in (contract, c_norm) for g in (graph, g_norm)):
+                continue
+        elif not contract or not graph:
+            continue  # Fallback mode: skip incomplete contexts
+
+        # DFS through vnsLIfCtx children to collect vnsRsLIfCtxToLIf references
+        stack = [ldev_ctx_mo]
+        while stack:
+            current_ctx = stack.pop()
+            for child in current_ctx.get("children", []) or []:
+                if child.get("vnsLIfCtx"):
+                    stack.append(child["vnsLIfCtx"])
+                lif_relation = child.get("vnsRsLIfCtxToLIf")
+                if not lif_relation:
+                    continue
+                parsed = safe_extract_attrs(lambda: (lif_relation["attributes"].get("tCl", ""), lif_relation["attributes"]["tDn"].strip()))
+                if parsed is None:
+                    continue
+                target_class, target_dn = parsed
+                if not target_dn:
+                    continue
+
+                if target_class == "vnsLIf" or re.search(lif_dn_regex, target_dn):
+                    lif_dns.add(target_dn)
+                    lif_dn_match = re.search(lif_dn_regex, target_dn)
+                    if lif_dn_match and ctx_tenant:
+                        dev_dn = device_dn_from_lif_match(lif_dn_match)
+                        lif_source_tenants.setdefault(target_dn, set()).add(ctx_tenant)
+                        dev_source_tenants.setdefault(dev_dn, set()).add(ctx_tenant)
+                elif target_class == "vnsLDevIfLIf" or ("/lDevIf-[" in target_dn and "/lDevIfLIf-" in target_dn):
+                    ldeviflif_match = re.search(ldeviflif_regex, target_dn)
+                    if ldeviflif_match:
+                        converted = "{}/lIf-{}".format(ldeviflif_match.group("base"), ldeviflif_match.group("lif"))
+                        lif_dns.add(converted)
+                        if ctx_tenant:
+                            lif_source_tenants.setdefault(converted, set()).add(ctx_tenant)
+                            dev_source_tenants.setdefault(ldeviflif_match.group("base"), set()).add(ctx_tenant)
+
+    # Expand to all LIFs under the same device clusters
+    dev_prefixes = set()
+    for lif_dn in lif_dns:
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        if lif_dn_match:
+            dev_prefixes.add(device_dn_from_lif_match(lif_dn_match))
+
+    # One consolidated collection for vnsLIf + vnsRsCIfAtt + vnsRsCIfAttN.
+    vns_lif_with_rel_query = (
+        "vnsLIf.json?rsp-prop-include=config-only"
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsCIfAtt,vnsRsCIfAttN"
+    )
+    vns_lif_mos = icurl("class", vns_lif_with_rel_query) or []
+
+    vnsRsCIfAtts = []
+    vnsRsCIfAttNs = []
+    lifs_with_new_relation = set()
+
+    for entry in vns_lif_mos:
+        parsed = safe_extract_attrs(lambda: (entry["vnsLIf"], entry["vnsLIf"]["attributes"]["dn"].strip()))
+        if parsed is None:
+            continue
+        lif_mo, lif_dn = parsed
+
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        if lif_dn_match:
+            dev_dn = device_dn_from_lif_match(lif_dn_match)
+            if dev_dn in dev_prefixes:
+                lif_dns.add(lif_dn)
+                if dev_source_tenants.get(dev_dn):
+                    lif_source_tenants.setdefault(lif_dn, set()).update(dev_source_tenants[dev_dn])
+
+        for child in lif_mo.get("children", []) or []:
+            if not isinstance(child, dict):
+                continue
+            if child.get("vnsRsCIfAtt"):
+                vnsRsCIfAtts.append(child)
+            if child.get("vnsRsCIfAttN"):
+                vnsRsCIfAttNs.append(child)
+                lifs_with_new_relation.add(lif_dn)
+
+    if not lif_dns:
+        return Result(result=PASS, msg="No deployed service graph interfaces found.", doc_url=doc_url)
+
+    # ── Step 2: Missing vnsRsCIfAttN under deployed LIFs (from consolidated data) ──
+
+    missing_rscifattn_rows = []
+    has_implicit_objects = False
+    for lif_dn in sorted(lif_dns):
+        if lif_dn in lifs_with_new_relation:
+            continue
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        missing_rscifattn_rows.append(build_row(lif_dn, lif_dn_match))
+        if post_cifatt_delete and lif_dn_match and lif_dn_match.group("tenant") == "common":
+            if any(t and t != "common" for t in lif_source_tenants.get(lif_dn, set())):
+                has_implicit_objects = True
+
+    # ── Step 3: Return results ───────────────────────────────────────────────
+
+    if post_cifatt_delete:
+        if missing_rscifattn_rows:
+            missing_rscifattn_rows.sort(key=lambda r: r[-1])
+            msg = "Graph is rendered with implicit objects" if has_implicit_objects else "vnsRsCIfAttN is missing under deployed L4-L7 cluster interfaces."
+            return Result(result=FAIL_O, msg=msg, headers=headers, data=[[r[0], r[1], r[2]] for r in missing_rscifattn_rows], recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="All deployed service graph interfaces have vnsRsCIfAttN.", doc_url=doc_url)
+
+    # version not having new object path reuses relation objects collected above.
+
+    if missing_rscifattn_rows:
+        missing_rscifattn_rows.sort(key=lambda r: r[-1])
+        msg = "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency." if not vnsRsCIfAtts and not vnsRsCIfAttNs else ""
+        return Result(result=FAIL_O, msg=msg, headers=headers, data=missing_rscifattn_rows, recommended_action=recommended_action, doc_url=doc_url)
+
+    if not vnsRsCIfAtts and not vnsRsCIfAttNs:
+        return Result(result=FAIL_O, msg="Both vnsRsCIfAtt and vnsRsCIfAttN are missing. Reattach concrete interface mappings before upgrade.", headers=headers, data=[], recommended_action=recommended_action, doc_url=doc_url)
+
+    if not vnsRsCIfAtts:
+        return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
+
+    # Build new-object lookup sets in a single pass over vnsRsCIfAttNs
+    new_lif_dns = set(lifs_with_new_relation)   # LIF DNs covered by vnsRsCIfAttN (for coverage check)
+    new_dn_keys = set()   # New DNs rewritten as old-style keys (for consistency check)
+    for relation_mo in vnsRsCIfAttNs:
+        relation_dn = safe_extract_attrs(lambda: relation_mo["vnsRsCIfAttN"]["attributes"]["dn"].strip())
+        if relation_dn is None:
+            continue
+        if not relation_dn:
+            continue
+        lif_parent_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/rscIfAttN-\[", relation_dn)
+        if lif_parent_match:
+            new_lif_dns.add(lif_parent_match.group(1))
+        new_dn_keys.add(relation_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1))
+
+    # Secondary coverage check: any deployed LIF not yet covered by a vnsRsCIfAttN
+    data = []
+    for lif_dn in sorted(lif_dns):
+        if lif_dn in new_lif_dns:
+            continue
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        data.append(build_row(lif_dn, lif_dn_match))
+    if data:
+        return Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    # Consistency check: each old vnsRsCIfAtt must have a matching new vnsRsCIfAttN
+    data = []
+    for old_relation_mo in vnsRsCIfAtts:
+        old_dn = safe_extract_attrs(lambda: old_relation_mo["vnsRsCIfAtt"]["attributes"]["dn"].strip())
+        if old_dn is None:
+            continue
+        if not old_dn:
+            continue
+        old_lif_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/", old_dn)
+        old_lif = old_lif_match.group(1) if old_lif_match else ""
+        if lif_dns and old_lif and old_lif not in lif_dns:
+            continue
+        if old_dn in new_dn_keys:
+            continue
+        old_relation_match = re.search(
+            r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)/"
+            r"rscIfAtt-\[.*?/cIf-\[(?P<cif>[^\]]+)\]\]",
+            old_dn,
+        )
+        data.append([
+            old_relation_match.group("tenant") if old_relation_match else "",
+            old_relation_match.group("device") if old_relation_match else "",
+            old_relation_match.group("lif") if old_relation_match else "",
+            old_relation_match.group("cif") if old_relation_match else "",
+            old_dn,
+        ])
+
+    data.sort(key=lambda r: r[-1])
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -6889,7 +7161,7 @@ class CheckManager:
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
         svccore_excessive_data_check,
-
+        
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
@@ -6973,7 +7245,7 @@ class CheckManager:
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,
-        
+        vnsRsCIfAtt_deprecation_check,
     ]
     ssh_checks = [
         # General
