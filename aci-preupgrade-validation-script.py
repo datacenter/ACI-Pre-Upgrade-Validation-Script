@@ -6129,7 +6129,18 @@ def apic_database_size_check(cversion, **kwargs):
                 for attempt in range(1, counter_read_attempts + 1):
                     try:
                         class_stats = run_cmd(collect_stats_cmd, splitlines=True)
-                        break
+                        if class_stats:
+                            break
+                        if attempt < counter_read_attempts:
+                            log.warning(
+                                'Counter read returned no data for APIC %s %s '
+                                '(attempt %s/%s)',
+                                id,
+                                dme,
+                                attempt,
+                                counter_read_attempts,
+                            )
+                            time.sleep(counter_read_retry_delay)
                     except subprocess.CalledProcessError as error:
                         error_output = error.output
                         if isinstance(error_output, bytes):

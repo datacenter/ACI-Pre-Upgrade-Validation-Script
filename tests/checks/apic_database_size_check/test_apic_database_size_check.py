@@ -464,6 +464,39 @@ def test_transient_counter_read_succeeds_on_retry(
     assert sleep_calls.count(1) == 4
 
 
+def test_empty_counter_read_succeeds_on_retry(
+    run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs, monkeypatch
+):
+    icurl_outputs.clear()
+    icurl_outputs.update({
+        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
+    })
+    successful_outputs = {
+        apic2_vmm_cat: mitcounters_neg,
+        apic2_pm_cat: mitcounters_neg,
+        apic2_evm_cat: mitcounters_neg,
+        apic2_pd_cat: mitcounters_neg,
+    }
+    call_counts = {}
+    sleep_calls = []
+
+    def transient_run_cmd(cmd, splitlines=False):
+        call_counts[cmd] = call_counts.get(cmd, 0) + 1
+        if call_counts[cmd] == 1:
+            return []
+        output = successful_outputs[cmd]
+        return output.splitlines() if splitlines else output
+
+    monkeypatch.setattr(script, "run_cmd", transient_run_cmd)
+    monkeypatch.setattr(script.time, "sleep", sleep_calls.append)
+
+    result = run_check(cversion=script.AciVersion("6.0(8f)"))
+
+    assert result.result == script.PASS
+    assert all(call_count == 2 for call_count in call_counts.values())
+    assert sleep_calls.count(1) == 4
+
+
 def test_object_counters_are_sorted_before_top_four_and_thresholded(
     run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs
 ):
