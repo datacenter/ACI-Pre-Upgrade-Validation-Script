@@ -84,6 +84,7 @@ test:py38:
     - pip install -r requirements.txt
   artifacts:
     when: always
+    expire_in: 7 days
     paths:
       - $CI_PROJECT_DIR/tests/*.log
       - $CI_PROJECT_DIR/tests/*.tgz
