@@ -3736,6 +3736,43 @@ def vpc_paired_switches_check(vpc_node_ids, fabric_nodes, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+# APIC 6.1(5) release notes, verified 2026-08-10.
+CIMC_RELEASE_NOTE_SUPPORT_615_M5 = (
+    "4.3(2.260007)",
+    "4.3(2.250016)",
+    "4.3(2.240077)",
+    "4.3(2.240009)",
+    "4.3(2.230207)",
+    "4.2(3e)",
+    "4.2(3b)",
+    "4.2(2a)",
+    "4.1(3m)",
+    "4.1(3f)",
+    "4.1(3d)",
+    "4.1(3c)",
+)
+
+CIMC_RELEASE_NOTE_SUPPORT_615_M6 = (
+    "6.0(2.260044)",
+    "6.0(1.250192)",
+    "6.0(1.250131)",
+    "4.3(6.250053)",
+    "4.3(4.252002)",
+    "4.3(4.241063)",
+    "4.3(2.240009)",
+    "4.3(2.230207)",
+    "4.2(3e)",
+    "4.2(3b)",
+)
+
+CIMC_RELEASE_NOTE_SUPPORT = {
+    ("6.1(5)", "apicl3"): CIMC_RELEASE_NOTE_SUPPORT_615_M5,
+    ("6.1(5)", "apicm3"): CIMC_RELEASE_NOTE_SUPPORT_615_M5,
+    ("6.1(5)", "apicl4"): CIMC_RELEASE_NOTE_SUPPORT_615_M6,
+    ("6.1(5)", "apicm4"): CIMC_RELEASE_NOTE_SUPPORT_615_M6,
+}
+
+
 @check_wrapper(check_title="APIC CIMC Compatibility")
 def cimc_compatibilty_check(tversion, cversion, **kwargs):
     result = FAIL_UF
@@ -3780,10 +3817,8 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     if compatMo and recommended_cimc:
                         if not is_firstver_gt_secondver(current_cimc, "3.0(3a)"):
                             warning = "Multi-step Upgrade may be required, check UCS CIMC Matrix."
-                        release_note_supported = (
-                            tversion.simple_version == "6.1(5)"
-                            and model in ("apicl3", "apicm3", "apicl4", "apicm4")
-                            and current_cimc == "4.2(3e)"
+                        release_note_supported = current_cimc in CIMC_RELEASE_NOTE_SUPPORT.get(
+                            (tversion.simple_version, model), ()
                         )
                         if not release_note_supported and not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]

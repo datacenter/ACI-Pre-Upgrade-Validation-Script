@@ -32,6 +32,40 @@ release_note_supported_615_outputs = {
     compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
 }
 
+release_note_model_data = {
+    "apicl3": ("APIC-SERVER-L3", compatRsSuppHwL3_api, "compatRsSuppHw_615_M5.json"),
+    "apicm3": ("APIC-SERVER-M3", compatRsSuppHwM3_api, "compatRsSuppHw_615_M5.json"),
+    "apicl4": ("APIC-SERVER-L4", compatRsSuppHwL4_api, "compatRsSuppHw_615_M6.json"),
+    "apicm4": ("APIC-SERVER-M4", compatRsSuppHwM4_api, "compatRsSuppHw_615_M6.json"),
+}
+
+
+def release_note_supported_outputs(model, cimc_version):
+    apic_model, compat_api, compat_fixture = release_note_model_data[model]
+    return {
+        eqptCh_api: [
+            {
+                "eqptCh": {
+                    "attributes": {
+                        "cimcVersion": cimc_version,
+                        "descr": apic_model,
+                        "dn": "topology/pod-1/node-1/sys/ch",
+                        "model": apic_model,
+                    }
+                }
+            }
+        ],
+        compat_api: read_data(dir, compat_fixture),
+    }
+
+
+release_note_supported_cases = [
+    release_note_supported_outputs(model, cimc_version)
+    for (target, model), cimc_versions in script.CIMC_RELEASE_NOTE_SUPPORT.items()
+    if target == "6.1(5)"
+    for cimc_version in cimc_versions
+]
+
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, cversion, expected_result",
     [
@@ -137,3 +171,12 @@ release_note_supported_615_outputs = {
 def test_logic(run_check, mock_icurl, tversion, cversion, expected_result):
     result = run_check(tversion=script.AciVersion(tversion), cversion=script.AciVersion(cversion) if cversion is not None else None)
     assert result.result == expected_result
+
+
+@pytest.mark.parametrize("icurl_outputs", release_note_supported_cases)
+def test_release_note_supported_versions(run_check, mock_icurl):
+    result = run_check(
+        tversion=script.AciVersion("6.1(5e)"),
+        cversion=script.AciVersion("5.2(8g)"),
+    )
+    assert result.result == script.PASS
