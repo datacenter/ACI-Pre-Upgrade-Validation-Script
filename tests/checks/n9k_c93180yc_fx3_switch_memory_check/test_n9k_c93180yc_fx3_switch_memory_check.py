@@ -80,3 +80,102 @@ def test_logic(run_check, mock_icurl, fabric_nodes, expected_result, expected_ms
         assert result.data == expected_data
     else:
         assert result.unformatted_data == expected_data
+
+
+# --- Batch query coverage ---
+# The check queries at most `batch_size` (15) node IDs per icurl call to stay
+# under APIC's 20 filter-expression limit, with headroom in case the and()/or()
+# wrappers also count. These helpers/tests build queries the same way the check
+# does, so they mirror the real query strings.
+BATCH_SIZE = 15
+
+
+def _fx3_fabric_nodes(node_ids):
+    return [
+        {
+            "fabricNode": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-{}".format(nid),
+                    "id": nid,
+                    "name": "leaf{}".format(nid),
+                    "model": "N9K-C93180YC-FX3",
+                    "role": "leaf",
+                }
+            }
+        }
+        for nid in node_ids
+    ]
+
+
+def _batch_query(node_ids, min_memory_kb=32000000):
+    node_filter = 'or({})'.format(','.join(
+        'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in node_ids
+    ))
+    return 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
+        node_filter, min_memory_kb
+    )
+
+
+def _proc_mem_usage(node_id, total_kb):
+    return [
+        {
+            "procMemUsage": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-{}/sys/procmem/memusage-sup".format(node_id),
+                    "Modname": "sup",
+                    "Total": str(total_kb),
+                }
+            }
+        }
+    ]
+
+
+def test_batch_at_boundary_issues_single_query(run_check, monkeypatch):
+    node_ids = [str(nid) for nid in range(101, 101 + BATCH_SIZE)]  # exactly 15 nodes
+    fabric_nodes = _fx3_fabric_nodes(node_ids)
+    query = _batch_query(node_ids)
+
+    calls = []
+
+    def _mock_icurl(apitype, q, page=0, page_size=100000):
+        calls.append(q)
+        assert q == query
+        return []
+
+    monkeypatch.setattr(script, "icurl", _mock_icurl)
+
+    result = run_check(fabric_nodes=fabric_nodes)
+
+    assert len(calls) == 1
+    assert result.result == script.PASS
+
+
+def test_batch_split_across_two_queries(run_check, monkeypatch):
+    # 20 affected nodes -> batch1 has 15 IDs, batch2 has the remaining 5.
+    node_ids = [str(nid) for nid in range(101, 121)]
+    fabric_nodes = _fx3_fabric_nodes(node_ids)
+    batch1_ids, batch2_ids = node_ids[:BATCH_SIZE], node_ids[BATCH_SIZE:]
+    query1, query2 = _batch_query(batch1_ids), _batch_query(batch2_ids)
+
+    # One low-memory node in each batch to confirm results from both queries are merged.
+    responses = {
+        query1: _proc_mem_usage(batch1_ids[0], 16000000),
+        query2: _proc_mem_usage(batch2_ids[-1], 16000000),
+    }
+    calls = []
+
+    def _mock_icurl(apitype, q, page=0, page_size=100000):
+        calls.append(q)
+        return responses[q]
+
+    monkeypatch.setattr(script, "icurl", _mock_icurl)
+
+    result = run_check(fabric_nodes=fabric_nodes)
+
+    assert sorted(calls) == sorted([query1, query2])
+    assert result.result == script.FAIL_O
+    expected_data = [
+        [batch1_ids[0], "leaf{}".format(batch1_ids[0]), "N9K-C93180YC-FX3", 16.0],
+        [batch2_ids[-1], "leaf{}".format(batch2_ids[-1]), "N9K-C93180YC-FX3", 16.0],
+    ]
+    assert result.data == expected_data

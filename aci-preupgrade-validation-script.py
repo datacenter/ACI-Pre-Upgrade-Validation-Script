@@ -6702,18 +6702,24 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
         msg = 'No N9K-C93180YC-FX3 switches found. Skipping.'
     else:
         node_ids = [node['fabricNode']['attributes']['id'] for node in affected_nodes]
-        node_filter = 'or({})'.format(','.join(
-            'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in node_ids
-        ))
-        query = 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
-            node_filter, min_memory_kb
-        )
-        proc_mem_mos = icurl('class', query)
-
         node_id_to_attrs = {
             node['fabricNode']['attributes']['id']: node['fabricNode']['attributes']
             for node in affected_nodes
         }
+
+        # APIC caps query-target-filter at 20 expressions total; use 16 per batch to
+        # leave headroom in case and()/or() wrappers also count toward that limit.
+        batch_size = 16
+        proc_mem_mos = []
+        for i in range(0, len(node_ids), batch_size):
+            batch_ids = node_ids[i:i + batch_size]
+            node_filter = 'or({})'.format(','.join(
+                'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in batch_ids
+            ))
+            query = 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
+                node_filter, min_memory_kb
+            )
+            proc_mem_mos += icurl('class', query)
 
         for memory_mo in proc_mem_mos:
             attrs = memory_mo['procMemUsage']['attributes']
