@@ -22,7 +22,7 @@ from six.moves import input
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict, OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
 from argparse import ArgumentParser
 from itertools import chain
 import threading
@@ -38,7 +38,7 @@ import sys
 import os
 import re
 
-SCRIPT_VERSION = "v4.2.0-dev"
+SCRIPT_VERSION = "v4.2.0"
 DEFAULT_TIMEOUT = 600  # sec
 # result constants
 DONE = 'DONE'
@@ -5666,7 +5666,12 @@ def clock_signal_component_failure_check(**kwargs):
     result = PASS
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
-    recommended_action = 'Run the SN string through the Serial Number Validation tool (linked within doc url) to check for FN64251.\n\tSN String:\n\t'
+    recommended_action = (
+        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
+        'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
+        'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
+        'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
+    )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nexus-950x-fm-or-lc-might-fail-to-boot-after-reload'
 
     eqptFC_api = 'eqptFC.json'
@@ -5881,7 +5886,8 @@ def equipment_disk_limits_exceeded(**kwargs):
     recommended_action = 'Review the reference document for commands to validate disk usage'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#equipment-disk-limits'
 
-    usage_regex = r"avail \(New: (?P<avail>\d+)\).+used \(New: (?P<used>\d+)\)"
+    avail_regex = r"(?:^|,\s*)avail(?:\s+\(New:\s*|:\s*)(?P<value>\d+)(?:\)|(?=,|$))"
+    used_regex = r"(?:^|,\s*)used(?:\s+\(New:\s*|:\s*)(?P<value>\d+)(?:\)|(?=,|$))"
     f182x_api = 'faultInst.json'
     f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.code,"F1821"),eq(faultInst.code,"F1822"))'
     faults = icurl('class', f182x_api)
@@ -5890,11 +5896,14 @@ def equipment_disk_limits_exceeded(**kwargs):
         percent = "NA"
         attributes = faultInst['faultInst']['attributes']
 
-        usage_match = re.search(usage_regex, attributes['changeSet'])
-        if usage_match:
-            avail = int(usage_match.group('avail'))
-            used = int(usage_match.group('used'))
-            percent = round((used / (avail + used)) * 100)
+        avail_match = re.search(avail_regex, attributes['changeSet'])
+        used_match = re.search(used_regex, attributes['changeSet'])
+        if avail_match and used_match:
+            avail = int(avail_match.group('value'))
+            used = int(used_match.group('value'))
+            total = avail + used
+            if total:
+                percent = int(round((used / total) * 100))
 
         dn_match = re.search(node_regex, attributes['dn'])
         if dn_match:
@@ -6137,7 +6146,10 @@ def apic_database_size_check(cversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-database-size'
 
     dme_svc_list = ['vmmmgr', 'policymgr', 'eventmgr', 'policydist']
+    counter_read_attempts = 3
+    counter_read_retry_delay = 1
     unique_list = {}
+    collection_errors = []
     apic_id_to_name = {}
     apic_node_mo = icurl('class', 'infraWiNode.json')
     for apic in apic_node_mo:
@@ -6155,15 +6167,88 @@ def apic_database_size_check(cversion, **kwargs):
         for dme in dme_svc_list:
             for id in apic_id_to_name:
                 apic_hostname = apic_id_to_name[id]
-                collect_stats_cmd = 'cat /debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo | grep -v ALL | sort -rn -k3'
-                top_class_stats = run_cmd(collect_stats_cmd, splitlines=True)
+                counter_file = '/debug/'+apic_hostname+'/'+dme+'/mitmocounters/mo'
+                collect_stats_cmd = 'cat ' + counter_file + ' 2>&1'
+                class_stats = None
+                final_error = None
+                for attempt in range(1, counter_read_attempts + 1):
+                    try:
+                        class_stats = run_cmd(collect_stats_cmd, splitlines=True)
+                        if class_stats:
+                            break
+                        if attempt < counter_read_attempts:
+                            log.warning(
+                                'Counter read returned no data for APIC %s %s '
+                                '(attempt %s/%s)',
+                                id,
+                                dme,
+                                attempt,
+                                counter_read_attempts,
+                            )
+                            time.sleep(counter_read_retry_delay)
+                    except subprocess.CalledProcessError as error:
+                        error_output = error.output
+                        if isinstance(error_output, bytes):
+                            error_output = error_output.decode('utf-8', 'replace')
+                        final_error = (error_output or str(error)).strip()
+                        if attempt < counter_read_attempts:
+                            log.warning(
+                                'Counter read failed for APIC %s %s '
+                                '(attempt %s/%s): %s',
+                                id,
+                                dme,
+                                attempt,
+                                counter_read_attempts,
+                                final_error,
+                            )
+                            time.sleep(counter_read_retry_delay)
 
-                for svc_stats in top_class_stats[:4]:
-                    if ":" in svc_stats:
-                        class_name = svc_stats.split(":")[0].strip()
-                        mo_count = svc_stats.split(":")[1].strip()
-                        if int(mo_count) > 1000*1000*1.5:
-                            unique_list[class_name] = {"id": id, "dme": dme, "checked_val": mo_count}
+                if class_stats is None:
+                    collection_errors.append([
+                        id,
+                        dme,
+                        'Counter file is unavailable after %s attempts: %s' % (
+                            counter_read_attempts,
+                            final_error,
+                        ),
+                    ])
+                    continue
+
+                parsed_class_stats = []
+                malformed_stats = False
+                for stats in class_stats:
+                    stats = stats.strip()
+                    if not stats or 'ALL' in stats:
+                        continue
+                    if ':' not in stats:
+                        malformed_stats = True
+                        continue
+                    class_name, mo_count = stats.split(':', 1)
+                    class_name = class_name.strip()
+                    if not class_name:
+                        malformed_stats = True
+                        continue
+                    try:
+                        mo_count = int(mo_count.strip())
+                    except ValueError:
+                        malformed_stats = True
+                        continue
+                    parsed_class_stats.append((mo_count, class_name))
+
+                if malformed_stats:
+                    collection_errors.append([id, dme, 'Counter data is malformed'])
+                if not parsed_class_stats and not malformed_stats:
+                    collection_errors.append([id, dme, 'Counter file is missing or empty'])
+                    continue
+
+                top_class_stats = sorted(parsed_class_stats, reverse=True)
+                for mo_count, class_name in top_class_stats[:4]:
+                    if mo_count > 1000*1000*1.5:
+                        unique_list[class_name] = {
+                            "id": id,
+                            "dme": dme,
+                            "checked_val": str(mo_count),
+                        }
     else:
         headers = ["APIC ID", "DME", "Shard", "Size"]
         recommended_action = 'Contact Cisco TAC to investigate all flagged large DB sizes'
@@ -6190,6 +6275,21 @@ def apic_database_size_check(cversion, **kwargs):
             dme = details['dme']
             checked_val = details['checked_val']
             data.append([apic_id, dme, unique_key, checked_val])
+
+    if collection_errors:
+        return Result(
+            result=ERROR,
+            msg='Unable to collect APIC database object counters',
+            headers=['APIC ID', 'DME', 'Collection Error'],
+            data=collection_errors,
+            unformatted_headers=headers,
+            unformatted_data=data,
+            recommended_action=(
+                'Retry the check. Contact Cisco TAC to investigate any flagged '
+                'high object counts or persistent collection errors.'
+            ),
+            doc_url=doc_url,
+        )
 
     if data:
         result = FAIL_UF
@@ -6329,6 +6429,9 @@ def rogue_ep_coop_exception_mac_check(cversion, tversion, **kwargs):
         in_61 = ver.newer_than("6.1(1a)") and ver.older_than("6.1(4h)")
         return in_60 or in_61
 
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    
     pre_apic_upg = is_affected_source(cversion) and is_affected_target(tversion)  # Before APIC upgrade
     post_apic_upg = is_affected_target(cversion) and is_affected_target(tversion) and cversion.same_as(tversion)  # After APIC upgrade (and before switch)
 
@@ -6440,6 +6543,59 @@ def apic_storage_inode_check(**kwargs):
     return Result(result=result, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Switch RTC Battery Voltage (F2421 equipment-diags-failed)")
+def rtc_battery_voltage_low_check(**kwargs):
+    result = FAIL_O
+    headers = ['Fault', 'Pod', 'Node', 'Supervisor', 'Severity', 'Lifecycle']
+    data = []
+    unformatted_headers = ['Fault', 'Fault DN', 'Description', 'Severity', 'Lifecycle']
+    unformatted_data = []
+    recommended_action = 'Contact Cisco TAC to replace the RTC battery before upgrading or power cycling the affected switch'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-rtc-battery-voltage'
+    dn_regex = node_regex + r'/.+/supslot-(?P<slot>\d+)/sup\]/fault-F2421$'
+    fault_reason = 'The RTC battery voltage is low'
+    fault_api = 'faultInst.json?query-target-filter=eq(faultInst.code,"F2421")'
+
+    faultInsts = icurl('class', fault_api)
+    for faultInst in faultInsts:
+        attributes = faultInst['faultInst']['attributes']
+        lc = attributes['lc']
+        if lc not in ['raised', 'soaking']:
+            continue
+        description = attributes['descr']
+        if 'reason:' not in description or description.split('reason:', 1)[1] != fault_reason:
+            continue
+        dn = re.search(dn_regex, attributes['dn'])
+        if dn:
+            data.append([
+                attributes['code'],
+                dn.group('pod'),
+                dn.group('node'),
+                dn.group('slot'),
+                attributes['severity'],
+                lc,
+            ])
+        else:
+            unformatted_data.append([
+                attributes['code'],
+                attributes['dn'],
+                description,
+                attributes['severity'],
+                lc,
+            ])
+    if not data and not unformatted_data:
+        result = PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
+
 # Connection Based Check
 @check_wrapper(check_title="Multi-Pod Modular Spine Bootscript File")
 def multipod_modular_spine_bootscript_check(tversion, fabric_nodes, username, password, **kwargs):
@@ -6512,6 +6668,9 @@ def inband_management_policy_misconfig_check(cversion, tversion, **kwargs):
     data = []
     recommended_action = "Contact Cisco TAC to remove any identified misconfigured 'mgmtRsInBStNode' objects"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#inband-management-policy-misconfiguration"
+    
+    if not tversion or not cversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
     
     if (cversion.older_than("5.2(8d)")) and (tversion.newer_than("6.0(4c)") or tversion.same_as("6.0(4c)")):
         mgmtRsInBStNodes = icurl('class', 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBStNode.addr,"0.0.0.0"),eq(mgmtRsInBStNode.gw,"0.0.0.0")),or(eq(mgmtRsInBStNode.v6Addr,"::"),eq(mgmtRsInBStNode.v6Gw,"::")))')
@@ -6721,7 +6880,12 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     if tversion and ((tversion.major1 == "6" and tversion.major2 == "1" and tversion.newer_than("6.1(5e)")) or tversion.newer_than("6.2(1g)")):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
 
-    threshold = datetime.utcnow() - timedelta(hours=24)
+    try:
+        from datetime import timezone 
+        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24) 
+    except ImportError:
+        threshold = datetime.utcnow() - timedelta(hours=24) 
+
     for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
         attr = obj["dbgacEpgSummaryTask"]["attributes"]
         dn = attr.get("dn", "")
@@ -6736,6 +6900,81 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
     if data:
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="InfraVLAN Overlap in Access Policy VLAN Pools")
+def infravlan_overlap_access_policy_check(tversion, **kwargs):
+    result = FAIL_UF
+    msg = ""
+    headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN"]
+    unformatted_headers = ["InfraVLAN", "Encap Block", "VLAN Pool DN", "VLAN Pool RN"]
+
+    data = []
+    unformatted_data = []
+    recommended_action = "Select a non-affected target version or contact Cisco TAC for Support before upgrade."
+    
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#infravlan-overlap-access-policy-check"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if not (tversion.same_as("6.2(1g)") or (
+        not tversion.older_than("6.1(3f)") and not tversion.newer_than("6.1(5e)")
+    )):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    dn_regex1 = r'uni/infra/vlanns-\[.+\]-(static|dynamic)/from-\[vlan-\d+\]-to-\[vlan-\d+\]'
+
+    dn_regex2 = r'uni/vmmp-[^/]+/dom-[^/]+/.+/from-\[vlan-\d+\]-to-\[vlan-\d+\]'
+
+    infra_vlan = None
+    has_error = False
+    lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
+    for lldpInst in lldpInsts:
+        infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
+        if not infra_vlan_id:
+            continue
+        match = re.search(r'\d+', str(infra_vlan_id))
+        if match:
+            infra_vlan = int(match.group(0))
+            break
+
+    if infra_vlan is None:
+        return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
+
+    encap_blocks = icurl('class', 'fvnsEncapBlk.json?query-target-filter=eq(fvnsEncapBlk.role,"external")')
+    for obj in encap_blocks:
+        blk_attr = obj.get('fvnsEncapBlk', {}).get('attributes', {})
+        dn = blk_attr.get('dn', '')
+        rn = blk_attr.get('rn', '')
+        from_encap = blk_attr.get('from')
+        to_encap = blk_attr.get('to')
+
+        if not dn or not from_encap or not to_encap:
+            has_error = True
+        
+        try:
+            from_vlan = int(str(from_encap).split('-')[-1])
+            to_vlan = int(str(to_encap).split('-')[-1])
+        except (ValueError, TypeError):
+            has_error = True
+            continue
+
+        if min(from_vlan, to_vlan) <= infra_vlan <= max(from_vlan, to_vlan):
+            row = [str(infra_vlan), "{} to {}".format(from_encap, to_encap), dn]
+            if (re.search(dn_regex1, dn) or re.search(dn_regex2, dn)):
+                data.append(row)
+            else:
+                unformatted_data.append(row + [rn])
+
+    if not data and not unformatted_data:
+        result = PASS
+        if has_error:
+            result = ERROR
+            msg = "Overlap check for InfraVLAN {} could not be determined because one or more VLAN pool blocks contain improper data or Error while fetching data.".format(infra_vlan)
+
+
+    return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----
@@ -6852,6 +7091,7 @@ class CheckManager:
         equipment_disk_limits_exceeded,
         apic_vmm_inventory_sync_faults_check,
         apic_storage_inode_check,
+        rtc_battery_voltage_low_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -6913,7 +7153,8 @@ class CheckManager:
         wred_affected_model_check,
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
-
+        infravlan_overlap_access_policy_check,
+        
     ]
     ssh_checks = [
         # General

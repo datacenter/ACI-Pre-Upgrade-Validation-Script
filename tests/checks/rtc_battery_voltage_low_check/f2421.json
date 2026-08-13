@@ -1,0 +1,37 @@
+{
+  "totalCount": "1",
+  "imdata": [
+    {
+      "faultInst": {
+        "attributes": {
+          "ack": "no",
+          "alert": "no",
+          "cause": "equipment-diags-failed",
+          "changeSet": "operStQual:The RTC battery voltage is low",
+          "childAction": "",
+          "code": "F2421",
+          "created": "2026-02-09T16:27:10.975+00:00",
+          "delegated": "no",
+          "descr": "Diagnostics test failed. reason:The RTC battery voltage is low",
+          "dn": "topology/pod-1/node-122/sys/diag/rule-rtc-test-trig-forever/subj-[topology/pod-1/node-122/sys/ch/supslot-1/sup]/fault-F2421",
+          "domain": "infra",
+          "extMngdBy": "",
+          "highestSeverity": "minor",
+          "lastTransition": "2026-02-09T16:27:10.975+00:00",
+          "lc": "raised",
+          "modTs": "never",
+          "occur": "1",
+          "origSeverity": "minor",
+          "prevSeverity": "cleared",
+          "rn": "fault-F2421",
+          "rule": "diag-rtctest-failed",
+          "severity": "minor",
+          "status": "",
+          "subject": "equipment-diags-failed",
+          "title": "",
+          "type": "operational"
+        }
+      }
+    }
+  ]
+}

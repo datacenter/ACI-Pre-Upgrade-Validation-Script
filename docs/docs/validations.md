@@ -87,6 +87,7 @@ Items                                         | Faults         | This Script    
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 [APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
+[Switch RTC Battery Voltage][f23]              | F2421: RTC battery voltage is low | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -110,6 +111,7 @@ Items                                         | Faults         | This Script    
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
+[f23]: #switch-rtc-battery-voltage
 
 ### Configuration Checks
 
@@ -206,6 +208,7 @@ Items                                           | Defect       | This Script    
 [WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
+[InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -244,6 +247,7 @@ Items                                           | Defect       | This Script    
 [d35]: #wred-with-affected-fm-models
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
+[d38]: #infravlan-overlap-access-policy-check
 
 ## General Check Details
 
@@ -523,7 +527,7 @@ The script performs 2 different checks depending on the version you are running.
 For current versions below 6.1(3):
 
 - The script checks all APICs' class's object count for a subset of services (DMEs) via a file scan. 
-- If the count is found to be above `150*1000*1000`, then that class will be flagged for further investigation.
+- If the count is found to be above `1000*1000*1.5` (1,500,000), then that class will be flagged for further investigation.
 
 For current version is 6.1(3f):
 
@@ -1530,6 +1534,8 @@ This fault occurs when the disk usage of a partiton increases beyond its thresho
 
 This fault also occurs when the MTS buffer memory usage increases beyond its threshold. /proc/isan/sw/mts/mem/stats is checked when this scenario occurs.
 
+The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
+
 Recommended Action:
 
 1. Check `df -h` output on affected node to see the usage of the partition.
@@ -1640,8 +1646,14 @@ To recover from this fault, try the following action
     subject         : equipment-full
     type            : operational
     ```
-    
-    
+
+### Switch RTC Battery Voltage
+
+This check detects active F2421 equipment diagnostic faults whose reason is `The RTC battery voltage is low`. The RTC battery maintains the switch system clock while the switch is powered off. If the battery voltage is low, a power cycle during an upgrade can reset the clock and prevent certificate validation, which can stop the switch from rejoining the fabric.
+
+The RTC battery should be replaced before upgrading or power cycling an affected switch. Contact Cisco TAC to coordinate replacement and confirm that the fault has cleared.
+
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -2647,7 +2659,7 @@ The script checks if your upgrade is susceptible to this defect from both versio
 ### Nexus 950X FM or LC Might Fail to boot after reload
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
-Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are documented in [FN64251][39].
 
 The matching defect is [CSCvg26013][40].
 
@@ -2662,7 +2674,9 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
+If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+
+The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
 
 ### Stale Decommissioned Spine
@@ -2848,6 +2862,12 @@ Affected versions: 6.1(5e) and below, or 6.2(1g).
 Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
 
 
+### Infravlan Overlap Access Policy Check
+
+Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.1(3f), 6.1(3g), 6.1(4h), 6.1(5e) and 6.2(1g), be aware of fault F4701 being raised if the InfraVLAN overlaps with any user-configured VLAN pool in Access Policies. This also affects vlan pool created by NDO/MSO, VMM, Kubernetes. After the upgrade, domains associated with those VLAN pools cannot be linked to new EPGs, although existing EPGs continue to function.
+
+To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2889,7 +2909,6 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [38]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/verified-scalability/cisco-aci-verified-scalability-guide-612.html
 [39]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
 [40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
-[41]: https://snvui.cisco.com/snv/FN64251
 [42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
 [43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
@@ -2925,3 +2944,4 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+[77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
