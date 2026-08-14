@@ -1,4 +1,5 @@
 import pytest
+import ast
 import importlib
 import logging
 import time
@@ -170,6 +171,56 @@ class TestCheckManager:
 def test_total_checks(api_only, debug_function, expected_total):
     cm = CheckManager(api_only, debug_function)
     assert cm.total_checks == expected_total
+
+
+def test_api_checks_do_not_run_ssh_or_cli_commands():
+    with open(script.__file__, "r") as source_file:
+        module = ast.parse(source_file.read())
+
+    functions = {
+        node.name: node
+        for node in module.body
+        if isinstance(node, ast.FunctionDef)
+    }
+    approved_api_boundaries = {"icurl"}
+    forbidden_calls = {"Connection", "run_cmd", "os.system", "os.popen"}
+    forbidden_prefixes = ("subprocess.", "pexpect.")
+
+    def get_call_name(node):
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            parent = get_call_name(node.value)
+            return "{}.{}".format(parent, node.attr) if parent else node.attr
+        return ""
+
+    def find_forbidden_calls(function_name, visited=None):
+        if visited is None:
+            visited = set()
+        if function_name in visited or function_name in approved_api_boundaries:
+            return set()
+        visited.add(function_name)
+
+        findings = set()
+        function = functions.get(function_name)
+        if function is None:
+            return findings
+        for node in ast.walk(function):
+            if not isinstance(node, ast.Call):
+                continue
+            call_name = get_call_name(node.func)
+            if call_name in forbidden_calls or call_name.startswith(forbidden_prefixes):
+                findings.add(call_name)
+            elif call_name in functions:
+                findings.update(find_forbidden_calls(call_name, visited))
+        return findings
+
+    violations = {
+        check.__name__: sorted(find_forbidden_calls(check.__name__))
+        for check in CheckManager.api_checks
+        if find_forbidden_calls(check.__name__)
+    }
+    assert violations == {}
 
 
 def test_exception_in_initialize():

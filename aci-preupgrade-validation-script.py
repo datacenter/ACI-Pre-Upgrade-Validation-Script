@@ -7101,7 +7101,6 @@ class CheckManager:
         l3out_route_map_direction_check,
         l3out_route_map_missing_target_check,
         l3out_overlapping_loopback_check,
-        intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
@@ -7171,6 +7170,7 @@ class CheckManager:
     cli_checks = [
         # General
         apic_database_size_check,
+        intersight_upgrade_status_check,
 
         # Bugs
         apic_ca_cert_validation,
