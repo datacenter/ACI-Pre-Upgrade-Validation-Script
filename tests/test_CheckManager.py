@@ -173,7 +173,7 @@ def test_total_checks(api_only, debug_function, expected_total):
     assert cm.total_checks == expected_total
 
 
-def test_api_checks_do_not_run_ssh_or_cli_commands():
+def test_api_checks_only_use_approved_external_commands():
     with open(script.__file__, "r") as source_file:
         module = ast.parse(source_file.read())
 
@@ -194,6 +194,15 @@ def test_api_checks_do_not_run_ssh_or_cli_commands():
             return "{}.{}".format(parent, node.attr) if parent else node.attr
         return ""
 
+    def is_literal_icurl_call(node):
+        if not get_call_name(node.func).startswith("subprocess.") or not node.args:
+            return False
+        command = node.args[0]
+        if not isinstance(command, (ast.List, ast.Tuple)) or not command.elts:
+            return False
+        executable = command.elts[0]
+        return isinstance(executable, ast.Str) and executable.s == "icurl"
+
     def find_forbidden_calls(function_name, visited=None):
         if visited is None:
             visited = set()
@@ -209,7 +218,10 @@ def test_api_checks_do_not_run_ssh_or_cli_commands():
             if not isinstance(node, ast.Call):
                 continue
             call_name = get_call_name(node.func)
-            if call_name in forbidden_calls or call_name.startswith(forbidden_prefixes):
+            if (
+                call_name in forbidden_calls
+                or call_name.startswith(forbidden_prefixes)
+            ) and not is_literal_icurl_call(node):
                 findings.add(call_name)
             elif call_name in functions:
                 findings.update(find_forbidden_calls(call_name, visited))

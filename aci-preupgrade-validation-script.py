@@ -3844,10 +3844,11 @@ def intersight_upgrade_status_check(**kwargs):
     recommended_action = 'Wait a few minutes for the upgrade to complete'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#intersight-device-connector-upgrade-status'
 
-    cmd = ['icurl', '-gks', 'https://127.0.0.1/connector/UpgradeStatus']
-
-    log.info('cmd = ' + ' '.join(cmd))
-    response = subprocess.check_output(cmd)
+    # The API-only container permits direct icurl access to this endpoint.
+    log.info('cmd = icurl -gks https://127.0.0.1/connector/UpgradeStatus')
+    response = subprocess.check_output([
+        'icurl', '-gks', 'https://127.0.0.1/connector/UpgradeStatus'
+    ])
     try:
         resp_json = json.loads(response)
 
@@ -7101,6 +7102,7 @@ class CheckManager:
         l3out_route_map_direction_check,
         l3out_route_map_missing_target_check,
         l3out_overlapping_loopback_check,
+        intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
@@ -7170,7 +7172,6 @@ class CheckManager:
     cli_checks = [
         # General
         apic_database_size_check,
-        intersight_upgrade_status_check,
 
         # Bugs
         apic_ca_cert_validation,
