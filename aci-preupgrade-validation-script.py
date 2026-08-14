@@ -3844,11 +3844,10 @@ def intersight_upgrade_status_check(**kwargs):
     recommended_action = 'Wait a few minutes for the upgrade to complete'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#intersight-device-connector-upgrade-status'
 
-    # The API-only container permits direct icurl access to this endpoint.
-    log.info('cmd = icurl -gks https://127.0.0.1/connector/UpgradeStatus')
-    response = subprocess.check_output([
-        'icurl', '-gks', 'https://127.0.0.1/connector/UpgradeStatus'
-    ])
+    cmd = ['icurl', '-gks', 'https://127.0.0.1/connector/UpgradeStatus']
+
+    log.info('cmd = ' + ' '.join(cmd))
+    response = subprocess.check_output(cmd)
     try:
         resp_json = json.loads(response)
 

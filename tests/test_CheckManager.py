@@ -194,14 +194,29 @@ def test_api_checks_only_use_approved_external_commands():
             return "{}.{}".format(parent, node.attr) if parent else node.attr
         return ""
 
-    def is_literal_icurl_call(node):
+    def is_literal_icurl_command(node):
+        if not isinstance(node, (ast.List, ast.Tuple)) or not node.elts:
+            return False
+        executable = node.elts[0]
+        return isinstance(executable, ast.Str) and executable.s == "icurl"
+
+    def is_literal_icurl_call(node, function):
         if not get_call_name(node.func).startswith("subprocess.") or not node.args:
             return False
         command = node.args[0]
-        if not isinstance(command, (ast.List, ast.Tuple)) or not command.elts:
+        if is_literal_icurl_command(command):
+            return True
+        if not isinstance(command, ast.Name):
             return False
-        executable = command.elts[0]
-        return isinstance(executable, ast.Str) and executable.s == "icurl"
+        return any(
+            isinstance(candidate, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == command.id
+                for target in candidate.targets
+            )
+            and is_literal_icurl_command(candidate.value)
+            for candidate in ast.walk(function)
+        )
 
     def find_forbidden_calls(function_name, visited=None):
         if visited is None:
@@ -221,7 +236,7 @@ def test_api_checks_only_use_approved_external_commands():
             if (
                 call_name in forbidden_calls
                 or call_name.startswith(forbidden_prefixes)
-            ) and not is_literal_icurl_call(node):
+            ) and not is_literal_icurl_call(node, function):
                 findings.add(call_name)
             elif call_name in functions:
                 findings.update(find_forbidden_calls(call_name, visited))
