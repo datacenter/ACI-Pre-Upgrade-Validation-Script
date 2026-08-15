@@ -83,11 +83,8 @@ def test_logic(run_check, mock_icurl, fabric_nodes, expected_result, expected_ms
 
 
 # --- Batch query coverage ---
-# The check queries at most `batch_size` (15) node IDs per icurl call to stay
-# under APIC's 20 filter-expression limit, with headroom in case the and()/or()
-# wrappers also count. These helpers/tests build queries the same way the check
-# does, so they mirror the real query strings.
-BATCH_SIZE = 15
+# Mirrors the check's batch_size so tests break if the constant drifts.
+BATCH_SIZE = 16
 
 
 def _fx3_fabric_nodes(node_ids):
@@ -131,7 +128,7 @@ def _proc_mem_usage(node_id, total_kb):
 
 
 def test_batch_at_boundary_issues_single_query(run_check, monkeypatch):
-    node_ids = [str(nid) for nid in range(101, 101 + BATCH_SIZE)]  # exactly 15 nodes
+    node_ids = [str(nid) for nid in range(101, 101 + BATCH_SIZE)]  # exactly BATCH_SIZE nodes
     fabric_nodes = _fx3_fabric_nodes(node_ids)
     query = _batch_query(node_ids)
 
@@ -151,7 +148,7 @@ def test_batch_at_boundary_issues_single_query(run_check, monkeypatch):
 
 
 def test_batch_split_across_two_queries(run_check, monkeypatch):
-    # 20 affected nodes -> batch1 has 15 IDs, batch2 has the remaining 5.
+    # 20 affected nodes -> batch1 has 16 IDs, batch2 has the remaining 4.
     node_ids = [str(nid) for nid in range(101, 121)]
     fabric_nodes = _fx3_fabric_nodes(node_ids)
     batch1_ids, batch2_ids = node_ids[:BATCH_SIZE], node_ids[BATCH_SIZE:]

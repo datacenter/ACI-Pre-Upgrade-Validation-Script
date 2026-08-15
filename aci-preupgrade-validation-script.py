@@ -6707,8 +6707,7 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
             for node in affected_nodes
         }
 
-        # APIC caps query-target-filter at 20 expressions total; use 16 per batch to
-        # leave headroom in case and()/or() wrappers also count toward that limit.
+        # APIC caps query-target-filter at 20 expressions total (16 node wcards + 2 leaf predicates + 2 wrappers = 20)
         batch_size = 16
         proc_mem_mos = []
         for i in range(0, len(node_ids), batch_size):
