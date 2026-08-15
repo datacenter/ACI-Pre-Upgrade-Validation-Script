@@ -148,8 +148,8 @@ def test_batch_at_boundary_issues_single_query(run_check, monkeypatch):
 
 
 def test_batch_split_across_two_queries(run_check, monkeypatch):
-    # 25 affected nodes -> batch1 has 20 IDs, batch2 has the remaining 5.
-    node_ids = [str(nid) for nid in range(101, 126)]
+    # 20 affected nodes -> batch1 has 16 IDs, batch2 has the remaining 4.
+    node_ids = [str(nid) for nid in range(101, 121)]
     fabric_nodes = _fx3_fabric_nodes(node_ids)
     batch1_ids, batch2_ids = node_ids[:BATCH_SIZE], node_ids[BATCH_SIZE:]
     query1, query2 = _batch_query(batch1_ids), _batch_query(batch2_ids)
