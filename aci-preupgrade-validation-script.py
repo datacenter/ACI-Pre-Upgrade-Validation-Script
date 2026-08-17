@@ -3908,6 +3908,76 @@ def isis_redis_metric_mpod_msite_check(**kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="Multi-site DPTEP overlap with Routable TEP Subnet")
+def multisite_dptep_routable_subnet_overlap_check(**kwargs):
+    result = PASS
+    headers = ["DPTEP Type", "DPTEP Address", "Routable TEP Pool", "DPTEP DN"]
+    data = []
+    recommended_action = (
+        'Change the overlapping Multi-site DPTEP address to fall outside the '
+        'unreserved portion of every Routable TEP Pool, or extend the Routable '
+        'TEP Pool reserved address count, before upgrading.'
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#multi-site-dptep-overlap-with-routable-tep-subnet'
+
+    subnets = icurl('class', 'fabricExtRoutablePodSubnet.json')
+    if not subnets:
+        return Result(result=PASS, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    # Mirrors fabric::ExtRoutablePodSubnetBI::checkIfPartOfUnreservedSubnet:
+    # the unreserved range is [poolStart + reserveAddressCount, poolEnd].
+    # IPv4-only, matching the PD validation.
+    subnet_ranges = []
+    for s in subnets:
+        attrs = s['fabricExtRoutablePodSubnet']['attributes']
+        pool = attrs.get('pool', '')
+        if '/' not in pool or ':' in pool:
+            continue
+        try:
+            ip_str, pfx_str = pool.split('/')
+            pfx = int(pfx_str)
+            start_ip = int(IPAddress.ipv4_to_binary(ip_str), 2)
+            mask = (0xFFFFFFFF << (32 - pfx)) & 0xFFFFFFFF if pfx else 0
+            net_start = start_ip & mask
+            net_end = net_start | ((~mask) & 0xFFFFFFFF)
+            reserve = int(attrs.get('reserveAddressCount', '0') or '0')
+        except (ValueError, TypeError):
+            continue
+        unr_lo = net_start + reserve
+        unr_hi = net_end
+        if unr_lo > unr_hi:
+            continue
+        subnet_ranges.append((pool, unr_lo, unr_hi))
+
+    if not subnet_ranges:
+        return Result(result=PASS, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    def _check(conn_class, label):
+        mos = icurl('class', '{}.json'.format(conn_class))
+        for mo in mos:
+            attrs = mo[conn_class]['attributes']
+            addr_str = attrs.get('addr', '')
+            ip_only = addr_str.split('/')[0]
+            if not ip_only or ':' in ip_only:
+                continue
+            try:
+                ip_int = int(IPAddress.ipv4_to_binary(ip_only), 2)
+            except (ValueError, TypeError):
+                continue
+            for pool, lo, hi in subnet_ranges:
+                if lo <= ip_int <= hi:
+                    data.append([label, addr_str, pool, attrs.get('dn', '')])
+                    break
+
+    _check('fvIntersiteConnP', 'Unicast')
+    _check('fvIntersiteMcastConnP', 'Multicast')
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="BGP route target type for GOLF over L2EVPN")
 def bgp_golf_route_target_type_check(cversion, tversion, **kwargs):
     result = FAIL_O
@@ -7103,6 +7173,7 @@ class CheckManager:
         l3out_overlapping_loopback_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
+        multisite_dptep_routable_subnet_overlap_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
         uplink_limit_check,

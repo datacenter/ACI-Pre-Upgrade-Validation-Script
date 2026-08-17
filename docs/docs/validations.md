@@ -141,6 +141,7 @@ Items                                         | Faults         | This Script    
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
+[Multi-site DPTEP overlap with Routable TEP Subnet][c25] | :white_check_mark: | :white_check_mark: 6.2(2)
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -166,6 +167,7 @@ Items                                         | Faults         | This Script    
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
+[c25]: #multi-site-dptep-overlap-with-routable-tep-subnet
 
 ### Defect Condition Checks
 
@@ -2115,6 +2117,17 @@ This script checks the ISIS Redistribution Metric via `redistribMetric` of an ob
     admin@f2-apic1:~> moquery -d uni/fabric/isisDomP-default | grep redistribMetric
     redistribMetric  : 32
     ```
+
+
+### Multi-site DPTEP overlap with Routable TEP Subnet
+
+Multi-site Data-Plane TEPs (DPTEPs) are configured under `Tenant infra > Policies > Protocol > Fabric Ext Connection Policies` and stored as `fvIntersiteConnP` (unicast DPTEP) and `fvIntersiteMcastConnP` (multicast DPTEP). The Routable TEP Pool, configured under `Fabric > Inventory > Pod Fabric Setup Policy > Pod > Routable TEP Pool`, is stored as `fabricExtRoutablePodSubnet` and is partitioned into a reserved range (used for fabric-allocated TEPs) followed by the remaining unreserved range. The number of reserved addresses is `reserveAddressCount`.
+
+Starting with APIC 6.2(2) (CSCwq69622), the APIC rejects any new `fvIntersiteConnP` / `fvIntersiteMcastConnP` whose `addr` falls in the unreserved portion of any Routable TEP Pool, because such DPTEPs may collide with addresses the fabric will allocate from that subnet. On older releases this configuration is allowed and may already be present in the running configuration, but after upgrading the offending MO can no longer be modified, and on a subsequent reconfiguration the upgrade will fail to redistribute it.
+
+This script flags every `fvIntersiteConnP` and `fvIntersiteMcastConnP` whose `addr` overlaps with the unreserved range of any `fabricExtRoutablePodSubnet`. The unreserved range used for the comparison is `[networkStart + reserveAddressCount, networkEnd]`, matching `fabric::ExtRoutablePodSubnetBI::checkIfPartOfUnreservedSubnet` in the APIC. IPv4 routable subnets are checked; IPv6 is skipped because the corresponding APIC validation is IPv4-only.
+
+Resolve any flagged overlap by changing the offending Multi-site DPTEP address to fall outside the unreserved portion of every Routable TEP Pool, or by extending the Routable TEP Pool reserved address count, before upgrading.
 
 
 ### BGP Route-target Type for GOLF over L2EVPN     

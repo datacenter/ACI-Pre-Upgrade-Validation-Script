@@ -1,0 +1,10 @@
+[
+    {
+        "fvIntersiteConnP": {
+            "attributes": {
+                "dn": "uni/tn-infra/fabricExtConnP-1/podConnP-1/intersiteConnP-[10.0.0.5]",
+                "addr": "10.0.0.5"
+            }
+        }
+    }
+]
