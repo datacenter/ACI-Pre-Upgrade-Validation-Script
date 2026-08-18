@@ -11,8 +11,25 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 test_function = "n9k_c93180yc_fx3_switch_memory_check"
 
-# icurl queries - filtered by affected node IDs and memory threshold
-proc_mem_query_node101 = 'procMemUsage.json?query-target-filter=and(or(wcard(procMemUsage.dn,"node-101/")),wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"32000000"))'
+# icurl query - affected node IDs are filtered from the response
+proc_mem_query = 'procMemUsage.json?query-target-filter=and(wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"32000000"))'
+
+
+def make_fx3_nodes(count):
+    return [
+        {
+            "fabricNode": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-{}".format(node_id),
+                    "id": str(node_id),
+                    "name": "leaf{}".format(node_id),
+                    "model": "N9K-C93180YC-FX3",
+                    "role": "leaf",
+                }
+            }
+        }
+        for node_id in range(101, 101 + count)
+    ]
 
 
 @pytest.mark.parametrize(
@@ -38,7 +55,7 @@ proc_mem_query_node101 = 'procMemUsage.json?query-target-filter=and(or(wcard(pro
         (
             read_data(dir, "fabricNode_one.json"),
             {
-                proc_mem_query_node101: [],
+                proc_mem_query: [],
             },
             script.PASS,
             '',
@@ -48,7 +65,27 @@ proc_mem_query_node101 = 'procMemUsage.json?query-target-filter=and(or(wcard(pro
         (
             read_data(dir, "fabricNode_two.json"),
             {
-                proc_mem_query_node101: [],
+                proc_mem_query: [],
+            },
+            script.PASS,
+            '',
+            [],
+        ),
+        # Low-memory results for other switch models are ignored
+        (
+            read_data(dir, "fabricNode_two.json"),
+            {
+                proc_mem_query: read_data(dir, "procMemUsage_lt32gb_unaffected.json"),
+            },
+            script.PASS,
+            '',
+            [],
+        ),
+        # Query remains below APIC's 20-expression limit on large fabrics
+        (
+            make_fx3_nodes(55),
+            {
+                proc_mem_query: [],
             },
             script.PASS,
             '',
@@ -58,7 +95,7 @@ proc_mem_query_node101 = 'procMemUsage.json?query-target-filter=and(or(wcard(pro
         (
             read_data(dir, "fabricNode_one.json"),
             {
-                proc_mem_query_node101: read_data(dir, "procMemUsage_lt32gb.json"),
+                proc_mem_query: read_data(dir, "procMemUsage_lt32gb.json"),
             },
             script.FAIL_O,
             (

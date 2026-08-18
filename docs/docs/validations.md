@@ -264,6 +264,8 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
+The APIC 6.1(5) release notes explicitly support multiple CIMC releases on UCS C220/C240 M5 (APIC-L3/M3) and UCS C225 M6 (APIC-L4/M4) that may be older than the image catalog recommendation. The check uses an embedded, model-specific list for those release-note-supported combinations before applying the image catalog recommendation to other CIMC releases.
+
 Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
 
 !!! note
@@ -2254,7 +2256,7 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 ### Out-of-Service Ports
 
-Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
+Any access/downlink or fabric port that has been disabled via policy creates a `fabricRsOosPath` object. The check covers operationally up ports with the `blacklist`, `blacklist,epg`, `blacklist,fabric`, or `blacklist,fabric,fabric-ext` usage. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
 
 While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this fact generally remains undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
 
