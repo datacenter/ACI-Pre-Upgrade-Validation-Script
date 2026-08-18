@@ -1393,7 +1393,9 @@ The fault F3545 occurs when the switch fails to activate a contract rule (zoning
 
 The script checks faults raised under `eqptcapacityEntity`, which are TCA (Threshold Crossed Alert) faults for various objects monitored in the **Capacity Dashboard** from `Operations > Capacity Dashboard > Leaf Capacity` on the Cisco APIC GUI.
 
-It is important to ensure that any capacity does not exceed its limit. When it's exceeding the limit, it may cause inconsistency on resources that are deployed before and after an upgrade just like it was warned for [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
+A raised TCA indicates that a configured capacity threshold was crossed; it does not necessarily indicate a current outage. The script reports `FAIL - OUTAGE WARNING!!` because switch reboots during an upgrade can cause endpoints, routes, contracts, and other programmed resources to be temporarily redistributed to the remaining switches. This spillover can push a resource that is already near its limit, such as Policy CAM at 90%, beyond supported capacity and cause programming failures or traffic disruption. Similar post-reboot resource inconsistencies are described under [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
+
+Before upgrading, review the affected node and resource under `Operations > Capacity Dashboard > Leaf Capacity` and examine the capacity headroom based on your network design, server connectivity and so on.
 
 Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacity` are the number of endpoints such as MAC (Learned), IPv4 (Learned), Policy CAM, LPM, host routes, VLANs and so on.
 
