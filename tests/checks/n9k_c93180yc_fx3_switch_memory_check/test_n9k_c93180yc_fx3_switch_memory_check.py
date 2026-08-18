@@ -103,7 +103,7 @@ def make_fx3_nodes(count):
                 'One or more switches with less than 32GB of memory may experience service instability. '
                 'Upgrade the switch memory to at least 32GB.'
             ),
-            [["101", "leaf101", "N9K-C93180YC-FX3", 16.0]],
+            [["101", "leaf101", "N9K-C93180YC-FX3", "16.0"]],
         ),
     ],
 )
