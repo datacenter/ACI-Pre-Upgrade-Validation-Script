@@ -1395,7 +1395,7 @@ The script checks faults raised under `eqptcapacityEntity`, which are TCA (Thres
 
 A raised TCA indicates that a configured capacity threshold was crossed; it does not necessarily indicate a current outage. The script reports `FAIL - OUTAGE WARNING!!` because switch reboots during an upgrade can cause endpoints, routes, contracts, and other programmed resources to be temporarily redistributed to the remaining switches. This spillover can push a resource that is already near its limit, such as Policy CAM at 90%, beyond supported capacity and cause programming failures or traffic disruption. Similar post-reboot resource inconsistencies are described under [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
 
-Before upgrading, review the affected node and resource under `Operations > Capacity Dashboard > Leaf Capacity`, reduce utilization or otherwise restore sufficient capacity headroom, and resolve the fault. A currently stable fabric does not demonstrate that sufficient upgrade headroom exists.
+Before upgrading, review the affected node and resource under `Operations > Capacity Dashboard > Leaf Capacity` and examine the capacity headroom based on your network design, server connectivity and so on.
 
 Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacity` are the number of endpoints such as MAC (Learned), IPv4 (Learned), Policy CAM, LPM, host routes, VLANs and so on.
 
