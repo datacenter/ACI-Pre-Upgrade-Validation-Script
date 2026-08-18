@@ -6977,6 +6977,88 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="APIC OOB Connectivity check")
+def apic_oob_connectivity_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Node ID", "OOB IP", "Port", "Status"]
+    recommended_action = "Restore OOB management connectivity between all APICs and ensure the required HTTPS ports are reachable across the OOB network."
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity'
+
+    def get_apic_oob_connectivity(apic_id_ip, port):
+        data = []
+        has_error = False
+
+        for apic in apic_id_ip:
+            attrs = apic['topSystem']['attributes']
+            node_id = attrs.get('id', '')
+
+            if attrs.get('oobMgmtAddr', '0.0.0.0') != '0.0.0.0':
+                ip = attrs.get('oobMgmtAddr')
+            elif attrs.get('oobMgmtAddr6', '::') not in ('', '::', '0:0:0:0:0:0:0:0'):
+                ip = attrs.get('oobMgmtAddr6')
+            else:
+                continue
+
+            try:
+                ip_formatted = '[{}]'.format(ip) if ':' in ip else ip
+                with open(os.devnull, 'wb') as devnull:
+                    if subprocess.call(
+                        ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull,
+                         'https://{}:{}'.format(ip_formatted, port)],
+                        stderr=devnull
+                    ) != 0:
+                        data.append([node_id, ip, port, "Unreachable"])
+            except Exception as e:
+                log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
+                data.append([node_id, ip, port, "Error"])
+                has_error = True
+                continue
+
+        return data, has_error
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if tversion.older_than("6.0(2a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    apic_id_ip = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+    if not apic_id_ip:
+        return Result(result=NA, msg="No APIC controller nodes found.")
+
+    data = []
+    has_error = False
+
+    # Default port check: APIC bootx uses port 443 from 6.0(2)
+    default_data, default_error = get_apic_oob_connectivity(apic_id_ip, 443)
+    data.extend(default_data)
+    if default_error:
+        has_error = True
+
+    # Custom HTTPS port check: upgrade fanout uses commHttps port from 6.2(1)
+    if not cversion.older_than("6.2(1g)"):
+        port = 443
+        commHttps = icurl('class', 'commHttps.json')
+        if commHttps:
+            try:
+                port = int(commHttps[0]['commHttps']['attributes'].get('port', 443))
+            except (ValueError, KeyError):
+                log.warning("Could not read commHttps port")
+                return Result(result=ERROR, msg="Could not read https port id from commHttps MO.")
+
+        if port != 443:  # Port 443 already covered by default port check above
+            custom_data, custom_error = get_apic_oob_connectivity(apic_id_ip, port)
+            data.extend(custom_data)
+            if custom_error:
+                has_error = True
+
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_UF
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -7154,7 +7236,7 @@ class CheckManager:
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,
-        
+        apic_oob_connectivity_check,
     ]
     ssh_checks = [
         # General

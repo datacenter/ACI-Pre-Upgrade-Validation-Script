@@ -209,6 +209,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
+[APIC OOB Connectivity][d39]                      | CSCwu91693   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -248,6 +249,7 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
+[d39]: #apic-oob-connectivity
 
 ## General Check Details
 
@@ -2868,6 +2870,14 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+### APIC OOB Connectivity
+
+Starting from 6.0(2), APIC firmware upgrades are triggered via an HTTPS POST request (bootx) sent to each peer APIC over its out-of-band (OOB) management interface. Due to [CSCwu91693][78], if OOB connectivity to a peer APIC is unavailable at the time this trigger is sent, that APIC does not receive it and silently fails to start the upgrade, while the remaining reachable APICs proceed normally. This results in a partially upgraded cluster with no explicit error raised at the time of failure.
+
+This check verifies OOB reachability between APICs on the port(s) actually used for the upgrade trigger. The default port 443 is validated on all versions from 6.0(2) onward, since it is always used unless a custom HTTPS port is configured. From 6.2(1) onward, the upgrade trigger also honors a custom HTTPS port if one is configured via the `commHttps` policy; this custom port is validated only when the current version is 6.2(1) or later, and only when the configured port differs from 443, which is already covered by the default check.
+
+For each applicable port, the script gets OOB management IP of every APIC in the cluster, then attempts an HTTPS connection to each peer on that port with a 5-second timeout. If any APIC is found unreachable on a port used for the upgrade trigger, the check fails.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2945,3 +2955,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
