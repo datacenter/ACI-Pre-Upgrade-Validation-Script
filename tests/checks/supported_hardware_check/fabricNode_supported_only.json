@@ -1,0 +1,20 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "101",
+        "model": "N9K-C93180YC-FX",
+        "role": "leaf"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "id": "1001",
+        "model": "N9K-C9504",
+        "role": "spine"
+      }
+    }
+  }
+]

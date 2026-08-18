@@ -4,7 +4,7 @@
             "attributes": {
                 "dn": "topology/pod-1/node-103/sys/phys-[eth1/9]/phys",
                 "operSt": "up",
-                "usage": "blacklist,epg"
+                "usage": "blacklist"
             }
         }
     },
@@ -14,6 +14,24 @@
                 "dn": "topology/pod-1/node-105/sys/phys-[eth1/27]/phys",
                 "operSt": "up",
                 "usage": "blacklist,epg"
+            }
+        }
+    },
+    {
+        "ethpmPhysIf": {
+            "attributes": {
+                "dn": "topology/pod-1/node-105/sys/phys-[eth1/49]/phys",
+                "operSt": "up",
+                "usage": "blacklist,fabric"
+            }
+        }
+    },
+    {
+        "ethpmPhysIf": {
+            "attributes": {
+                "dn": "topology/pod-1/node-105/sys/phys-[eth1/50]/phys",
+                "operSt": "up",
+                "usage": "blacklist,fabric,fabric-ext"
             }
         }
     }

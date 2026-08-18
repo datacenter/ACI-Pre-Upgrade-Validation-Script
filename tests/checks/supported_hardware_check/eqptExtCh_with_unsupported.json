@@ -1,0 +1,18 @@
+[
+  {
+    "eqptExtCh": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101/sys/ch/supslot-1/extch-101",
+        "model": "N2K-C2232PP-10GE"
+      }
+    }
+  },
+  {
+    "eqptExtCh": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101/sys/ch/supslot-1/extch-102",
+        "model": "N2K-C2348UPQ"
+      }
+    }
+  }
+]

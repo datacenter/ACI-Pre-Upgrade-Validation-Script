@@ -3,6 +3,7 @@
 # since gitlab ci can only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  INTEGRATION_RUN_ID: "$CI_PROJECT_ID-$CI_PIPELINE_ID-$CI_JOB_ID"
 
 stages:
   - unit_test
@@ -60,9 +61,13 @@ test:py38:
       - .cache/pip
 
 
-test:integration:
+# =============================================================================
+# Integration Test Template
+# =============================================================================
+.integration_template: &integration_template
   stage: integration_test
   image: python:3.8.10-slim
+  resource_group: aci_fabric_tests
   before_script:
     - echo 'ACQUIRE {http::proxy "$apt_proxy"}' >> /etc/apt/apt.conf
     - echo -e "$apt_source" > /etc/apt/sources.list
@@ -73,17 +78,16 @@ test:integration:
     - pip install virtualenv
     - virtualenv venv38-integration
     - source venv38-integration/bin/activate
-  script:
     - cd tests
     - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/requirements.txt/raw?ref=main" -o requirements.txt'
     - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/runner.py/raw?ref=main" -o runner.py'
-    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
     - pip install -r requirements.txt
-    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key
   artifacts:
     when: always
+    expire_in: 7 days
     paths:
       - $CI_PROJECT_DIR/tests/*.log
+      - $CI_PROJECT_DIR/tests/*.tgz
   cache:
     key:
       files:
@@ -91,3 +95,82 @@ test:integration:
     paths:
       - venv38-integration/
       - .cache/pip
+  timeout: 45m
+  retry:
+    max: 1
+    when: runner_system_failure
+
+# =============================================================================
+# Integration Test - Actual Fabric Versions
+# =============================================================================
+test:integration:actual-current-version:
+  <<: *integration_template
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key
+
+# =============================================================================
+# Integration Tests - 5.x Internal Upgrades
+# =============================================================================
+test:integration:5.2.4d-to-5.2.8f:
+  <<: *integration_template
+  variables:
+    FABRIC_CVERSION: "5.2(4d)"
+    FABRIC_TVERSION: "5.2(8f)"
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
+
+# =============================================================================
+# Integration Tests - 5.x to 6.0.x Upgrades
+# =============================================================================
+test:integration:5.2.4d-to-6.0.2h:
+  <<: *integration_template
+  variables:
+    FABRIC_CVERSION: "5.2(4d)"
+    FABRIC_TVERSION: "6.0(2h)"
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
+
+test:integration:5.2.6e-to-6.0.5a:
+  <<: *integration_template
+  variables:
+    FABRIC_CVERSION: "5.2(6e)"
+    FABRIC_TVERSION: "6.0(5a)"
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
+
+# =============================================================================
+# Integration Tests - 5.x to 6.1.x Upgrades
+# =============================================================================
+test:integration:5.2.8d-to-6.1.1f:
+  <<: *integration_template
+  variables:
+    FABRIC_CVERSION: "5.2(8d)"
+    FABRIC_TVERSION: "6.1(1f)"
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
+
+test:integration:5.3.2d-to-6.1.4h:
+  <<: *integration_template
+  variables:
+    FABRIC_CVERSION: "5.3(2d)"
+    FABRIC_TVERSION: "6.1(4h)"
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
+
+# =============================================================================
+# Integration Tests - 6.x Internal Upgrades
+# =============================================================================
+test:integration:6.0.2a-to-6.1.4h:
+  <<: *integration_template
+  variables:
+    FABRIC_CVERSION: "6.0(2a)"
+    FABRIC_TVERSION: "6.1(4h)"
+  script:
+    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
+    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
