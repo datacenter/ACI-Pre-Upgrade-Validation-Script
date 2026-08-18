@@ -6828,12 +6828,8 @@ def n9k_c93180yc_fx3_switch_memory_check(fabric_nodes, **kwargs):
         result = NA
         msg = 'No N9K-C93180YC-FX3 switches found. Skipping.'
     else:
-        node_ids = [node['fabricNode']['attributes']['id'] for node in affected_nodes]
-        node_filter = 'or({})'.format(','.join(
-            'wcard(procMemUsage.dn,"node-{}/")'.format(nid) for nid in node_ids
-        ))
-        query = 'procMemUsage.json?query-target-filter=and({},wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
-            node_filter, min_memory_kb
+        query = 'procMemUsage.json?query-target-filter=and(wcard(procMemUsage.dn,"memusage-sup"),lt(procMemUsage.Total,"{}"))'.format(
+            min_memory_kb
         )
         proc_mem_mos = icurl('class', query)
 
