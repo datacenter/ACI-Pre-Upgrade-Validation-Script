@@ -1,0 +1,11 @@
+[
+  {
+    "vnsGraphInst": {
+      "attributes": {
+        "configSt": "applied",
+        "ctrctDn": "uni/tn-user-11/brc-epg-epg",
+        "graphDn": "uni/tn-user-11/AbsGraph-test"
+      }
+    }
+  }
+]
