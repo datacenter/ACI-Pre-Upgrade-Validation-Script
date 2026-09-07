@@ -1,0 +1,10 @@
+[
+    {
+        "fabricRsCommPol": {
+            "attributes": {
+                "dn": "uni/fabric/funcprof/podpgrp-default/rscommPol",
+                "tDn": "uni/fabric/comm-custom-port"
+            }
+        }
+    }
+]

@@ -1,0 +1,11 @@
+[
+    {
+        "fabricPodBlk": {
+            "attributes": {
+                "dn": "uni/fabric/podprofile-default/pods-pod1-typ-range/podblk-blk1",
+                "from": "1",
+                "to": "1"
+            }
+        }
+    }
+]

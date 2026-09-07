@@ -1,0 +1,10 @@
+[
+    {
+        "fabricRsPodPGrp": {
+            "attributes": {
+                "dn": "uni/fabric/podprofile-default/pods-default-typ-ALL/rspodPGrp",
+                "tDn": "uni/fabric/funcprof/podpgrp-default"
+            }
+        }
+    }
+]

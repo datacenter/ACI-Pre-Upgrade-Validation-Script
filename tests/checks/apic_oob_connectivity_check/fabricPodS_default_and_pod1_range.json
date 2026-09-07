@@ -1,0 +1,18 @@
+[
+    {
+        "fabricPodS": {
+            "attributes": {
+                "dn": "uni/fabric/podprofile-default/pods-default-typ-ALL",
+                "type": "ALL"
+            }
+        }
+    },
+    {
+        "fabricPodS": {
+            "attributes": {
+                "dn": "uni/fabric/podprofile-default/pods-pod1-typ-range",
+                "type": "range"
+            }
+        }
+    }
+]

@@ -1,0 +1,10 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "id": "1",
+                "role": "controller"
+            }
+        }
+    }
+]
