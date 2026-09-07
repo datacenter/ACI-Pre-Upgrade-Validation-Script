@@ -2177,6 +2177,22 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
     if not partitions:
         return Result(result=MANUAL, msg='/bootflash directory not found. Check switch health.', doc_url=doc_url)
 
+    download_sts_api = 'maintUpgJob.json'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100"))'
+    download_sts_api += '&rsp-subtree=full'
+
+    try:
+        download_sts = icurl('class', download_sts_api)
+    except OldVerPropNotFound:
+        # Older versions don't have 'dnldStatus'/'dnldPercent' params
+        download_sts = []
+
+    predownloaded_nodes = {}
+    for maintUpgJob in download_sts:
+        dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
+        if dn:
+            predownloaded_nodes[dn.group("node")] = maintUpgJob['maintUpgJob']['attributes']
+            
     # Starting 6.0(2a), switch images are shipped as separate 32-bit and 64-bit
     # isos (`-cs_64` suffix for 64-bit). Below that, only a single 32-bit iso exists.
     boundary_version = "6.0(2a)"
@@ -2224,6 +2240,8 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
         dn = re.search(node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
         pod = dn.group("pod")
         node = dn.group("node")
+        if node in predownloaded_nodes:
+            continue
         avail = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['avail'])
 
         if avail < required_space_kb:
