@@ -2179,7 +2179,6 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
 
     download_sts_api = 'maintUpgJob.json'
     download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100"))'
-    download_sts_api += '&rsp-subtree=full'
 
     try:
         download_sts = icurl('class', download_sts_api)
@@ -2192,7 +2191,7 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
         dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
         if dn:
             predownloaded_nodes[dn.group("node")] = maintUpgJob['maintUpgJob']['attributes']
-            
+
     # Starting 6.0(2a), switch images are shipped as separate 32-bit and 64-bit
     # isos (`-cs_64` suffix for 64-bit). Below that, only a single 32-bit iso exists.
     boundary_version = "6.0(2a)"
@@ -2214,15 +2213,17 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
         if target_size_32 is None:
             msg = 'Target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * target_size_32
+        required_space = 2 * target_size_32 # only the 32-bit image is ever used pre-6.0(2a)
+
     elif not cversion.older_than(boundary_version) and not tversion.older_than(boundary_version):
-        # Either image may be used, so size for the larger of the two.
+
         if target_size_32 is None and target_size_64 is None:
             msg = 'Target switch image(s) not found in Firmware Repository.'
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * max(target_size_32 or 0, target_size_64 or 0)
+        required_space = 2 * max(target_size_32 or 0, target_size_64 or 0) # only the larger of the 32-bit or 64-bit image is used post-6.0(2a).
+
     else:
-        # Crossing the 32/64-bit boundary: both target isos are downloaded while
+        # Crossing the 32/64-bit boundary: 32 + 64 b target images are downloaded while
         # the current (32-bit only) image is removed, freeing up its space.
         if target_size_32 is None and target_size_64 is None:
             msg = 'Target switch image(s) not found in Firmware Repository.'
