@@ -19,7 +19,6 @@ firmware = 'firmwareFirmware.json?query-target-filter=eq(firmwareFirmware.type,"
 
 download_sts = 'maintUpgJob.json'
 download_sts += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100"))'
-download_sts += '&rsp-subtree=full'
 
 # No pre-downloaded nodes unless a test overrides this key.
 no_predownload = []
