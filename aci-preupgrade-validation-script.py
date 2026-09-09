@@ -6061,7 +6061,13 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     result= PASS
     headers = ["Shared Service Contract", "Provider in Preferred Group", "PcTag", "Affected Consumer"]
     data = []
-    recommended_action = 'an EPG in a Contract Preferred Group can consume a shared service contract, but cannot be a provider for a shared service contract.'
+    recommended_action = (
+        "Before upgrading, remove each listed provider from the Preferred Group, "
+        "stop it from providing the listed shared-service contract, or remove the "
+        "unsupported L3Out/vzAny consumer relationship. Re-deploy the policy and "
+        "confirm the contract and Preferred Group configuration deploy successfully. "
+        "On releases that enforce this restriction, verify that F0467 or F4684 clears."
+    )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#preferred_group_shared_service_provider'
 
     if not tversion:
