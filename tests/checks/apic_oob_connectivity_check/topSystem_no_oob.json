@@ -1,0 +1,12 @@
+[
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "1",
+                "role": "controller",
+                "oobMgmtAddr": "0.0.0.0",
+                "oobMgmtAddr6": "::"
+            }
+        }
+    }
+]

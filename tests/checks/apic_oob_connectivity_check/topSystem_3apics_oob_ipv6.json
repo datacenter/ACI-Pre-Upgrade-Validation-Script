@@ -1,0 +1,32 @@
+[
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "1",
+                "role": "controller",
+                "oobMgmtAddr": "0.0.0.0",
+                "oobMgmtAddr6": "2001:db8::1"
+            }
+        }
+    },
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "2",
+                "role": "controller",
+                "oobMgmtAddr": "0.0.0.0",
+                "oobMgmtAddr6": "2001:db8::2"
+            }
+        }
+    },
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "3",
+                "role": "controller",
+                "oobMgmtAddr": "0.0.0.0",
+                "oobMgmtAddr6": "2001:db8::3"
+            }
+        }
+    }
+]
