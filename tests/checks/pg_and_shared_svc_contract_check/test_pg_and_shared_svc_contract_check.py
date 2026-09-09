@@ -30,6 +30,7 @@ glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
 
 l3out_consumers_api = 'l3extInstP.json'
 l3out_consumers_api += '?rsp-subtree=children&rsp-subtree-class=fvRsCons'
+vzany_consumers_api = 'vzRtAnyToCons.json'
 
 childless_fvAEPg = {
     "fvAEPg": {
@@ -142,6 +143,36 @@ tenant_l3out_consumer = {
         ]
     }
 }
+tenant_vzany_consumer = {
+    "vzRtAnyToCons": {
+        "attributes": {
+            "dn": (
+                "uni/tn-test/brc-tenant-shared/"
+                "rtanyToCons-[uni/tn-test/ctx-consumer/any]"
+            ),
+            "tDn": "uni/tn-test/ctx-consumer/any"
+        }
+    }
+}
+unrelated_vzany_consumer = {
+    "vzRtAnyToCons": {
+        "attributes": {
+            "dn": (
+                "uni/tn-test/brc-unrelated/"
+                "rtanyToCons-[uni/tn-test/ctx-consumer/any]"
+            ),
+            "tDn": "uni/tn-test/ctx-consumer/any"
+        }
+    }
+}
+malformed_vzany_consumer = {
+    "vzRtAnyToCons": {
+        "attributes": {
+            "dn": "uni/tn-test/brc-tenant-shared/bad-relation",
+            "tDn": "uni/tn-test/ctx-consumer/any"
+        }
+    }
+}
 
 
 @pytest.mark.parametrize(
@@ -217,7 +248,8 @@ tenant_l3out_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
-                l3out_consumers_api: [different_vrf_l3out_consumer]
+                l3out_consumers_api: [different_vrf_l3out_consumer],
+                vzany_consumers_api: []
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -228,7 +260,8 @@ tenant_l3out_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
-                l3out_consumers_api: [different_vrf_l3out_consumer]
+                l3out_consumers_api: [different_vrf_l3out_consumer],
+                vzany_consumers_api: []
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -249,7 +282,8 @@ tenant_l3out_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
                 glbl_ext_epgs_api: [childless_l3extInstP] + read_data(dir, "global_pg_l3extInstP.json"),
-                l3out_consumers_api: [different_vrf_l3out_consumer]
+                l3out_consumers_api: [different_vrf_l3out_consumer],
+                vzany_consumers_api: []
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -270,8 +304,7 @@ tenant_l3out_consumer = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
-                glbl_ext_epgs_api: [],
-                l3out_consumers_api: []
+                glbl_ext_epgs_api: []
             },
             "4.2(1a)", "6.0(1h)",
             script.PASS,
@@ -282,7 +315,8 @@ tenant_l3out_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: []
+                l3out_consumers_api: [],
+                vzany_consumers_api: []
             },
             "4.2(1a)", "6.0(1h)",
             script.PASS,
@@ -303,7 +337,8 @@ tenant_l3out_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [childless_l3extInstP]
+                l3out_consumers_api: [childless_l3extInstP],
+                vzany_consumers_api: []
             },
             "4.2(1a)", "6.0(1g)",
             script.PASS,
@@ -314,18 +349,20 @@ tenant_l3out_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [same_vrf_l3out_consumer]
+                l3out_consumers_api: [same_vrf_l3out_consumer],
+                vzany_consumers_api: []
             },
             "4.2(1a)", "6.0(1g)",
             script.PASS,
         ),
-        # An unrelated L3Out consumer does not affect the provider.
+        # Unrelated L3Out and vzAny consumers do not affect the provider.
         (
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [unrelated_l3out_consumer]
+                l3out_consumers_api: [unrelated_l3out_consumer],
+                vzany_consumers_api: [unrelated_vzany_consumer]
             },
             "4.2(1a)", "6.0(1g)",
             script.PASS,
@@ -347,7 +384,8 @@ def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
             shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
             glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
             glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
-            l3out_consumers_api: [different_vrf_l3out_consumer]
+            l3out_consumers_api: [different_vrf_l3out_consumer],
+            vzany_consumers_api: []
         }
     ]
 )
@@ -378,7 +416,8 @@ def test_all_4_2_and_newer_targets_are_checked(run_check, mock_icurl, tversion):
             shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
             glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
             glbl_ext_epgs_api: [],
-            l3out_consumers_api: [different_vrf_l3out_consumer]
+            l3out_consumers_api: [different_vrf_l3out_consumer],
+            vzany_consumers_api: []
         }
     ]
 )
@@ -408,7 +447,8 @@ def test_reports_correlated_l3out_consumer(run_check, mock_icurl):
             shrd_contracts_api: [tenant_contract],
             glbl_epgs_api: [tenant_provider],
             glbl_ext_epgs_api: [],
-            l3out_consumers_api: [tenant_l3out_consumer]
+            l3out_consumers_api: [tenant_l3out_consumer],
+            vzany_consumers_api: []
         }
     ]
 )
@@ -425,3 +465,55 @@ def test_reports_tenant_scope_contract_across_vrfs(run_check, mock_icurl):
         "102",
         "uni/tn-test/out-consumer/instP-consumer"
     ]]
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: [tenant_contract],
+            glbl_epgs_api: [tenant_provider],
+            glbl_ext_epgs_api: [],
+            l3out_consumers_api: [],
+            vzany_consumers_api: [tenant_vzany_consumer]
+        }
+    ]
+)
+def test_reports_correlated_vzany_consumer(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [[
+        "uni/tn-test/brc-tenant-shared",
+        "uni/tn-test/ap-provider/epg-provider",
+        "102",
+        "uni/tn-test/ctx-consumer/any"
+    ]]
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: [tenant_contract],
+            glbl_epgs_api: [tenant_provider],
+            glbl_ext_epgs_api: [],
+            l3out_consumers_api: [],
+            vzany_consumers_api: [malformed_vzany_consumer]
+        }
+    ]
+)
+def test_rejects_malformed_vzany_reverse_relation(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.ERROR
+    assert result.msg == (
+        "Failed to get contract DN from vzRtAnyToCons DN: "
+        "uni/tn-test/brc-tenant-shared/bad-relation"
+    )
