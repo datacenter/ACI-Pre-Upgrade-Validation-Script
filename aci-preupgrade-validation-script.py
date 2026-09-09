@@ -2214,6 +2214,7 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
             msg = 'Target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
         required_space = 2 * target_size_32 # only the 32-bit image is ever used pre-6.0(2a)
+        
 
     elif not cversion.older_than(boundary_version) and not tversion.older_than(boundary_version):
 
@@ -2221,7 +2222,7 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
             msg = 'Target switch image(s) not found in Firmware Repository.'
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
         required_space = 2 * max(target_size_32 or 0, target_size_64 or 0) # only the larger of the 32-bit or 64-bit image is used post-6.0(2a).
-
+        
     else:
         # Crossing the 32/64-bit boundary: 32 + 64 b target images are downloaded while
         # the current (32-bit only) image is removed, freeing up its space.
@@ -2234,7 +2235,7 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
             msg = 'Current switch image ({}) not found in Firmware Repository.'.format(switch_current_version)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
         required_space = 2 * ((target_size_32 or 0) + (target_size_64 or 0) - current_size)
-
+        
     required_space_kb = required_space / 1024.0  # eqptcapacityFSPartition avail/used are in KB
 
     for eqptcapacityFSPartition in partitions:
