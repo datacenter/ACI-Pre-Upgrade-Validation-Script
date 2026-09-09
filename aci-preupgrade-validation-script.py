@@ -6068,7 +6068,7 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
         "confirm the contract and Preferred Group configuration deploy successfully. "
         "On releases that enforce this restriction, verify that F0467 or F4684 clears."
     )
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#preferred_group_shared_service_provider'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#preferred-group-shared-service-provider'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)

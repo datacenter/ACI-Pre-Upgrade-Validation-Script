@@ -160,7 +160,7 @@ Items                                         | Faults         | This Script    
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
-[c25]: #preferred_group_shared_service_provider
+[c25]: #preferred-group-shared-service-provider
 
 ### Defect Condition Checks
 
@@ -2722,4 +2722,3 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 [60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
 [61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
 [62]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
-

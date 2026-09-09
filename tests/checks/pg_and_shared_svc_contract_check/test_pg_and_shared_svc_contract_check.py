@@ -438,6 +438,7 @@ def test_reports_correlated_l3out_consumer(run_check, mock_icurl):
     assert "stop it from providing the listed shared-service contract" in result.recommended_action
     assert "remove the unsupported L3Out/vzAny consumer relationship" in result.recommended_action
     assert "F0467 or F4684" in result.recommended_action
+    assert result.doc_url.endswith("/#preferred-group-shared-service-provider")
 
 
 @pytest.mark.parametrize(
