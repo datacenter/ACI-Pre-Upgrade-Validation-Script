@@ -6085,7 +6085,7 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
         glbl_epgs = icurl('class', glbl_epgs_api)
         if glbl_epgs:
             for glbl_epg in glbl_epgs:
-                for prov_contract in glbl_epg["fvAEPg"]["children"]:
+                for prov_contract in glbl_epg["fvAEPg"].get("children") or []:
                     if prov_contract["fvRsProv"]["attributes"]["tDn"] in list_of_shrd_contracts:
                         contract = prov_contract["fvRsProv"]["attributes"]["tDn"]
                         pctag = glbl_epg["fvAEPg"]["attributes"]["pcTag"]
@@ -6098,7 +6098,7 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     glbl_ext_epgs = icurl('class', glbl_ext_epgs_api)
     if glbl_ext_epgs:
         for glbl_ext_epg in glbl_ext_epgs:
-            for prov_ext_contract in glbl_ext_epg["l3extInstP"]["children"]:
+            for prov_ext_contract in glbl_ext_epg["l3extInstP"].get("children") or []:
                 if prov_ext_contract["fvRsProv"]["attributes"]["tDn"] in list_of_shrd_contracts:
                     contract = prov_ext_contract["fvRsProv"]["attributes"]["tDn"]
                     pctag = glbl_ext_epg["l3extInstP"]["attributes"]["pcTag"]

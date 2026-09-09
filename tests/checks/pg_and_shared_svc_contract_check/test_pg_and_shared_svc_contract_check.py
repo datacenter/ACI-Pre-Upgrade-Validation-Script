@@ -28,6 +28,23 @@ glbl_ext_epgs_api = 'l3extInstP.json'
 glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"16"),eq(l3extInstP.prefGrMemb,"include"))'
 glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
 
+childless_fvAEPg = {
+    "fvAEPg": {
+        "attributes": {
+            "dn": "uni/tn-test/ap-test/epg-no-provider",
+            "pcTag": "100"
+        }
+    }
+}
+childless_l3extInstP = {
+    "l3extInstP": {
+        "attributes": {
+            "dn": "uni/tn-test/out-test/instP-no-provider",
+            "pcTag": "101"
+        }
+    }
+}
+
 
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
@@ -106,6 +123,26 @@ glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
         ),
+        # A childless fvAEPg does not hide a later affected fvAEPg.
+        (
+            {
+                shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+                glbl_epgs_api: [childless_fvAEPg] + read_data(dir, "global_pg_fvAEPg.json"),
+                glbl_ext_epgs_api: []
+            },
+            "4.2(1a)", "5.2(8i)",
+            script.FAIL_O,
+        ),
+        # A childless l3extInstP does not hide a later affected l3extInstP.
+        (
+            {
+                shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+                glbl_epgs_api: [],
+                glbl_ext_epgs_api: [childless_l3extInstP] + read_data(dir, "global_pg_l3extInstP.json")
+            },
+            "4.2(1a)", "6.0(1g)",
+            script.FAIL_O,
+        ),
         # PASS Cases
         # Target version is older than 6.0(1g), no global_pg EPGs or extEPGs , Result = PASS
         (
@@ -135,6 +172,16 @@ glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
                 glbl_ext_epgs_api: []
             },
             "4.2(1a)", "6.0(1h)",
+            script.PASS,
+        ),
+        # Preferred-group objects without provider children are not affected.
+        (
+            {
+                shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+                glbl_epgs_api: [childless_fvAEPg],
+                glbl_ext_epgs_api: [childless_l3extInstP]
+            },
+            "4.2(1a)", "5.2(8i)",
             script.PASS,
         ),
     ]
