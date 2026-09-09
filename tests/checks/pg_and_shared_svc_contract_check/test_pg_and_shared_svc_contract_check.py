@@ -28,6 +28,9 @@ glbl_ext_epgs_api = 'l3extInstP.json'
 glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"16"),eq(l3extInstP.prefGrMemb,"include"))'
 glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
 
+l3out_consumers_api = 'l3extInstP.json'
+l3out_consumers_api += '?rsp-subtree=children&rsp-subtree-class=fvRsCons'
+
 childless_fvAEPg = {
     "fvAEPg": {
         "attributes": {
@@ -42,6 +45,57 @@ childless_l3extInstP = {
             "dn": "uni/tn-test/out-test/instP-no-provider",
             "pcTag": "101"
         }
+    }
+}
+different_vrf_l3out_consumer = {
+    "l3extInstP": {
+        "attributes": {
+            "dn": "uni/tn-consumer/out-consumer/instP-different-vrf",
+            "scope": "999"
+        },
+        "children": [
+            {
+                "fvRsCons": {
+                    "attributes": {
+                        "tDn": "uni/tn-common/brc-AD_C"
+                    }
+                }
+            }
+        ]
+    }
+}
+same_vrf_l3out_consumer = {
+    "l3extInstP": {
+        "attributes": {
+            "dn": "uni/tn-consumer/out-consumer/instP-same-vrf",
+            "scope": "2261001"
+        },
+        "children": [
+            {
+                "fvRsCons": {
+                    "attributes": {
+                        "tDn": "uni/tn-common/brc-AD_C"
+                    }
+                }
+            }
+        ]
+    }
+}
+unrelated_l3out_consumer = {
+    "l3extInstP": {
+        "attributes": {
+            "dn": "uni/tn-consumer/out-consumer/instP-unrelated",
+            "scope": "999"
+        },
+        "children": [
+            {
+                "fvRsCons": {
+                    "attributes": {
+                        "tDn": "uni/tn-common/brc-unrelated"
+                    }
+                }
+            }
+        ]
     }
 }
 
@@ -108,7 +162,8 @@ childless_l3extInstP = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+                l3out_consumers_api: [different_vrf_l3out_consumer]
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -118,7 +173,8 @@ childless_l3extInstP = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
-                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+                l3out_consumers_api: [different_vrf_l3out_consumer]
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -138,7 +194,8 @@ childless_l3extInstP = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
-                glbl_ext_epgs_api: [childless_l3extInstP] + read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: [childless_l3extInstP] + read_data(dir, "global_pg_l3extInstP.json"),
+                l3out_consumers_api: [different_vrf_l3out_consumer]
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -159,7 +216,8 @@ childless_l3extInstP = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
-                glbl_ext_epgs_api: []
+                glbl_ext_epgs_api: [],
+                l3out_consumers_api: []
             },
             "4.2(1a)", "6.0(1h)",
             script.PASS,
@@ -169,7 +227,8 @@ childless_l3extInstP = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: []
+                glbl_ext_epgs_api: [],
+                l3out_consumers_api: []
             },
             "4.2(1a)", "6.0(1h)",
             script.PASS,
@@ -182,6 +241,39 @@ childless_l3extInstP = {
                 glbl_ext_epgs_api: [childless_l3extInstP]
             },
             "4.2(1a)", "5.2(8i)",
+            script.PASS,
+        ),
+        # No L3Out consumer means an ordinary EPG consumer cannot trigger this check.
+        (
+            {
+                shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+                glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
+                glbl_ext_epgs_api: [],
+                l3out_consumers_api: [childless_l3extInstP]
+            },
+            "4.2(1a)", "6.0(1g)",
+            script.PASS,
+        ),
+        # A same-VRF L3Out consumer does not trigger the cross-VRF restriction.
+        (
+            {
+                shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+                glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+                glbl_ext_epgs_api: [],
+                l3out_consumers_api: [same_vrf_l3out_consumer]
+            },
+            "4.2(1a)", "6.0(1g)",
+            script.PASS,
+        ),
+        # An unrelated L3Out consumer does not affect the provider.
+        (
+            {
+                shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+                glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
+                glbl_ext_epgs_api: [],
+                l3out_consumers_api: [unrelated_l3out_consumer]
+            },
+            "4.2(1a)", "6.0(1g)",
             script.PASS,
         ),
     ]
@@ -200,7 +292,8 @@ def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
         {
             shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
             glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-            glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+            glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+            l3out_consumers_api: [different_vrf_l3out_consumer]
         }
     ]
 )
@@ -222,3 +315,29 @@ def test_all_4_2_and_newer_targets_are_checked(run_check, mock_icurl, tversion):
         tversion=script.AciVersion(tversion)
     )
     assert result.result not in (script.NA, script.ERROR)
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+            glbl_ext_epgs_api: [],
+            l3out_consumers_api: [different_vrf_l3out_consumer]
+        }
+    ]
+)
+def test_reports_correlated_l3out_consumer(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [[
+        "uni/tn-common/brc-AD_C",
+        "uni/tn-common/ap-apptest/epg-epg1",
+        "5555",
+        "uni/tn-consumer/out-consumer/instP-different-vrf"
+    ]]

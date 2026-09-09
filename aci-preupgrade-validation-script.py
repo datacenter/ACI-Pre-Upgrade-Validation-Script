@@ -6059,7 +6059,7 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
 @check_wrapper(check_title='Shared Services Providers with Preferred Group enabled')
 def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     result= PASS
-    headers = ["Shared Service Contract", "Provider in Preferred Group", "PcTag"]
+    headers = ["Shared Service Contract", "Provider in Preferred Group", "PcTag", "Affected Consumer"]
     data = []
     recommended_action = 'an EPG in a Contract Preferred Group can consume a shared service contract, but cannot be a provider for a shared service contract.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#preferred_group_shared_service_provider'
@@ -6074,36 +6074,59 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     shrd_contracts = icurl('class', shrd_contracts_api)
     if not shrd_contracts:
         return Result(result=NA)
-    list_of_shrd_contracts =[]
+    list_of_shrd_contracts = set()
     for shrd_contract in shrd_contracts:
-        list_of_shrd_contracts.append(shrd_contract["vzBrCP"]["attributes"]["dn"])
-    # Configuration only becomes faulted for extEPGs after 6.0(1g), normal epgs permitted.
-    if tversion.older_than("6.0(1g)"):  
-        glbl_epgs_api = 'fvAEPg.json'
-        glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"16"),eq(fvAEPg.prefGrMemb,"include"))'
-        glbl_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
-        glbl_epgs = icurl('class', glbl_epgs_api)
-        if glbl_epgs:
-            for glbl_epg in glbl_epgs:
-                for prov_contract in glbl_epg["fvAEPg"].get("children") or []:
-                    if prov_contract["fvRsProv"]["attributes"]["tDn"] in list_of_shrd_contracts:
-                        contract = prov_contract["fvRsProv"]["attributes"]["tDn"]
-                        pctag = glbl_epg["fvAEPg"]["attributes"]["pcTag"]
-                        provider = glbl_epg["fvAEPg"]["attributes"]["dn"]
-                        data.append([contract, provider, pctag])
-    # Regardless of version, check extEPGs
+        list_of_shrd_contracts.add(shrd_contract["vzBrCP"]["attributes"]["dn"])
+
+    broad_provider_check = tversion.older_than("6.0(1g)")
+    l3out_consumers_by_contract = {}
+    if not broad_provider_check:
+        l3out_consumers_api = 'l3extInstP.json'
+        l3out_consumers_api += '?rsp-subtree=children&rsp-subtree-class=fvRsCons'
+        l3out_consumers = icurl('class', l3out_consumers_api)
+        for l3out_consumer in l3out_consumers:
+            consumer_attributes = l3out_consumer["l3extInstP"]["attributes"]
+            for cons_contract in l3out_consumer["l3extInstP"].get("children") or []:
+                contract = cons_contract["fvRsCons"]["attributes"]["tDn"]
+                if contract in list_of_shrd_contracts:
+                    l3out_consumers_by_contract.setdefault(contract, []).append(
+                        (consumer_attributes["dn"], consumer_attributes["scope"])
+                    )
+
+    glbl_epgs_api = 'fvAEPg.json'
+    glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"16"),eq(fvAEPg.prefGrMemb,"include"))'
+    glbl_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
+    glbl_epgs = icurl('class', glbl_epgs_api)
+
     glbl_ext_epgs_api = 'l3extInstP.json'
     glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"16"),eq(l3extInstP.prefGrMemb,"include"))'
     glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
     glbl_ext_epgs = icurl('class', glbl_ext_epgs_api)
-    if glbl_ext_epgs:
-        for glbl_ext_epg in glbl_ext_epgs:
-            for prov_ext_contract in glbl_ext_epg["l3extInstP"].get("children") or []:
-                if prov_ext_contract["fvRsProv"]["attributes"]["tDn"] in list_of_shrd_contracts:
-                    contract = prov_ext_contract["fvRsProv"]["attributes"]["tDn"]
-                    pctag = glbl_ext_epg["l3extInstP"]["attributes"]["pcTag"]
-                    provider = glbl_ext_epg["l3extInstP"]["attributes"]["dn"]
-                    data.append([contract, provider, pctag])
+
+    for provider_class, providers in (("fvAEPg", glbl_epgs), ("l3extInstP", glbl_ext_epgs)):
+        for provider_mo in providers:
+            provider = provider_mo[provider_class]
+            provider_attributes = provider["attributes"]
+            for prov_contract in provider.get("children") or []:
+                contract = prov_contract["fvRsProv"]["attributes"]["tDn"]
+                if contract not in list_of_shrd_contracts:
+                    continue
+                if broad_provider_check:
+                    data.append([
+                        contract,
+                        provider_attributes["dn"],
+                        provider_attributes["pcTag"],
+                        "Any"
+                    ])
+                    continue
+                for consumer_dn, consumer_scope in l3out_consumers_by_contract.get(contract, []):
+                    if consumer_scope != provider_attributes["scope"]:
+                        data.append([
+                            contract,
+                            provider_attributes["dn"],
+                            provider_attributes["pcTag"],
+                            consumer_dn
+                        ])
 
     if data:
         result = FAIL_O
