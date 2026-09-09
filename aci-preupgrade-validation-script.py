@@ -6076,7 +6076,7 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     if tversion.older_than("4.2(1a)"):
         return Result(result=NA)
     shrd_contracts_api = 'vzBrCP.json'
-    shrd_contracts_api += '?query-target-filter=and(eq(vzBrCP.scope,"global"))'
+    shrd_contracts_api += '?query-target-filter=or(eq(vzBrCP.scope,"global"),eq(vzBrCP.scope,"tenant"))'
     shrd_contracts = icurl('class', shrd_contracts_api)
     if not shrd_contracts:
         return Result(result=NA)

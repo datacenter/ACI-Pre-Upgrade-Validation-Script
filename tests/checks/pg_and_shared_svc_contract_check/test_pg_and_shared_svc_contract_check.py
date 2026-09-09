@@ -14,7 +14,7 @@ test_function = "pg_and_shared_svc_contract_check"
 # icurl queries
 # shared contracts
 shrd_contracts_api = 'vzBrCP.json'
-shrd_contracts_api += '?query-target-filter=and(eq(vzBrCP.scope,"global"))'
+shrd_contracts_api += '?query-target-filter=or(eq(vzBrCP.scope,"global"),eq(vzBrCP.scope,"tenant"))'
 
 # global epgs  ( 16 <= pgtag <= 16385) with Preferred group enabled with provided contracts
 
@@ -98,6 +98,50 @@ unrelated_l3out_consumer = {
         ]
     }
 }
+tenant_contract = {
+    "vzBrCP": {
+        "attributes": {
+            "dn": "uni/tn-test/brc-tenant-shared",
+            "name": "tenant-shared",
+            "scope": "tenant"
+        }
+    }
+}
+tenant_provider = {
+    "fvAEPg": {
+        "attributes": {
+            "dn": "uni/tn-test/ap-provider/epg-provider",
+            "pcTag": "102",
+            "scope": "1000"
+        },
+        "children": [
+            {
+                "fvRsProv": {
+                    "attributes": {
+                        "tDn": "uni/tn-test/brc-tenant-shared"
+                    }
+                }
+            }
+        ]
+    }
+}
+tenant_l3out_consumer = {
+    "l3extInstP": {
+        "attributes": {
+            "dn": "uni/tn-test/out-consumer/instP-consumer",
+            "scope": "2000"
+        },
+        "children": [
+            {
+                "fvRsCons": {
+                    "attributes": {
+                        "tDn": "uni/tn-test/brc-tenant-shared"
+                    }
+                }
+            }
+        ]
+    }
+}
 
 
 @pytest.mark.parametrize(
@@ -155,6 +199,16 @@ unrelated_l3out_consumer = {
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
             },
             "4.2(1a)", "6.0(1f)",
+            script.FAIL_O,
+        ),
+        # Tenant-scope contracts carry the same broad forwarding risk through 5.2.
+        (
+            {
+                shrd_contracts_api: [tenant_contract],
+                glbl_epgs_api: [tenant_provider],
+                glbl_ext_epgs_api: []
+            },
+            "4.2(1a)", "5.2(8i)",
             script.FAIL_O,
         ),
         # Target version is newer than 6.0(1g), both global_pg EPGs and extEPGs , Result = FAIL_O
@@ -345,3 +399,29 @@ def test_reports_correlated_l3out_consumer(run_check, mock_icurl):
     assert "stop it from providing the listed shared-service contract" in result.recommended_action
     assert "remove the unsupported L3Out/vzAny consumer relationship" in result.recommended_action
     assert "F0467 or F4684" in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: [tenant_contract],
+            glbl_epgs_api: [tenant_provider],
+            glbl_ext_epgs_api: [],
+            l3out_consumers_api: [tenant_l3out_consumer]
+        }
+    ]
+)
+def test_reports_tenant_scope_contract_across_vrfs(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [[
+        "uni/tn-test/brc-tenant-shared",
+        "uni/tn-test/ap-provider/epg-provider",
+        "102",
+        "uni/tn-test/out-consumer/instP-consumer"
+    ]]
