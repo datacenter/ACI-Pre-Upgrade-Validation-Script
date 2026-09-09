@@ -17,8 +17,17 @@ partitions += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash"
 
 firmware = 'firmwareFirmware.json?query-target-filter=eq(firmwareFirmware.type,"switch")'
 
-download_sts = 'maintUpgJob.json'
-download_sts += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100"))'
+download_sts_602 = 'maintUpgJob.json'
+download_sts_602 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+download_sts_602 += ',eq(maintUpgJob.desiredVersion,"n9000-16.0(2h)"))'
+
+download_sts_528 = 'maintUpgJob.json'
+download_sts_528 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+download_sts_528 += ',eq(maintUpgJob.desiredVersion,"n9000-15.2(8h)"))'
+
+download_sts_615 = 'maintUpgJob.json'
+download_sts_615 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+download_sts_615 += ',eq(maintUpgJob.desiredVersion,"n9000-16.1(5e)"))'
 
 # No pre-downloaded nodes unless a test overrides this key.
 no_predownload = []
@@ -86,7 +95,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: no_predownload,
+                download_sts_602: no_predownload,
                 firmware: firmware_dual_602,
             },
             "6.0(3a)",
@@ -97,7 +106,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: no_predownload,
+                download_sts_528: no_predownload,
                 firmware: [
                     {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.15.2.8h.bin", "size": "1000000000"}}},
                 ],
@@ -110,7 +119,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: no_predownload,
+                download_sts_615: no_predownload,
                 firmware: read_data(dir, "firmwareFirmware_dual_image_insufficient.json"),
             },
             "5.2(8h)",
@@ -120,7 +129,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: no_predownload,
+                download_sts_615: no_predownload,
                 firmware: read_data(dir, "firmwareFirmware_dual_image_sufficient.json"),
             },
             "5.2(8h)",
@@ -131,7 +140,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: no_predownload,
+                download_sts_602: no_predownload,
                 firmware: [],
             },
             "6.0(3a)",
@@ -143,7 +152,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_node_101_downloaded,
+                download_sts_602: maintUpgJob_node_101_downloaded,
                 firmware: firmware_dual_602,
             },
             "6.0(3a)",
@@ -154,7 +163,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_node_999_downloaded,
+                download_sts_602: maintUpgJob_node_999_downloaded,
                 firmware: firmware_dual_602,
             },
             "6.0(3a)",
@@ -165,7 +174,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_all_downloaded,
+                download_sts_602: maintUpgJob_all_downloaded,
                 firmware: firmware_dual_602,
             },
             "6.0(3a)",
@@ -177,7 +186,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: old_ver_no_prop,
+                download_sts_602: old_ver_no_prop,
                 firmware: firmware_dual_602,
             },
             "6.0(3a)",
@@ -189,7 +198,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_malformed_dn,
+                download_sts_602: maintUpgJob_malformed_dn,
                 firmware: firmware_dual_602,
             },
             "6.0(3a)",
@@ -201,7 +210,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_partial_of_failing,
+                download_sts_615: maintUpgJob_partial_of_failing,
                 firmware: read_data(dir, "firmwareFirmware_dual_image_insufficient.json"),
             },
             "5.2(8h)",
@@ -213,7 +222,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_all_of_failing,
+                download_sts_615: maintUpgJob_all_of_failing,
                 firmware: read_data(dir, "firmwareFirmware_dual_image_insufficient.json"),
             },
             "5.2(8h)",
@@ -226,7 +235,7 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
-                download_sts: maintUpgJob_partial_missing_empty,
+                download_sts_615: maintUpgJob_partial_missing_empty,
                 firmware: read_data(dir, "firmwareFirmware_dual_image_insufficient.json"),
             },
             "5.2(8h)",

@@ -2178,7 +2178,8 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
         return Result(result=MANUAL, msg='/bootflash directory not found. Check switch health.', doc_url=doc_url)
 
     download_sts_api = 'maintUpgJob.json'
-    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100"))'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+    download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion.version)
 
     try:
         download_sts = icurl('class', download_sts_api)
