@@ -44,17 +44,18 @@ glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
             script.MANUAL,
         ),
         # NA cases
-        # Target version is lower than 4.2(6d), Result = NA
+        # Target version is lower than 4.2, Result = NA
         (
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
             },
-            "4.2(1a)", "4.2(6c)",
+            "4.2(1a)", "4.1(2a)",
             script.NA,
         ),
-        # Target version is lower than 5.1(1h), Result = NA
+        # Target version predates Preferred Group-specific F0467 enforcement,
+        # but the forwarding risk is still present.
         (
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
@@ -62,7 +63,7 @@ glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
             },
             "4.2(1a)", "5.1(1g)",
-            script.NA,
+            script.FAIL_O,
         ),
         # There are no global contracts, Result = NA
         (
@@ -144,3 +145,33 @@ def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
         tversion=script.AciVersion(tversion) if tversion else None
     )
     assert result.result == expected_result
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
+            glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+        }
+    ]
+)
+@pytest.mark.parametrize(
+    "tversion",
+    [
+        "4.2(5n)",
+        "4.2(6d)",
+        "5.1(1h)",
+        "5.1(3e)",
+        "5.2(1g)",
+        "5.2(8i)",
+        "6.0(1g)",
+    ]
+)
+def test_all_4_2_and_newer_targets_are_checked(run_check, mock_icurl, tversion):
+    result = run_check(
+        cversion=script.AciVersion("4.2(1a)"),
+        tversion=script.AciVersion(tversion)
+    )
+    assert result.result not in (script.NA, script.ERROR)

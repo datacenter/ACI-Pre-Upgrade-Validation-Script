@@ -6066,10 +6066,8 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
-    # Configuration becomes faulted after 4.2-6d and 5.1-1h
-    if tversion.older_than("4.2(6d)"):
-        return Result(result=NA)
-    elif tversion.older_than("5.1(1h)"):
+    # Only releases 4.2 and later are in scope for this validation.
+    if tversion.older_than("4.2(1a)"):
         return Result(result=NA)
     shrd_contracts_api = 'vzBrCP.json'
     shrd_contracts_api += '?query-target-filter=and(eq(vzBrCP.scope,"global"))'
