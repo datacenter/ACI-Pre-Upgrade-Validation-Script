@@ -1,0 +1,7 @@
+[
+  {"eqptLC": {"attributes": {"dn": "topology/pod-1/node-101/sys/ch/lcslot-1/lc", "model": "N9K-X9400-16W"}}},
+  {"eqptLC": {"attributes": {"dn": "topology/pod-1/node-101/sys/ch/lcslot-2/lc", "model": "N9K-X9400-16W"}}},
+  {"eqptLC": {"attributes": {"dn": "topology/pod-1/node-101/sys/ch/lcslot-3/lc", "model": "N9K-X9400-16W"}}},
+  {"eqptLC": {"attributes": {"dn": "topology/pod-1/node-101/sys/ch/lcslot-4/lc", "model": "N9K-X9400-16W"}}},
+  {"eqptLC": {"attributes": {"dn": "topology/pod-1/node-101/sys/ch/lcslot-5/lc", "model": "N9K-X9400-16W"}}}
+]

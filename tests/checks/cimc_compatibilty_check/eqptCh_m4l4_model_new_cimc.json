@@ -1,0 +1,29 @@
+[
+   
+  {
+      "eqptCh": {
+          "attributes": {
+              "bootSource": "bootflash",
+              "cimcVersion": "4.5(2f)",
+              "configRole": "unspecified",
+              "descr": "APIC-SERVER-M4",
+              "dn": "topology/pod-2/node-3/sys/ch",
+              "hybridMode": "no",
+              "model": "APIC-SERVER-M4"
+          }
+      }
+  },
+  {
+      "eqptCh": {
+          "attributes": {
+              "bootSource": "bootflash",
+              "cimcVersion": "4.5(2f)",
+              "configRole": "unspecified",
+              "descr": "APIC-SERVER-L4",
+              "dn": "topology/pod-2/node-4/sys/ch",
+              "hybridMode": "no",
+              "model": "APIC-SERVER-L4"
+          }
+      }
+  }
+]

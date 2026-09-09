@@ -1,0 +1,18 @@
+[
+  {
+    "eqptSupC": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001/sys/ch/supslot-1/sup",
+        "model": "N9K-SUP-B"
+      }
+    }
+  },
+  {
+    "eqptSupC": {
+      "attributes": {
+        "dn": "topology/pod-1/node-1001/sys/ch/supslot-2/sup",
+        "model": "N9K-SUP-C"
+      }
+    }
+  }
+]

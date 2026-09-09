@@ -69,6 +69,8 @@ mo_count_fail = {
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result",
     [
+        # Current Version not affected
+        (mo_count_fail, "6.0(6b)", None, script.NA),
         # Target Version not supplied
         (mo_count_fail, "3.2(8f)", None, script.POST),
         # Target Version newer than current (i.e. APIC upgrade not done yet)

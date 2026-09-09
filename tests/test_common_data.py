@@ -324,7 +324,7 @@ _icurl_outputs_old = {
                 "attributes": {
                     "dn": "topology/pod-1/node-1/sys/ctrlrfwstatuscont/ctrlrrunning",
                     "type": "controller",
-                    "version": "3.2(7f)"
+                    "version": "3.2(7f)",
                 }
             }
         }
@@ -336,7 +336,7 @@ _icurl_outputs_old = {
                     "dn": "topology/pod-1/node-101/sys/fwstatuscont/running",
                     "peVer": "3.1(2u)",
                     "type": "switch",
-                    "version": "n9000-13.1(2u)"
+                    "version": "n9000-13.1(2u)",
                 }
             }
         },
@@ -346,7 +346,7 @@ _icurl_outputs_old = {
                     "dn": "topology/pod-1/node-102/sys/fwstatuscont/running",
                     "peVer": "3.2(7f)",
                     "type": "switch",
-                    "version": "n9000-13.2(7f)"
+                    "version": "n9000-13.2(7f)",
                 }
             }
         },
@@ -356,7 +356,7 @@ _icurl_outputs_old = {
                     "dn": "topology/pod-1/node-1001/sys/fwstatuscont/running",
                     "peVer": "3.2(7f)",
                     "type": "switch",
-                    "version": "n9000-13.2(7f)"
+                    "version": "n9000-13.2(7f)",
                 }
             }
         },
@@ -366,7 +366,7 @@ _icurl_outputs_old = {
                     "dn": "topology/pod-2/node-201/sys/fwstatuscont/running",
                     "peVer": "3.2(7f)",
                     "type": "switch",
-                    "version": "n9000-13.2(7f)"
+                    "version": "n9000-13.2(7f)",
                 }
             }
         },
@@ -376,11 +376,10 @@ _icurl_outputs_old = {
                     "dn": "topology/pod-2/node-2001/sys/fwstatuscont/running",
                     "peVer": "3.2(7f)",
                     "type": "switch",
-                    "version": "n9000-13.2(7f)"
+                    "version": "n9000-13.2(7f)",
                 }
             }
         },
-
     ],
 }
 
@@ -391,6 +390,8 @@ def fake_args(request):
         "api_only": False,
         "cversion": None,
         "tversion": None,
+        "username": None,
+        "password": None,
     }
     # update data contents when parametrize provides non-falsy values
     for key in data:
@@ -412,6 +413,8 @@ def fake_args(request):
             _icurl_outputs,
             {},
             {
+                "username": "admin",
+                "password": "mypassword",
                 "cversion": AciVersion("6.1(1a)"),
                 "sw_cversion": AciVersion("6.0(9d)"),
                 "tversion": AciVersion("6.2(1a)"),
@@ -425,6 +428,8 @@ def fake_args(request):
             _icurl_outputs_old,
             {},
             {
+                "username": "admin",
+                "password": "mypassword",
                 "cversion": AciVersion("3.2(7f)"),
                 "sw_cversion": AciVersion("3.1(2u)"),
                 "tversion": AciVersion("6.2(1a)"),
@@ -450,6 +455,34 @@ def fake_args(request):
                 "vpc_node_ids": ["101", "102"],
             },
             id="api_only",
+        ),
+        # `api_only` is True.
+        # username and password are provide but ignored.
+        pytest.param(
+            _icurl_outputs,
+            {
+                "api_only": True,
+                "username": "arg_admin",
+                "password": "arg_password",
+            },
+            {
+                "username": None,
+                "password": None,
+            },
+            id="api_only_with_username_password",
+        ),
+        # username and password are provided
+        pytest.param(
+            _icurl_outputs,
+            {
+                "username": "arg_admin",
+                "password": "arg_password",
+            },
+            {
+                "username": "arg_admin",
+                "password": "arg_password",
+            },
+            id="username_password",
         ),
         # `arg_tversion` is provided (i.e. -t 6.1(4a))
         pytest.param(
@@ -537,7 +570,11 @@ def test_common_data(mock_icurl, fake_args, expected_common_data):
     """test query_common_data and write_script_metadata"""
     # --- test for `query_common_data()`
     common_data = script.query_common_data(
-        api_only=fake_args["api_only"], arg_cversion=fake_args["cversion"], arg_tversion=fake_args["tversion"]
+        api_only=fake_args["api_only"],
+        arg_cversion=fake_args["cversion"],
+        arg_tversion=fake_args["tversion"],
+        username=fake_args["username"],
+        password=fake_args["password"],
     )
     for key in common_data:
         if isinstance(common_data[key], AciVersion):
@@ -603,7 +640,13 @@ Parsing failure of ACI version `invalid_version`
         # `get_fabric_nodes()` failure
         (
             {
-                "fabricNode.json": [{"error": {"attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}}}],
+                "fabricNode.json": [
+                    {
+                        "error": {
+                            "attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}
+                        }
+                    }
+                ],
                 "fabricNodePEp.json": _icurl_outputs["fabricNodePEp.json"],
             },
             "Gathering Node Information...\n\n",
@@ -612,7 +655,13 @@ Parsing failure of ACI version `invalid_version`
         (
             {
                 "fabricNode.json": _icurl_outputs["fabricNode.json"],
-                "fabricNodePEp.json": [{"error": {"attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}}}],
+                "fabricNodePEp.json": [
+                    {
+                        "error": {
+                            "attributes": {"code": "400", "text": "Request failed, unresolved class for dummyClass"}
+                        }
+                    }
+                ],
             },
             "Collecting VPC Node IDs...",
         ),

@@ -1,0 +1,15 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "cause": "equipment-disk-limits-exceeded",
+        "changeSet": "avail:1959076, memAlert:minor, name:ifc:cfg, path:/mnt/ifc/cfg, used:8207252",
+        "code": "F1820",
+        "descr": "Disk usage for /mnt/ifc/cfg is above normal",
+        "dn": "topology/pod-1/node-107/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1820",
+        "lc": "raised",
+        "rule": "eqptcapacity-fspartition-fs-partition-limits-exceeded-minor"
+      }
+    }
+  }
+]

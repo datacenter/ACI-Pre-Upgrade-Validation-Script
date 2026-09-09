@@ -1,0 +1,12 @@
+[
+  {
+    "eqptFlash": {
+      "attributes": {
+        "dn": "topology/pod-1/node-205/sys/ch/supslot-2/sup/flash",
+        "model": "Micron_M600_MTFDDAT064MBF",
+        "vendor": "Micron",
+        "ser": "MSA20400892"
+      }
+    }
+  }
+]
