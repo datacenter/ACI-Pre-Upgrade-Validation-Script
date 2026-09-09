@@ -5978,9 +5978,9 @@ def aes_encryption_check(tversion, **kwargs):
 @check_wrapper(check_title='Service Graph BD Forceful Routing')
 def service_bd_forceful_routing_check(cversion, tversion, **kwargs):
     result = PASS
-    headers = ["Bridge Domain (Tenant:BD)", "Service Graph Device (Tenant:Device)"]
+    headers = ["Bridge Domain (Tenant:BD)", "Contract (Tenant:Contract)", "Service Graph (Tenant:Service Graph)", "Node", "Connector"]
     data = []
-    unformatted_headers = ["DN of fvRtEPpInfoToBD"]
+    unformatted_headers = ["DN of fvRtLIfCtxToBD"]
     unformatted_data = []
     recommended_action = (
         "\n\tConfirm that within these BDs there is no bridging traffic with the destination IP that doesn't belong to them."
@@ -5995,18 +5995,24 @@ def service_bd_forceful_routing_check(cversion, tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
     dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)/"
-    dn_regex += r"rtvnsEPpInfoToBD-\[uni/tn-(?P<sg_tn>[^/])+/LDevInst-\[uni/tn-(?P<ldev_tn>[^/]+)/lDevVip-(?P<ldev>[^\]]+)\].*\]"
+    dn_regex += r"rtvnsLIfCtxToBD-\[uni/tn-(?P<ldevctx_tn>[^/]+)/"
+    dn_regex += r"ldevCtx-c-(?P<contract>.+?)-g-(?P<graph>.+?)-n-(?P<node>.+?)/"
+    dn_regex += r"lIfCtx-c-(?P<conn>[^\]]+)\]"
 
-    fvRtEPpInfoToBDs = icurl("class", "fvRtEPpInfoToBD.json")
-    for fvRtEPpInfoToBD in fvRtEPpInfoToBDs:
-        m = re.search(dn_regex, fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
+    fvRtLIfCtxToBDs = icurl("class", "fvRtLIfCtxToBD.json")
+    for fvRtLIfCtxToBD in fvRtLIfCtxToBDs:
+        dn = fvRtLIfCtxToBD["fvRtLIfCtxToBD"]["attributes"]["dn"]
+        m = re.search(dn_regex, dn)
         if not m:
-            log.error("Failed to match %s", fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"])
-            unformatted_data.append([fvRtEPpInfoToBD["fvRtEPpInfoToBD"]["attributes"]["dn"]])
+            log.error("Failed to match %s", dn)
+            unformatted_data.append([dn])
             continue
         data.append([
             "{}:{}".format(m.group("bd_tn"), m.group("bd")),
-            "{}:{}".format(m.group("ldev_tn"), m.group("ldev")),
+            "{}:{}".format(m.group("ldevctx_tn"), m.group("contract")),
+            "{}:{}".format(m.group("ldevctx_tn"), m.group("graph")),
+            m.group("node"),
+            m.group("conn"),
         ])
 
     if data or unformatted_data:
