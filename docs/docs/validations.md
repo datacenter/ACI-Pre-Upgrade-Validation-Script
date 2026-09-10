@@ -651,67 +651,16 @@ To prevent this, check the `/bootflash` prior to an upgrade and take the necessa
 
 The pre-upgrade validation built into Cisco APIC upgrade workflow monitors the fault F1821, which can capture the high utilization of any partition. When this fault is present, we recommend that you resolve it prior to the upgrade even if the fault is not for bootflash.
 
-The ACI Pre-Upgrade Validation script (this script) focuses on the utilization of bootflash on each switch specifically to see if there are any issues with bootflash where the usage is more than 50%, which might trigger the internal cleanup script.
+The ACI Pre-Upgrade Validation script (this script) dynamically calculates the actual bootflash space required for the target upgrade, rather than relying on a fixed usage threshold, and compares it against each switch's available `/bootflash` space:
 
-!!! example "Example of a query used by this script"
-    The script is calculating the bootflash usage using `avail` and `used` in the object `eqptcapacityFSPartition` for each switch.
-    ```
-    f2-apic1# moquery -c eqptcapacityFSPartition -f 'eqptcapacity.FSPartition.path=="/bootflash"'
-    Total Objects shown: 6
+* Required space is based on the target image size(s) needed to download and extract on top of the existing content. Starting 6.0(2a), switch images are shipped as separate 32-bit and 64-bit isos, so both current and target version determine whether one or both images apply:
+    * Both versions pre-6.0(2a): only the single 32-bit image size is used.
+    * Both versions post-6.0(2a): the larger of the 32-bit/64-bit target images is used.
+    * Crossing the 6.0(2a) boundary: both target images are downloaded while the current (32-bit-only) image is removed, freeing its space.
 
-    # eqptcapacity.FSPartition
-    name            : bootflash
-    avail           : 7214920
-    childAction     :
-    dn              : topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash
-    memAlert        : normal
-    modTs           : never
-    monPolDn        : uni/fabric/monfab-default
-    path            : /bootflash
-    rn              : fspartition-bootflash
-    status          :
-    used            : 4320184
-    --- omit ---
-    ```
+* Nodes that already pre-downloaded the exact target version (`maintUpgJob.dnldStatus == downloaded` and `desiredVersion` matching target) are excluded from the check, since no further download/extraction is needed.
 
-!!! tip
-    Alternatively you can log into a leaf switch CLI, and check `/bootflash` usage `df -h`
-    ```
-    leaf1# df -h
-    Filesystem             Size    Used   Avail   Use%   Mounted on
-    rootfs                 2.5G    935M   1.6G    38%    /bin
-    /dev/sda4               12G    5.7G   4.9G    54%    /bootflash
-    /dev/sda2              4.7G    9.6M   4.4G     1%    /recovery
-    /dev/mapper/map-sda9    11G    5.7G   4.2G    58%    /isan/lib
-    none                   3.0G    602M   2.5G    20%    /dev/shm
-    none                    50M    3.4M    47M     7%    /etc
-    /dev/sda6               56M    1.3M    50M     3%    /mnt/cfg/1
-    /dev/sda5               56M    1.3M    50M     3%    /mnt/cfg/0
-    /dev/sda8               15G    140M    15G     1%    /mnt/ifc/log
-    /dev/sda3              115M     52M    54M    50%    /mnt/pss
-    none                   1.5G    2.3M   1.5G     1%    /tmp
-    none                    50M    240K    50M     1%    /var/log
-    /dev/sda7               12G    1.4G   9.3G    13%    /logflash
-    none                   350M     54M   297M    16%    /var/log/dme/log/dme_logs
-    none                   512M     24M   489M     5%    /var/sysmgr/mem_logs
-    none                    40M    4.0K    40M     1%    /var/sysmgr/startup-cfg
-    none                   500M     0     500M     0%    /volatile
-    ```
-
-!!! note
-    If you suspect that the auto cleanup removed some files within `/bootflash`, you can review a log to validate this:
-
-    ```
-    leaf1# egrep "higher|removed" /mnt/pss/core_control.log
-    [2020-07-22 16:52:08.928318] Bootflash Usage is higher than 50%!!
-    [2020-07-22 16:52:08.931990] File: MemoryLog.65%_usage removed !!
-    [2020-07-22 16:52:08.943914] File: mem_log.txt.old.gz removed !!
-    [2020-07-22 16:52:08.955376] File: libmon.logs removed !!
-    [2020-07-22 16:52:08.966686] File: urib_api_log.txt removed !!
-    [2020-07-22 16:52:08.977832] File: disk_log.txt removed !!
-    [2020-07-22 16:52:08.989102] File: mem_log.txt removed !!
-    [2020-07-22 16:52:09.414572] File: aci-n9000-dk9.13.2.1m.bin removed !!
-    ```
+* If a required firmware image isn't found in the Firmware Repository, the check reports a manual review.
 
 
 ### APIC SSD Health
