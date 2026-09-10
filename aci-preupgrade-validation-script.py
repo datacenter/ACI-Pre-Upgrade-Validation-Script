@@ -2172,26 +2172,25 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
     partitions_api = 'eqptcapacityFSPartition.json'
     partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
 
-    partitions = icurl('class', partitions_api)
+    download_sts_api = 'maintUpgJob.json'
+    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")'
+    download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion)
 
+    partitions = icurl('class', partitions_api)
     if not partitions:
         return Result(result=MANUAL, msg='/bootflash directory not found. Check switch health.', doc_url=doc_url)
 
-    download_sts_api = 'maintUpgJob.json'
-    download_sts_api += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
-    download_sts_api += ',eq(maintUpgJob.desiredVersion,"n9000-1{}"))'.format(tversion)
-
+    predownloaded_nodes = []
     try:
         download_sts = icurl('class', download_sts_api)
     except OldVerPropNotFound:
-        # Older versions don't have 'dnldStatus'/'dnldPercent' params
+        # Older versions don't have 'dnldStatus' param
         download_sts = []
-
-    predownloaded_nodes = {}
+   
     for maintUpgJob in download_sts:
         dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
-        if dn:
-            predownloaded_nodes[dn.group("node")] = maintUpgJob['maintUpgJob']['attributes']
+        node = dn.group("node")
+        predownloaded_nodes.append(node)
 
     # Starting 6.0(2a), switch images are shipped as separate 32-bit and 64-bit
     # isos (`-cs_64` suffix for 64-bit). Below that, only a single 32-bit iso exists.
