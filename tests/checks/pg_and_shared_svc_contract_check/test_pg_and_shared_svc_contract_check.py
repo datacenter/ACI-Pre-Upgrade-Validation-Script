@@ -16,21 +16,23 @@ test_function = "pg_and_shared_svc_contract_check"
 shrd_contracts_api = 'vzBrCP.json'
 shrd_contracts_api += '?query-target-filter=or(eq(vzBrCP.scope,"global"),eq(vzBrCP.scope,"tenant"))'
 
-# global epgs  ( 16 <= pgtag <= 16385) with Preferred group enabled with provided contracts
+# global epgs (17 <= pcTag <= 16385) with Preferred Group enabled and provided contracts
 
 glbl_epgs_api = 'fvAEPg.json'
-glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"16"),eq(fvAEPg.prefGrMemb,"include"))'
+glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"17"),eq(fvAEPg.prefGrMemb,"include"))'
 glbl_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
 
-# global external Epgs  ( 16 <= pgtag <= 16385) with Preferred group enabled with provided contracts
+# global external EPGs (17 <= pcTag <= 16385) with Preferred Group enabled and provided contracts
 
 glbl_ext_epgs_api = 'l3extInstP.json'
-glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"16"),eq(l3extInstP.prefGrMemb,"include"))'
+glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"17"),eq(l3extInstP.prefGrMemb,"include"))'
 glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
 
-l3out_consumers_api = 'l3extInstP.json'
-l3out_consumers_api += '?rsp-subtree=children&rsp-subtree-class=fvRsCons'
-vzany_consumers_api = 'vzRtAnyToCons.json'
+ctx_defs_api = 'fvCtxDef.json'
+provider_relationships_api = 'vzFromEPg.json'
+provider_relationships_api += '?query-target-filter=and(eq(vzFromEPg.membType,"prov"),'
+provider_relationships_api += 'le(vzFromEPg.pcTag,"16385"),ge(vzFromEPg.pcTag,"17"))'
+provider_relationships_api += '&rsp-subtree=children&rsp-subtree-class=vzToEPg'
 
 childless_fvAEPg = {
     "fvAEPg": {
@@ -48,57 +50,108 @@ childless_l3extInstP = {
         }
     }
 }
-different_vrf_l3out_consumer = {
-    "l3extInstP": {
-        "attributes": {
-            "dn": "uni/tn-consumer/out-consumer/instP-different-vrf",
-            "scope": "999"
-        },
-        "children": [
-            {
-                "fvRsCons": {
-                    "attributes": {
-                        "tDn": "uni/tn-common/brc-AD_C"
+provider_dn = "uni/tn-common/ap-apptest/epg-epg1"
+provider_scope = "2261001"
+provider_ctx_def_dn = "uni/ctx-[uni/tn-common/ctx-provider]"
+external_provider_dn = "uni/tn-common/out-test-L3Out/instP-testExtEPG"
+external_provider_scope = "2490368"
+external_provider_ctx_def_dn = "uni/ctx-[uni/tn-common/ctx-external-provider]"
+ordinary_consumer_dn = "uni/tn-consumer/ap-app/epg-consumer"
+different_vrf_l3out_consumer_dn = "uni/tn-consumer/out-consumer/instP-different-vrf"
+same_vrf_l3out_consumer_dn = "uni/tn-consumer/out-consumer/instP-same-vrf"
+different_ctx_def_dn = "uni/ctx-[uni/tn-consumer/ctx-consumer]"
+
+
+def ctx_def(scope, ctx_def_dn):
+    return {
+        "fvCtxDef": {
+            "attributes": {
+                "dn": ctx_def_dn,
+                "scope": scope
+            }
+        }
+    }
+
+
+def provider_relationship(
+    contract,
+    provider,
+    provider_scope_id,
+    consumer,
+    consumer_ctx_def_dn,
+    consumer_scope_id="999"
+):
+    return {
+        "vzFromEPg": {
+            "attributes": {
+                "dn": "cdef-[{}]/epgCont-[{}]/fr-[provider]".format(
+                    contract,
+                    provider
+                ),
+                "epgDn": provider,
+                "membType": "prov",
+                "scopeId": provider_scope_id
+            },
+            "children": [
+                {
+                    "vzToEPg": {
+                        "attributes": {
+                            "ctxDefDn": consumer_ctx_def_dn,
+                            "dn": (
+                                "cdef-[{}]/epgCont-[{}]/fr-[provider]/"
+                                "to-[{}]"
+                            ).format(contract, provider, consumer),
+                            "epgDn": consumer,
+                            "scopeId": consumer_scope_id
+                        }
                     }
                 }
-            }
-        ]
+            ]
+        }
     }
-}
-same_vrf_l3out_consumer = {
-    "l3extInstP": {
-        "attributes": {
-            "dn": "uni/tn-consumer/out-consumer/instP-same-vrf",
-            "scope": "2261001"
-        },
-        "children": [
-            {
-                "fvRsCons": {
-                    "attributes": {
-                        "tDn": "uni/tn-common/brc-AD_C"
-                    }
-                }
-            }
-        ]
-    }
-}
-unrelated_l3out_consumer = {
-    "l3extInstP": {
-        "attributes": {
-            "dn": "uni/tn-consumer/out-consumer/instP-unrelated",
-            "scope": "999"
-        },
-        "children": [
-            {
-                "fvRsCons": {
-                    "attributes": {
-                        "tDn": "uni/tn-common/brc-unrelated"
-                    }
-                }
-            }
-        ]
-    }
-}
+
+
+provider_ctx_defs = [
+    ctx_def(provider_scope, provider_ctx_def_dn),
+    ctx_def(external_provider_scope, external_provider_ctx_def_dn)
+]
+cross_context_ordinary_relationship = provider_relationship(
+    "uni/tn-common/brc-AD_C",
+    provider_dn,
+    provider_scope,
+    ordinary_consumer_dn,
+    different_ctx_def_dn
+)
+same_context_ordinary_relationship = provider_relationship(
+    "uni/tn-common/brc-AD_C",
+    provider_dn,
+    provider_scope,
+    ordinary_consumer_dn,
+    provider_ctx_def_dn,
+    provider_scope
+)
+cross_context_l3out_relationship = provider_relationship(
+    "uni/tn-common/brc-AD_C",
+    provider_dn,
+    provider_scope,
+    different_vrf_l3out_consumer_dn,
+    different_ctx_def_dn
+)
+same_context_l3out_relationship = provider_relationship(
+    "uni/tn-common/brc-AD_C",
+    provider_dn,
+    provider_scope,
+    same_vrf_l3out_consumer_dn,
+    provider_ctx_def_dn,
+    provider_scope
+)
+external_provider_l3out_relationship = provider_relationship(
+    "uni/tn-common/brc-AD_C",
+    external_provider_dn,
+    external_provider_scope,
+    different_vrf_l3out_consumer_dn,
+    different_ctx_def_dn
+)
 tenant_contract = {
     "vzBrCP": {
         "attributes": {
@@ -126,53 +179,38 @@ tenant_provider = {
         ]
     }
 }
-tenant_l3out_consumer = {
-    "l3extInstP": {
-        "attributes": {
-            "dn": "uni/tn-test/out-consumer/instP-consumer",
-            "scope": "2000"
-        },
-        "children": [
-            {
-                "fvRsCons": {
-                    "attributes": {
-                        "tDn": "uni/tn-test/brc-tenant-shared"
-                    }
-                }
-            }
-        ]
-    }
-}
-tenant_vzany_consumer = {
-    "vzRtAnyToCons": {
-        "attributes": {
-            "dn": (
-                "uni/tn-test/brc-tenant-shared/"
-                "rtanyToCons-[uni/tn-test/ctx-consumer/any]"
-            ),
-            "tDn": "uni/tn-test/ctx-consumer/any"
-        }
-    }
-}
-unrelated_vzany_consumer = {
-    "vzRtAnyToCons": {
-        "attributes": {
-            "dn": (
-                "uni/tn-test/brc-unrelated/"
-                "rtanyToCons-[uni/tn-test/ctx-consumer/any]"
-            ),
-            "tDn": "uni/tn-test/ctx-consumer/any"
-        }
-    }
-}
-malformed_vzany_consumer = {
-    "vzRtAnyToCons": {
-        "attributes": {
-            "dn": "uni/tn-test/brc-tenant-shared/bad-relation",
-            "tDn": "uni/tn-test/ctx-consumer/any"
-        }
-    }
-}
+tenant_provider_ctx_def_dn = "uni/ctx-[uni/tn-test/ctx-provider]"
+tenant_consumer_ctx_def_dn = "uni/ctx-[uni/tn-test/ctx-consumer]"
+tenant_l3out_consumer_dn = "uni/tn-test/out-consumer/instP-consumer"
+tenant_vzany_consumer_dn = "uni/tn-test/ctx-consumer/any"
+tenant_mismatch_consumer_dn = "uni/tn-other/out-consumer/instP-consumer"
+tenant_ctx_defs = [
+    ctx_def("1000", tenant_provider_ctx_def_dn)
+]
+tenant_l3out_relationship = provider_relationship(
+    "uni/tn-test/brc-tenant-shared",
+    "uni/tn-test/ap-provider/epg-provider",
+    "1000",
+    tenant_l3out_consumer_dn,
+    tenant_consumer_ctx_def_dn,
+    "2000"
+)
+tenant_vzany_relationship = provider_relationship(
+    "uni/tn-test/brc-tenant-shared",
+    "uni/tn-test/ap-provider/epg-provider",
+    "1000",
+    tenant_vzany_consumer_dn,
+    tenant_consumer_ctx_def_dn,
+    "2000"
+)
+tenant_mismatch_relationship = provider_relationship(
+    "uni/tn-test/brc-tenant-shared",
+    "uni/tn-test/ap-provider/epg-provider",
+    "1000",
+    tenant_mismatch_consumer_dn,
+    "uni/ctx-[uni/tn-other/ctx-consumer]",
+    "3000"
+)
 
 
 @pytest.mark.parametrize(
@@ -184,7 +222,9 @@ malformed_vzany_consumer = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_ordinary_relationship]
             },
             "4.2(4a)", None,
             script.MANUAL,
@@ -195,7 +235,9 @@ malformed_vzany_consumer = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_ordinary_relationship]
             },
             "4.2(1a)", "4.1(2a)",
             script.NA,
@@ -206,7 +248,9 @@ malformed_vzany_consumer = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_ordinary_relationship]
             },
             "4.2(1a)", "5.1(1g)",
             script.FAIL_O,
@@ -227,7 +271,9 @@ malformed_vzany_consumer = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json")
+                glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_ordinary_relationship]
             },
             "4.2(1a)", "6.0(1f)",
             script.FAIL_O,
@@ -237,7 +283,9 @@ malformed_vzany_consumer = {
             {
                 shrd_contracts_api: [tenant_contract],
                 glbl_epgs_api: [tenant_provider],
-                glbl_ext_epgs_api: []
+                glbl_ext_epgs_api: [],
+                ctx_defs_api: tenant_ctx_defs,
+                provider_relationships_api: [tenant_l3out_relationship]
             },
             "4.2(1a)", "5.2(8i)",
             script.FAIL_O,
@@ -248,8 +296,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
-                l3out_consumers_api: [different_vrf_l3out_consumer],
-                vzany_consumers_api: []
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_l3out_relationship]
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -260,8 +308,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
                 glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
-                l3out_consumers_api: [different_vrf_l3out_consumer],
-                vzany_consumers_api: []
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [external_provider_l3out_relationship]
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -271,7 +319,9 @@ malformed_vzany_consumer = {
             {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [childless_fvAEPg] + read_data(dir, "global_pg_fvAEPg.json"),
-                glbl_ext_epgs_api: []
+                glbl_ext_epgs_api: [],
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_ordinary_relationship]
             },
             "4.2(1a)", "5.2(8i)",
             script.FAIL_O,
@@ -282,8 +332,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [],
                 glbl_ext_epgs_api: [childless_l3extInstP] + read_data(dir, "global_pg_l3extInstP.json"),
-                l3out_consumers_api: [different_vrf_l3out_consumer],
-                vzany_consumers_api: []
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [external_provider_l3out_relationship]
             },
             "4.2(1a)", "6.0(1g)",
             script.FAIL_O,
@@ -315,8 +365,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [],
-                vzany_consumers_api: []
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: []
             },
             "4.2(1a)", "6.0(1h)",
             script.PASS,
@@ -337,8 +387,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [childless_l3extInstP],
-                vzany_consumers_api: []
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [cross_context_ordinary_relationship]
             },
             "4.2(1a)", "6.0(1g)",
             script.PASS,
@@ -349,8 +399,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [same_vrf_l3out_consumer],
-                vzany_consumers_api: []
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: [same_context_l3out_relationship]
             },
             "4.2(1a)", "6.0(1g)",
             script.PASS,
@@ -361,8 +411,8 @@ malformed_vzany_consumer = {
                 shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
                 glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
                 glbl_ext_epgs_api: [],
-                l3out_consumers_api: [unrelated_l3out_consumer],
-                vzany_consumers_api: [unrelated_vzany_consumer]
+                ctx_defs_api: provider_ctx_defs,
+                provider_relationships_api: []
             },
             "4.2(1a)", "6.0(1g)",
             script.PASS,
@@ -377,6 +427,32 @@ def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
     assert result.result == expected_result
 
 
+def test_provider_queries_exclude_reserved_and_local_pctags(run_check, monkeypatch):
+    queries = []
+
+    def recording_icurl(apitype, query, page=0, page_size=100000):
+        queries.append(query)
+        if query == shrd_contracts_api:
+            return [tenant_contract]
+        return []
+
+    monkeypatch.setattr(script, "icurl", recording_icurl)
+
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("5.2(8i)")
+    )
+
+    assert result.result == script.PASS
+    assert queries == [shrd_contracts_api, glbl_epgs_api, glbl_ext_epgs_api]
+    assert 'ge(fvAEPg.pcTag,"17")' in glbl_epgs_api
+    assert 'le(fvAEPg.pcTag,"16385")' in glbl_epgs_api
+    assert 'ge(l3extInstP.pcTag,"17")' in glbl_ext_epgs_api
+    assert 'le(l3extInstP.pcTag,"16385")' in glbl_ext_epgs_api
+    assert 'ge(vzFromEPg.pcTag,"17")' in provider_relationships_api
+    assert 'le(vzFromEPg.pcTag,"16385")' in provider_relationships_api
+
+
 @pytest.mark.parametrize(
     "icurl_outputs",
     [
@@ -384,8 +460,8 @@ def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
             shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
             glbl_epgs_api: read_data(dir, "global_pg_fvAEPg.json"),
             glbl_ext_epgs_api: read_data(dir, "global_pg_l3extInstP.json"),
-            l3out_consumers_api: [different_vrf_l3out_consumer],
-            vzany_consumers_api: []
+            ctx_defs_api: provider_ctx_defs,
+            provider_relationships_api: [cross_context_l3out_relationship]
         }
     ]
 )
@@ -416,8 +492,8 @@ def test_all_4_2_and_newer_targets_are_checked(run_check, mock_icurl, tversion):
             shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
             glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
             glbl_ext_epgs_api: [],
-            l3out_consumers_api: [different_vrf_l3out_consumer],
-            vzany_consumers_api: []
+            ctx_defs_api: provider_ctx_defs,
+            provider_relationships_api: [cross_context_l3out_relationship]
         }
     ]
 )
@@ -448,8 +524,8 @@ def test_reports_correlated_l3out_consumer(run_check, mock_icurl):
             shrd_contracts_api: [tenant_contract],
             glbl_epgs_api: [tenant_provider],
             glbl_ext_epgs_api: [],
-            l3out_consumers_api: [tenant_l3out_consumer],
-            vzany_consumers_api: []
+            ctx_defs_api: tenant_ctx_defs,
+            provider_relationships_api: [tenant_l3out_relationship]
         }
     ]
 )
@@ -475,8 +551,8 @@ def test_reports_tenant_scope_contract_across_vrfs(run_check, mock_icurl):
             shrd_contracts_api: [tenant_contract],
             glbl_epgs_api: [tenant_provider],
             glbl_ext_epgs_api: [],
-            l3out_consumers_api: [],
-            vzany_consumers_api: [tenant_vzany_consumer]
+            ctx_defs_api: tenant_ctx_defs,
+            provider_relationships_api: [tenant_vzany_relationship]
         }
     ]
 )
@@ -502,12 +578,109 @@ def test_reports_correlated_vzany_consumer(run_check, mock_icurl):
             shrd_contracts_api: [tenant_contract],
             glbl_epgs_api: [tenant_provider],
             glbl_ext_epgs_api: [],
-            l3out_consumers_api: [],
-            vzany_consumers_api: [malformed_vzany_consumer]
+            ctx_defs_api: tenant_ctx_defs,
+            provider_relationships_api: [provider_relationship(
+                "uni/tn-test/brc-tenant-shared",
+                "uni/tn-test/ap-provider/epg-provider",
+                "1000",
+                tenant_vzany_consumer_dn,
+                tenant_provider_ctx_def_dn,
+                "1000"
+            )]
         }
     ]
 )
-def test_rejects_malformed_vzany_reverse_relation(run_check, mock_icurl):
+def test_same_context_vzany_consumer_is_not_reported(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.PASS
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: [tenant_contract],
+            glbl_epgs_api: [tenant_provider],
+            glbl_ext_epgs_api: [],
+            ctx_defs_api: tenant_ctx_defs,
+            provider_relationships_api: [tenant_mismatch_relationship]
+        }
+    ]
+)
+def test_tenant_scope_relationship_requires_matching_tenant(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.PASS
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+            glbl_ext_epgs_api: [],
+            ctx_defs_api: provider_ctx_defs,
+            provider_relationships_api: []
+        }
+    ]
+)
+def test_provider_without_materialized_relationship_is_not_reported(
+    run_check,
+    mock_icurl
+):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("5.2(8i)")
+    )
+
+    assert result.result == script.PASS
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+            glbl_ext_epgs_api: [],
+            ctx_defs_api: provider_ctx_defs,
+            provider_relationships_api: [same_context_ordinary_relationship]
+        }
+    ]
+)
+def test_same_context_relationship_is_not_reported_before_6_0(
+    run_check,
+    mock_icurl
+):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("5.2(8i)")
+    )
+
+    assert result.result == script.PASS
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+            glbl_ext_epgs_api: [],
+            ctx_defs_api: [],
+            provider_relationships_api: [cross_context_l3out_relationship]
+        }
+    ]
+)
+def test_missing_provider_context_is_an_error(run_check, mock_icurl):
     result = run_check(
         cversion=script.AciVersion("5.2(8i)"),
         tversion=script.AciVersion("6.0(1g)")
@@ -515,6 +688,94 @@ def test_rejects_malformed_vzany_reverse_relation(run_check, mock_icurl):
 
     assert result.result == script.ERROR
     assert result.msg == (
-        "Failed to get contract DN from vzRtAnyToCons DN: "
-        "uni/tn-test/brc-tenant-shared/bad-relation"
+        "Unable to resolve context for one or more derived contract relationships"
     )
+    assert result.data == [[
+        (
+            "cdef-[uni/tn-common/brc-AD_C]/"
+            "epgCont-[uni/tn-common/ap-apptest/epg-epg1]/fr-[provider]"
+        ),
+        "No fvCtxDef found for scopeId 2261001"
+    ]]
+    assert "Retry the check" in result.recommended_action
+    assert "contact Cisco TAC" in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+            glbl_ext_epgs_api: [],
+            ctx_defs_api: provider_ctx_defs,
+            provider_relationships_api: [provider_relationship(
+                "uni/tn-common/brc-AD_C",
+                provider_dn,
+                provider_scope,
+                different_vrf_l3out_consumer_dn,
+                ""
+            )]
+        }
+    ]
+)
+def test_missing_consumer_context_is_an_error(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.ERROR
+    assert result.msg == (
+        "Unable to resolve context for one or more derived contract relationships"
+    )
+    assert result.data == [[
+        (
+            "cdef-[uni/tn-common/brc-AD_C]/"
+            "epgCont-[uni/tn-common/ap-apptest/epg-epg1]/fr-[provider]/"
+            "to-[uni/tn-consumer/out-consumer/instP-different-vrf]"
+        ),
+        "vzToEPg.ctxDefDn is empty"
+    ]]
+    assert "Retry the check" in result.recommended_action
+    assert "contact Cisco TAC" in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            shrd_contracts_api: read_data(dir, "global_vzBrCP_pos.json"),
+            glbl_epgs_api: [read_data(dir, "global_pg_fvAEPg.json")[0]],
+            glbl_ext_epgs_api: [],
+            ctx_defs_api: provider_ctx_defs,
+            provider_relationships_api: [
+                cross_context_l3out_relationship,
+                provider_relationship(
+                    "uni/tn-common/brc-AD_C",
+                    provider_dn,
+                    "missing-scope",
+                    ordinary_consumer_dn,
+                    different_ctx_def_dn
+                )
+            ]
+        }
+    ]
+)
+def test_context_error_preserves_confirmed_affected_relationship(
+    run_check,
+    mock_icurl
+):
+    result = run_check(
+        cversion=script.AciVersion("5.2(8i)"),
+        tversion=script.AciVersion("6.0(1g)")
+    )
+
+    assert result.result == script.ERROR
+    assert result.data[0][1] == "No fvCtxDef found for scopeId missing-scope"
+    assert result.unformatted_data == [[
+        "uni/tn-common/brc-AD_C",
+        provider_dn,
+        "5555",
+        different_vrf_l3out_consumer_dn
+    ]]

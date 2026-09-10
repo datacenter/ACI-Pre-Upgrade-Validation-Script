@@ -6421,17 +6421,18 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
     shrd_contracts = icurl('class', shrd_contracts_api)
     if not shrd_contracts:
         return Result(result=NA)
-    list_of_shrd_contracts = set()
+    shared_contract_scopes = {}
     for shrd_contract in shrd_contracts:
-        list_of_shrd_contracts.add(shrd_contract["vzBrCP"]["attributes"]["dn"])
+        contract_attributes = shrd_contract["vzBrCP"]["attributes"]
+        shared_contract_scopes[contract_attributes["dn"]] = contract_attributes["scope"]
 
     glbl_epgs_api = 'fvAEPg.json'
-    glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"16"),eq(fvAEPg.prefGrMemb,"include"))'
+    glbl_epgs_api += '?query-target-filter=and(le(fvAEPg.pcTag,"16385"),ge(fvAEPg.pcTag,"17"),eq(fvAEPg.prefGrMemb,"include"))'
     glbl_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
     glbl_epgs = icurl('class', glbl_epgs_api)
 
     glbl_ext_epgs_api = 'l3extInstP.json'
-    glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"16"),eq(l3extInstP.prefGrMemb,"include"))'
+    glbl_ext_epgs_api += '?query-target-filter=and(le(l3extInstP.pcTag,"16385"),ge(l3extInstP.pcTag,"17"),eq(l3extInstP.prefGrMemb,"include"))'
     glbl_ext_epgs_api += '&rsp-subtree=children&rsp-subtree-class=fvRsProv'
     glbl_ext_epgs = icurl('class', glbl_ext_epgs_api)
 
@@ -6442,58 +6443,134 @@ def pg_and_shared_svc_contract_check(cversion, tversion, **kwargs):
             provider_attributes = provider["attributes"]
             for prov_contract in provider.get("children") or []:
                 contract = prov_contract["fvRsProv"]["attributes"]["tDn"]
-                if contract in list_of_shrd_contracts:
+                if contract in shared_contract_scopes:
                     shared_service_providers.append((contract, provider_attributes))
 
-    broad_provider_check = tversion.older_than("6.0(1g)")
-    if broad_provider_check:
+    if shared_service_providers:
+        providers_by_dn = {}
         for contract, provider_attributes in shared_service_providers:
-            data.append([
+            providers_by_dn.setdefault(provider_attributes["dn"], []).append(
+                (contract, provider_attributes)
+            )
+
+        ctx_defs = icurl('class', 'fvCtxDef.json')
+        ctx_def_by_scope = {}
+        for ctx_def in ctx_defs:
+            ctx_attributes = ctx_def["fvCtxDef"]["attributes"]
+            ctx_def_by_scope[ctx_attributes["scope"]] = ctx_attributes["dn"]
+
+        provider_relationships_api = 'vzFromEPg.json'
+        provider_relationships_api += '?query-target-filter=and(eq(vzFromEPg.membType,"prov"),'
+        provider_relationships_api += 'le(vzFromEPg.pcTag,"16385"),ge(vzFromEPg.pcTag,"17"))'
+        provider_relationships_api += '&rsp-subtree=children&rsp-subtree-class=vzToEPg'
+        provider_relationships = icurl('class', provider_relationships_api)
+        cross_context_relationships = []
+        relationship_errors = []
+
+        def tenant_dn(dn):
+            dn_parts = dn.split("/", 2)
+            if len(dn_parts) >= 2 and dn_parts[0] == "uni" and dn_parts[1].startswith("tn-"):
+                return "/".join(dn_parts[:2])
+            return None
+
+        for provider_relationship in provider_relationships:
+            from_epg = provider_relationship["vzFromEPg"]
+            from_attributes = from_epg["attributes"]
+            provider_dn = from_attributes["epgDn"]
+            provider_contracts = providers_by_dn.get(provider_dn, [])
+            if not provider_contracts:
+                continue
+
+            matching_provider_contracts = [
+                provider_contract
+                for provider_contract in provider_contracts
+                if from_attributes["dn"].startswith(
+                    "cdef-[{}]/".format(provider_contract[0])
+                )
+            ]
+            if not matching_provider_contracts:
+                continue
+
+            to_epgs = from_epg.get("children") or []
+            if not to_epgs:
+                continue
+
+            provider_ctx_def_dn = ctx_def_by_scope.get(from_attributes["scopeId"])
+            if not provider_ctx_def_dn:
+                relationship_errors.append([
+                    from_attributes["dn"],
+                    "No fvCtxDef found for scopeId {}".format(from_attributes["scopeId"])
+                ])
+                continue
+
+            for contract, provider_attributes in matching_provider_contracts:
+                for to_epg_mo in to_epgs:
+                    if "vzToEPg" not in to_epg_mo:
+                        continue
+                    consumer_attributes = to_epg_mo["vzToEPg"]["attributes"]
+                    consumer_dn = consumer_attributes["epgDn"]
+                    consumer_ctx_def_dn = consumer_attributes.get("ctxDefDn")
+                    if not consumer_ctx_def_dn:
+                        relationship_errors.append([
+                            consumer_attributes["dn"],
+                            "vzToEPg.ctxDefDn is empty"
+                        ])
+                        continue
+
+                    if shared_contract_scopes[contract] == "tenant":
+                        contract_tenant = tenant_dn(contract)
+                        if (
+                            contract_tenant != tenant_dn(provider_dn)
+                            or contract_tenant != tenant_dn(consumer_dn)
+                        ):
+                            continue
+
+                    if provider_ctx_def_dn != consumer_ctx_def_dn:
+                        cross_context_relationships.append(
+                            (contract, provider_attributes, consumer_dn)
+                        )
+
+        broad_provider_check = tversion.older_than("6.0(1g)")
+        if broad_provider_check:
+            affected_relationships = cross_context_relationships
+        elif cross_context_relationships:
+            affected_relationships = [
+                relationship
+                for relationship in cross_context_relationships
+                if "/instP-" in relationship[2]
+                or relationship[2].endswith("/any")
+            ]
+        else:
+            affected_relationships = []
+
+        reported_relationships = set()
+        for contract, provider_attributes, consumer_dn in affected_relationships:
+            result_row = (
                 contract,
                 provider_attributes["dn"],
                 provider_attributes["pcTag"],
-                "Any"
-            ])
-    elif shared_service_providers:
-        provider_contracts = set(provider[0] for provider in shared_service_providers)
-        restricted_consumers_by_contract = {}
+                consumer_dn
+            )
+            if result_row not in reported_relationships:
+                reported_relationships.add(result_row)
+                data.append(list(result_row))
 
-        l3out_consumers_api = 'l3extInstP.json'
-        l3out_consumers_api += '?rsp-subtree=children&rsp-subtree-class=fvRsCons'
-        l3out_consumers = icurl('class', l3out_consumers_api)
-        for l3out_consumer in l3out_consumers:
-            consumer_attributes = l3out_consumer["l3extInstP"]["attributes"]
-            for cons_contract in l3out_consumer["l3extInstP"].get("children") or []:
-                contract = cons_contract["fvRsCons"]["attributes"]["tDn"]
-                if contract in provider_contracts:
-                    restricted_consumers_by_contract.setdefault(contract, []).append(
-                        (consumer_attributes["dn"], consumer_attributes["scope"], "l3extInstP")
-                    )
-
-        vzany_consumers = icurl('class', 'vzRtAnyToCons.json')
-        for vzany_consumer in vzany_consumers:
-            consumer_attributes = vzany_consumer["vzRtAnyToCons"]["attributes"]
-            relation_dn = consumer_attributes["dn"]
-            contract, separator, _ = relation_dn.rpartition("/rtanyToCons-")
-            if not separator:
-                return Result(
-                    result=ERROR,
-                    msg="Failed to get contract DN from vzRtAnyToCons DN: {}".format(relation_dn)
-                )
-            if contract in provider_contracts:
-                restricted_consumers_by_contract.setdefault(contract, []).append(
-                    (consumer_attributes["tDn"], None, "vzAny")
-                )
-
-        for contract, provider_attributes in shared_service_providers:
-            for consumer_dn, consumer_scope, consumer_class in restricted_consumers_by_contract.get(contract, []):
-                if consumer_class == "vzAny" or consumer_scope != provider_attributes["scope"]:
-                    data.append([
-                        contract,
-                        provider_attributes["dn"],
-                        provider_attributes["pcTag"],
-                        consumer_dn
-                    ])
+        if relationship_errors:
+            return Result(
+                result=ERROR,
+                msg="Unable to resolve context for one or more derived contract relationships",
+                headers=["Derived Relationship", "Context Resolution Error"],
+                data=relationship_errors,
+                unformatted_headers=headers,
+                unformatted_data=data,
+                recommended_action=(
+                    "Retry the check. Review any confirmed affected relationships "
+                    "shown in the failure details. If context resolution continues "
+                    "to fail, contact Cisco TAC with the listed derived relationship "
+                    "DNs."
+                ),
+                doc_url=doc_url
+            )
 
     if data:
         result = FAIL_O

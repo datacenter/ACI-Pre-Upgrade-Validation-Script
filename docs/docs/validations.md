@@ -2376,13 +2376,15 @@ See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details abou
 
 ### Preferred Group Shared Service Provider
 
-ACI 4.2 and later configurations where a Preferred Group member provides a tenant- or global-scope shared-service contract can cause traffic loss or contract rejection.
+ACI 4.2 and later configurations can be affected by CSCvm63145 and CSCvv51121 when a Preferred Group member provides a tenant- or global-scope shared-service contract to a consumer in another VRF.
 
-Before 6.0(1g), this configuration is subject to broad provider-side behavior. Depending on the release, the forwarding risk can be silent or the contract can be rejected with F0467 and `invalid-contract-config: Shared service provider cannot be in a Preferred Group`.
+The script reports only materialized, cross-VRF provider-to-consumer relationships represented by `vzFromEPg` and `vzToEPg`. A configured provider without such a relationship is not reported. Tenant-scope contracts are considered only when the contract, provider, and consumer belong to the same tenant. Shared/global pcTags `17` through `16385` are treated as fabric-wide identities; VRF separation is determined independently from the context-definition DNs.
 
-Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains when the Preferred Group provider is paired with an L3Out consumer in another VRF or with a `vzAny` consumer. Starting with 6.1(3f), this condition may be reported through F4684.
+Before 6.0(1g), any consumer class in a materialized cross-VRF relationship can be affected. Depending on the release, the forwarding risk can be silent or the contract can be rejected with F0467 and `invalid-contract-config: Shared service provider cannot be in a Preferred Group`.
 
-Before upgrading, remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported L3Out/`vzAny` consumer relationship. See the [ACI Policy Model][78] for additional background.
+Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains only when the Preferred Group provider has a materialized relationship with an L3Out or `vzAny` consumer in another VRF. Same-VRF L3Out and `vzAny` relationships are not reported. Starting with 6.1(3f), this condition may be reported through F4684.
+
+Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
 
 
 ## Defect Check Details
