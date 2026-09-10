@@ -18,15 +18,15 @@ partitions += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash"
 firmware = 'firmwareFirmware.json?query-target-filter=eq(firmwareFirmware.type,"switch")'
 
 download_sts_602 = 'maintUpgJob.json'
-download_sts_602 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+download_sts_602 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")'
 download_sts_602 += ',eq(maintUpgJob.desiredVersion,"n9000-16.0(2h)"))'
 
 download_sts_528 = 'maintUpgJob.json'
-download_sts_528 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+download_sts_528 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")'
 download_sts_528 += ',eq(maintUpgJob.desiredVersion,"n9000-15.2(8h)"))'
 
 download_sts_615 = 'maintUpgJob.json'
-download_sts_615 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.dnldPercent,"100")'
+download_sts_615 += '?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded")'
 download_sts_615 += ',eq(maintUpgJob.desiredVersion,"n9000-16.1(5e)"))'
 
 # No pre-downloaded nodes unless a test overrides this key.
@@ -40,6 +40,30 @@ old_ver_no_prop = read_data(dir, "maintUpgJob_old_ver_no_prop.json")
 # Of all nodes in eqptcapacityFSPartition.json, only node-101 (avail 5347648 KB)
 # falls below the resulting required space (~5859375 KB) and thus fails.
 firmware_dual_602 = read_data(dir, "firmwareFirmware_dual_602.json")
+
+# Only the 64-bit target image (6.0(2h)) is missing from the Firmware Repository.
+firmware_602_missing_64 = [
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.0.2h.bin", "size": "2000000000"}}},
+]
+
+# Only the 32-bit target image (6.0(2h)) is missing from the Firmware Repository.
+firmware_602_missing_32 = [
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.0.2h-cs_64.bin", "size": "3000000000"}}},
+]
+
+# Crossing 6.0(2a): current (5.2(8h)) image plus only the 32-bit target (6.1(5e)); the
+# 64-bit target image is missing from the Firmware Repository.
+firmware_crossing_missing_64 = [
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.15.2.8h.bin", "size": "2000000000"}}},
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e.bin", "size": "3000000000"}}},
+]
+
+# Crossing 6.0(2a): current (5.2(8h)) image plus only the 64-bit target (6.1(5e)); the
+# 32-bit target image is missing from the Firmware Repository.
+firmware_crossing_missing_32 = [
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.15.2.8h.bin", "size": "2000000000"}}},
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e-cs_64.bin", "size": "3000000000"}}},
+]
 
 # node-101 has fully downloaded/extracted the target image already.
 maintUpgJob_node_101_downloaded = [
@@ -145,6 +169,50 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
             },
             "6.0(3a)",
             "6.0(2h)",
+            script.MANUAL,
+        ),
+        # Post-6.0(2a): only the 64-bit target image is missing from the Firmware Repository.
+        (
+            {
+                partitions: read_data(dir, "eqptcapacityFSPartition.json"),
+                download_sts_602: no_predownload,
+                firmware: firmware_602_missing_64,
+            },
+            "6.0(3a)",
+            "6.0(2h)",
+            script.MANUAL,
+        ),
+        # Post-6.0(2a): only the 32-bit target image is missing from the Firmware Repository.
+        (
+            {
+                partitions: read_data(dir, "eqptcapacityFSPartition.json"),
+                download_sts_602: no_predownload,
+                firmware: firmware_602_missing_32,
+            },
+            "6.0(3a)",
+            "6.0(2h)",
+            script.MANUAL,
+        ),
+        # Crossing 6.0(2a): only the 64-bit target image is missing from the Firmware Repository.
+        (
+            {
+                partitions: read_data(dir, "eqptcapacityFSPartition.json"),
+                download_sts_615: no_predownload,
+                firmware: firmware_crossing_missing_64,
+            },
+            "5.2(8h)",
+            "6.1(5e)",
+            script.MANUAL,
+        ),
+        # Crossing 6.0(2a): only the 32-bit target image is missing from the Firmware Repository.
+        (
+            {
+                partitions: read_data(dir, "eqptcapacityFSPartition.json"),
+                download_sts_615: no_predownload,
+                firmware: firmware_crossing_missing_32,
+            },
+            "5.2(8h)",
+            "6.1(5e)",
             script.MANUAL,
         ),
         # node-101 (the only node that would otherwise fail) already fully downloaded

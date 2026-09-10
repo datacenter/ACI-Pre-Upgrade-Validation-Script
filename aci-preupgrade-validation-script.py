@@ -2189,8 +2189,8 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
    
     for maintUpgJob in download_sts:
         dn = re.search(node_regex, maintUpgJob['maintUpgJob']['attributes']['dn'])
-        node = dn.group("node")
-        predownloaded_nodes.append(node)
+        if dn:
+            predownloaded_nodes.append(dn.group("node"))
 
     # Starting 6.0(2a), switch images are shipped as separate 32-bit and 64-bit
     # isos (`-cs_64` suffix for 64-bit). Below that, only a single 32-bit iso exists.
@@ -2218,23 +2218,37 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
 
     elif not cversion.older_than(boundary_version) and not tversion.older_than(boundary_version):
 
+        # The larger image is used as a conservative estimate, so both sizes must be
+        # known; a missing one can't be assumed to be the smaller (or zero-byte) one.
         if target_size_32 is None and target_size_64 is None:
-            msg = 'Target switch image(s) not found in Firmware Repository.'
+            msg = 'Target switch images ({}, {}) not found in Firmware Repository.'.format(switch_target_version, switch_target_version_64)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * max(target_size_32 or 0, target_size_64 or 0) # only the larger of the 32-bit or 64-bit image is used post-6.0(2a).
+        elif target_size_32 is None:
+            msg = '32-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
+            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
+        elif target_size_64 is None:
+            msg = '64-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version_64)
+            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
+        required_space = 2 * max(target_size_32, target_size_64) # only the larger of the 32-bit or 64-bit image is used post-6.0(2a).
         
     else:
         # Crossing the 32/64-bit boundary: 32 + 64 b target images are downloaded while
         # the current (32-bit only) image is removed, freeing up its space.
         if target_size_32 is None and target_size_64 is None:
-            msg = 'Target switch image(s) not found in Firmware Repository.'
+            msg = 'Target switch images ({}, {}) not found in Firmware Repository.'.format(switch_target_version, switch_target_version_64)
+            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
+        elif target_size_32 is None:
+            msg = '32-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
+            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
+        elif target_size_64 is None:
+            msg = '64-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version_64)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
         switch_current_version = "aci-n9000-dk9.1{}.bin".format(cversion.dot_version)
         current_size = fw_sizes.get(switch_current_version)
         if current_size is None:
             msg = 'Current switch image ({}) not found in Firmware Repository.'.format(switch_current_version)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * ((target_size_32 or 0) + (target_size_64 or 0) - current_size)
+        required_space = 2 * (target_size_32 + target_size_64 - current_size)
         
     required_space_kb = required_space / 1024.0  # eqptcapacityFSPartition avail/used are in KB
 
