@@ -32,16 +32,12 @@ release_note_supported_615_outputs = {
     compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
 }
 
-release_note_model_data = {
-    "apicl3": ("APIC-SERVER-L3", compatRsSuppHwL3_api, "compatRsSuppHw_615_M5.json"),
-    "apicm3": ("APIC-SERVER-M3", compatRsSuppHwM3_api, "compatRsSuppHw_615_M5.json"),
-    "apicl4": ("APIC-SERVER-L4", compatRsSuppHwL4_api, "compatRsSuppHw_615_M6.json"),
-    "apicm4": ("APIC-SERVER-M4", compatRsSuppHwM4_api, "compatRsSuppHw_615_M6.json"),
-}
-
-
 def release_note_supported_outputs(model, cimc_version):
-    apic_model, compat_api, compat_fixture = release_note_model_data[model]
+    apic_model = "APIC-SERVER-{}".format(model[4:].upper())
+    compat_api = (
+        "uni/fabric/compcat-default/ctlrfw-apic-6.1(5)"
+        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-{}].json".format(model)
+    )
     return {
         eqptCh_api: [
             {
@@ -55,7 +51,16 @@ def release_note_supported_outputs(model, cimc_version):
                 }
             }
         ],
-        compat_api: read_data(dir, compat_fixture),
+        compat_api: [
+            {
+                "compatRsSuppHw": {
+                    "attributes": {
+                        "cimcVersion": "9.9(9z)",
+                        "dn": compat_api[:-5],
+                    }
+                }
+            }
+        ],
     }
 
 
@@ -72,6 +77,13 @@ release_note_supported_cases = [
         # CIMC 4.2(3e) is explicitly supported for M5/M6 APICs by the 6.1(5) release notes.
         (
             release_note_supported_615_outputs,
+            "6.1(5e)",
+            "5.2(8g)",
+            script.PASS,
+        ),
+        # Issue #435: CIMC 4.1(1g) is release-note supported on APIC-L3/M3.
+        (
+            release_note_supported_outputs("apicl3", "4.1(1g)"),
             "6.1(5e)",
             "5.2(8g)",
             script.PASS,
