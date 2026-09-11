@@ -141,6 +141,7 @@ Items                                         | Faults         | This Script    
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
+[Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -166,6 +167,7 @@ Items                                         | Faults         | This Script    
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
+[c25]: #preferred-group-shared-service-provider
 
 ### Defect Condition Checks
 
@@ -2372,6 +2374,19 @@ See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Gu
 See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
 
 
+### Preferred Group Shared Service Provider
+
+ACI 4.2 and later configurations can be affected by CSCvm63145 and CSCvv51121 when a Preferred Group member provides a tenant- or global-scope shared-service contract to a consumer in another VRF.
+
+The script reports only materialized, cross-VRF provider-to-consumer relationships represented by `vzFromEPg` and `vzToEPg`. A configured provider without such a relationship is not reported. Tenant-scope contracts are considered only when the contract, provider, and consumer belong to the same tenant. Shared/global pcTags `17` through `16385` are treated as fabric-wide identities; VRF separation is determined independently from the context-definition DNs.
+
+Before 6.0(1g), any consumer class in a materialized cross-VRF relationship can be affected. Depending on the release, the forwarding risk can be silent or the contract can be rejected with F0467 and `invalid-contract-config: Shared service provider cannot be in a Preferred Group`.
+
+Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains only when the Preferred Group provider has a materialized relationship with an L3Out or `vzAny` consumer in another VRF. Same-VRF L3Out and `vzAny` relationships are not reported. Starting with 6.1(3f), this condition may be reported through F4684.
+
+Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2947,3 +2962,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
