@@ -85,6 +85,22 @@ CIMC_RELEASE_NOTE_SUPPORT = {
     ("6.1(5)", "apicl4"): CIMC_RELEASE_NOTE_SUPPORT_615_M6,
     ("6.1(5)", "apicm4"): CIMC_RELEASE_NOTE_SUPPORT_615_M6,
 }
+# APIC models exempt from the three-node cluster size limit. Keep this
+# embedded so the standalone validation script has no external dependency.
+APIC_EXCLUDED_MODELS = (
+    'APIC-SERVER-L1',
+    'APIC-SERVER-L2',
+    'APIC-SERVER-L3',
+    'APIC-SERVER-L4',
+    'APIC-SERVER-L3T',
+    'APIC-SERVER-L4T',
+    'APIC-SERVER-M1',
+    'APIC-SERVER-M2',
+    'APIC-SERVER-M3',
+    'APIC-SERVER-M4',
+    'APIC-SERVER-M3T',
+    'APIC-SERVER-M4T',
+)
 # regex constants
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
 port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
@@ -1769,6 +1785,11 @@ def get_fabric_nodes():
     prints("Gathering Node Information...\n")
     fabricNodes = icurl('class', 'fabricNode.json')
     return fabricNodes
+
+
+def get_apic_excluded_models():
+    """Return APIC models exempt from the three-node cluster size limit."""
+    return set(APIC_EXCLUDED_MODELS)
 
 
 def get_current_versions(fabric_nodes, arg_cversion):
@@ -6397,6 +6418,43 @@ def apic_downgrade_compat_warning_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='APIC Cluster Size')
+def apic_cluster_size_check(tversion, **kwargs):
+    """Warn when an APIC cluster has more than three non-excluded models."""
+    apic_api = ('fabricNode.json?query-target-filter='
+                'and(eq(fabricNode.role,"controller"),'
+                'eq(fabricNode.apicType,"apic"),'
+                'eq(fabricNode.fabricSt,"commissioned"))')
+    headers = ["Node ID", "Node Name", "Model", "Excluded from 3-Node Limit"]
+    recommended_action = ('Reduce the APIC cluster to three nodes before continuing '
+                          'the upgrade. Clusters larger than three nodes are not '
+                          'supported for this upgrade unless they include an excluded '
+                          'APIC model.')
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-cluster-size'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if tversion.older_than("6.3(1a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    apics = icurl('class', apic_api)
+    excluded_models = get_apic_excluded_models()
+    models = [node.get('fabricNode', {}).get('attributes', {}).get('model', '')
+              for node in apics]
+
+    if len(apics) <= 3 or any(model in excluded_models for model in models):
+        return Result(result=PASS, msg="APIC cluster size and models are supported.")
+
+    data = []
+    for node in apics:
+        attributes = node.get('fabricNode', {}).get('attributes', {})
+        model = attributes.get('model', '')
+        data.append([attributes.get('id', ''), attributes.get('name', ''), model,
+                     'yes' if model in excluded_models else 'no'])
+    return Result(result=MANUAL, msg="APIC clusters require no more than 3 nodes unless an excluded model is present.",
+                  headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title='Auto Firmware Update on Switch Discovery')
 def auto_firmware_update_on_switch_check(cversion, tversion, **kwargs):
     result = PASS
@@ -7081,6 +7139,7 @@ class CheckManager:
         validate_32_64_bit_image_check,
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
+        apic_cluster_size_check,
         svccore_excessive_data_check,
 
         # Faults
