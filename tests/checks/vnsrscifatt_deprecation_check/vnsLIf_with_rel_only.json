@@ -1,0 +1,20 @@
+[
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-user-11/lDevVip-test/lIf-intf-cons",
+        "name": "intf-cons"
+      },
+      "children": []
+    }
+  },
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-user-11/lDevVip-test/lIf-intf-prov",
+        "name": "intf-prov"
+      },
+      "children": []
+    }
+  }
+]

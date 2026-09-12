@@ -1,0 +1,30 @@
+[
+  {
+    "vnsLDevCtx": {
+      "attributes": {
+        "dn": "uni/tn-user-11/ldevCtx-c-epg-epg-g-test-n-test-node",
+        "ctrctNameOrLbl": "epg-epg",
+        "graphNameOrLbl": "test"
+      },
+      "children": [
+        {
+          "vnsLIfCtx": {
+            "attributes": {
+              "dn": "uni/tn-user-11/ldevCtx-c-epg-epg-g-test-n-test-node/lifCtx-2"
+            },
+            "children": [
+              {
+                "vnsRsLIfCtxToLIf": {
+                  "attributes": {
+                    "tCl": "vnsLDevIfLIf",
+                    "tDn": "uni/tn-user/lDevIf-[uni/tn-common/lDevVip-common-device]/lDevIfLIf-common-cons"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]
