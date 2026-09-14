@@ -95,15 +95,80 @@ maintUpgJob_all_of_failing = read_data(dir, "maintUpgJob_all_of_failing.json")
 # response, and one entry has an empty-string `dn` (unparseable, skipped gracefully).
 maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_empty.json")
 
+# APIC (cversion) reaches 6.0(2a)+ before the switches per the documented upgrade
+# sequence, so sw_cversion (5.2(8h), pre-boundary) must still drive the crossing decision
+# even though the APIC cluster (cversion 6.0(3a)) is already post-boundary. cversion is
+# passed here (as it would be via query_common_data() in production) solely to prove the
+# check ignores it: switch_bootflash_usage_check() only declares sw_cversion/tversion, so
+# cversion lands in **kwargs and has no effect on the result. Sizes are chosen so
+# target_size_32 (3 GiB) exceeds current_size (2 GiB), forcing the full crossing formula:
+# 2 * (3 GiB + 3 GiB - 2 GiB) = 8 GiB required.
+apic_post_boundary_switch_pre_boundary_case = [
+    {
+        partitions: read_data(dir, "eqptcapacityFSPartition.json"),
+        download_sts_615: no_predownload,
+        firmware: [
+            {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.15.2.8h.bin", "size": str(2 * 1024 ** 3)}}},
+            {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e.bin", "size": str(3 * 1024 ** 3)}}},
+            {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e-cs_64.bin", "size": str(3 * 1024 ** 3)}}},
+        ],
+    },
+]
+
+
+@pytest.mark.parametrize("icurl_outputs", apic_post_boundary_switch_pre_boundary_case)
+def test_apic_post_boundary_switch_pre_boundary_uses_crossing_formula(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.0(3a)"),
+        sw_cversion=script.AciVersion("5.2(8h)"),
+        tversion=script.AciVersion("6.1(5e)"),
+    )
+    assert result.result == script.FAIL_UF
+    assert result.data
+    required_mb = str(8 * 1024.0)  # "8192.0" MB == 8 GiB
+    assert all(row[3] == required_mb for row in result.data)
+
+
+#`dnldStatus == "downloaded"` only proves the image was delivered, not
+# that extraction (which still consumes bootflash) succeeded, so node-101 having
+# pre-downloaded the exact target must still fail when its remaining space (1 KB) can't
+# fit the extraction-only requirement (max(target_size_32, target_size_64) == 3 GB).
+exact_target_downloaded_insufficient_case = [
+    {
+        partitions: [
+            {"eqptcapacityFSPartition": {"attributes": {"dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash", "avail": "1", "used": "999999999"}}},
+        ],
+        download_sts_602: maintUpgJob_node_101_downloaded,
+        firmware: firmware_dual_602,
+    },
+]
+
+
+@pytest.mark.parametrize("icurl_outputs", exact_target_downloaded_insufficient_case)
+def test_exact_target_downloaded_still_fails_on_insufficient_extraction_space(run_check, mock_icurl):
+    result = run_check(
+        sw_cversion=script.AciVersion("6.0(3a)"),
+        tversion=script.AciVersion("6.0(2h)"),
+    )
+    assert result.result == script.FAIL_UF
+    assert result.data == [["1", "101", "0.0", "2861.02"]]
+
 
 @pytest.mark.parametrize(
-    "icurl_outputs, cversion, tversion, expected_result",
+    "icurl_outputs, sw_cversion, tversion, expected_result",
     [
         # No tversion provided.
         (
             {},
             None,
             None,
+            script.MANUAL,
+        ),
+        # No sw_cversion (lowest switch version) found.
+        (
+            {},
+            None,
+            "6.0(2h)",
             script.MANUAL,
         ),
         # /bootflash partition objects not found at all. Returns before maintUpgJob is queried.
@@ -312,9 +377,9 @@ maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, cversion, tversion, expected_result):
+def test_logic(run_check, mock_icurl, sw_cversion, tversion, expected_result):
     result = run_check(
-        cversion=script.AciVersion(cversion) if cversion else None,
+        sw_cversion=script.AciVersion(sw_cversion) if sw_cversion else None,
         tversion=script.AciVersion(tversion) if tversion else None,
     )
     assert result.result == expected_result

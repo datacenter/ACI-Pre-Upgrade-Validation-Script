@@ -656,9 +656,9 @@ The ACI Pre-Upgrade Validation script (this script) dynamically calculates the a
 * Required space is based on the target image size(s) needed to download and extract on top of the existing content. Starting 6.0(2a), switch images are shipped as separate 32-bit and 64-bit isos, so both current and target version determine whether one or both images apply:
     * Both versions pre-6.0(2a): only the single 32-bit image size is used.
     * Both versions post-6.0(2a): the larger of the 32-bit/64-bit target images is used.
-    * Crossing the 6.0(2a) boundary: both target images are downloaded while the current (32-bit-only) image is removed, freeing its space.
+    * Crossing the 6.0(2a) boundary: target image downloaded while the current is removed, freeing its space for successful extraction.
 
-* Nodes that already pre-downloaded the exact target version (`maintUpgJob.dnldStatus == downloaded` and `desiredVersion` matching target) are excluded from the check, since no further download/extraction is needed.
+* Nodes that already downloaded the exact target version (`maintUpgJob.dnldStatus == downloaded` and `desiredVersion` matching target) are still evaluated, just against a smaller, extraction-only requirement (the larger of the 32-bit/64-bit target image sizes, without doubling for the download), since extraction and later upgrade stages can still require additional bootflash space.
 
 * If a required firmware image isn't found in the Firmware Repository, the check reports a manual review.
 

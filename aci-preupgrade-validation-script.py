@@ -2158,13 +2158,16 @@ def switch_group_guideline_check(fabric_nodes, **kwargs):
 
 
 @check_wrapper(check_title="Switch Node /bootflash usage")
-def switch_bootflash_usage_check(cversion, tversion, **kwargs):
+def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
     result = FAIL_UF
     msg = ''
     headers = ["Pod-ID", "Node-ID", "Avail (MB)", "Required (MB)"]
     data = []
     recommended_action = "Insufficient free space to download and extract the target image! Contact Cisco TAC for Support"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-node-bootflash-usage"
+
+    if not sw_cversion:
+        return Result(result=MANUAL, msg="Current switch version not found. Check switch health.", doc_url=doc_url)
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
@@ -2208,16 +2211,21 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
     target_size_32 = fw_sizes.get(switch_target_version)
     target_size_64 = fw_sizes.get(switch_target_version_64)
 
-    if cversion.older_than(boundary_version) and tversion.older_than(boundary_version):
-        # Only the 32-bit image is ever used pre-6.0(2a).
+    # sw_cversion (lowest switch version), not the APIC cversion, drives the boundary
+    # decision: the upgrade guide has APICs reach 6.0(2a)+ before the switches, so the
+    # switches can still be pre-boundary while the APIC cluster is already post-boundary.
+    target_is_legacy = tversion.older_than(boundary_version)
+    current_is_legacy = sw_cversion.older_than(boundary_version)
+
+    if target_is_legacy:
+        # Only the 32-bit image is ever used for a pre-6.0(2a) target.
         if target_size_32 is None:
             msg = 'Target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * target_size_32 # only the 32-bit image is ever used pre-6.0(2a)
-        
+        required_space = 2 * target_size_32
+        downloaded_required_space = target_size_32
 
-    elif not cversion.older_than(boundary_version) and not tversion.older_than(boundary_version):
-
+    else:
         # The larger image is used as a conservative estimate, so both sizes must be
         # known; a missing one can't be assumed to be the smaller (or zero-byte) one.
         if target_size_32 is None and target_size_64 is None:
@@ -2229,39 +2237,40 @@ def switch_bootflash_usage_check(cversion, tversion, **kwargs):
         elif target_size_64 is None:
             msg = '64-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version_64)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * max(target_size_32, target_size_64) # only the larger of the 32-bit or 64-bit image is used post-6.0(2a).
-        
-    else:
-        # Crossing the 32/64-bit boundary: 32 + 64 b target images are downloaded while
-        # the current (32-bit only) image is removed, freeing up its space.
-        if target_size_32 is None and target_size_64 is None:
-            msg = 'Target switch images ({}, {}) not found in Firmware Repository.'.format(switch_target_version, switch_target_version_64)
-            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        elif target_size_32 is None:
-            msg = '32-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
-            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        elif target_size_64 is None:
-            msg = '64-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version_64)
-            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        switch_current_version = "aci-n9000-dk9.1{}.bin".format(cversion.dot_version)
-        current_size = fw_sizes.get(switch_current_version)
-        if current_size is None:
-            msg = 'Current switch image ({}) not found in Firmware Repository.'.format(switch_current_version)
-            return Result(result=MANUAL, msg=msg, doc_url=doc_url)
-        required_space = 2 * (target_size_32 + target_size_64 - current_size)
-        
+
+        downloaded_required_space = max(target_size_32, target_size_64)
+
+        if current_is_legacy:
+            # Crossing the 32/64-bit boundary: the pre-6.0(2a) switch only ever had a
+            # 32-bit image, so its size is freed once removed during the upgrade.
+            switch_current_version = "aci-n9000-dk9.1{}.bin".format(sw_cversion.dot_version)
+            current_size = fw_sizes.get(switch_current_version)
+            if current_size is None:
+                msg = 'Current switch image ({}) not found in Firmware Repository.'.format(switch_current_version)
+                return Result(result=MANUAL, msg=msg, doc_url=doc_url)
+            if target_size_32 > current_size:
+                required_space = 2 * (target_size_32 + target_size_64 - current_size)
+            else:
+                required_space = 2 * max(target_size_32, target_size_64)
+        else:
+            required_space = 2 * max(target_size_32, target_size_64)
+
     required_space_kb = required_space / 1024.0  # eqptcapacityFSPartition avail/used are in KB
+    downloaded_required_space_kb = downloaded_required_space / 1024.0
 
     for eqptcapacityFSPartition in partitions:
         dn = re.search(node_regex, eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['dn'])
         pod = dn.group("pod")
         node = dn.group("node")
-        if node in predownloaded_nodes:
-            continue
         avail = int(eqptcapacityFSPartition['eqptcapacityFSPartition']['attributes']['avail'])
 
-        if avail < required_space_kb:
-            data.append([pod, node, round(avail / 1024.0, 2), round(required_space_kb / 1024.0, 2)])
+        # dnldStatus == downloaded only proves the image was delivered, not that
+        # extraction (which still consumes bootflash) has completed, so a downloaded
+        # node is still checked, just against the smaller extraction-only requirement.
+        node_required_space_kb = downloaded_required_space_kb if node in predownloaded_nodes else required_space_kb
+
+        if avail < node_required_space_kb:
+            data.append([pod, node, round(avail / 1024.0, 2), round(node_required_space_kb / 1024.0, 2)])
 
     if not data:
         result = PASS
