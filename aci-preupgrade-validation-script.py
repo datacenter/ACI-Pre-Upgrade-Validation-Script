@@ -2163,7 +2163,10 @@ def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
     msg = ''
     headers = ["Pod-ID", "Node-ID", "Avail (MB)", "Required (MB)"]
     data = []
-    recommended_action = "Insufficient free space to download and extract the target image! Contact Cisco TAC for Support"
+    recommended_action = (
+        "Remove old, unused switch images to free bootflash space, then re-run this validation. "
+        "Contact Cisco TAC if sufficient space cannot be recovered."
+    )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-node-bootflash-usage"
 
     if not tversion:

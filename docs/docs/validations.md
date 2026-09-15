@@ -653,7 +653,7 @@ The calculation generally reserves twice the applicable target image size. This 
 
 Switches that have already downloaded the target image are still checked because image extraction and later upgrade stages can require additional space. Because the downloaded image is already reflected in the switch's available-space value, the check evaluates only the remaining space required to complete the upgrade.
 
-If a switch does not have enough available space, the check reports an upgrade failure and displays the available and required space. If the current switch version, target firmware image, or `/bootflash` information is unavailable, the check reports that a manual review is required.
+If a switch does not have enough available space, the check reports an upgrade failure and displays the available and required space. Remove old, unused switch images to recover space, then run the validation again. Contact Cisco TAC if sufficient space cannot be recovered. If the current switch version, target firmware image, or `/bootflash` information is unavailable, the check reports that a manual review is required.
 
 
 ### APIC SSD Health
