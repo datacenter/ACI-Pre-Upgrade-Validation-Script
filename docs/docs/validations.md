@@ -2228,7 +2228,7 @@ If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Gui
 As detailed in the [Cisco Apic Basic Configuration guide][59] a Link level Policy is recommended to have the speed set to "inherit".
 With this value, Cisco Apic determines the speed based on the transceiver inserted.
 
-In case the link speed is set to "auto" , interfaces may not come up after an upgrade (stateless reboot). 
+In case the link speed is set to "auto" , interfaces may not come up after an upgrade (stateless reboot).
 Changing the speed to "inherit" resolves this situation, which is also a best practice.
 
 ## Defect Check Details
@@ -2658,4 +2658,3 @@ Do not upgrade to any affected ACI software release if this check fails.
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
 [59]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/basic-configuration/cisco-apic-basic-configuration-guide-52x/m_provisioning.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
-

@@ -5300,7 +5300,7 @@ def apic_database_size_check(cversion, **kwargs):
         result = FAIL_UF
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-@check_wrapper(check_title='Host Interface Policy policy Set')
+@check_wrapper(check_title='Host Interface Policy Set to Auto')
 def host_interface_policy_set_speed_check( tversion, **kwargs):
     result = PASS
     headers = ["Host Interface Policy", "Set Speed", "Policy Groups associated"]
@@ -5309,7 +5309,7 @@ def host_interface_policy_set_speed_check( tversion, **kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#host-interface-policy-set-to-auto'
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
-    
+
     policy_group_regex = r'uni/infra/funcprof/accportgrp-(?P<policyGroup>.+)'
     host_interface_policy_api = 'fabricHIfPol.json'
     host_interface_policy_api += '?query-target-filter=and(eq(fabricHIfPol.speed,"auto"))'
@@ -5319,7 +5319,7 @@ def host_interface_policy_set_speed_check( tversion, **kwargs):
         for host_interface_policy in host_interface_policies:
             if "children" in host_interface_policy["fabricHIfPol"]:
                 for policy_group in host_interface_policy["fabricHIfPol"]["children"]:
-                    pg_match = re.match(policy_group_regex, 
+                    pg_match = re.match(policy_group_regex,
                                         policy_group["fabricRtHIfPol"]["attributes"]["tDn"])
                     if pg_match:
                         policy_group_name = pg_match.group("policyGroup")

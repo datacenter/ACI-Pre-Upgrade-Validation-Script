@@ -23,7 +23,7 @@ host_interface_policy_api += '&rsp-subtree=children&rsp-subtree-class=fabricRtHI
             {host_interface_policy_api: read_data(dir, "fabricHIfPol-pos.json")},
             None,
             script.MANUAL,
-        ),        
+        ),
         # FAIL_O Cases
         # fabricHIfPol with 'auto' speed found
         (
