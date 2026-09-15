@@ -1,0 +1,35 @@
+[
+  {
+    "firmwareFirmware": {
+      "attributes": {
+        "dn": "fwrepo/fw-aci-n9000-system.16.1.5e.bin",
+        "fullVersion": "n9000-16.1(5e)",
+        "isoname": "aci-n9000-dk9.16.1.5e.bin",
+        "name": "aci-n9000-system.16.1.5e.bin",
+        "size": "3000000000"
+      }
+    }
+  },
+  {
+    "firmwareFirmware": {
+      "attributes": {
+        "dn": "fwrepo/fw-aci-n9000-system.16.1.5e-cs_64.bin",
+        "fullVersion": "n9000-16.1(5e)",
+        "isoname": "aci-n9000-dk9.16.1.5e-cs_64.bin",
+        "name": "aci-n9000-system.16.1.5e-cs_64.bin",
+        "size": "3000000000"
+      }
+    }
+  },
+  {
+    "firmwareFirmware": {
+      "attributes": {
+        "dn": "fwrepo/fw-aci-n9000-system.15.2.8h.bin",
+        "fullVersion": "n9000-15.2(8h)",
+        "isoname": "aci-n9000-dk9.15.2.8h.bin",
+        "name": "aci-n9000-system.15.2.8h.bin",
+        "size": "2000000000"
+      }
+    }
+  }
+]
