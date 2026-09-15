@@ -46,3 +46,49 @@ def test_logic(mock_icurl, tversion, expected_result):
         1, 1, tversion
     )
     assert result == expected_result
+
+
+def test_policy_group_types(mock_icurl, icurl_outputs, monkeypatch):
+    icurl_outputs[host_interface_policy_api] = read_data(
+        dir, "fabricHIfPol-pos.json"
+    )
+    rendered_result = {}
+
+    def capture_print_result(**kwargs):
+        rendered_result.update(kwargs)
+
+    monkeypatch.setattr(script, "print_result", capture_print_result)
+
+    result = script.host_interface_policy_set_speed_check(
+        1, 1, script.AciVersion("6.0(9d)")
+    )
+
+    assert result == script.FAIL_O
+    assert rendered_result["headers"] == [
+        "Host Interface Policy",
+        "Set Speed",
+        "Associated Interface Policy Group",
+        "Group Type",
+    ]
+    assert rendered_result["data"] == [
+        [
+            "uni/infra/hintfpol-fernandh_interface",
+            "auto",
+            "fernandh_interface",
+            "Leaf Access",
+        ],
+        ["uni/infra/hintfpol-AUTO", "auto", "av_accessB", "Leaf Access"],
+        ["uni/infra/hintfpol-AUTO", "auto", "av-access", "PC/vPC"],
+        [
+            "uni/infra/hintfpol-AUTO",
+            "auto",
+            "av-override",
+            "PC/vPC Override",
+        ],
+        [
+            "uni/infra/hintfpol-AUTO",
+            "auto",
+            "spine-access",
+            "Spine Access",
+        ],
+    ]

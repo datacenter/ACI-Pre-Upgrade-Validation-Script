@@ -5303,14 +5303,24 @@ def apic_database_size_check(cversion, **kwargs):
 @check_wrapper(check_title='Host Interface Policy Set to Auto')
 def host_interface_policy_set_speed_check( tversion, **kwargs):
     result = PASS
-    headers = ["Host Interface Policy", "Set Speed", "Policy Groups associated"]
+    headers = [
+        "Host Interface Policy",
+        "Set Speed",
+        "Associated Interface Policy Group",
+        "Group Type",
+    ]
     data = []
     recommended_action = 'Change the speed to "inherit" to avoid issues with interfaces upon stateless reboot'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#host-interface-policy-set-to-auto'
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    policy_group_regex = r'uni/infra/funcprof/accportgrp-(?P<policyGroup>.+)'
+    policy_group_types = {
+        "infraAccPortGrp": ("accportgrp-", "Leaf Access"),
+        "infraAccBndlGrp": ("accbundle-", "PC/vPC"),
+        "infraAccBndlPolGrp": ("accbundlepolgrp-", "PC/vPC Override"),
+        "infraSpAccPortGrp": ("spaccportgrp-", "Spine Access"),
+    }
     host_interface_policy_api = 'fabricHIfPol.json'
     host_interface_policy_api += '?query-target-filter=and(eq(fabricHIfPol.speed,"auto"))'
     host_interface_policy_api += '&rsp-subtree=children&rsp-subtree-class=fabricRtHIfPol'
@@ -5319,15 +5329,20 @@ def host_interface_policy_set_speed_check( tversion, **kwargs):
         for host_interface_policy in host_interface_policies:
             if "children" in host_interface_policy["fabricHIfPol"]:
                 for policy_group in host_interface_policy["fabricHIfPol"]["children"]:
-                    pg_match = re.match(policy_group_regex,
-                                        policy_group["fabricRtHIfPol"]["attributes"]["tDn"])
-                    if pg_match:
-                        policy_group_name = pg_match.group("policyGroup")
-                    else:
-                        policy_group_name = "N/A"
+                    policy_group_attributes = policy_group["fabricRtHIfPol"]["attributes"]
+                    policy_group_class = policy_group_attributes["tCl"]
+                    policy_group_dn = policy_group_attributes["tDn"]
+                    policy_group_name = policy_group_dn
+                    policy_group_type = policy_group_class
+                    policy_group_details = policy_group_types.get(policy_group_class)
+                    if policy_group_details:
+                        policy_group_prefix = "uni/infra/funcprof/" + policy_group_details[0]
+                        policy_group_type = policy_group_details[1]
+                        if policy_group_dn.startswith(policy_group_prefix):
+                            policy_group_name = policy_group_dn[len(policy_group_prefix):]
                     fabricHIfPol = host_interface_policy["fabricHIfPol"]["attributes"]["dn"]
                     speed = host_interface_policy["fabricHIfPol"]["attributes"]["speed"]
-                    data.append([fabricHIfPol, speed, policy_group_name])
+                    data.append([fabricHIfPol, speed, policy_group_name, policy_group_type])
     if data:
         result = FAIL_O
 

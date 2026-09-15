@@ -90,10 +90,36 @@
                             "childAction": "",
                             "lcOwn": "local",
                             "modTs": "2025-06-05T04:53:53.112+00:00",
-                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/accportgrp-av-access]",
+                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/accbundle-av-access]",
                             "status": "",
-                            "tCl": "infraAccPortGrp",
-                            "tDn": "uni/infra/funcprof/accportgrp-av-access"
+                            "tCl": "infraAccBndlGrp",
+                            "tDn": "uni/infra/funcprof/accbundle-av-access"
+                        }
+                    }
+                },
+                {
+                    "fabricRtHIfPol": {
+                        "attributes": {
+                            "childAction": "",
+                            "lcOwn": "local",
+                            "modTs": "2025-06-05T04:53:53.112+00:00",
+                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/accbundlepolgrp-av-override]",
+                            "status": "",
+                            "tCl": "infraAccBndlPolGrp",
+                            "tDn": "uni/infra/funcprof/accbundlepolgrp-av-override"
+                        }
+                    }
+                },
+                {
+                    "fabricRtHIfPol": {
+                        "attributes": {
+                            "childAction": "",
+                            "lcOwn": "local",
+                            "modTs": "2025-06-05T04:53:53.112+00:00",
+                            "rn": "rtinfraHIfPol-[uni/infra/funcprof/spaccportgrp-spine-access]",
+                            "status": "",
+                            "tCl": "infraSpAccPortGrp",
+                            "tDn": "uni/infra/funcprof/spaccportgrp-spine-access"
                         }
                     }
                 }
