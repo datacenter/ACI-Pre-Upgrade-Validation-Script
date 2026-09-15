@@ -65,7 +65,7 @@ firmware_crossing_missing_32 = [
     {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e-cs_64.bin", "size": "3000000000"}}},
 ]
 
-# node-101 has fully downloaded/extracted the target image already.
+# node-101 has downloaded the exact target image; extraction status is unknown.
 maintUpgJob_node_101_downloaded = [
     {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-101/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
 ]
@@ -75,7 +75,7 @@ maintUpgJob_node_999_downloaded = [
     {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-999/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
 ]
 
-# Every node in eqptcapacityFSPartition.json has fully pre-downloaded the target image.
+# Every node in eqptcapacityFSPartition.json has downloaded the exact target image.
 maintUpgJob_all_downloaded = read_data(dir, "maintUpgJob_all_downloaded.json")
 
 # `dn` doesn't match `node_regex` (unparseable): skipped gracefully, not added to the map.
@@ -96,28 +96,30 @@ maintUpgJob_all_of_failing = read_data(dir, "maintUpgJob_all_of_failing.json")
 maintUpgJob_partial_missing_empty = read_data(dir, "maintUpgJob_partial_missing_empty.json")
 
 # APIC (cversion) reaches 6.0(2a)+ before the switches per the documented upgrade
-# sequence, so sw_cversion (5.2(8h), pre-boundary) must still drive the crossing decision
-# even though the APIC cluster (cversion 6.0(3a)) is already post-boundary. cversion is
+# sequence, so sw_cversion (5.2(8h), pre-split) must still drive the crossing decision
+# even though the APIC cluster (cversion 6.0(3a)) is already in the split-image era. cversion is
 # passed here (as it would be via query_common_data() in production) solely to prove the
 # check ignores it: switch_bootflash_usage_check() only declares sw_cversion/tversion, so
 # cversion lands in **kwargs and has no effect on the result. Sizes are chosen so
 # target_size_32 (3 GiB) exceeds current_size (2 GiB), forcing the full crossing formula:
 # 2 * (3 GiB + 3 GiB - 2 GiB) = 8 GiB required.
-apic_post_boundary_switch_pre_boundary_case = [
+firmware_crossing_2_3_3 = [
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.15.2.8h.bin", "size": str(2 * 1024 ** 3)}}},
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e.bin", "size": str(3 * 1024 ** 3)}}},
+    {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e-cs_64.bin", "size": str(3 * 1024 ** 3)}}},
+]
+
+apic_split_image_switch_pre_split_case = [
     {
         partitions: read_data(dir, "eqptcapacityFSPartition.json"),
         download_sts_615: no_predownload,
-        firmware: [
-            {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.15.2.8h.bin", "size": str(2 * 1024 ** 3)}}},
-            {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e.bin", "size": str(3 * 1024 ** 3)}}},
-            {"firmwareFirmware": {"attributes": {"isoname": "aci-n9000-dk9.16.1.5e-cs_64.bin", "size": str(3 * 1024 ** 3)}}},
-        ],
+        firmware: firmware_crossing_2_3_3,
     },
 ]
 
 
-@pytest.mark.parametrize("icurl_outputs", apic_post_boundary_switch_pre_boundary_case)
-def test_apic_post_boundary_switch_pre_boundary_uses_crossing_formula(run_check, mock_icurl):
+@pytest.mark.parametrize("icurl_outputs", apic_split_image_switch_pre_split_case)
+def test_apic_split_image_switch_pre_split_uses_crossing_formula(run_check, mock_icurl):
     result = run_check(
         cversion=script.AciVersion("6.0(3a)"),
         sw_cversion=script.AciVersion("5.2(8h)"),
@@ -152,6 +154,45 @@ def test_exact_target_downloaded_still_fails_on_insufficient_extraction_space(ru
     )
     assert result.result == script.FAIL_UF
     assert result.data == [["1", "101", "0.0", "2861.02"]]
+
+
+downloaded_crossing_cases = [
+    (
+        {
+            partitions: [
+                {"eqptcapacityFSPartition": {"attributes": {"dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash", "avail": str(4 * 1024 ** 2), "used": "0"}}},
+            ],
+            download_sts_615: maintUpgJob_node_101_downloaded,
+            firmware: firmware_crossing_2_3_3,
+        },
+        script.FAIL_UF,
+        [["1", "101", "4096.0", "5120.0"]],
+    ),
+    (
+        {
+            partitions: [
+                {"eqptcapacityFSPartition": {"attributes": {"dn": "topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash", "avail": str(5 * 1024 ** 2), "used": "0"}}},
+            ],
+            download_sts_615: maintUpgJob_node_101_downloaded,
+            firmware: firmware_crossing_2_3_3,
+        },
+        script.PASS,
+        [],
+    ),
+]
+
+
+@pytest.mark.parametrize("icurl_outputs, expected_result, expected_data", downloaded_crossing_cases)
+def test_downloaded_crossing_uses_remaining_crossing_requirement(
+    run_check, mock_icurl, expected_result, expected_data
+):
+    result = run_check(
+        sw_cversion=script.AciVersion("5.2(8h)"),
+        tversion=script.AciVersion("6.1(5e)"),
+    )
+
+    assert result.result == expected_result
+    assert result.data == expected_data
 
 
 def test_missing_target_version_takes_precedence(run_check):
@@ -287,8 +328,8 @@ def test_missing_target_version_takes_precedence(run_check):
             "6.1(5e)",
             script.MANUAL,
         ),
-        # node-101 (the only node that would otherwise fail) already fully downloaded
-        # the target image, so it's excluded from the check and the result is PASS.
+        # node-101 downloaded the target and has enough space for the remaining
+        # extraction-only requirement, so the result is PASS.
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
@@ -310,7 +351,8 @@ def test_missing_target_version_takes_precedence(run_check):
             "6.0(2h)",
             script.FAIL_UF,
         ),
-        # Every node has pre-downloaded the image, so all are skipped and the result is PASS.
+        # Every node downloaded the image and has enough space for the remaining
+        # extraction-only requirement, so the result is PASS.
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),
@@ -357,8 +399,8 @@ def test_missing_target_version_takes_precedence(run_check):
             "6.1(5e)",
             script.FAIL_UF,
         ),
-        # Pre-downloading every node that would otherwise fail with the insufficient-space
-        # fixture leaves only the already-sufficient nodes, so the result is PASS.
+        # Every node that fails the full crossing requirement downloaded the 32-bit target
+        # and has enough space for the reduced remaining requirement, so the result is PASS.
         (
             {
                 partitions: read_data(dir, "eqptcapacityFSPartition.json"),

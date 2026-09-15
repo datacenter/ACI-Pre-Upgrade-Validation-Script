@@ -2211,13 +2211,13 @@ def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
     target_size_32 = fw_sizes.get(switch_target_version)
     target_size_64 = fw_sizes.get(switch_target_version_64)
 
-    # sw_cversion (lowest switch version), not the APIC cversion, drives the boundary
+    # sw_cversion (lowest switch version), not the APIC cversion, drives the image split
     # decision: the upgrade guide has APICs reach 6.0(2a)+ before the switches, so the
-    # switches can still be pre-boundary while the APIC cluster is already post-boundary.
-    target_is_legacy = tversion.older_than(boundary_version)
-    current_is_legacy = sw_cversion.older_than(boundary_version)
+    # switches can still be pre-split while the APIC cluster is in the split-image era.
+    target_is_pre_split = tversion.older_than(boundary_version)
+    current_is_pre_split = sw_cversion.older_than(boundary_version)
 
-    if target_is_legacy:
+    if target_is_pre_split:
         # Only the 32-bit image is ever used for a pre-6.0(2a) target.
         if target_size_32 is None:
             msg = 'Target switch image ({}) not found in Firmware Repository.'.format(switch_target_version)
@@ -2238,9 +2238,7 @@ def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
             msg = '64-bit target switch image ({}) not found in Firmware Repository.'.format(switch_target_version_64)
             return Result(result=MANUAL, msg=msg, doc_url=doc_url)
 
-        downloaded_required_space = max(target_size_32, target_size_64)
-
-        if current_is_legacy:
+        if current_is_pre_split:
             # Crossing the 32/64-bit boundary: the pre-6.0(2a) switch only ever had a
             # 32-bit image, so its size is freed once removed during the upgrade.
             switch_current_version = "aci-n9000-dk9.1{}.bin".format(sw_cversion.dot_version)
@@ -2252,8 +2250,11 @@ def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
                 required_space = 2 * (target_size_32 + target_size_64 - current_size)
             else:
                 required_space = 2 * max(target_size_32, target_size_64)
+            # A downloaded 32-bit target is already reflected in the current `avail`.
+            downloaded_required_space = required_space - target_size_32
         else:
             required_space = 2 * max(target_size_32, target_size_64)
+            downloaded_required_space = max(target_size_32, target_size_64)
 
     required_space_kb = required_space / 1024.0  # eqptcapacityFSPartition avail/used are in KB
     downloaded_required_space_kb = downloaded_required_space / 1024.0
