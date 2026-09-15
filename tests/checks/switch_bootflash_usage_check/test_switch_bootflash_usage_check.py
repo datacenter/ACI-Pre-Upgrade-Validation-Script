@@ -154,13 +154,20 @@ def test_exact_target_downloaded_still_fails_on_insufficient_extraction_space(ru
     assert result.data == [["1", "101", "0.0", "2861.02"]]
 
 
+def test_missing_target_version_takes_precedence(run_check):
+    result = run_check(sw_cversion=None, tversion=None)
+
+    assert result.result == script.MANUAL
+    assert result.msg == script.TVER_MISSING
+
+
 @pytest.mark.parametrize(
     "icurl_outputs, sw_cversion, tversion, expected_result",
     [
         # No tversion provided.
         (
             {},
-            None,
+            "6.0(3a)",
             None,
             script.MANUAL,
         ),

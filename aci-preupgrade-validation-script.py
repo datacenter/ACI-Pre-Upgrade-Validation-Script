@@ -2166,11 +2166,11 @@ def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
     recommended_action = "Insufficient free space to download and extract the target image! Contact Cisco TAC for Support"
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#switch-node-bootflash-usage"
 
-    if not sw_cversion:
-        return Result(result=MANUAL, msg="Current switch version not found. Check switch health.", doc_url=doc_url)
-
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    if not sw_cversion:
+        return Result(result=MANUAL, msg="Current switch version not found. Check switch health.", doc_url=doc_url)
 
     partitions_api = 'eqptcapacityFSPartition.json'
     partitions_api += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
