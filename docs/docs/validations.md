@@ -634,26 +634,26 @@ The script performs SSH into each standby Cisco APIC as `rescue-user`, then run 
 
 ### Switch Node `/bootflash` usage
 
-ACI switches mainly have two different faults about the filesystem usage of each partition:
+ACI switches mainly have two different faults related to filesystem usage on each partition:
 
-* **F1820**: A minor level fault for switch partition usage. This is raised when the utilization of the partition exceeds the minor threshold.
+* **F1820**: A minor-level fault raised when partition utilization exceeds the minor threshold.
 
-* **F1821**: A major level fault for switch partition usage. This is raised when the utilization of the partition exceeds the major threshold.
+* **F1821**: A major-level fault raised when partition utilization exceeds the major threshold.
 
 !!! note
-    The threshold for minor and major depends on partitions. The critical one for upgrades is `/bootflash`. The threshold of bootflash is 80% for minor and 90% for major threshold.
+    Thresholds vary by partition. For `/bootflash`, the minor threshold is 80% utilization and the major threshold is 90%.
 
-On top of this, there is a built-in behavior added to every switch node where it will take action to ensure that the `/bootflash` directory maintains 50% capacity. This is specifically to ensure that switch upgrades are able to successfully transfer and extract the switch image over during an upgrade.
+ACI switches also include an internal cleanup process intended to maintain sufficient free `/bootflash` capacity for switch upgrades. When usage exceeds approximately 50%, the process can remove eligible files to make space for transferring and extracting switch images.
 
-To do this, there is an internal script that is monitoring `/bootflash` usage and, if over 50% usage, it will start removing files to free up the filesystem. Given its aggressiveness, there are some corner case scenarios where this cleanup script could potentially trigger against the switch image it is intending to use, which can result in a switch upgrade booting a switch into the loader prompt given that the boot image was removed from `/bootflash`.
+The fixed cleanup threshold does not cover every upgrade scenario. Larger target images, files that cannot be removed, and upgrades that cross the ACI 6.0(2) 32-bit/64-bit image boundary can require more free space than the cleanup process normally maintains. Insufficient space can prevent an image from being downloaded or extracted and may cause the switch upgrade to fail.
 
-To prevent this, check the `/bootflash` prior to an upgrade and take the necessary steps to understand what is written there and why. Once understood, take the necessary steps to clear up unnecessary `/bootflash` files to ensure there is enough space to prevent the auto-cleanup corner case scenario.
+The ACI Pre-Upgrade Validation script uses APIC API data to compare each switch's available `/bootflash` space with the space required for the target switch release. The requirement is calculated dynamically from the current and target switch images rather than from a fixed utilization percentage.
 
-The pre-upgrade validation built into Cisco APIC upgrade workflow monitors the fault F1821, which can capture the high utilization of any partition. When this fault is present, we recommend that you resolve it prior to the upgrade even if the fault is not for bootflash.
+The calculation generally reserves twice the applicable target image size. This accounts for space used by the downloaded image and additional space needed while the image is extracted. For an upgrade that crosses the 6.0(2) image boundary, the calculation accounts for both the 32-bit and 64-bit target images and the space recovered when the current image is removed.
 
-The ACI Pre-Upgrade Validation script checks whether each switch has enough available `/bootflash` space to download and extract the target switch image. The required space is calculated dynamically from the current and target switch releases, including upgrades that cross the 6.0(2) 32-bit/64-bit image boundary and targets that have already been downloaded.
+Switches that have already downloaded the target image are still checked because image extraction and later upgrade stages can require additional space. Because the downloaded image is already reflected in the switch's available-space value, the check evaluates only the remaining space required to complete the upgrade.
 
-If a switch does not have the calculated amount of available space, the check reports an upgrade failure. If the required switch version, firmware image, or bootflash information is unavailable, the check reports that a manual review is required.
+If a switch does not have enough available space, the check reports an upgrade failure and displays the available and required space. If the current switch version, target firmware image, or `/bootflash` information is unavailable, the check reports that a manual review is required.
 
 
 ### APIC SSD Health
