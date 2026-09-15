@@ -651,19 +651,9 @@ To prevent this, check the `/bootflash` prior to an upgrade and take the necessa
 
 The pre-upgrade validation built into Cisco APIC upgrade workflow monitors the fault F1821, which can capture the high utilization of any partition. When this fault is present, we recommend that you resolve it prior to the upgrade even if the fault is not for bootflash.
 
-The ACI Pre-Upgrade Validation script (this script) dynamically calculates the actual bootflash space required for the target upgrade, rather than relying on a fixed usage threshold, and compares it against each switch's available `/bootflash` space. Starting with 6.0(2a), switch releases use separate 32-bit and 64-bit images. The calculation therefore distinguishes between pre-split releases older than 6.0(2a) and split-image releases starting with 6.0(2a):
+The ACI Pre-Upgrade Validation script checks whether each switch has enough available `/bootflash` space to download and extract the target switch image. The required space is calculated dynamically from the current and target switch releases, including upgrades that cross the 6.0(2) 32-bit/64-bit image boundary and targets that have already been downloaded.
 
-* A pre-split target requires twice the 32-bit target image size.
-* An upgrade from a pre-split release to a split-image release requires `2 × (32-bit target size + 64-bit target size − current image size)`. If the 32-bit target is not larger than the current image, the check instead uses twice the larger target image.
-* An upgrade where both the current and target releases are in the split-image era requires twice the larger target image.
-
-Nodes that already downloaded the exact target version (`maintUpgJob.dnldStatus == downloaded` and `desiredVersion` matching target) are still evaluated because extraction and later upgrade stages require additional bootflash space. Since the downloaded image is already reflected in the current available-space value:
-
-* A pre-split target requires one 32-bit target image of remaining space.
-* A boundary-crossing upgrade requires the full crossing requirement minus the downloaded 32-bit target image.
-* A split-image-era upgrade requires the larger target image of remaining space.
-
-* If a required firmware image isn't found in the Firmware Repository, the check reports a manual review.
+If a switch does not have the calculated amount of available space, the check reports an upgrade failure. If the required switch version, firmware image, or bootflash information is unavailable, the check reports that a manual review is required.
 
 
 ### APIC SSD Health
