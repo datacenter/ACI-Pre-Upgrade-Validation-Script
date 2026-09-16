@@ -37,6 +37,7 @@ Items                                                        | This Script      
 [Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
 [APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
+[APIC Cluster Size][g22]                                      | :white_check_mark: | :no_entry_sign:
 [Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
 [Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
 
@@ -61,6 +62,7 @@ Items                                                        | This Script      
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
+[g22]: #apic-cluster-size
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -567,6 +569,13 @@ This check alerts you if you are crossing the 6.2 boundary, beyond which downgra
     Make sure to collect the latest configuration backup before you upgrade your APICs from pre-6.2(1) to 6.2(1)+ so that Cisco TAC can perform the fabric recovery process in the case of emergency where you need to downgrade your APICs to the previous version (i.e. 6.2(1)+ -> pre-6.2(1)).
 
     If it's for a lab environment, you can initialize the fabric and perform a fresh ISO installation of pre-6.2(1) on APICs.
+
+
+### APIC Cluster Size
+
+For target versions 6.3(1a) and later, APIC clusters must contain no more than three commissioned APIC controllers to continue an upgrade unless they include an APIC-SERVER-L1 through L4 or APIC-SERVER-M1 through M4 model. This validation queries commissioned APIC controllers and compares their models with the excluded models embedded in the validation script.
+
+If more than three controllers are found and none is one of the excluded models, reduce the cluster to three nodes before continuing the upgrade.
 
 
 ## Fault Check Details
