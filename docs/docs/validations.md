@@ -2804,27 +2804,6 @@ To avoid this issue, disable WRED on the affected nodes or upgrade to a release 
 
 This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
 
-### vzAny Service Graph on Stretched VRF
-
-Due to [CSCwn95571][80], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
-
-The validation checks whether `vnsEpgDefXlate` translation entries exist for the first node's consumer leg of the service graph. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail.
-
-This check detects configurations where **all** of the following conditions are true:
-
-1. The VRF is stretched across multiple sites (has `fvSiteAssociated` with `fvRemoteId` children)
-2. vzAny is used as either consumer **or** provider on the stretched VRF
-3. The contract has a service graph attached (any type — PBR is **not** required)
-4. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
-
-!!! note
-    The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
-
-!!! note
-    This applies to **all** service graph types including firewalls with PBR, load balancers without PBR, and any other L4-L7 service devices.
-
-Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][79].
-
 
 ### N9K-C93180YC-FX3 Switch Memory Less Than 32GB
 
@@ -2849,6 +2828,29 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.1(3f), 6.1(3g), 6.1(4h), 6.1(5e) and 6.2(1g), be aware of fault F4701 being raised if the InfraVLAN overlaps with any user-configured VLAN pool in Access Policies. This also affects vlan pool created by NDO/MSO, VMM, Kubernetes. After the upgrade, domains associated with those VLAN pools cannot be linked to new EPGs, although existing EPGs continue to function.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
+
+
+### vzAny Service Graph on Stretched VRF
+
+Due to [CSCwn95571][80], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
+
+The validation checks whether `vnsEpgDefXlate` translation entries exist for the first node's consumer leg of the service graph. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail.
+
+This check detects configurations where **all** of the following conditions are true:
+
+1. The VRF is stretched across multiple sites (has `fvSiteAssociated` with `fvRemoteId` children)
+2. vzAny is used as either consumer **or** provider on the stretched VRF
+3. The contract has a service graph attached (any type — PBR is **not** required)
+4. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
+
+!!! note
+    The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
+
+!!! note
+    This applies to **all** service graph types including firewalls with PBR, load balancers without PBR, and any other L4-L7 service devices.
+
+Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][79].
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
