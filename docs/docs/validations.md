@@ -142,6 +142,7 @@ Items                                         | Faults         | This Script    
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 [Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
+[Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -168,6 +169,7 @@ Items                                         | Faults         | This Script    
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
 [c25]: #preferred-group-shared-service-provider
+[c26]: #host-interface-policy-set-to-auto
 
 ### Defect Condition Checks
 
@@ -2329,6 +2331,15 @@ Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupp
 Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
 
 
+### Host interface policy set to auto
+As detailed in the [Cisco APIC Basic Configuration Guide][79], for **Interface Speed**, use the default value, `Inherit`.
+With this value, Cisco APIC determines the interface speed based on the transceiver installed in the switch port.
+
+In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
+Changing the speed to "inherit" resolves this situation, which is also a best practice.
+Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2905,3 +2916,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
+[79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
