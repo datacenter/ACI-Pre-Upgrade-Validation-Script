@@ -6353,28 +6353,49 @@ def configpush_shard_check(tversion, **kwargs):
 
 
 @check_wrapper(check_title='Port Tracking Minimal Uplink Zero')
-def port_tracking_active_fabric_port_check(tversion, **kwargs):
-    result = NA
+def port_tracking_active_fabric_port_check(tversion, vpc_node_ids, **kwargs):
     headers = ["Admin State", "Port Tracking Active Fabric Ports"]
     data = []
-    recommended_action = 'Increase Port Tracking Active Fabric Ports to 1 before upgrade'
+    recommended_action = (
+        'Upgrade to a fixed release when possible. If upgrading to an affected release, either disable Port Tracking '
+        'before upgrading the leaf, or set Port Tracking Active Fabric Ports (minLink) to 1 only after verifying every '
+        'affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port '
+        'Tracking, reload the affected switch, and then re-enable Port Tracking.'
+    )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#port-tracking-active-fabric-port-zero'
 
     if not tversion:
-        return Result(result=MANUAL, msg=TVER_MISSING)
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
 
-    if tversion.same_as("6.0(9d)"):
-        result = PASS
-        port_tracking_api = 'uni/infra/trackEqptFabP-default.json'
-        port_tracking_mo = icurl('mo', port_tracking_api)
-        if port_tracking_mo:
-            admin_st = port_tracking_mo[0]['infraPortTrackPol']['attributes']['adminSt']
-            minimal_uplink = port_tracking_mo[0]['infraPortTrackPol']['attributes']['minlinks']
-            if admin_st == "on" and minimal_uplink == "0":
-                data.append([admin_st, minimal_uplink])
-    else:
-        return Result(result=NA, msg=VER_NOT_AFFECTED)
-    if data:
+    affected_versions = ("6.0(9d)", "6.1(3f)")
+    if not any(tversion.same_as(version) for version in affected_versions):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    if not vpc_node_ids:
+        return Result(result=NA, msg="No vPC nodes found. Not susceptible.", doc_url=doc_url)
+
+    port_tracking_api = 'uni/infra/trackEqptFabP-default.json'
+    port_tracking_mo = icurl('mo', port_tracking_api)
+    if not isinstance(port_tracking_mo, list) or len(port_tracking_mo) != 1:
+        object_count = len(port_tracking_mo) if isinstance(port_tracking_mo, list) else 0
+        msg = "Expected exactly one infraPortTrackPol object, but found {}.".format(object_count)
+        return Result(result=ERROR, msg=msg, recommended_action=recommended_action, doc_url=doc_url)
+
+    try:
+        attributes = port_tracking_mo[0]['infraPortTrackPol']['attributes']
+        admin_st = attributes['adminSt']
+        minimal_uplink = attributes['minlinks']
+    except (KeyError, TypeError):
+        msg = "The infraPortTrackPol response is missing required adminSt or minlinks attributes."
+        return Result(result=ERROR, msg=msg, recommended_action=recommended_action, doc_url=doc_url)
+
+    if admin_st not in ("on", "off") or not str(minimal_uplink).isdigit():
+        msg = "The infraPortTrackPol response contains an invalid adminSt or minlinks value."
+        return Result(result=ERROR, msg=msg, recommended_action=recommended_action, doc_url=doc_url)
+
+    result = PASS
+    if admin_st == "on" and str(minimal_uplink) == "0":
+        data.append([admin_st, minimal_uplink])
         result = FAIL_O
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)

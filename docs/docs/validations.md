@@ -2757,9 +2757,11 @@ If any instances of `configpushShardCont` are flagged by this script, Cisco TAC 
 
 ### Port Tracking Active Fabric Port Zero
 
-Due to [CSCwp91797][78], if port tracking is enabled and the number of active fabric ports that triggers port tracking is zero, a vPC member may appear down after upgrade and show an `initializing` interface state.
+Due to [CSCwp91797][78], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
 
-This defect applies only to 6.0(9d). Set the port-tracking active-fabric-port threshold to 1 before upgrading to avoid the issue.
+The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
+
+Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
 
 
 ### Auto Firmware Update on Switch Discovery
