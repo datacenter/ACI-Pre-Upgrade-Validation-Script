@@ -1,0 +1,30 @@
+{
+  "totalCount": "1",
+  "imdata": [
+    {
+      "infraPortTrackPol": {
+        "attributes": {
+          "adminSt": "off",
+          "annotation": "",
+          "childAction": "",
+          "delay": "120",
+          "descr": "",
+          "dn": "uni/infra/trackEqptFabP-default",
+          "extMngdBy": "",
+          "includeApicPorts": "no",
+          "lcOwn": "local",
+          "minlinks": "0",
+          "modTs": "2025-10-31T17:13:46.220+11:00",
+          "name": "default",
+          "nameAlias": "",
+          "ownerKey": "",
+          "ownerTag": "",
+          "rn": "trackEqptFabP-default",
+          "status": "",
+          "uid": "0",
+          "userdom": "all"
+        }
+      }
+    }
+  ]
+}

@@ -199,6 +199,7 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: |
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
 [Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
@@ -248,6 +249,7 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
+[d39]: #port-tracking-active-fabric-port-zero
 
 ## General Check Details
 
@@ -2753,6 +2755,12 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
+### Port Tracking Active Fabric Port Zero
+
+Due to [CSCwp91797][78], if port tracking is enabled and the number of active fabric ports that triggers port tracking is zero, a vPC member may appear down after upgrade and show an `initializing` interface state.
+
+This defect applies only to 6.0(9d). Set the port-tracking active-fabric-port threshold to 1 before upgrading to avoid the issue.
+
 
 ### Auto Firmware Update on Switch Discovery
 
@@ -2947,3 +2955,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
