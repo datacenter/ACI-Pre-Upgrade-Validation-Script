@@ -1,0 +1,21 @@
+[
+  {
+    "vzBrCP": {
+      "attributes": {
+        "dn": "uni/tn-vzAny-consumer/brc-contract-epg",
+        "scope": "global",
+        "name": "contract-epg"
+      },
+      "children": [
+        {
+          "vzRtProv": {
+            "attributes": {
+              "tDn": "uni/tn-vzAny-consumer/ap-ap1/epg-epg2-unmatched",
+              "tCl": "fvAEPg"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

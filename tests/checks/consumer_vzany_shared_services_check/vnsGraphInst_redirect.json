@@ -1,0 +1,43 @@
+{
+  "totalCount": "2",
+  "imdata": [
+    {
+      "vnsGraphInst": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/GraphInst-no-redirect",
+          "ctrctDn": "uni/tn-vzAny-consumer/brc-vzany-esg-permit",
+          "configSt": "applied"
+        },
+        "children": [
+          {
+            "vnsNodeInst": {
+              "attributes": {
+                "dn": "uni/tn-vzAny-consumer/GraphInst-no-redirect/NodeInst-N1",
+                "routingMode": "unspecified"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "vnsGraphInst": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/GraphInst-redirect",
+          "ctrctDn": "uni/tn-vzAny-consumer/brc-vzany-esg-redirect",
+          "configSt": "applied"
+        },
+        "children": [
+          {
+            "vnsNodeInst": {
+              "attributes": {
+                "dn": "uni/tn-vzAny-consumer/GraphInst-redirect/NodeInst-N1",
+                "routingMode": "Redirect"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

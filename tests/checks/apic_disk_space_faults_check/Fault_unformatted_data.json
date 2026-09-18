@@ -1,0 +1,31 @@
+[
+        {
+            "faultInst": {
+                "attributes": {
+                    "ack": "no",
+                    "alert": "no",
+                    "cause": "equipment-full",
+                    "changeSet": "available (Old: 237936, New: 1495556), capUtilized (Old: 89, New: 29), inodesFree (Old: 12148990, New: 12148991), inodesUsed (Old: 722, New: 721), used (Old: 1859216, New: 601596)",
+                    "childAction": "",
+                    "code": "F1528",
+                    "created": "2026-01-12T06:44:26.382+00:00",
+                    "delegated": "no",
+                    "dn": "topology/pod-1/node-1/sys/ch/p-[/unknown]-f",
+                    "descr": "Partition /unknown is 88% full",
+                    "domain": "infra",
+                    "highestSeverity": "major",
+                    "lastTransition": "2026-01-12T06:49:47.550+00:00",
+                    "lc": "raised",
+                    "occur": "1",
+                    "origSeverity": "major",
+                    "prevSeverity": "major",
+                    "rule": "eqpt-storage-full-major",
+                    "severity": "major",
+                    "status": "",
+                    "subject": "equipment-full",
+                    "title": "",
+                    "type": "operational"
+                }
+            }
+        }
+    ]

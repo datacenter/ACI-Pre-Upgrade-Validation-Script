@@ -1,0 +1,45 @@
+{
+  "totalCount": "2",
+  "imdata": [
+    {
+      "fvCtx": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/ctx-v1",
+          "scope": "2916352",
+          "name": "v1"
+        },
+        "children": [
+          {
+            "vzAny": {
+              "attributes": {
+                "dn": "uni/tn-vzAny-consumer/ctx-v1/any",
+                "pcTag": "any"
+              },
+              "children": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fvCtx": {
+        "attributes": {
+          "dn": "uni/tn-vzAny-consumer/ctx-v2",
+          "scope": "2850816",
+          "name": "v2"
+        },
+        "children": [
+          {
+            "vzAny": {
+              "attributes": {
+                "dn": "uni/tn-vzAny-consumer/ctx-v2/any",
+                "pcTag": "any"
+              },
+              "children": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

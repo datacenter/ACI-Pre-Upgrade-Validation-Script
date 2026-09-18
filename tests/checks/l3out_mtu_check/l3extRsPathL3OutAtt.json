@@ -1,0 +1,36 @@
+[
+    {
+        "l3extRsPathL3OutAtt": {
+            "attributes": {
+                "addr": "122.1.1.1/30",
+                "dn": "uni/tn-infra/out-IPNL3Out/lnodep-LNodeP_2001/lifp-LIfP_2001/rspathL3OutAtt-[topology/pod-2/paths-2001/pathep-[eth1/26]]",
+                "encap": "vlan-4",
+                "ifInstT": "sub-interface",
+                "ipv6Dad": "enabled",
+                "isMultiPodDirect": "no",
+                "lcOwn": "local",
+                "llAddr": "::",
+                "mac": "00:22:BD:F8:19:FF",
+                "mtu": "inherit",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-2/paths-2001/pathep-[eth1/26]",
+                "tType": "mo",
+                "targetDscp": "unspecified",
+                "uid": "15374",
+                "userdom": "all"
+            }
+        }
+    },
+    {
+        "l3extRsPathL3OutAtt": {
+            "attributes": {
+                "addr": "102.1.1.1/30",
+                "dn": "uni/tn-infra/out-IPNL3Out/lnodep-LNodeP_1001/lifp-LIfP_1001/rspathL3OutAtt-[topology/pod-1/paths-1001/pathep-[eth1/6]]",
+                "encap": "vlan-4",
+                "ifInstT": "sub-interface",
+                "mtu": "9150",
+                "tCl": "fabricPathEp",
+                "tDn": "topology/pod-1/paths-1001/pathep-[eth1/6]"            }
+        }
+    }
+]

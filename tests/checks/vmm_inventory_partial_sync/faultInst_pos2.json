@@ -1,0 +1,15 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "cause": "operational-issues",
+                "code": "F0132",
+                "changeSet": "remoteOperIssues (Old: event-channel-down,partial-inv, New: partial-inv)",
+                "descr": "Operational issues detected for VMM controller: 192.168.1.1 with name MY_CONTROLLER in datacenter  MY_DC in domain: MY_DOMAIN due to error: Received partial inventory in the last inventory sync. Please look for Faults under VM and Host and fix them via VCenter, then manually re-trigger inventory sync on APIC",
+                "dn": "comp/prov-VMware/ctrlrx-[MY_DOMAIN]-MY_CONTROLLER/fault-F0132",
+                "rule": "comp-ctrlr-operational-issues"
+            }
+        }
+    }
+    
+]

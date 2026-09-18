@@ -1,0 +1,42 @@
+[
+  {
+    "eqptCh": {
+      "attributes": {
+        "cimcVersion": "4.2(3e)",
+        "descr": "APIC-SERVER-L3",
+        "dn": "topology/pod-1/node-1/sys/ch",
+        "model": "APIC-SERVER-L3"
+      }
+    }
+  },
+  {
+    "eqptCh": {
+      "attributes": {
+        "cimcVersion": "4.2(3e)",
+        "descr": "APIC-SERVER-M3",
+        "dn": "topology/pod-1/node-2/sys/ch",
+        "model": "APIC-SERVER-M3"
+      }
+    }
+  },
+  {
+    "eqptCh": {
+      "attributes": {
+        "cimcVersion": "4.2(3e)",
+        "descr": "APIC-SERVER-L4",
+        "dn": "topology/pod-1/node-3/sys/ch",
+        "model": "APIC-SERVER-L4"
+      }
+    }
+  },
+  {
+    "eqptCh": {
+      "attributes": {
+        "cimcVersion": "4.2(3e)",
+        "descr": "APIC-SERVER-M4",
+        "dn": "topology/pod-1/node-4/sys/ch",
+        "model": "APIC-SERVER-M4"
+      }
+    }
+  }
+]

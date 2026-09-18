@@ -1,0 +1,14 @@
+{
+    "totalCount": "1",
+    "imdata": [
+        {
+            "eqptFlash": {
+                "attributes": {
+                    "dn": "topology/pod-1/node-205/sys/ch/supslot-1/sup/flash",
+                    "vendor": "Micron",
+                    "model": "Micron_M550_MTFDDAT256MAY"
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "fabricExplicitGEp": {
+      "attributes": {
+        "dn": "uni/fabric/protpol/expgep-101-102",
+        "id": "12",
+        "name": "101-102",
+        "virtualIp": "10.0.112.64/32"
+      },
+      "children": [
+        {
+          "fabricNodePEp": {
+            "attributes": {
+              "id": "102",
+              "podId": "1",
+              "rn": "nodepep-102"
+            }
+          }
+        },
+        {
+          "fabricNodePEp": {
+            "attributes": {
+              "id": "101",
+              "podId": "1",
+              "rn": "nodepep-101"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fabricExplicitGEp": {
+      "attributes": {
+        "dn": "uni/fabric/protpol/expgep-111-112",
+        "id": "112",
+        "name": "111-112",
+        "virtualIp": "10.0.188.64/32"
+      },
+      "children": [
+        {
+          "fabricNodePEp": {
+            "attributes": {
+              "id": "111",
+              "podId": "1",
+              "rn": "nodepep-111"
+            }
+          }
+        },
+        {
+          "fabricNodePEp": {
+            "attributes": {
+              "id": "112",
+              "podId": "1",
+              "rn": "nodepep-112"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fabricExplicitGEp": {
+      "attributes": {
+        "dn": "uni/fabric/protpol/expgep-201-202",
+        "id": "212",
+        "name": "201-202",
+        "virtualIp": "10.0.188.64/32"
+      },
+      "children": [
+        {
+          "fabricNodePEp": {
+            "attributes": {
+              "id": "201",
+              "podId": "2",
+              "rn": "nodepep-201"
+            }
+          }
+        },
+        {
+          "fabricNodePEp": {
+            "attributes": {
+              "id": "202",
+              "podId": "2",
+              "rn": "nodepep-202"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

@@ -4,7 +4,7 @@ Tables in this page list the validations supported by the script and compare the
 
 * **This Script**: The python script provided in [GitHub][0]
 * **APIC built-in**: A validator embedded in the Cisco APIC Upgrade Workflow. This is automatically performed when performing an upgrade or downgrade for the Cisco APIC or switches.
-* **Pre-Upgrade Validator (App)**: A validator that can be installed on the Cisco APICs as an app that can be downloaded through dcappcenter.cisco.com.
+* <del>**Pre-Upgrade Validator (App)**</del>: The APIC App infra, including the Pre-Upgrade Validation app, was deprecated in ACI version [6.1(2)](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/cisco-aci-releases-changes-in-behavior.html#ACIrelease612).
 
 !!! info
     The tables in this page assume the **latest version** of the script.
@@ -16,26 +16,29 @@ Tables in this page list the validations supported by the script and compare the
 
 ### General Checks
 
-Items                                                        | This Script        | APIC built-in             | Pre-Upgrade Validator (App)
--------------------------------------------------------------|--------------------|---------------------------|---------------------------
-[Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:        | :no_entry_sign:
-[Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767 | :white_check_mark:
-[APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)| :no_entry_sign:
-[APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6) | :white_check_mark:
-[Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
-[Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps | :white_check_mark:
-[Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked) | :white_check_mark:
-[Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5) | :white_check_mark:
-[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
+Items                                                        | This Script        | APIC built-in
+-------------------------------------------------------------|--------------------|---------------------------
+[Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4)
+[Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4)
+[Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:
+[Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4)
+[Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767
+[APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)
+[APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6)
+[Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:
+[NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5)
+[Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:
+[Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps
+[Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked)
+[Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5)
+[Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:
+[Post Upgrade CallBack Integrity][g15]                       | :white_check_mark: | :no_entry_sign:
+[6.0(2)+ requires 32 and 64 bit switch images][g16]          | :white_check_mark: | :no_entry_sign:
+[Fabric Link Redundancy][g17]                                | :white_check_mark: | :no_entry_sign:
+[APIC Database Size][g18]                                    | :white_check_mark: | :no_entry_sign:
+[APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
+[Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
+[Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -55,32 +58,36 @@ Items                                                        | This Script      
 [g16]: #602-requires-32-and-64-bit-switch-images
 [g17]: #fabric-link-redundancy
 [g18]: #apic-database-size
+[g19]: #apic-downgrade-compatibility-when-crossing-62-release
+[g20]: #supported-hardware-compatibility
+[g21]: #svccore-excessive-data-check
 
 ### Fault Checks
-Items                                         | Faults         | This Script       | APIC built-in                 | Pre-Upgrade Validator (App)
-----------------------------------------------|----------------|-------------------|-------------------------------|--------------------------------
-[APIC Disk Space Usage][f1]                   | F1527: 80% - 85%<br>F1528: 85% - 90%<br>F1529: 90% or more | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Standby APIC Disk Space Usage][f2]           |                | :white_check_mark: | :white_check_mark: 5.2(3) | :no_entry_sign:
-[Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
-[L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g) | :white_check_mark:
-[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d) | :white_check_mark:
-[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1) | :white_check_mark:
-[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1) | :white_check_mark:
-[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign: | :white_check_mark:
-[Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-[Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign: | :no_entry_sign:
-
-
+Items                                         | Faults         | This Script       | APIC built-in
+----------------------------------------------|----------------|-------------------|-------------------------------
+[APIC Disk Space Usage][f1]                   | F1527: 80% - 85%<br>F1528: 85% - 90%<br>F1529: 90% or more  | :white_check_mark: | :white_check_mark: 4.2(1)
+[Standby APIC Disk Space Usage][f2]           |                | :white_check_mark: | :white_check_mark: 5.2(3)
+[Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4)
+[APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1)
+[Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1)
+[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g)
+[L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)
+[L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)
+[Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:
+[Encap Already in Use][f10]                   | F0467: encap-already-in-use | :white_check_mark: | :no_entry_sign:
+[L3Out Subnets][f11]                          | F0467: prefix-entry-already-in-use | :white_check_mark: | :white_check_mark: 6.0(1g)
+[BD Subnets][f12]                             | F0469: duplicate-subnets-within-ctx | :white_check_mark: | :white_check_mark: 5.2(4d)
+[BD Subnets][f13]                             | F1425: subnet-overlap | :white_check_mark: | :white_check_mark: 5.2(4d)
+[VMM Domain Controller Status][f14]           | F0130         | :white_check_mark: | :white_check_mark: 4.2(1)
+[VMM Domain LLDP/CDP Adjacency Status][f15]   | F606391       | :white_check_mark: | :white_check_mark: 4.2(1)
+[Different infra VLAN via LLDP][f16]          | F0454: infra-vlan-mismatch | :white_check_mark: | :white_check_mark: 4.2(4)
+[HW Programming Failure][f17]                 | F3544: L3Out Prefixes<br>F3545: Contracts | :white_check_mark: | :white_check_mark: 5.1(1)
+[Scalability (faults related to Capacity Dashboard)][f18] | TCA faults for eqptcapacityEntity | :white_check_mark: | :no_entry_sign:
+[Fabric Port Status][f19]                     | F1394: ethpm-if-port-down-fabric | :white_check_mark: | :no_entry_sign:
+[Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
+[VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
+[APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
+[Switch RTC Battery Voltage][f23]              | F2421: RTC battery voltage is low | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -102,37 +109,40 @@ Items                                         | Faults         | This Script    
 [f18]: #scalability-faults-related-to-capacity-dashboard
 [f19]: #fabric-port-status
 [f20]: #equipment-disk-limits
-
+[f21]: #vmm-inventory-partially-synced
+[f22]: #apic-storage-inode-usage
+[f23]: #switch-rtc-battery-voltage
 
 ### Configuration Checks
 
- Items                                                | This Script        | APIC built-in             | Pre-Upgrade Validator (App)
-------------------------------------------------------|--------------------|---------------------------|-------------------------------
-[VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4) | :white_check_mark:
-[Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[VNID Mismatch][c3] (deprecated)                      | :warning:          | :no_entry_sign:           | :no_entry_sign:
-[L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:           | :white_check_mark:
-[APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Unsupported FEC Configuration for N9K-C93180YC-EX][c16]    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:  
-[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2) | :no_entry_sign:
-[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-[Host interface policy set to auto][c24]              | :white_check_mark: | :no_entry_sign:           | :no_entry_sign:
-
+ Items                                                | This Script        | APIC built-in
+------------------------------------------------------|--------------------|---------------------------
+[VPC-paired Leaf switches][c1]                        | :white_check_mark: | :white_check_mark: 4.2(4)
+[Overlapping VLAN Pool][c2]                           | :white_check_mark: | :no_entry_sign:
+[VNID Mismatch][c3]                                   | :warning:{title="Deprecated"} | :no_entry_sign:
+[L3Out MTU][c4]                                       | :white_check_mark: | :no_entry_sign:
+[BGP Peer Profile at node level without Loopback][c5] | :white_check_mark: | :no_entry_sign:
+[L3Out Route Map import/export direction][c6]         | :white_check_mark: | :no_entry_sign:
+[L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:
+[L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:
+[ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:
+[BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:
+[APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:
+[Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:
+[OoB Mgmt Security][c13]                              | :white_check_mark: | :no_entry_sign:
+[EECDH SSL Cipher Disabled][c14]                      | :white_check_mark: | :no_entry_sign:
+[BD and EPG Subnet Scope Consistency][c15]            | :white_check_mark: | :no_entry_sign:
+[Unsupported FEC Configuration for N9K-C93180YC-EX][c16] | :white_check_mark: | :no_entry_sign:
+[CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:
+[Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:
+[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:
+[HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:
+[Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2)
+[Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
+[AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
+[Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
+[Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
+[Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -157,40 +167,52 @@ Items                                         | Faults         | This Script    
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
-[c24]: #host-interface-policy-set-to-auto
+[c24]: #shared-service-with-vzany-consumer
+[c25]: #preferred-group-shared-service-provider
+[c26]: #host-interface-policy-set-to-auto
 
 ### Defect Condition Checks
 
-Items                                           | Defect       | This Script        |  APIC built-in            | Pre-Upgrade Validator (App)
-------------------------------------------------|--------------|--------------------|---------------------------|---------------------------
-[EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Contract Port 22 Defect][d3]                   | CSCvz65560   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[telemetryStatsServerP Object][d4]              | CSCvt47850   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Link Level Flow Control][d5]                   | CSCvo27498   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[Internal VLAN Pool][d6]                        | CSCvw33061   | :white_check_mark: | :no_entry_sign:           |:white_check_mark:
-[APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FabricDomain Name][d8]                         | CSCwf80352   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Invalid fabricPathEp Targets][d14]             | CSCwh68103   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[FC/FCOE support for EX switches][d19]          | CSCwm92166   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Stale Decommissioned Spine][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[N9K-C9408 Platform Model][d22]                 | CSCwk77800   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[Stale pconsRA Object][d26]                     | CSCwp22212   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-[ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:           |:no_entry_sign:
-
+Items                                           | Defect       | This Script        |  APIC built-in
+------------------------------------------------|--------------|--------------------|---------------------------
+[EP Announce Compatibility][d1]                 | CSCvi76161   | :white_check_mark: | :no_entry_sign:
+[Eventmgr DB size defect susceptibility][d2]    | CSCvn20175   | :white_check_mark: | :no_entry_sign:
+[Contract Port 22 Defect][d3]                   | CSCvz65560   | :white_check_mark: | :no_entry_sign:
+[telemetryStatsServerP Object][d4]              | CSCvt47850   | :white_check_mark: | :no_entry_sign:
+[Link Level Flow Control][d5]                   | CSCvo27498   | :white_check_mark: | :no_entry_sign:
+[Internal VLAN Pool][d6]                        | CSCvw33061   | :white_check_mark: | :no_entry_sign:
+[APIC CA Cert Validation][d7]                   | CSCvy35257   | :white_check_mark: | :no_entry_sign:
+[FabricDomain Name][d8]                         | CSCwf80352   | :white_check_mark: | :no_entry_sign:
+[Spine SUP HW Revision][d9]                     | CSCwb86706   | :white_check_mark: | :no_entry_sign:
+[SUP-A/A+ High Memory Usage][d10]               | CSCwh39489   | :white_check_mark: | :no_entry_sign:
+[VMM Uplink Container with empty Actives][d11]  | CSCvr96408   | :white_check_mark: | :no_entry_sign:
+[CoS 3 with Dynamic Packet Prioritization][d12] | CSCwf05073   | :white_check_mark: | :no_entry_sign:
+[N9K-C93108TC-FX3P/FX3H Interface Down][d13]    | CSCwh81430   | :white_check_mark: | :no_entry_sign:
+[Invalid fabricPathEp Targets][d14]             | CSCwh68103   | :white_check_mark: | :no_entry_sign:
+[LLDP Custom Interface Description][d15]        | CSCwf00416   | :white_check_mark: | :no_entry_sign:
+[Route-map Community Match][d16]                | CSCwb08081   | :white_check_mark: | :no_entry_sign:
+[L3out /32 overlap with BD Subnet][d17]         | CSCwb91766   | :white_check_mark: | :no_entry_sign:
+[vzAny-to-vzAny Service Graph when crossing 5.0 release][d18] | CSCwh75475   | :white_check_mark: | :no_entry_sign:
+[FC/FCOE support for EX switches][d19]          | CSCwm92166   | :white_check_mark: | :no_entry_sign:
+[Nexus 950X FM or LC Might Fail to boot after reload][d20] | CSCvg26013   | :white_check_mark: | :no_entry_sign:
+[Stale Decommissioned Spine][d21]               | CSCwf58763   | :white_check_mark: | :no_entry_sign:
+[N9K-C9408 Platform Model][d22]                 | CSCwk77800   | :white_check_mark: | :no_entry_sign:
+[PBR High Scale][d23]                           | CSCwi66348   | :white_check_mark: | :no_entry_sign:
+[Standby Sup Image Sync][d24]                   | CSCwi66348   | :white_check_mark: | :no_entry_sign:
+[Observer Database Size][d25]                   | CSCvw45531   | :white_check_mark: | :no_entry_sign:
+[Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
+[ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
+[Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
+[Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
+[Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
+[N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
+[Multi-Pod Modular Spine Bootscript File][d32]  | CSCwr66848   | :white_check_mark: | :no_entry_sign:
+[Inband Management Policy Misconfiguration][d33]| CSCwd40071   | :white_check_mark: | :no_entry_sign:
+[BgpProto timer policy already existing][d34]   | CSCwt78235   | :white_check_mark: | :no_entry_sign:
+[WRED with Affected FM Models][d35]             | CSCwt50713   | :white_check_mark: | :no_entry_sign:
+[N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
+[Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
+[InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -219,7 +241,17 @@ Items                                           | Defect       | This Script    
 [d25]: #observer-database-size
 [d26]: #stale-pconsra-object
 [d27]: #isis-dteps-byte-size
-
+[d28]: #policydist-configpushshardcont-crash
+[d29]: #auto-firmware-update-on-switch-discovery
+[d30]: #rogue-ep-exception-list-missing-on-switches
+[d31]: #n9k-c9408-with-more-than-5-n9k-x9400-16w-lems
+[d32]: #multi-pod-modular-spine-bootscript-file
+[d33]: #inband-management-policy-misconfiguration
+[d34]: #bgpProto-timer-policy-already-existing
+[d35]: #wred-with-affected-fm-models
+[d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
+[d37]: #stale-dbgacepgsummarytask-objects
+[d38]: #infravlan-overlap-access-policy-check
 
 ## General Check Details
 
@@ -236,6 +268,10 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
+The APIC release notes explicitly support multiple model-specific CIMC releases that may be older than the image catalog recommendation. The check uses release-note support data refreshed from Cisco documentation during script release preparation before applying the image catalog recommendation to other CIMC releases. The released validator remains standalone and does not require internet access.
+
+Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
+
 !!! note
     Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
 
@@ -250,6 +286,17 @@ This is mainly for downgrades because all switches operating in one ACI version 
 The script checks the presence of generation one switches when the upgrade is crossing 5.0(1)/15.0(1).
 
 Or you can check the [Release Note 15.0(1) of ACI switches][3] to see the list of generation one switches, typically the one without any suffix such as N9K-C9372PX, that are no longer supported from 15.0(1) release.
+
+
+### Supported Hardware Compatibility
+
+The script checks the presence of deprecated hardware in the fabric.
+
+The list of supported and unsupported hardware is populated from the Release Notes across all ACI releases. This means the check covers hardware compatibility changes introduced in any version, not just the most recent release. As new release notes are published and hardware is deprecated, this list is updated accordingly.
+
+Refer the [Release Note 15.0(1) of ACI switches][3] to see the list of unsuporrted hardware for your desired target versions. Prior upgrading to target version, replace the unsupported hardware elements in your fabric with other supported hardware.
+
+Contact cisco TAC for further assistance.
 
 
 ### Compatibility (Remote Leaf Switch)
@@ -484,7 +531,7 @@ The script performs 2 different checks depending on the version you are running.
 For current versions below 6.1(3):
 
 - The script checks all APICs' class's object count for a subset of services (DMEs) via a file scan. 
-- If the count is found to be above `150*1000*1000`, then that class will be flagged for further investigation.
+- If the count is found to be above `1000*1000*1.5` (1,500,000), then that class will be flagged for further investigation.
 
 For current version is 6.1(3f):
 
@@ -492,6 +539,38 @@ For current version is 6.1(3f):
 - The script will utilize the new command and flag any DB shard which have surpassed 5G.
 
 In either scenario, contact TAC to collect a database dump of the flagged DME(s) and shard(s) for further analysis.
+
+
+### APIC downgrade compatibility when crossing 6.2 release
+
+APIC 6.2(1) release introduces significant optimizations to the APIC upgrade process, including shorter upgrade time and an orchestrated workflow across the cluster with fewer failure points. This release includes an architecture change on APIC, so APIC running 6.2(1) or newer (e.g., 6.2(1a)) cannot be downgraded to any pre-6.2(1) version (e.g., 6.1(4h)).
+
+Upgrading from pre-6.2(1) to 6.2(1)+ is supported; however, rollback (downgrade) after such an upgrade is not possible.
+
+This check alerts you if you are crossing the 6.2 boundary, beyond which downgrade compatibility is lost. No additional user action is required.
+
+!!! note
+    Switch upgrade architecture hasn't been changed in 6.2(1)/16.2(1). The limitation of downgrade compatibility between pre-/post-6.2(1) versions is only for APIC.
+
+!!! example
+    These are examples for upgrade/downgrade paths to show which downgrade compatibility is lost.
+
+    Upgrade:
+
+    * 6.1(4) -> **6.2(1)**: Supported
+    * **6.2(1)** -> 6.2(2): Supported
+
+    Downgrade:
+
+    * **6.2(1)** -> 6.1(4): Not Supported !!! - The API request gets rejected on APIC.
+    * 6.2(2) -> **6.2(1)**: Supported
+
+    Note that this is just one example. See [APIC Upgrade/Downgrade Matrix][2] for the full list of supported version combinations.
+
+!!! tip
+    Make sure to collect the latest configuration backup before you upgrade your APICs from pre-6.2(1) to 6.2(1)+ so that Cisco TAC can perform the fabric recovery process in the case of emergency where you need to downgrade your APICs to the previous version (i.e. 6.2(1)+ -> pre-6.2(1)).
+
+    If it's for a lab environment, you can initialize the fabric and perform a fresh ISO installation of pre-6.2(1) on APICs.
 
 
 ## Fault Check Details
@@ -559,84 +638,26 @@ The script performs SSH into each standby Cisco APIC as `rescue-user`, then run 
 
 ### Switch Node `/bootflash` usage
 
-ACI switches mainly have two different faults about the filesystem usage of each partition:
+ACI switches mainly have two different faults related to filesystem usage on each partition:
 
-* **F1820**: A minor level fault for switch partition usage. This is raised when the utilization of the partition exceeds the minor threshold.
+* **F1820**: A minor-level fault raised when partition utilization exceeds the minor threshold.
 
-* **F1821**: A major level fault for switch partition usage. This is raised when the utilization of the partition exceeds the major threshold.
-
-!!! note
-    The threshold for minor and major depends on partitions. The critical one for upgrades is `/bootflash`. The threshold of bootflash is 80% for minor and 90% for major threshold.
-
-On top of this, there is a built-in behavior added to every switch node where it will take action to ensure that the `/bootflash` directory maintains 50% capacity. This is specifically to ensure that switch upgrades are able to successfully transfer and extract the switch image over during an upgrade.
-
-To do this, there is an internal script that is monitoring `/bootflash` usage and, if over 50% usage, it will start removing files to free up the filesystem. Given its aggressiveness, there are some corner case scenarios where this cleanup script could potentially trigger against the switch image it is intending to use, which can result in a switch upgrade booting a switch into the loader prompt given that the boot image was removed from `/bootflash`.
-
-To prevent this, check the `/bootflash` prior to an upgrade and take the necessary steps to understand what is written there and why. Once understood, take the necessary steps to clear up unnecessary `/bootflash` files to ensure there is enough space to prevent the auto-cleanup corner case scenario.
-
-The pre-upgrade validation built into Cisco APIC upgrade workflow monitors the fault F1821, which can capture the high utilization of any partition. When this fault is present, we recommend that you resolve it prior to the upgrade even if the fault is not for bootflash.
-
-The ACI Pre-Upgrade Validation script (this script) focuses on the utilization of bootflash on each switch specifically to see if there are any issues with bootflash where the usage is more than 50%, which might trigger the internal cleanup script.
-
-!!! example "Example of a query used by this script"
-    The script is calculating the bootflash usage using `avail` and `used` in the object `eqptcapacityFSPartition` for each switch.
-    ```
-    f2-apic1# moquery -c eqptcapacityFSPartition -f 'eqptcapacity.FSPartition.path=="/bootflash"'
-    Total Objects shown: 6
-
-    # eqptcapacity.FSPartition
-    name            : bootflash
-    avail           : 7214920
-    childAction     :
-    dn              : topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash
-    memAlert        : normal
-    modTs           : never
-    monPolDn        : uni/fabric/monfab-default
-    path            : /bootflash
-    rn              : fspartition-bootflash
-    status          :
-    used            : 4320184
-    --- omit ---
-    ```
-
-!!! tip
-    Alternatively you can log into a leaf switch CLI, and check `/bootflash` usage `df -h`
-    ```
-    leaf1# df -h
-    Filesystem             Size    Used   Avail   Use%   Mounted on
-    rootfs                 2.5G    935M   1.6G    38%    /bin
-    /dev/sda4               12G    5.7G   4.9G    54%    /bootflash
-    /dev/sda2              4.7G    9.6M   4.4G     1%    /recovery
-    /dev/mapper/map-sda9    11G    5.7G   4.2G    58%    /isan/lib
-    none                   3.0G    602M   2.5G    20%    /dev/shm
-    none                    50M    3.4M    47M     7%    /etc
-    /dev/sda6               56M    1.3M    50M     3%    /mnt/cfg/1
-    /dev/sda5               56M    1.3M    50M     3%    /mnt/cfg/0
-    /dev/sda8               15G    140M    15G     1%    /mnt/ifc/log
-    /dev/sda3              115M     52M    54M    50%    /mnt/pss
-    none                   1.5G    2.3M   1.5G     1%    /tmp
-    none                    50M    240K    50M     1%    /var/log
-    /dev/sda7               12G    1.4G   9.3G    13%    /logflash
-    none                   350M     54M   297M    16%    /var/log/dme/log/dme_logs
-    none                   512M     24M   489M     5%    /var/sysmgr/mem_logs
-    none                    40M    4.0K    40M     1%    /var/sysmgr/startup-cfg
-    none                   500M     0     500M     0%    /volatile
-    ```
+* **F1821**: A major-level fault raised when partition utilization exceeds the major threshold.
 
 !!! note
-    If you suspect that the auto cleanup removed some files within `/bootflash`, you can review a log to validate this:
+    Thresholds vary by partition. For `/bootflash`, the minor threshold is 80% utilization and the major threshold is 90%.
 
-    ```
-    leaf1# egrep "higher|removed" /mnt/pss/core_control.log
-    [2020-07-22 16:52:08.928318] Bootflash Usage is higher than 50%!!
-    [2020-07-22 16:52:08.931990] File: MemoryLog.65%_usage removed !!
-    [2020-07-22 16:52:08.943914] File: mem_log.txt.old.gz removed !!
-    [2020-07-22 16:52:08.955376] File: libmon.logs removed !!
-    [2020-07-22 16:52:08.966686] File: urib_api_log.txt removed !!
-    [2020-07-22 16:52:08.977832] File: disk_log.txt removed !!
-    [2020-07-22 16:52:08.989102] File: mem_log.txt removed !!
-    [2020-07-22 16:52:09.414572] File: aci-n9000-dk9.13.2.1m.bin removed !!
-    ```
+ACI switches also include an internal cleanup process intended to maintain sufficient free `/bootflash` capacity for switch upgrades. When usage exceeds approximately 50%, the process can remove eligible files to make space for transferring and extracting switch images.
+
+The fixed cleanup threshold does not cover every upgrade scenario. Larger target images, files that cannot be removed, and upgrades that cross the ACI 6.0(2) 32-bit/64-bit image boundary can require more free space than the cleanup process normally maintains. Insufficient space can prevent an image from being downloaded or extracted and may cause the switch upgrade to fail.
+
+The ACI Pre-Upgrade Validation script uses APIC API data to compare each switch's available `/bootflash` space with the space required for the target switch release. The requirement is calculated dynamically from the current and target switch images rather than from a fixed utilization percentage.
+
+The calculation generally reserves twice the applicable target image size. This accounts for space used by the downloaded image and additional space needed while the image is extracted. For an upgrade that crosses the 6.0(2) image boundary, the calculation accounts for both the 32-bit and 64-bit target images and the space recovered when the current image is removed.
+
+Switches that have already downloaded the target image are still checked because image extraction and later upgrade stages can require additional space. Because the downloaded image is already reflected in the switch's available-space value, the check evaluates only the remaining space required to complete the upgrade.
+
+If a switch does not have enough available space, the check reports an upgrade failure and displays the available and required space. Remove old, unused switch images to recover space, then run the validation again. Contact Cisco TAC if sufficient space cannot be recovered. If the current switch version, target firmware image, or `/bootflash` information is unavailable, the check reports that a manual review is required.
 
 
 ### APIC SSD Health
@@ -740,6 +761,12 @@ See the [ACI Switch Node SSD Lifetime Explained technote][9] for more details.
     type             : operational
     --- omit ---
     ```
+
+Due to [CSCwt38698][76], Micron SSDs present in the fabric may give false end-of-life failures after upgrading to 6.1(5e) or 6.2(1g).
+
+To confirm if this is genuine or false alarm, run the SSD Lifetime Validation script on all nodes with identified actual failure case. If the SSD lifetime is critically low after manually running the script, you have to follow the SSD replacement procedure outlined in the field notice to ensure that the node remains available after the upgrade. To avoid this false alarm you can choose non-impacted target version.
+
+- Script location: [SSD Lifetime Validation](https://github.com/datacenter/aci-tac-scripts/tree/main/SSD%20Lifetime%20Validation)
 
 
 ### Config On APIC Connected Port
@@ -895,7 +922,6 @@ The script verifies these faults to ensure that a port is not configured as part
     type             : config
     uid              : 
     userdom          : all
-    apic1# 
     ```
 Please note that this behavior has recently changed. With the new behavior, rejected through policy distributor validation, two different access encapsulations are no longer allowed on the same port by the APIC. This change has been documented in CSCwj69435.
 
@@ -1120,22 +1146,7 @@ It is critical that you resolve these issues before the upgrade to prevent any i
     delegated        : no
     descr            : IPv4 address(10.10.10.1/24) is operationally down, reason:Subnet overlap on node 101 fabric hostname leaf-101
     dn               : topology/pod-1/node-101/sys/ipv4/inst/dom-jr:v1/if-[vlan10]/addr-[10.10.10.1/24]/fault-F1425
-    domain           : access
-    extMngdBy        : undefined
-    highestSeverity  : major
-    lastTransition   : 2020-02-27T01:52:49.812+01:00
-    lc               : raised
-    modTs            : never
-    occur            : 1
-    origSeverity     : major
-    prevSeverity     : major
-    rn               : fault-F1425
-    rule             : ipv4-addr-oper-st-down
-    severity         : major
-    status           : 
-    subject          : oper-state-err
-    type             : operational
-    uid              : 
+    --- omit ---
     ```
 
 
@@ -1328,7 +1339,9 @@ The fault F3545 occurs when the switch fails to activate a contract rule (zoning
 
 The script checks faults raised under `eqptcapacityEntity`, which are TCA (Threshold Crossed Alert) faults for various objects monitored in the **Capacity Dashboard** from `Operations > Capacity Dashboard > Leaf Capacity` on the Cisco APIC GUI.
 
-It is important to ensure that any capacity does not exceed its limit. When it's exceeding the limit, it may cause inconsistency on resources that are deployed before and after an upgrade just like it was warned for [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
+A raised TCA indicates that a configured capacity threshold was crossed; it does not necessarily indicate a current outage. The script reports `FAIL - OUTAGE WARNING!!` because switch reboots during an upgrade can cause endpoints, routes, contracts, and other programmed resources to be temporarily redistributed to the remaining switches. This spillover can push a resource that is already near its limit, such as Policy CAM at 90%, beyond supported capacity and cause programming failures or traffic disruption. Similar post-reboot resource inconsistencies are described under [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
+
+Before upgrading, review the affected node and resource under `Operations > Capacity Dashboard > Leaf Capacity` and examine the capacity headroom based on your network design, server connectivity and so on.
 
 Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacity` are the number of endpoints such as MAC (Learned), IPv4 (Learned), Policy CAM, LPM, host routes, VLANs and so on.
 
@@ -1469,6 +1482,8 @@ This fault occurs when the disk usage of a partiton increases beyond its thresho
 
 This fault also occurs when the MTS buffer memory usage increases beyond its threshold. /proc/isan/sw/mts/mem/stats is checked when this scenario occurs.
 
+The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
+
 Recommended Action:
 
 1. Check `df -h` output on affected node to see the usage of the partition.
@@ -1520,6 +1535,72 @@ To recover from this fault, try the following action
     uid              : 
     userdom          : all
     ```
+
+### VMM Inventory Partially Synced
+
+This script checks for fault code F0132 with rule comp-ctrlr-operational-issues and change set `partial-inv`. This fault is raised when APICs report a partially synchronized inventory with vCenter servers.
+
+EPGs using the `immediate` or `on-demand` resolution immediacy (this is typical) rely on the VMM Inventory to determine VLAN programming. If the known inventory changes during an upgrade and the APIC is reporting its last sync to be partial, a VMM inventory resync response with inventory changes could result in VLANs being unexpectedly removed.
+
+EPGs using the `pre-provision` resolution immediacy do not rely on the VMM inventory for VLAN deployment and so unexpected inventory changes will not change vlan programmings.
+
+This check returns a `MANUAL` result as there are many reasons for a partial inventory sync to be reported. The goal is to ensure that the VMM inventory sync has fully completed before triggering the APIC upgrade to reduce any chance for unexpected inventory changes to occur.
+
+
+### APIC Storage Inode Usage
+
+If a Cisco APIC is running low on inode capacity for any reason, the Cisco APIC upgrade can fail. The Cisco APIC will raise three different faults depending on inode utilization. If any of these faults are raised on the system, the issue should be resolved prior to performing the upgrade.
+
+* **F4388**: A warning level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 75%.
+
+* **F4389**: A major level fault for Cisco APIC storage inode utilization. This is raised when utilization is between 85% and 90%.
+
+* **F4390**: A critical level fault for Cisco APIC storage inode utilization. This is raised when utilization is greater than 90%.
+
+Although the storage space for the filesystem might be adequate we might still see issues with inode usage, this happens when we have more number of files or directories created with lower file sizes.
+
+Recommended Action:
+
+To recover from this fault, try the following action
+
+1. Free up space from affected disk partition .
+2. TAC may be required to analyze and cleanup certain directories due to filesystem permissions. Cleanup of `/` is one such example.
+
+!!! example "Fault Example (F4390: Critical fault for APIC Inode Utilisation)"
+    ```
+    moquery -c faultInst -f 'fault.Inst.code=="F4390"'
+    Total Objects shown: 1
+   
+    # faultInst
+    ack             : yes
+    alert           : no
+    cause           : equipment-full
+    changeSet       : available (Old: 19408344, New: 19407972), inodesFree (Old: 263915, New: 263842), inodesUsed (Old: 2357525, New: 2357598), 
+    used (Old: 19436092, New: 19436464)
+    code            : F4390
+    created         : 2024-08-05T05:42:31.975+02:00
+    delegated       : no
+    descr           : Storage unit /scratch-writes on node 3 with hostname apic3 mounted at /scratch-writes is 90% full for Inodes
+    dn              : topology/pod-2/node-3/sys/ch/p-[/scratch-writes]-f-[/dev/mapper/atx-scratch]/fault-F4390
+    domain          : infra
+    highestSeverity : critical
+    lastTransition  : 2024-08-05T09:41:18.152+02:00
+    lc              : raised
+    occur           : 2
+    origSeverity    : critical
+    prevSeverity    : cleared
+    rule            : eqpt-storage-inode-critical
+    severity        : critical
+    subject         : equipment-full
+    type            : operational
+    ```
+
+### Switch RTC Battery Voltage
+
+This check detects active F2421 equipment diagnostic faults whose reason is `The RTC battery voltage is low`. The RTC battery maintains the switch system clock while the switch is powered off. If the battery voltage is low, a power cycle during an upgrade can reset the clock and prevent certificate validation, which can stop the switch from rejoining the fabric.
+
+The RTC battery should be replaced before upgrading or power cycling an affected switch. Contact Cisco TAC to coordinate replacement and confirm that the fault has cleared.
+
 
 ## Configuration Check Details
 
@@ -1794,8 +1875,8 @@ Refer to the following documents to understand how overlapping VLAN pools become
 
 ### <del>VNID Mismatch</del>
 
-!!! warning "Deprecated"
-    This check was deprecated and removed as it had not only become redundant after the updates in the [Overlapping VLAN Pool][c2] check but also contained a risk of rainsing a false alarm. See [PR #182](https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/pull/182) for details.
+!!! danger "Deprecated"
+    This check was deprecated and removed as it had not only become redundant after the updates in the [Overlapping VLAN Pool][c2] check but also contained a risk of raising a false alarm. See [PR #182](https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/pull/182) for details.
 
 <span style="color:lightgray">
 A VNID mismatch can arise due to an [Overlapping VLAN Pool][c2] situation. This verification is closely tied to the [Overlapping VLAN Pool][c2] scenario, which often leads to problems post-upgrade. Nonetheless, if your fabric is currently experiencing any VNID mismatches, you might encounter the challenges outlined in [Overlapping VLAN Pool][c2] even without undergoing an upgrade. This situation also implies the presence of an overlapping VLAN pool configuration, potentially resulting in a VNID mismatch at a distinct EPG following an upgrade, causing different impact to your traffic. 
@@ -2011,7 +2092,7 @@ route-target:as4-nns:1.2.3.4:20
 
 By default, the APIC Container Bridge IP (docker0 interface) for AppCenter uses 172.17.0.1/16. If this overlaps with the APIC TEP IP range, APICs may not be able to communicate with each other. Depending on the version, the bridge IP may fallback to 172.18.0.1/16 to avoid the conflict. However, after an upgrade, the bridge IP may start using 172.17.0.1/16 again, which can result in an upgrade failure with an unhealthy APIC cluster.
 
-To avoid this, the APIC Container Bridge IP must be expliplicitly configured to be a different range than the APIC TEP IP range. The APIC Container Bridge IP can be changed from `Apps > Settings` in the APIC GUI.
+To avoid this, the APIC Container Bridge IP must be explicitly configured to be a different range than the APIC TEP IP range. The APIC Container Bridge IP can be changed from `Apps > Settings` in the APIC GUI.
 
 The script checks if the APIC Container Bridge IP is overlapping withe the APIC TEP IP range via `containerBip` of an object `apContainerPol` (DN: `pluginPolContr/ContainerPol`).
 
@@ -2123,7 +2204,7 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 ### Out-of-Service Ports
 
-Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
+Any access/downlink or fabric port that has been disabled via policy creates a `fabricRsOosPath` object. The check covers operationally up ports with the `blacklist`, `blacklist,epg`, `blacklist,fabric`, or `blacklist,fabric,fabric-ext` usage. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
 
 While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this fact generally remains undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
 
@@ -2224,13 +2305,40 @@ As outlined in the [End-of-Sale and End-of-Life Announcement for Cisco Applicati
 If planning an upgrade to 6.0+, review the [Cisco ACI Virtual Edge Migration Guide][56] and complete a domain migration prior to performing the upgrade.
 
 
+### Shared Service with vzAny Consumer
+A shared service (VRF Route Leaking) contract with vzAny as a consumer may use more policy TCAM space after an upgrade depending on the release version and provider type due to a behavior change called "Rule Expansion":
+
+* In the case of EPG/External EPG providers, 5.3(2d) and later or 6.0(3) and later releases may use more policy TCAM space than releases older than 5.3(2d) or 6.0(3).
+* In the case of ESG providers, 6.1(2) and later releases may use more policy TCAM space than releases older than 6.1(2).
+
+When Rule Expansion takes place after an upgrade, the increase in the TCAM space may result in TCAM overflow which can lead to traffic disruption because contracts that used to work may stop working.
+
+See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, consider enabling the policy compression directive on contract filters to mitigate the increase of TCAM usage. However, note that enabling the policy compression directive will result in loss of the statistics capability for those rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
+
+See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
+
+
+### Preferred Group Shared Service Provider
+
+ACI 4.2 and later configurations can be affected by CSCvm63145 and CSCvv51121 when a Preferred Group member provides a tenant- or global-scope shared-service contract to a consumer in another VRF.
+
+The script reports only materialized, cross-VRF provider-to-consumer relationships represented by `vzFromEPg` and `vzToEPg`. A configured provider without such a relationship is not reported. Tenant-scope contracts are considered only when the contract, provider, and consumer belong to the same tenant. Shared/global pcTags `17` through `16385` are treated as fabric-wide identities; VRF separation is determined independently from the context-definition DNs.
+
+Before 6.0(1g), any consumer class in a materialized cross-VRF relationship can be affected. Depending on the release, the forwarding risk can be silent or the contract can be rejected with F0467 and `invalid-contract-config: Shared service provider cannot be in a Preferred Group`.
+
+Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains only when the Preferred Group provider has a materialized relationship with an L3Out or `vzAny` consumer in another VRF. Same-VRF L3Out and `vzAny` relationships are not reported. Starting with 6.1(3f), this condition may be reported through F4684.
+
+Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
+
+
 ### Host interface policy set to auto
-As detailed in the [Cisco APIC Basic Configuration Guide][59], for **Interface Speed**, use the default value, `Inherit`.
+As detailed in the [Cisco APIC Basic Configuration Guide][79], for **Interface Speed**, use the default value, `Inherit`.
 With this value, Cisco APIC determines the interface speed based on the transceiver installed in the switch port.
 
-In case the link speed is set to "auto" , interfaces may not come up after an upgrade (stateless reboot).
+In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
 Changing the speed to "inherit" resolves this situation, which is also a best practice.
 Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
+
 
 ## Defect Check Details
 
@@ -2297,11 +2405,9 @@ To avoid this issue, change the `collectorLocation` type to `none` through the A
 
 ### Link Level Flow Control
 
-Due to the defect CSCvo27498, after upgrade of first ACI leaf switch in a VPC pair to newer 15.x version from older 13.x version, downstream VPC might be down due to `vpc port channel mis-config due to vpc links in the 2 switches connected to different partners` even though they are connected to same device. 
+Due to the defect CSCvo27498[70], after upgrade of first ACI leaf switch in a VPC pair to newer 15.2(7f) version, some of vpc member port on upgrading device may go down. By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control.  If far end device transmit(send) flow control in auto or desirable mode, it will enable transmit flow control.
 
-By default Link level Flow control is off in ACI but in older code, the ACI software was incorrectly signalling far end device to enable transmit flow control. if far end device transmit(send) flow control  in auto or desirable mode, it will enable transmit flow control.
-
-After the first switch in VPC pair is upgraded to newer 15.x code, the  incorrect flow control signalling is fixed. But due to mismatched software versions in ACI during upgrade, the far end device port-channel member interfaces will end up with mismatched send flow control. When this happens. they could send a different LACP operational key causing the ACI leaf to interpret that it is connected to different partners. 
+After the first switch in VPC pair is upgraded to 15.2(7f) the incorrect flow control signalling is fixed. But due to mismatched software versions in ACI during upgrade, the far end device port-channel member interfaces will end up with mismatched send flow control. When this happens. they could send a different LACP operational key causing the ACI leaf to interpret that it is connected to different partners.
 
 The script checks if the version is susceptible to the default along with the specific 1G SFPs that are affected by the defect.
 
@@ -2447,6 +2553,7 @@ In cases where there is a custom interface description and a VMM-integrated depl
     --- omit ---
     ```
 
+
 ### Route-map Community Match
 
 Due to the defect [CSCwb08081][25], if you have a route-map with a community match statement but there is no prefix list match the set clause may not be applied.
@@ -2522,7 +2629,7 @@ The script checks if your upgrade is susceptible to this defect from both versio
 ### Nexus 950X FM or LC Might Fail to boot after reload
 
 A clock signal component manufactured by one supplier, and included in some Cisco products, has been seen to degrade over time in some units.
-Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are document in [FN64251][39]
+Although the Cisco products with these components are currently performing normally, we expect product failures to increase over the years, beginning after the unit has been in operation for approximately 18 months. Additional details are documented in [FN64251][39].
 
 The matching defect is [CSCvg26013][40].
 
@@ -2537,7 +2644,9 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, check if identified Serial Numbers are affected using the [Serial Number Validation Tool][41].
+If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+
+The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
 
 ### Stale Decommissioned Spine
@@ -2575,11 +2684,16 @@ This check logs in to each APIC, checks the contents of the `/data2/dbstats/` di
 !!! tip
     Certain high churn logging configurations have been found to grow this DB exceptionally large while on a non-fixed version. 'Contract Permit Logging' is one such configuration.
 
-### Stale pconsRA Object
 
-Due to [CSCwp22212][57], the existence of stale pconsRA objects within an ACI fabric can cause the APIC Policymanager process to crash after an upgrade to 6.0(3d) and above. This script looks for instances of stale pconsRA objects and flags them for cleanup when found. 
+### <del>Stale pconsRA Object</del>
 
+!!! danger "Deprecated"
+    This check was deprecated in script version v3.3.0 via [PR #287](https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/pull/287) as it was raising false positives.
+
+<span style="color:lightgray">
+Due to [CSCwp22212][57], the existence of stale pconsRA objects within an ACI fabric can cause the APIC Policymanager process to crash after an upgrade to 6.0(3d) and above. This script looks for instances of stale pconsRA objects and flags them for cleanup when found.
 TAC must be engaged to cleanup these objects, as they require root access.
+</span>
 
 
 ### ISIS DTEPs Byte Size
@@ -2598,6 +2712,131 @@ Do not upgrade to any affected ACI software release if this check fails.
 !!! note
     Nexus Dashboard Insights (NDI) integration can cause ACI tech support generation to happen automatically as part of the bug scan feature.
 
+
+### Policydist configpushShardCont crash
+
+In ACI, there are internal objects which track the underlying transactions which occur as policies are handled by the Policydist process. One such object is `configpushShardCont` which populates the `headTx` and `tailTx` parameters to mark any potentially stuck transactions.
+
+Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
+
+If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
+
+
+### Auto Firmware Update on Switch Discovery
+
+[Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
+
+* when adding a new switch to expand the fabric
+* when replacing an existing switch
+* when initializing and rediscovering an existing switch
+
+It does not activate during regular upgrades initiated through the APIC.
+
+Due to [CSCwe83941][62], if a new switch is running 6.0(1), 6.0(2) or any version older than 5.2(8), attempting to upgrade it to 6.0(3)+ using Auto Firmware Update will fail. The switch will become unusable until a manual recovery procedure is performed directly on the device.
+
+While this issue does not occur during standard upgrades, it is important to be aware of the risk when your target version is 6.0(3) or newer and the switch is running 6.0(1), 6.0(2), or a version older than 5.2(8). Auto Firmware Update may get triggered and hit this issue during switch replacement in an upgrade window or if you need to re-initialize a switch after a failed upgrade.
+
+To avoid this risk, consider disabling Auto Firmware Update before upgrading to 6.0(3)+ if any switches are running the affected older versions. In the future, ensure that any new switch is running a compatible version before re-enabling Auto Firmware Update and registering it to the fabric.
+
+!!! note
+    This issue occurs because older switch firmware versions are not compatible with switch images 6.0(3) or newer. The APIC version is not a factor.
+
+
+### Rogue EP Exception List missing on switches
+
+The Rogue/COOP Exception List feature, introduced in 5.2(3), allows exclusion of specific MAC addresses from Rogue Endpoint Control and COOP Dampening. Initially, each MAC address had to be configured individually in each bridge domain. In 6.0(3), this feature was enhanced to support fabric-wide exception lists with wildcard options per bridge domain and the ability to exclude MAC addresses in L3Outs.
+
+However, due to [CSCwp64296][64], when upgrading spine switches to version 6.0(3)+ from an older version with Rogue/COOP Exception Lists configured, some exception lists may not be pushed to the spine switches. As a result, the feature may stop functioning after the upgrade. 
+
+The root cause is that internal objects called `presListener` for Rogue/COOP Exception List, which publish the configuration from APICs to switches, may be missing on the APICs after an upgrade.
+
+Recommended action: Delete the affected exception list and create it again. If needed, contact Cisco TAC to help recover missing `presListener` objects on APICs.
+
+
+### N9K-C9408 with more than 5 N9K-X9400-16W LEMs
+
+Due to defect [CSCws82819][65], N9K-C9408 switch will experience a boot loop with dt_helper process crash if upgraded to versions 16.1(2f) to 16.1(5) or 16.2(1g) with more than 5 N9K-X9400-16W LEMs installed.
+
+To avoid this issue, please upgrade to fix version or use less than 6 N9K-X9400-16W in one chassis.
+
+
+### Multi-Pod Modular Spine Bootscript File
+
+Due to [CSCwr66848][66], in Multi-Pod environments, upgrading a modular spine to 6.1(4h) may result in inter-pod traffic to stop working if the `/bootflash/bootscript` file is missing on the spine prior to the upgrade. The traffic interruption occurs because the spine incorrectly indentifies the reason of its reload, leading to an unnecessary attempt to load the missing bootscript file.
+
+This issue happens only when the target version is specifically 6.1(4h).
+
+To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
+
+
+### Inband Management Policy Misconfiguration
+
+Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
+
+Impact:
+
+When upgrading Apic from versions prior to 6.0(4c) to versions 6.0(4c) or later, if there is a misconfiguration in the inband management policies (mgmtRsInBStNode) with invalid values, the re-processing triggered by [CSCwh80837][67] will expose the underlying [CSCwd40071][68] defect. This results in continuous policyelem core dumps and switch reboot if Switch are running impacted version of [CSCwd40071][68].
+
+The invalid configuration occurs when mgmtRsInBStNode has "0.0.0.0" values ( with or without mask) for either the "addr" or "gw" fields.
+
+Suggestion:
+
+Contact Cisco TAC to remove any identified misconfigured objects before performing the upgrade to prevent policyelem crashes.
+The [CSCwd40071][68] defect affects versions 5.2(5c) and later with a fix available in 6.0(1g). However, the issue will only be triggered during Apic upgrades crossing 6.0(4c) due to [CSCwh80837][67].
+
+
+### Svccore Excessive Data Check
+
+Due to excessive `svccoreCtrlr` or `svccoreNode` managed objects, Apic gui stuck in loading multiple queries.
+
+The svccoreCtrlr and svccoreNode objects represent core files related to Apic and Leaf/Spines process respectively.
+
+Due to [CSCws84232][69], the APIC GUI may become unresponsive after login, with dashboards stuck in a continuous “Loading…”state.
+Administrators may be unable to access or operate the APIC GUI, potentially impacting day-to-day management or upgrade.
+
+This check will verify the count of the `svccoreCtrlr` Managed Object and raise and alarm with the bug if object count found more than 240. Remove the content or objects of `svccoreCtrlr` or `svccoreNode`. Contact Cisco TAC or upgrade to a release containing the fix for CSCws84232 before proceeding with an upgrade.
+
+
+### WRED with Affected FM Models
+
+Due to [CSCwt50713][72], when WRED (Weighted Random Early Detection) is enabled and specific Fabric Module (FM) hardware models are present in the fabric, the spine switch may crash after moving to an affected ACI release in the 6.1(x) or 6.2(x) range. The crash is specifically triggered by running a tech-support collection or QoS-related commands on the affected spine.
+
+Affected versions: 
+version <= 6.1(5e) or version < 6.2(2e).
+
+Affected hardware models: N9K-C9504-FM-E, N9K-C9508-FM-E, N9K-C9516-FM-E.
+
+To avoid this issue, disable WRED on the affected nodes or upgrade to a release newer than 6.1(5e) in the 6.1(x) train or 6.2(2e) or later in the 6.2(x) train.
+
+
+### BgpProto Timer Policy Already Existing
+
+This bug [CSCwt78235][71] validates `F0467` faults where `changeSet` contains 'bgpProt-policy-already-existing'. The fault indicates conflicting BGP protocol timer policy under an L3Outs deployed in same vrf under same node. If this fault is not resolved, l3out will not be programmed properly in the leaf after the clean reboot or the upgrade.
+
+
+### N9K-C93180YC-FX3 Switch Memory Less Than 32GB
+
+This check applies to N9K-C93180YC-FX3 switches only. It checks whether the switch has less than 32GB of memory. The minimum RAM requirement for the N9K-C93180YC-FX3 to operate properly in ACI mode is 32GB. This check is not version dependent and runs for all upgrade versions.
+
+[CSCwm42741][74] tracks this issue. N9K-C93180YC-FX3 switches running in ACI mode with less than 32GB of memory will not perform well and are at risk of service instability. With fix of CSCwm42741, a critical fault F4680 (`eqpt-low-memory-device`) is raised on affected switches.
+
+If any N9K-C93180YC-FX3 switch is flagged by this check, upgrade the switch memory to at least 32GB before proceeding with the upgrade.
+
+
+### Stale dbgacEpgSummaryTask Objects
+
+Due to [CSCwt69100][75], a stale `dbgacEpgSummaryTask` object stuck in `processing` state with empty content can cause the policymgr process to crash on all APICs during an upgrade or process restart.
+
+Affected versions: 6.1(5e) and below, or 6.2(1g).
+
+Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
+
+
+### Infravlan Overlap Access Policy Check
+
+Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.1(3f), 6.1(3g), 6.1(4h), 6.1(5e) and 6.2(1g), be aware of fault F4701 being raised if the InfraVLAN overlaps with any user-configured VLAN pool in Access Policies. This also affects vlan pool created by NDO/MSO, VMM, Kubernetes. After the upgrade, domains associated with those VLAN pools cannot be linked to new EPGs, although existing EPGs continue to function.
+
+To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2640,7 +2879,6 @@ Do not upgrade to any affected ACI software release if this check fails.
 [38]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/verified-scalability/cisco-aci-verified-scalability-guide-612.html
 [39]: https://www.cisco.com/c/en/us/support/docs/field-notices/642/fn64251.html
 [40]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvg26013
-[41]: https://snvui.cisco.com/snv/FN64251
 [42]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwf58763
 [43]: https://www.cisco.com/c/en/us/support/docs/field-notices/740/fn74050.html
 [44]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd65255
@@ -2658,4 +2896,24 @@ Do not upgrade to any affected ACI software release if this check fails.
 [56]: https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-aci-virtual-edge-migration.html
 [57]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp22212
 [58]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp15375
-[59]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
+[59]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp95515
+[60]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#Inter
+[61]: https://www.cisco.com/c/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/white-paper-c11-743951.html#EnablePolicyCompression
+[62]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe83941
+[63]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/m-auto-firmware-update.html
+[64]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp64296
+[65]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws82819
+[66]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr66848
+[67]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwh80837
+[68]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwd40071
+[69]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCws84232
+[70]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvo27498
+[71]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt78235
+[72]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt50713
+[73]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwo74485
+[74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
+[75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
+[76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
+[77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
+[79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061

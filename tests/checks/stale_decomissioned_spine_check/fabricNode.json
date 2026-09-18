@@ -1,0 +1,46 @@
+[
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-101", 
+        "id": "101", 
+        "fabricSt": "active", 
+        "role": "leaf", 
+        "name": "leaf1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-201", 
+        "id": "201", 
+        "fabricSt": "active", 
+        "role": "spine", 
+        "name": "spine1"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-106", 
+        "id": "106", 
+        "fabricSt": "active", 
+        "role": "spine", 
+        "name": "spine2"
+      }
+    }
+  },
+  {
+    "fabricNode": {
+      "attributes": {
+        "dn": "topology/pod-1/node-107", 
+        "id": "107", 
+        "fabricSt": "disabled", 
+        "role": "spine", 
+        "name": "spine3"
+      }
+    }
+  }
+]

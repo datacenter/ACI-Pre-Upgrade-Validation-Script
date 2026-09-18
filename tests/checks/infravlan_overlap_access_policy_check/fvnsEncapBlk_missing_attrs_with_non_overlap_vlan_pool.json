@@ -1,0 +1,39 @@
+[
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-100]-to-[vlan-200]",
+        "role": "external",
+        "from": "vlan-100",
+        "to": "vlan-200"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-30]-to-[vlan-40]",
+        "role": "external",
+        "from": "",
+        "to": "vlan-40"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-10]-to-[vlan-20]",
+        "role": "external",
+        "from": "vlan-10",
+        "to": "vlan-20",
+        "dn": "uni/infra/vlanns-[vlan_pool3]-static/from-[vlan-10]-to-[vlan-20]"
+      }
+    }
+  }
+]
