@@ -7321,10 +7321,12 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
 
 
 @check_wrapper(check_title='vzAny Service Graph on Stretched VRF')
-def vzany_svcgraph_stretched_vrf_check(tversion, **kwargs):
+def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
     result = PASS
     headers = ['Tenant', 'VRF', 'Contract', 'Graph', 'Issue']
     data = []
+    unformatted_headers = ['Graph Instance DN', 'Issue']
+    unformatted_data = []
     recommended_action = 'Migrate vzAny service graph configuration to NDO before upgrade using brownfield import. See documentation for detailed migration steps.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-service-graph-stretched-vrf'
 
@@ -7336,20 +7338,34 @@ def vzany_svcgraph_stretched_vrf_check(tversion, **kwargs):
 
     has_error = False
 
+    # Pre-6.1(4): the impacted graph is still 'applied', so scope to that state to limit load.
+    # 6.1(4)+: a later re-render can leave it failed-to-apply, so poll all states.
+    graph_subtree = '&rsp-subtree=full&rsp-subtree-class=vnsTermNodeInst,vnsConnectionInst,vnsRsConnectionInstConns'
+    if cversion and not cversion.newer_than("6.1(3g)"):
+        graph_query = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")' + graph_subtree
+    else:
+        graph_query = 'vnsGraphInst.json?' + graph_subtree.lstrip('&')
+
     try:
-        graph_insts = icurl('class', 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")&rsp-subtree=full')
+        graph_insts = icurl('class', graph_query)
     except Exception as e:
-        return Result(result=ERROR, msg='Error querying applied service graphs: {}'.format(str(e)), doc_url=doc_url)
+        return Result(result=ERROR, msg='Error querying service graphs: {}'.format(str(e)), doc_url=doc_url)
 
     if not graph_insts:
-        return Result(result=PASS, msg="No applied service graphs found", doc_url=doc_url)
+        return Result(result=PASS, msg="No service graphs found", doc_url=doc_url)
 
-    sg_by_contract = {}
+    # Key by contract with a list of instances so multiple VRFs sharing one contract are all retained.
+    sg_by_contract = defaultdict(list)
     for graph_inst_mo in graph_insts:
         gi_attrs = graph_inst_mo.get('vnsGraphInst', {}).get('attributes', {})
         gi_dn = gi_attrs.get('dn', '')
         contract_dn = gi_attrs.get('ctrctDn', '')
         if not contract_dn:
+            continue
+
+        # Skip NDO/MSC-managed graphs; their translation entries are created by NDO.
+        annotation = gi_attrs.get('absGraphAnnotation', '') or gi_attrs.get('annotation', '')
+        if 'orchestrator:msc' in annotation:
             continue
 
         graph_name_match = re.search(r'-G-\[uni/tn-[^/]+/AbsGraph-([^\]]+)\]', gi_dn)
@@ -7380,15 +7396,15 @@ def vzany_svcgraph_stretched_vrf_check(tversion, **kwargs):
             if first_node_name:
                 break
 
-        sg_by_contract[contract_dn] = {
+        sg_by_contract[contract_dn].append({
             'gi_dn': gi_dn,
             'graph_name': graph_name,
             'scope_dn': scope_dn,
             'first_node': first_node_name,
-        }
+        })
 
     if not sg_by_contract:
-        return Result(result=PASS, msg="No applied service graphs with contracts found", doc_url=doc_url)
+        return Result(result=PASS, msg="No locally-managed service graphs with contracts found", doc_url=doc_url)
 
     stretched_vrf_dns = set()
     try:
@@ -7408,13 +7424,14 @@ def vzany_svcgraph_stretched_vrf_check(tversion, **kwargs):
     if not stretched_vrf_dns:
         return Result(result=PASS, msg="No stretched VRFs found", doc_url=doc_url)
 
+    # Key by (contract, VRF) so each scoped vzAny relationship is preserved.
     vzany_on_stretched = {}
     for rel_class in ('vzRsAnyToCons', 'vzRsAnyToProv'):
         try:
             rels = icurl('class', '{}.json'.format(rel_class))
         except Exception as e:
             has_error = True
-            data.append(['-', '-', '-', '-', 'Error querying {}: {}'.format(rel_class, str(e))])
+            unformatted_data.append(['-', 'Error querying {}: {}'.format(rel_class, str(e))])
             continue
         for rel in rels:
             rel_attrs = rel.get(rel_class, {}).get('attributes', {})
@@ -7430,50 +7447,55 @@ def vzany_svcgraph_stretched_vrf_check(tversion, **kwargs):
                 continue
             vrf_name_match = re.search(r'ctx-([^/]+)', vrf_dn)
             vrf_name = vrf_name_match.group(1) if vrf_name_match else vrf_dn
-            vzany_on_stretched[contract_dn] = {'vrf_name': vrf_name}
+            vzany_on_stretched[(contract_dn, vrf_dn)] = {'vrf_name': vrf_name}
 
     if not vzany_on_stretched and not has_error:
         return Result(result=PASS, msg="No vzAny service graph contracts on stretched VRFs", doc_url=doc_url)
 
-    for contract_dn, vrf_info in vzany_on_stretched.items():
-        sg_info = sg_by_contract[contract_dn]
-        first_node_name = sg_info['first_node']
-        if not first_node_name:
-            continue
-
+    for (contract_dn, vrf_dn), vrf_info in vzany_on_stretched.items():
         contract_match = re.match(r'uni/tn-([^/]+)/brc-([^/]+)', contract_dn)
         if not contract_match:
+            has_error = True
+            unformatted_data.append([contract_dn, 'Unable to parse the contract DN'])
             continue
         tenant = contract_match.group(1)
         contract = contract_match.group(2)
-        graph_name = sg_info['graph_name']
-        scope_dn = sg_info['scope_dn']
         vrf_name = vrf_info['vrf_name']
 
-        epg_def_dn = (
-            "uni/tn-{}/GraphInst_C-[uni/tn-{}/brc-{}]"
-            "-G-[uni/tn-{}/AbsGraph-{}]-S-[{}]"
-            "/NodeInst-{}/LegVNode-0/EPgDef-consumer"
-        ).format(tenant, tenant, contract, tenant, graph_name, scope_dn, first_node_name)
-        xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
+        # Evaluate every graph instance scoped to this specific VRF.
+        for sg_info in sg_by_contract.get(contract_dn, []):
+            if sg_info['scope_dn'] != vrf_dn:
+                continue
 
-        try:
-            result_query = icurl('mo', '{}.json'.format(xlate_dn))
-            has_xlate = len(result_query) > 0
-        except Exception:
-            has_xlate = False
-            has_error = True
-            data.append([tenant, vrf_name, contract, graph_name, 'Error querying vnsEpgDefXlate'])
-            continue
+            gi_dn = sg_info['gi_dn']
+            graph_name = sg_info['graph_name']
+            first_node_name = sg_info['first_node']
+            if not first_node_name:
+                has_error = True
+                unformatted_data.append([gi_dn or contract_dn, 'Unable to determine the first consumer node'])
+                continue
 
-        if not has_xlate:
-            data.append([tenant, vrf_name, contract, graph_name, 'Missing vnsEpgDefXlate for 1st node consumer leg'])
+            # Build the exact DN from the real graph instance DN (no reconstruction).
+            epg_def_dn = "{}/NodeInst-{}/LegVNode-0/EPgDef-consumer".format(gi_dn, first_node_name)
+            xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
+
+            try:
+                has_xlate = len(icurl('mo', '{}.json'.format(xlate_dn))) > 0
+            except Exception:
+                has_error = True
+                data.append([tenant, vrf_name, contract, graph_name, 'Error querying vnsEpgDefXlate'])
+                continue
+
+            if not has_xlate:
+                data.append([tenant, vrf_name, contract, graph_name, 'Missing vnsEpgDefXlate for 1st node consumer leg'])
 
     if has_error:
         result = ERROR
     elif data:
         result = FAIL_O
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(result=result, headers=headers, data=data,
+                  unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                  recommended_action=recommended_action, doc_url=doc_url)
 
 
 # ---- Script Execution ----

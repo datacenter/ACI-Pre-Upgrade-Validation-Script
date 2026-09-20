@@ -2841,7 +2841,10 @@ This check detects configurations where **all** of the following conditions are 
 1. The VRF is stretched across multiple sites (has `fvSiteAssociated` with `fvRemoteId` children)
 2. vzAny is used as either consumer **or** provider on the stretched VRF
 3. The contract has a service graph attached (any type — PBR is **not** required)
-4. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
+4. The service graph is **not** managed by NDO/MSC (no `orchestrator:msc` annotation)
+5. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
+
+When upgrading from a release earlier than 6.1(4), the impacted graph is still in the `applied` state, so the check scopes the query to applied graph instances. When the current release is already 6.1(4) or later, the graph may have failed to render, so the check evaluates graph instances in all states (a later re-render can re-expose the same condition).
 
 !!! note
     The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
