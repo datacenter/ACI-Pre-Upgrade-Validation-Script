@@ -6705,7 +6705,7 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
 @check_wrapper(check_title='Certificate Expiration Check')
 def certificate_expiration_check(cversion, username, password, fabric_nodes, **kwargs):
     result = PASS
-    headers = ["Fault Code", "Severity", "Description"]
+    headers = ["Fault Code", "Description"]
     data = []
     recommended_action = ""
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#certificate-expiration-check'
@@ -6719,22 +6719,43 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
     FACTORY_CERT_MIN_VERSION = "6.1(5e)"
     CERT_EXPIRING_DAYS = 30
 
-    has_critical = has_major = has_error = False
+    has_blocking_certificate = has_error = False
+    factory_check_required = cversion.older_than(FACTORY_CERT_MIN_VERSION)
+    factory_check_unavailable = (
+        factory_check_required and not (username and password)
+    )
+    controller_inventory_unavailable = False
+    controllers = []
 
     applicable_codes = [code for code, ver in fault_min_versions if not cversion.older_than(ver)]
     if applicable_codes:
         fault_filter = ",".join('eq(faultInst.code,"{}")'.format(code) for code in applicable_codes)
         for faultInst in icurl('class', 'faultInst.json?query-target-filter=or({})'.format(fault_filter)):
             fault_attrs = faultInst['faultInst']['attributes']
-            if fault_attrs['lc'] not in ("raised", "soaking"):
+            if fault_attrs.get('lc') != "raised":
                 continue
-            data.append([fault_attrs['code'], fault_attrs['severity'], fault_attrs['descr']])
-            if fault_attrs['severity'] == 'critical':
-                has_critical = True
-            elif fault_attrs['severity'] == 'major':
-                has_major = True
+            data.append([fault_attrs['code'], fault_attrs.get('descr', '')])
+            has_blocking_certificate = True
 
-    if cversion.older_than(FACTORY_CERT_MIN_VERSION) and username and password:
+    if factory_check_unavailable:
+        data.append([
+            "N/A",
+            "Factory certificate expiry was not checked because SSH credentials are unavailable.",
+        ])
+    elif factory_check_required:
+        controllers = [
+            node for node in (fabric_nodes or [])
+            if node.get("fabricNode", {}).get("attributes", {}).get("role") == "controller"
+        ]
+        if not controllers:
+            data.append([
+                "N/A",
+                "No APIC controllers were found; factory certificate expiry could not be verified.",
+            ])
+            has_error = True
+            controller_inventory_unavailable = True
+
+    if factory_check_required and not factory_check_unavailable:
         date_format = "%b %d %H:%M:%S %Y"
         current_date_re = re.compile(
             r'[A-Z][a-z]{2}\s+(?P<mon>[A-Z][a-z]{2})\s+(?P<day>\d+)\s+(?P<time>\d{2}:\d{2}:\d{2})\s+\w+\s+(?P<year>\d{4})'
@@ -6743,14 +6764,14 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
             r'notAfter=(?P<date>[A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})'
         )
 
-        for controller in (node for node in fabric_nodes if node.get("fabricNode", {}).get("attributes", {}).get("role") == "controller"):
+        for controller in controllers:
             controller_attrs = controller.get("fabricNode", {}).get("attributes", {})
             controller_id = controller_attrs.get("id", "N/A")
             controller_name = controller_attrs.get("name", "N/A")
             controller_address = controller_attrs.get("address")
 
             if not controller_address:
-                data.append(["N/A", "error",
+                data.append(["N/A",
                              "APIC {} ({}): unable to determine controller address".format(controller_id, controller_name)])
                 has_error = True
                 continue
@@ -6766,7 +6787,7 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
                 current_date_match = current_date_re.search(c.output)
                 cert_expiry_match = cert_expiry_re.search(c.output)
             except Exception as e:
-                data.append(["N/A", "error",
+                data.append(["N/A",
                              "APIC {} ({}): unable to verify factory certificate - {}".format(controller_id, controller_name, e)])
                 has_error = True
                 continue
@@ -6776,7 +6797,7 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
                     "{mon} {day} {time} {year}".format(**current_date_match.groupdict()), date_format
                 )
             except (AttributeError, ValueError):
-                data.append(["N/A", "error",
+                data.append(["N/A",
                              "APIC {} ({}): unable to determine current date".format(controller_id, controller_name)])
                 has_error = True
                 continue
@@ -6784,36 +6805,67 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes, **k
             try:
                 cert_expiry = datetime.strptime(" ".join(cert_expiry_match.group("date").split()), date_format)
             except (AttributeError, ValueError):
-                data.append(["N/A", "error",
+                data.append(["N/A",
                              "APIC {} ({}): unable to determine factory certificate expiry date".format(controller_id, controller_name)])
                 has_error = True
                 continue
 
             if cert_expiry <= current_date:
-                data.append(["N/A", "critical",
+                data.append(["N/A",
                              "APIC {} ({}): factory certificate expired on {} UTC".format(controller_id, controller_name, cert_expiry)])
-                has_critical = True
+                has_blocking_certificate = True
             elif (cert_expiry - current_date).days <= CERT_EXPIRING_DAYS:
-                data.append(["N/A", "major",
+                data.append(["N/A",
                              "APIC {} ({}): factory certificate expiring on {} UTC".format(controller_id, controller_name, cert_expiry)])
-                has_major = True
+                has_blocking_certificate = True
 
     if data:
-        if has_error:
-            result = ERROR
+        if has_blocking_certificate:
+            result = FAIL_O
             recommended_action = (
+                'Resolve all certificate conditions before starting the upgrade. Renew expired certificates '
+                'immediately and renew certificates approaching expiry before they expire. See {} for '
+                'verification and remediation guidance.'.format(doc_url)
+            )
+
+            if has_error:
+                if controller_inventory_unavailable:
+                    verification_action = (
+                        "Factory certificate status could not be verified because no APIC controllers were "
+                        "found. Verify APIC cluster and node inventory health, then follow the manual factory "
+                        "certificate verification procedure in {}".format(doc_url)
+                    )
+                else:
+                    verification_action = (
+                        "Certificate status could not be verified on all APICs. Manually verify the affected "
+                        "APICs using the procedure in {}".format(doc_url)
+                    )
+                recommended_action = "{} {}".format(recommended_action, verification_action)
+        elif has_error:
+            result = ERROR
+            if controller_inventory_unavailable:
+                recommended_action = (
+                    "Verify APIC cluster and node inventory health, then rerun the validation. If inventory "
+                    "cannot be restored, follow the manual factory certificate verification procedure in {}"
+                    .format(doc_url)
+                )
+            else:
+                recommended_action = (
                     "Manually verify certificate expiry for all affected nodes. "
                     "\n\tFor APIC factory certificates, run `acidiag verifyapic` on each affected APIC."
                 )
-        elif has_critical and has_major:
-            result = FAIL_O
-            recommended_action = 'Renew expired certificate(s) immediately. For certificate(s) approaching expiry, renew before they expire to avoid service disruption.'
-        elif has_critical:
-            result = FAIL_O
-            recommended_action = 'Renew the certificate(s) immediately to restore functionality.'
-        elif has_major:
+
+    if factory_check_unavailable:
+        if result == PASS:
             result = MANUAL
-            recommended_action = 'Renew the certificate(s) before they expire to avoid service disruption.'
+        manual_verification_action = (
+            "Re-run without `--api-only` using SSH credentials, or follow the manual factory certificate "
+            "verification procedure in {}".format(doc_url)
+        )
+        if recommended_action:
+            recommended_action = "{} {}".format(recommended_action, manual_verification_action)
+        else:
+            recommended_action = manual_verification_action
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 

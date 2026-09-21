@@ -1645,7 +1645,7 @@ To recover from this fault, try the following action
 
 ACI uses various X.509 certificates for security and authentication purposes. If these certificates expire or are about to expire, it can cause service disruptions or failures. The fabric will raise different faults depending on the certificate type.
 
-**Expiring Certificates (Major Severity):**
+**Certificates Approaching Expiry:**
 
 * **F4501**: KeyRing X.509 Certificate expiring - This fault occurs when a custom KeyRing X.509 Certificate is going to expire in one month.
 
@@ -1656,7 +1656,7 @@ ACI uses various X.509 certificates for security and authentication purposes. If
 * **F4752**: Factory X.509 Certificate expiring - This fault occurs when the factory Certificate is expiring.
 
 
-**Expired Certificates (Critical Severity):**
+**Expired Certificates:**
 
 * **F4502**: KeyRing X.509 Certificate expired - This fault occurs when a custom KeyRing X.509 Certificate has expired.
 
@@ -1669,9 +1669,46 @@ ACI uses various X.509 certificates for security and authentication purposes. If
 
 **Recommended Actions:**
 
+Any certificate fault listed above with a lifecycle state of `raised` is upgrade-blocking. Resolve every raised certificate fault before starting the upgrade.
+
 * For expiring certificates (F4501, F3081, F4617, F4752): Renew the certificate(s) before they expire to avoid service disruption.
 
 * For expired certificates (F4502, F4503, F3082, F4753): Renew the certificate(s) immediately to restore functionality.
+
+#### Manually verify factory certificates in API-only mode
+
+On APIC releases earlier than 6.1(5e), the F4752 and F4753 factory-certificate faults are not available. The script normally connects to each APIC over SSH and checks the factory certificate directly. When the script is run with `--api-only`, SSH credentials are unavailable, so the check reports `MANUAL` instead of treating the unevaluated certificate as a pass.
+
+If the check reports that no APIC controllers were found, verify the APIC cluster and node inventory health, then rerun the validation. If the inventory cannot be restored, manually identify and check every APIC using the procedure below; do not treat the result as a pass.
+
+To verify the factory certificate manually:
+
+1. Connect to each APIC controller over SSH. Every controller must be checked independently.
+2. Run the following commands:
+
+    ```bash
+    date -u
+    acidiag verifyapic
+    ```
+
+3. In the `Manufacturing certificate details` section, locate the `notAfter` value. For example:
+
+    ```text
+    openssl_check: Manufacturing certificate details
+    notAfter=Aug  1 06:57:40 2026 GMT
+    ```
+
+4. Compare `notAfter` with the UTC date reported by the same APIC:
+
+    * If `notAfter` has passed, the factory certificate is expired. Renew it immediately before the upgrade.
+    * If `notAfter` is within the next 30 days, the factory certificate is expiring. Renew it before starting the upgrade.
+    * If `notAfter` is more than 30 days away, the factory certificate is valid for this check.
+
+5. Repeat the procedure on every APIC. A valid certificate on one controller does not validate the other controllers.
+
+If `acidiag verifyapic` fails, or its output does not contain a readable `notAfter` value, consider the factory certificate unverified. Re-run the script with SSH credentials or resolve the command/output issue before the upgrade; do not treat the result as a pass.
+
+If a certificate requiring action is found while another APIC cannot be verified, the overall result remains `FAIL - OUTAGE WARNING!!`. Resolve the confirmed certificate condition and manually verify every APIC that reported an error.
 
 !!! example "Fault Example (F4502: Expired KeyRing Certificate)"
     The following shows an example of an expired KeyRing certificate:
@@ -3033,4 +3070,3 @@ Contact Cisco TAC for next steps. For more details, refer to the workaround in [
 [74]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwm42741
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
-

@@ -103,7 +103,7 @@ def ssh_cmds(outputs):
             script.PASS,
             [],
         ),
-        # MANUAL - only expiring certificate (F4501 - KeyRing)
+        # FAIL_O - raised expiring certificate (F4501 - KeyRing)
         (
             {
                 faultInst: read_data(dir, "faultInst_F4501.json")
@@ -112,12 +112,12 @@ def ssh_cmds(outputs):
             {}, 
             "6.1(5e)",
             [],
-            script.MANUAL,
+            script.FAIL_O,
             [
-                ["F4501", "major", "KeyRing Certificate THD_KEYRING expiring"],
+                ["F4501", "KeyRing Certificate THD_KEYRING expiring"],
             ],
         ),
-        # MANUAL - only expiring certificate (F3081 - SAML)
+        # FAIL_O - raised expiring certificate (F3081 - SAML)
         (
             {
                 faultInst: read_data(dir, "faultInst_F3081.json")
@@ -126,12 +126,12 @@ def ssh_cmds(outputs):
             {}, 
             "6.1(5e)", 
             [],
-            script.MANUAL,
+            script.FAIL_O,
             [
-                ["F3081", "major", "SAML Signing Certificate expiring in one month"],
+                ["F3081", "SAML Signing Certificate expiring in one month"],
             ],
         ),
-        # MANUAL - only expiring certificate (F4617 - TP)
+        # FAIL_O - raised expiring certificate (F4617 - TP)
         (
             {
                 faultInst: read_data(dir, "faultInst_F4617.json")
@@ -140,12 +140,12 @@ def ssh_cmds(outputs):
             {}, 
             "6.1(5e)", 
             [],
-            script.MANUAL,
+            script.FAIL_O,
             [
-                ["F4617", "major", "TP Certificate expiring"],
+                ["F4617", "TP Certificate expiring"],
             ],
         ),
-        # MANUAL - only expiring factory certificate (F4752 - Factory)
+        # FAIL_O - raised expiring factory certificate (F4752 - Factory)
         (
             {
                 faultInst: read_data(dir, "faultInst_F4752.json")
@@ -154,12 +154,12 @@ def ssh_cmds(outputs):
             {},
             "6.1(5e)",
             [],
-            script.MANUAL,
+            script.FAIL_O,
             [
-                ["F4752", "major", "Factory certificate expiring"],
+                ["F4752", "Factory certificate expiring"],
             ],
         ),
-        # MANUAL - multiple expiring certificates
+        # FAIL_O - multiple raised expiring certificates
         (
             {
                 faultInst: read_data(dir, "faultInst_multiple_expiring.json")
@@ -168,11 +168,11 @@ def ssh_cmds(outputs):
             {}, 
             "6.1(5e)", 
             [],
-            script.MANUAL,
+            script.FAIL_O,
             [
-                ["F4501", "major", "KeyRing Certificate THD_KEYRING expiring"],
-                ["F3081", "major", "SAML Signing Certificate expiring in one month"],
-                ["F4617", "major", "TP Certificate expiring"],
+                ["F4501", "KeyRing Certificate THD_KEYRING expiring"],
+                ["F3081", "SAML Signing Certificate expiring in one month"],
+                ["F4617", "TP Certificate expiring"],
             ],
         ),
         # FAIL_O - only expired certificate (F4502 - KeyRing)
@@ -186,7 +186,7 @@ def ssh_cmds(outputs):
             [],
             script.FAIL_O,
             [
-                ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
+                ["F4502", "KeyRing Certificate THD_KEYRING expired"],
             ],
         ),
         # FAIL_O - only expired certificate (F4503 - TP)
@@ -200,7 +200,7 @@ def ssh_cmds(outputs):
             [],
             script.FAIL_O,
             [
-                ["F4503", "critical", "TP Certificate THD_CA expired"],
+                ["F4503", "TP Certificate THD_CA expired"],
             ],
         ),
         # FAIL_O - only expired certificate (F3082 - SAML)
@@ -214,7 +214,7 @@ def ssh_cmds(outputs):
             [],
             script.FAIL_O,
             [
-                ["F3082", "critical", "SAML Encryption Certificate has expired"],
+                ["F3082", "SAML Encryption Certificate has expired"],
             ],
         ),
         # FAIL_O - only expired factory certificate (F4753 - Factory)
@@ -228,7 +228,7 @@ def ssh_cmds(outputs):
             [],
             script.FAIL_O,
             [
-                ["F4753", "critical", "Factory certificate expired"],
+                ["F4753", "Factory certificate expired"],
             ],
         ),
         # FAIL_O - multiple expired certificates
@@ -242,9 +242,9 @@ def ssh_cmds(outputs):
             [],
             script.FAIL_O,
             [
-                ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
-                ["F4503", "critical", "TP Certificate THD_CA expired"],
-                ["F3082", "critical", "SAML Encryption Certificate has expired"],
+                ["F4502", "KeyRing Certificate THD_KEYRING expired"],
+                ["F4503", "TP Certificate THD_CA expired"],
+                ["F3082", "SAML Encryption Certificate has expired"],
             ],
         ),
         # FAIL_O - mixed: both expiring and expired certificates (expired takes priority)
@@ -258,13 +258,13 @@ def ssh_cmds(outputs):
             [],
             script.FAIL_O,
             [
-                ["F4501", "major", "KeyRing Certificate KEYRING1 expiring"],
-                ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
-                ["F3081", "major", "SAML Signing Certificate expiring in one month"],
-                ["F3082", "critical", "SAML Encryption Certificate has expired"],
+                ["F4501", "KeyRing Certificate KEYRING1 expiring"],
+                ["F4502", "KeyRing Certificate THD_KEYRING expired"],
+                ["F3081", "SAML Signing Certificate expiring in one month"],
+                ["F3082", "SAML Encryption Certificate has expired"],
             ],
         ),
-        # PASS - faults exist but not in raised/soaking state (cleared/retaining)
+        # PASS - faults exist but are not in the raised state (cleared/retaining)
         (
             {
                 faultInst: read_data(dir, "faultInst_cleared.json")
@@ -285,12 +285,12 @@ def ssh_cmds(outputs):
                 faultInst_pre_factory: read_data(dir, "faultInst_F4503.json")
             },
             False, 
-            {}, 
+            ssh_cmds(VERIFYAPIC_VALID),
             "6.1(1e)", 
-            [],
+            fabric_nodes_ssh,
             script.FAIL_O,
             [
-                ["F4503", "critical", "TP Certificate THD_CA expired"],
+                ["F4503", "TP Certificate THD_CA expired"],
             ],
         ),
         # 6.0(4c) <= cversion < 6.1(1e): KeyRing + SAML only. KeyRing expired.
@@ -299,12 +299,12 @@ def ssh_cmds(outputs):
                 faultInst_keyring_saml: read_data(dir, "faultInst_F4502.json")
             },
             False, 
-            {}, 
+            ssh_cmds(VERIFYAPIC_VALID),
             "6.0(4c)", 
-            [],
+            fabric_nodes_ssh,
             script.FAIL_O,
             [
-                ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
+                ["F4502", "KeyRing Certificate THD_KEYRING expired"],
             ],
         ),
         # 3.1(2f) <= cversion < 6.0(4c): SAML only. Expired.
@@ -313,33 +313,36 @@ def ssh_cmds(outputs):
                 faultInst_saml: read_data(dir, "faultInst_F3082.json")
             },
             False, 
-            {}, 
+            ssh_cmds(VERIFYAPIC_VALID),
             "5.2(7g)", 
-            [],
+            fabric_nodes_ssh,
             script.FAIL_O,
             [
-                ["F3082", "critical", "SAML Encryption Certificate has expired"],
+                ["F3082", "SAML Encryption Certificate has expired"],
             ],
         ),
         # 3.1(2f) <= cversion < 6.0(4c): SAML only, none raised.
         (
             {faultInst_saml: []},
             False, 
-            {}, 
+            ssh_cmds(VERIFYAPIC_VALID),
             "5.2(7g)", 
-            [],
+            fabric_nodes_ssh,
             script.PASS,
             [],
         ),
-        # cversion < 3.1(2f): no applicable fault codes, no fault query issued.
+        # ERROR - no applicable fault query and no controller inventory for the factory certificate check.
         (
             {}, 
             False, 
             {}, 
             "2.3(1a)", 
             [],
-            script.PASS,
-            [],
+            script.ERROR,
+            [[
+                "N/A",
+                "No APIC controllers were found; factory certificate expiry could not be verified.",
+            ]],
         ),
 
         # ==== Factory certificate SSH check (cversion < 6.1(5e)) ====
@@ -367,20 +370,20 @@ def ssh_cmds(outputs):
             fabric_nodes_ssh,
             script.FAIL_O,
             [
-                ["N/A", "critical",
+                ["N/A",
                  "APIC 1 (apic1): factory certificate expired on 2024-05-14 20:25:42 UTC"],
             ],
         ),
-        # MANUAL - manufacturing certificate expiring within threshold (30 days)
+        # FAIL_O - manufacturing certificate expiring within threshold (30 days)
         (
             {faultInst_pre_factory: []},
             False, 
             ssh_cmds(VERIFYAPIC_EXPIRING), 
             "6.1(4a)", 
             fabric_nodes_ssh,
-            script.MANUAL,
+            script.FAIL_O,
             [
-                ["N/A", "major",
+                ["N/A",
                  "APIC 1 (apic1): factory certificate expiring on 2026-08-01 06:57:40 UTC"],
             ],
         ),
@@ -395,7 +398,7 @@ def ssh_cmds(outputs):
             fabric_nodes_ssh,
             script.ERROR,
             [
-                ["N/A", "error",
+                ["N/A",
                  "APIC 1 (apic1): unable to verify factory certificate - Simulated exception at connect()"],
             ],
         ),
@@ -418,7 +421,7 @@ def ssh_cmds(outputs):
             fabric_nodes_ssh,
             script.ERROR,
             [
-                ["N/A", "error",
+                ["N/A",
                 "APIC 1 (apic1): unable to determine current date"],
             ],
         ),
@@ -442,7 +445,7 @@ def ssh_cmds(outputs):
             fabric_nodes_ssh,
             script.ERROR,
             [
-                ["N/A", "error",
+                ["N/A",
                 "APIC 1 (apic1): unable to determine factory certificate expiry date"],
             ],
         ),
@@ -455,8 +458,8 @@ def ssh_cmds(outputs):
             fabric_nodes_ssh,
             script.FAIL_O,
             [
-                ["F4502", "critical", "KeyRing Certificate THD_KEYRING expired"],
-                ["N/A", "critical",
+                ["F4502", "KeyRing Certificate THD_KEYRING expired"],
+                ["N/A",
                  "APIC 1 (apic1): factory certificate expired on 2024-05-14 20:25:42 UTC"],
             ],
         ),
@@ -473,7 +476,7 @@ def ssh_cmds(outputs):
             fabric_nodes_multi,
             script.FAIL_O,
             [
-                ["N/A", "critical",
+                ["N/A",
                  "APIC 2 (apic2): factory certificate expired on 2024-05-14 20:25:42 UTC"],
             ],
         ),
@@ -488,3 +491,291 @@ def test_logic(run_check, mock_icurl, mock_conn, cversion, fabric_nodes, expecte
     )
     assert result.result == expected_result
     assert result.data == expected_data
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs, expected_data",
+    [
+        (
+            {
+                faultInst: [{
+                    "faultInst": {
+                        "attributes": {
+                            "code": "F4501",
+                            "severity": "critical",
+                            "descr": "KeyRing certificate approaching expiry",
+                            "lc": "raised",
+                        }
+                    }
+                }]
+            },
+            [["F4501", "KeyRing certificate approaching expiry"]],
+        ),
+        (
+            {
+                faultInst: [{
+                    "faultInst": {
+                        "attributes": {
+                            "code": "F4502",
+                            "severity": "major",
+                            "descr": "KeyRing certificate expired",
+                            "lc": "raised",
+                        }
+                    }
+                }]
+            },
+            [["F4502", "KeyRing certificate expired"]],
+        ),
+        (
+            {
+                faultInst: [{
+                    "faultInst": {
+                        "attributes": {
+                            "code": "F4502",
+                            "descr": "KeyRing certificate expired without a severity field",
+                            "lc": "raised",
+                        }
+                    }
+                }]
+            },
+            [["F4502", "KeyRing certificate expired without a severity field"]],
+        ),
+    ],
+)
+def test_raised_fault_blocks_regardless_of_reported_severity(
+    run_check, mock_icurl, expected_data
+):
+    result = run_check(
+        cversion=script.AciVersion("6.1(5e)"),
+        username=None,
+        password=None,
+        fabric_nodes=[],
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.headers == ["Fault Code", "Description"]
+    assert result.data == expected_data
+    assert "Resolve all certificate conditions" in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [{
+        faultInst: [{
+            "faultInst": {
+                "attributes": {
+                    "code": "F4502",
+                    "severity": "critical",
+                    "descr": "KeyRing certificate expired",
+                    "lc": "soaking",
+                }
+            }
+        }]
+    }],
+)
+def test_soaking_fault_is_not_upgrade_blocking(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.1(5e)"),
+        username=None,
+        password=None,
+        fabric_nodes=[],
+    )
+
+    assert result.result == script.PASS
+    assert result.data == []
+
+
+@pytest.mark.parametrize("icurl_outputs", [{faultInst_pre_factory: []}])
+def test_api_only_requires_manual_factory_certificate_verification(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username=None,
+        password=None,
+        fabric_nodes=[],
+    )
+
+    assert result.result == script.MANUAL
+    assert result.data == [[
+        "N/A",
+        "Factory certificate expiry was not checked because SSH credentials are unavailable.",
+    ]]
+    assert result.doc_url in result.recommended_action
+    assert "manual factory certificate verification procedure" in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [{faultInst_pre_factory: []}])
+@pytest.mark.parametrize(
+    "fabric_nodes",
+    [
+        [],
+        [{"fabricNode": {"attributes": {"id": "101", "name": "leaf101", "role": "leaf"}}}],
+    ],
+)
+def test_missing_controller_inventory_is_error(run_check, mock_icurl, fabric_nodes):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username="fake_username",
+        password="fake_password",
+        fabric_nodes=fabric_nodes,
+    )
+
+    assert result.result == script.ERROR
+    assert result.data == [[
+        "N/A",
+        "No APIC controllers were found; factory certificate expiry could not be verified.",
+    ]]
+    assert "Verify APIC cluster and node inventory health" in result.recommended_action
+    assert result.doc_url in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [{faultInst_pre_factory: read_data(dir, "faultInst_F4502.json")}],
+)
+@pytest.mark.parametrize("conn_failure", [True])
+def test_raised_api_fault_takes_precedence_over_ssh_error(run_check, mock_icurl, mock_conn):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username="fake_username",
+        password="fake_password",
+        fabric_nodes=fabric_nodes_ssh,
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [
+        ["F4502", "KeyRing Certificate THD_KEYRING expired"],
+        [
+            "N/A",
+            "APIC 1 (apic1): unable to verify factory certificate - Simulated exception at connect()",
+        ],
+    ]
+    assert "Resolve all certificate conditions" in result.recommended_action
+    assert "could not be verified on all APICs" in result.recommended_action
+    assert result.doc_url in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [{faultInst_pre_factory: []}])
+@pytest.mark.parametrize(
+    "conn_cmds",
+    [{
+        "10.0.0.1": [{
+            "cmd": "date; acidiag verifyapic",
+            "output": "{}\n{}".format(DATE_OUTPUT, VERIFYAPIC_EXPIRED),
+            "exception": None,
+        }],
+        "10.0.0.2": [{
+            "cmd": "date; acidiag verifyapic",
+            "output": "",
+            "exception": RuntimeError("Simulated command failure"),
+        }],
+    }],
+)
+def test_expired_factory_certificate_takes_precedence_over_other_apic_error(
+    run_check, mock_icurl, mock_conn
+):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username="fake_username",
+        password="fake_password",
+        fabric_nodes=fabric_nodes_multi[:2],
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [
+        [
+            "N/A",
+            "APIC 1 (apic1): factory certificate expired on 2024-05-14 20:25:42 UTC",
+        ],
+        [
+            "N/A",
+            "APIC 2 (apic2): unable to verify factory certificate - Simulated command failure",
+        ],
+    ]
+    assert "Resolve all certificate conditions" in result.recommended_action
+    assert "could not be verified on all APICs" in result.recommended_action
+    assert result.doc_url in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [{faultInst_pre_factory: read_data(dir, "faultInst_F4502.json")}],
+)
+def test_raised_fault_takes_precedence_over_missing_controller_inventory(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username="fake_username",
+        password="fake_password",
+        fabric_nodes=[],
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [
+        ["F4502", "KeyRing Certificate THD_KEYRING expired"],
+        [
+            "N/A",
+            "No APIC controllers were found; factory certificate expiry could not be verified.",
+        ],
+    ]
+    assert "Resolve all certificate conditions" in result.recommended_action
+    assert "Verify APIC cluster and node inventory health" in result.recommended_action
+    assert result.doc_url in result.recommended_action
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [{faultInst_pre_factory: read_data(dir, "faultInst_F4501.json")}],
+)
+@pytest.mark.parametrize("conn_failure", [True])
+def test_raised_expiring_fault_takes_precedence_over_ssh_error(run_check, mock_icurl, mock_conn):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username="fake_username",
+        password="fake_password",
+        fabric_nodes=fabric_nodes_ssh,
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [
+        ["F4501", "KeyRing Certificate THD_KEYRING expiring"],
+        [
+            "N/A",
+            "APIC 1 (apic1): unable to verify factory certificate - Simulated exception at connect()",
+        ],
+    ]
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [{faultInst_pre_factory: read_data(dir, "faultInst_F4502.json")}],
+)
+def test_api_only_preserves_expired_certificate_failure(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.1(4a)"),
+        username=None,
+        password=None,
+        fabric_nodes=fabric_nodes_ssh,
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [
+        ["F4502", "KeyRing Certificate THD_KEYRING expired"],
+        [
+            "N/A",
+            "Factory certificate expiry was not checked because SSH credentials are unavailable.",
+        ],
+    ]
+    assert result.doc_url in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [{faultInst: []}])
+def test_api_only_does_not_require_ssh_on_newer_releases(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.1(5e)"),
+        username=None,
+        password=None,
+        fabric_nodes=[],
+    )
+
+    assert result.result == script.PASS
+    assert result.data == []
+    assert result.recommended_action == ""
