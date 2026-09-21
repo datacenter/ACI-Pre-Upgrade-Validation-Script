@@ -19,7 +19,7 @@ eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, expected_result",
+    "icurl_outputs, expected_result, expected_serials",
     # Positive cases, one or both classes return an affected model
     [
         (
@@ -28,6 +28,7 @@ eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 		eqptLC_api: read_data(dir, "eqptLC_POS.json")
 	    },
             script.MANUAL,
+            ["FOC235053QS", "FOC23506V60", "FOC23506V3J", "FOC235053QU", "FOC235053MR", "FDO23260QX5"],
         ),
         (
             {
@@ -35,6 +36,7 @@ eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 		eqptLC_api: read_data(dir, "eqptLC_NEG.json")
 	    },
             script.MANUAL,
+            ["FOC235053QS", "FOC23506V60", "FOC23506V3J", "FOC235053QU", "FOC235053MR"],
         ),
         (
             {
@@ -42,6 +44,7 @@ eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 		eqptLC_api: read_data(dir, "eqptLC_POS.json")
 	    },
             script.MANUAL,
+            ["FDO23260QX5"],
         ),
         # Both classes return empty
         (
@@ -50,9 +53,18 @@ eqptLC_api += '?query-target-filter=eq(eqptLC.model,"N9K-X9732C-EX")'
 		eqptLC_api: read_data(dir, "eqptLC_NEG.json")
 	    },
             script.PASS,
+            [],
         )
     ],
 )
-def test_logic(run_check, mock_icurl, expected_result):
+def test_logic(run_check, mock_icurl, expected_result, expected_serials):
     result = run_check()
     assert result.result == expected_result
+    if expected_result == script.MANUAL:
+        assert "shipped after December 5, 2016 are not affected" in result.recommended_action
+        assert "on or before December 5, 2016" in result.recommended_action
+        assert "contact Cisco TAC" in result.recommended_action
+        assert "V01 Version ID (VID) is only possibly affected" in result.recommended_action
+        assert all(serial in result.recommended_action for serial in expected_serials)
+        assert "chat interface" not in result.recommended_action
+        assert "Serial Number Validation tool" not in result.recommended_action

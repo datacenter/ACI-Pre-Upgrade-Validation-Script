@@ -13,6 +13,13 @@ mgmtRsInBStNode = 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBS
 @pytest.mark.parametrize(
     "icurl_outputs, cversion, tversion, expected_result, expected_data",
     [
+
+        # tversion missing
+        ({}, "5.2(7g)", None, script.MANUAL, []),
+        # cversion missing
+        ({}, None, "5.2(7g)", script.MANUAL, []),
+        # cversion and tversion missing
+        ({}, None, None, script.MANUAL, []),
         # Current version is affected, Target version = 6.0(4c), valid data
         (
             {
@@ -158,6 +165,9 @@ mgmtRsInBStNode = 'mgmtRsInBStNode.json?query-target-filter=and(or(eq(mgmtRsInBS
     ],
 )
 def test_logic(run_check, mock_icurl, cversion, tversion, expected_result, expected_data):
-    result = run_check(cversion=script.AciVersion(cversion), tversion=script.AciVersion(tversion))
+    result = run_check(
+        cversion=script.AciVersion(cversion) if cversion else None,
+        tversion=script.AciVersion(tversion) if tversion else None,
+    )
     assert result.result == expected_result
     assert result.data == expected_data

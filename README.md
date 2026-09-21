@@ -21,3 +21,23 @@ For every check that has been flagged as `FAIL`, a general recommended action ha
 
 [1]: https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/
 [2]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/all/apic-installation-upgrade-downgrade/Cisco-APIC-Installation-Upgrade-Downgrade-Guide.html
+
+# Maintainer Workflows
+
+## Refresh CIMC Release-Note Support
+
+Before preparing a script release, add any new APIC target release, its Cisco
+release-note URL, expected APIC models, and per-model minimum version counts to
+`tools/cimc_release_note_sources.json`, then run:
+
+```sh
+python tools/update_cimc_release_note_support.py
+python tools/update_cimc_release_note_support.py --check
+```
+
+The updater extracts supported CIMC versions by APIC model, ignores deferred
+releases, normalizes Cisco's displayed version format, and rejects incomplete
+or unrecognized model mappings. Legacy entries without model applicability must
+be explicitly listed as ignored in the source configuration. The updater then
+refreshes the generated data embedded in `aci-preupgrade-validation-script.py`.
+Review the generated diff and run the test suite before publishing the script.

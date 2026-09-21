@@ -88,7 +88,7 @@ def ssh_cmds(outputs):
 @pytest.mark.parametrize(
     "icurl_outputs, conn_failure, conn_cmds, cversion, fabric_nodes, expected_result, expected_data",
     [
-        
+
         # ==== cversion >= 6.1(5e): all 8 fault codes, SSH skipped ====
 
         # PASS - no certificate faults
@@ -96,9 +96,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: []
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.PASS,
             [],
@@ -108,8 +108,8 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_F4501.json")
             },
-            False, 
-            {}, 
+            False,
+            {},
             "6.1(5e)",
             [],
             script.FAIL_O,
@@ -122,9 +122,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_F3081.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -136,9 +136,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_F4617.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -164,9 +164,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_multiple_expiring.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -180,9 +180,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_F4502.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -194,9 +194,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_F4503.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -208,9 +208,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_F3082.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -236,9 +236,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_multiple_expired.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -252,9 +252,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_mixed.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.FAIL_O,
             [
@@ -269,9 +269,9 @@ def ssh_cmds(outputs):
             {
                 faultInst: read_data(dir, "faultInst_cleared.json")
             },
-            False, 
-            {}, 
-            "6.1(5e)", 
+            False,
+            {},
+            "6.1(5e)",
             [],
             script.PASS,
             [],
@@ -284,9 +284,9 @@ def ssh_cmds(outputs):
             {
                 faultInst_pre_factory: read_data(dir, "faultInst_F4503.json")
             },
-            False, 
+            False,
             ssh_cmds(VERIFYAPIC_VALID),
-            "6.1(1e)", 
+            "6.1(1e)",
             fabric_nodes_ssh,
             script.FAIL_O,
             [
@@ -298,9 +298,9 @@ def ssh_cmds(outputs):
             {
                 faultInst_keyring_saml: read_data(dir, "faultInst_F4502.json")
             },
-            False, 
+            False,
             ssh_cmds(VERIFYAPIC_VALID),
-            "6.0(4c)", 
+            "6.0(4c)",
             fabric_nodes_ssh,
             script.FAIL_O,
             [
@@ -312,9 +312,9 @@ def ssh_cmds(outputs):
             {
                 faultInst_saml: read_data(dir, "faultInst_F3082.json")
             },
-            False, 
+            False,
             ssh_cmds(VERIFYAPIC_VALID),
-            "5.2(7g)", 
+            "5.2(7g)",
             fabric_nodes_ssh,
             script.FAIL_O,
             [
@@ -324,19 +324,19 @@ def ssh_cmds(outputs):
         # 3.1(2f) <= cversion < 6.0(4c): SAML only, none raised.
         (
             {faultInst_saml: []},
-            False, 
+            False,
             ssh_cmds(VERIFYAPIC_VALID),
-            "5.2(7g)", 
+            "5.2(7g)",
             fabric_nodes_ssh,
             script.PASS,
             [],
         ),
         # ERROR - no applicable fault query and no controller inventory for the factory certificate check.
         (
-            {}, 
-            False, 
-            {}, 
-            "2.3(1a)", 
+            {},
+            False,
+            {},
+            "2.3(1a)",
             [],
             script.ERROR,
             [[
@@ -352,9 +352,9 @@ def ssh_cmds(outputs):
             {
                 faultInst_pre_factory: []
             },
-            False, 
-            ssh_cmds(VERIFYAPIC_VALID), 
-            "6.1(4a)", 
+            False,
+            ssh_cmds(VERIFYAPIC_VALID),
+            "6.1(4a)",
             fabric_nodes_ssh,
             script.PASS,
             [],
@@ -364,9 +364,9 @@ def ssh_cmds(outputs):
             {
                 faultInst_pre_factory: []
             },
-            False, 
-            ssh_cmds(VERIFYAPIC_EXPIRED), 
-            "6.1(4a)", 
+            False,
+            ssh_cmds(VERIFYAPIC_EXPIRED),
+            "6.1(4a)",
             fabric_nodes_ssh,
             script.FAIL_O,
             [
@@ -377,9 +377,9 @@ def ssh_cmds(outputs):
         # FAIL_O - manufacturing certificate expiring within threshold (30 days)
         (
             {faultInst_pre_factory: []},
-            False, 
-            ssh_cmds(VERIFYAPIC_EXPIRING), 
-            "6.1(4a)", 
+            False,
+            ssh_cmds(VERIFYAPIC_EXPIRING),
+            "6.1(4a)",
             fabric_nodes_ssh,
             script.FAIL_O,
             [
@@ -392,9 +392,9 @@ def ssh_cmds(outputs):
             {
                 faultInst_pre_factory: []
             },
-            True, 
-            {}, 
-            "6.1(4a)", 
+            True,
+            {},
+            "6.1(4a)",
             fabric_nodes_ssh,
             script.ERROR,
             [
@@ -452,9 +452,9 @@ def ssh_cmds(outputs):
         # FAIL_O - combined: a raised fault AND an expired manufacturing cert (both reported)
         (
             {faultInst_pre_factory: read_data(dir, "faultInst_F4502.json")},
-            False, 
-            ssh_cmds(VERIFYAPIC_EXPIRED), 
-            "6.1(4a)", 
+            False,
+            ssh_cmds(VERIFYAPIC_EXPIRED),
+            "6.1(4a)",
             fabric_nodes_ssh,
             script.FAIL_O,
             [

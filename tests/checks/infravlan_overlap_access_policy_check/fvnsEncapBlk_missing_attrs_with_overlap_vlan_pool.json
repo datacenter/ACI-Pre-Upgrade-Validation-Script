@@ -1,0 +1,39 @@
+[
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-3000]-to-[vlan-4094]",
+        "role": "external",
+        "from": "vlan-3000",
+        "to": "vlan-4094"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-3001]-to-[vlan-4094]",
+        "role": "external",
+        "from": "",
+        "to": "vlan-4094"
+      }
+    }
+  },
+  {
+    "fvnsEncapBlk": {
+      "attributes": {
+        "allocMode": "static",
+        "annotation": "orchestrator:aci-containers-controller",
+        "rn": "from-[vlan-4000]-to-[vlan-4094]",
+        "role": "external",
+        "from": "vlan-4000",
+        "to": "vlan-4094",
+        "dn": "uni/infra/vlanns-[vlan_pool3]-static/from-[vlan-4000]-to-[vlan-4094]"
+      }
+    }
+  }
+]
