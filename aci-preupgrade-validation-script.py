@@ -7439,7 +7439,7 @@ def collect_factory_certificate_status(username, password, fabric_nodes):
 
     date_format = "%b %d %H:%M:%S %Y"
     current_date_re = re.compile(
-        r'[A-Z][a-z]{2}\s+(?P<mon>[A-Z][a-z]{2})\s+(?P<day>\d+)\s+(?P<time>\d{2}:\d{2}:\d{2})\s+\w+\s+(?P<year>\d{4})'
+        r'(?m)^[ \t\r]*(?P<epoch>\d{9,})[ \t\r]*$'
     )
     cert_expiry_re = re.compile(
         r'notAfter=(?P<date>[A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})'
@@ -7464,7 +7464,7 @@ def collect_factory_certificate_status(username, password, fabric_nodes):
             c.log = LOG_FILE
             c.connect()
 
-            c.cmd("date; acidiag verifyapic")
+            c.cmd("date -u +%s; acidiag verifyapic")
             current_date_match = current_date_re.search(c.output)
             cert_expiry_match = cert_expiry_re.search(c.output)
         except Exception as e:
@@ -7474,10 +7474,10 @@ def collect_factory_certificate_status(username, password, fabric_nodes):
             continue
 
         try:
-            current_date = datetime.strptime(
-                "{mon} {day} {time} {year}".format(**current_date_match.groupdict()), date_format
+            current_date = datetime.utcfromtimestamp(
+                int(current_date_match.group("epoch"))
             )
-        except (AttributeError, ValueError):
+        except (AttributeError, TypeError, ValueError, OverflowError):
             data.append(["N/A",
                          "APIC {} ({}): unable to determine current date".format(controller_id, controller_name)])
             has_error = True

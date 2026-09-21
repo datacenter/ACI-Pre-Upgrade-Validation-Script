@@ -41,7 +41,7 @@ fabric_nodes_multi = [
     {"fabricNode": {"attributes": {"id": "3", "name": "apic3", "role": "controller", "address": "10.0.0.3"}}},
 ]
 
-DATE_OUTPUT = "Wed Jul 15 06:35:30 UTC 2026\nfab-apic#"
+DATE_OUTPUT = "1784097330\nfab-apic#"
 
 VERIFYAPIC_EXPIRED = """\
 openssl_check: Manufacturing certificate details
@@ -57,6 +57,15 @@ openssl_check: Manufacturing certificate details
 issuer=CN=Cisco Manufacturing CA,O=Cisco Systems
 notBefore=Jul  6 19:33:57 2019 GMT
 notAfter=Aug  1 06:57:40 2026 GMT
+openssl_check: passed
+all_checks: passed
+"""
+
+VERIFYAPIC_EXACTLY_30_DAYS = """\
+openssl_check: Manufacturing certificate details
+issuer=CN=Cisco Manufacturing CA,O=Cisco Systems
+notBefore=Jul  6 19:33:57 2019 GMT
+notAfter=Aug 14 06:35:30 2026 GMT
 openssl_check: passed
 all_checks: passed
 """
@@ -77,7 +86,7 @@ def ssh_cmds(outputs):
     return {
         addr: [
             {
-                "cmd": "date; acidiag verifyapic",
+                "cmd": "date -u +%s; acidiag verifyapic",
                 "output": "{}\n{}".format(DATE_OUTPUT, out),
                 "exception": None
             },
@@ -387,6 +396,19 @@ def ssh_cmds(outputs):
                  "APIC 1 (apic1): factory certificate expiring on 2026-08-01 06:57:40 UTC"],
             ],
         ),
+        # FAIL_O - manufacturing certificate expiring exactly at the 30-day threshold
+        (
+            {faultInst_pre_factory: []},
+            False,
+            ssh_cmds(VERIFYAPIC_EXACTLY_30_DAYS),
+            "6.1(4a)",
+            fabric_nodes_ssh,
+            script.FAIL_O,
+            [
+                ["N/A",
+                 "APIC 1 (apic1): factory certificate expiring on 2026-08-14 06:35:30 UTC"],
+            ],
+        ),
         # ERROR - SSH connection failure while verifying manufacturing certificate
         (
             {
@@ -411,7 +433,7 @@ def ssh_cmds(outputs):
             {
                 "10.0.0.1": [
                     {
-                        "cmd": "date; acidiag verifyapic",
+                        "cmd": "date -u +%s; acidiag verifyapic",
                         "output": "BADDATE\nnotAfter=May 14 20:25:42 2024 GMT\n",
                         "exception": None
                     },
@@ -435,8 +457,8 @@ def ssh_cmds(outputs):
             {
                 "10.0.0.1": [
                     {
-                        "cmd": "date; acidiag verifyapic",
-                        "output": "Wed Jul 15 06:35:30 UTC 2026\nopenssl_check: Manufacturing certificate details\n",
+                        "cmd": "date -u +%s; acidiag verifyapic",
+                        "output": "{}\nopenssl_check: Manufacturing certificate details\n".format(DATE_OUTPUT),
                         "exception": None
                     },
                 ]
@@ -659,12 +681,12 @@ def test_raised_api_fault_takes_precedence_over_ssh_error(run_check, mock_icurl,
     "conn_cmds",
     [{
         "10.0.0.1": [{
-            "cmd": "date; acidiag verifyapic",
+            "cmd": "date -u +%s; acidiag verifyapic",
             "output": "{}\n{}".format(DATE_OUTPUT, VERIFYAPIC_EXPIRED),
             "exception": None,
         }],
         "10.0.0.2": [{
-            "cmd": "date; acidiag verifyapic",
+            "cmd": "date -u +%s; acidiag verifyapic",
             "output": "",
             "exception": RuntimeError("Simulated command failure"),
         }],
