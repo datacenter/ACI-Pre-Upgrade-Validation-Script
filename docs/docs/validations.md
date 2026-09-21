@@ -141,6 +141,8 @@ Items                                         | Faults         | This Script    
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
+[Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
+[Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -166,6 +168,8 @@ Items                                         | Faults         | This Script    
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
+[c25]: #preferred-group-shared-service-provider
+[c26]: #host-interface-policy-set-to-auto
 
 ### Defect Condition Checks
 
@@ -199,7 +203,6 @@ Items                                           | Defect       | This Script    
 [Stale pconsRA Object][d26]                     | CSCwp22212   | :warning:{title="Deprecated"} | :no_entry_sign:
 [ISIS DTEPs Byte Size][d27]                     | CSCwp15375   | :white_check_mark: | :no_entry_sign:
 [Policydist configpushShardCont Crash][d28]     | CSCwp95515   | :white_check_mark: | :no_entry_sign:
-[Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: |
 [Auto Firmware Update on Switch Discovery][d29] | CSCwe83941   | :white_check_mark: | :no_entry_sign:
 [Rogue EP Exception List missing on switches][d30] | CSCwp64296   | :white_check_mark: | :no_entry_sign:
 [N9K-C9408 with more than 5 N9K-X9400-16W LEMs][d31] | CSCws82819   | :white_check_mark: | :no_entry_sign:
@@ -210,6 +213,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
+[Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -266,7 +270,7 @@ The script checks the minimum recommended CIMC version for the given APIC model 
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
 
-The APIC 6.1(5) release notes explicitly support multiple CIMC releases on UCS C220/C240 M5 (APIC-L3/M3) and UCS C225 M6 (APIC-L4/M4) that may be older than the image catalog recommendation. The check uses an embedded, model-specific list for those release-note-supported combinations before applying the image catalog recommendation to other CIMC releases.
+The APIC release notes explicitly support multiple model-specific CIMC releases that may be older than the image catalog recommendation. The check uses release-note support data refreshed from Cisco documentation during script release preparation before applying the image catalog recommendation to other CIMC releases. The released validator remains standalone and does not require internet access.
 
 Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
 
@@ -636,84 +640,26 @@ The script performs SSH into each standby Cisco APIC as `rescue-user`, then run 
 
 ### Switch Node `/bootflash` usage
 
-ACI switches mainly have two different faults about the filesystem usage of each partition:
+ACI switches mainly have two different faults related to filesystem usage on each partition:
 
-* **F1820**: A minor level fault for switch partition usage. This is raised when the utilization of the partition exceeds the minor threshold.
+* **F1820**: A minor-level fault raised when partition utilization exceeds the minor threshold.
 
-* **F1821**: A major level fault for switch partition usage. This is raised when the utilization of the partition exceeds the major threshold.
-
-!!! note
-    The threshold for minor and major depends on partitions. The critical one for upgrades is `/bootflash`. The threshold of bootflash is 80% for minor and 90% for major threshold.
-
-On top of this, there is a built-in behavior added to every switch node where it will take action to ensure that the `/bootflash` directory maintains 50% capacity. This is specifically to ensure that switch upgrades are able to successfully transfer and extract the switch image over during an upgrade.
-
-To do this, there is an internal script that is monitoring `/bootflash` usage and, if over 50% usage, it will start removing files to free up the filesystem. Given its aggressiveness, there are some corner case scenarios where this cleanup script could potentially trigger against the switch image it is intending to use, which can result in a switch upgrade booting a switch into the loader prompt given that the boot image was removed from `/bootflash`.
-
-To prevent this, check the `/bootflash` prior to an upgrade and take the necessary steps to understand what is written there and why. Once understood, take the necessary steps to clear up unnecessary `/bootflash` files to ensure there is enough space to prevent the auto-cleanup corner case scenario.
-
-The pre-upgrade validation built into Cisco APIC upgrade workflow monitors the fault F1821, which can capture the high utilization of any partition. When this fault is present, we recommend that you resolve it prior to the upgrade even if the fault is not for bootflash.
-
-The ACI Pre-Upgrade Validation script (this script) focuses on the utilization of bootflash on each switch specifically to see if there are any issues with bootflash where the usage is more than 50%, which might trigger the internal cleanup script.
-
-!!! example "Example of a query used by this script"
-    The script is calculating the bootflash usage using `avail` and `used` in the object `eqptcapacityFSPartition` for each switch.
-    ```
-    f2-apic1# moquery -c eqptcapacityFSPartition -f 'eqptcapacity.FSPartition.path=="/bootflash"'
-    Total Objects shown: 6
-
-    # eqptcapacity.FSPartition
-    name            : bootflash
-    avail           : 7214920
-    childAction     :
-    dn              : topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash
-    memAlert        : normal
-    modTs           : never
-    monPolDn        : uni/fabric/monfab-default
-    path            : /bootflash
-    rn              : fspartition-bootflash
-    status          :
-    used            : 4320184
-    --- omit ---
-    ```
-
-!!! tip
-    Alternatively you can log into a leaf switch CLI, and check `/bootflash` usage `df -h`
-    ```
-    leaf1# df -h
-    Filesystem             Size    Used   Avail   Use%   Mounted on
-    rootfs                 2.5G    935M   1.6G    38%    /bin
-    /dev/sda4               12G    5.7G   4.9G    54%    /bootflash
-    /dev/sda2              4.7G    9.6M   4.4G     1%    /recovery
-    /dev/mapper/map-sda9    11G    5.7G   4.2G    58%    /isan/lib
-    none                   3.0G    602M   2.5G    20%    /dev/shm
-    none                    50M    3.4M    47M     7%    /etc
-    /dev/sda6               56M    1.3M    50M     3%    /mnt/cfg/1
-    /dev/sda5               56M    1.3M    50M     3%    /mnt/cfg/0
-    /dev/sda8               15G    140M    15G     1%    /mnt/ifc/log
-    /dev/sda3              115M     52M    54M    50%    /mnt/pss
-    none                   1.5G    2.3M   1.5G     1%    /tmp
-    none                    50M    240K    50M     1%    /var/log
-    /dev/sda7               12G    1.4G   9.3G    13%    /logflash
-    none                   350M     54M   297M    16%    /var/log/dme/log/dme_logs
-    none                   512M     24M   489M     5%    /var/sysmgr/mem_logs
-    none                    40M    4.0K    40M     1%    /var/sysmgr/startup-cfg
-    none                   500M     0     500M     0%    /volatile
-    ```
+* **F1821**: A major-level fault raised when partition utilization exceeds the major threshold.
 
 !!! note
-    If you suspect that the auto cleanup removed some files within `/bootflash`, you can review a log to validate this:
+    Thresholds vary by partition. For `/bootflash`, the minor threshold is 80% utilization and the major threshold is 90%.
 
-    ```
-    leaf1# egrep "higher|removed" /mnt/pss/core_control.log
-    [2020-07-22 16:52:08.928318] Bootflash Usage is higher than 50%!!
-    [2020-07-22 16:52:08.931990] File: MemoryLog.65%_usage removed !!
-    [2020-07-22 16:52:08.943914] File: mem_log.txt.old.gz removed !!
-    [2020-07-22 16:52:08.955376] File: libmon.logs removed !!
-    [2020-07-22 16:52:08.966686] File: urib_api_log.txt removed !!
-    [2020-07-22 16:52:08.977832] File: disk_log.txt removed !!
-    [2020-07-22 16:52:08.989102] File: mem_log.txt removed !!
-    [2020-07-22 16:52:09.414572] File: aci-n9000-dk9.13.2.1m.bin removed !!
-    ```
+ACI switches also include an internal cleanup process intended to maintain sufficient free `/bootflash` capacity for switch upgrades. When usage exceeds approximately 50%, the process can remove eligible files to make space for transferring and extracting switch images.
+
+The fixed cleanup threshold does not cover every upgrade scenario. Larger target images, files that cannot be removed, and upgrades that cross the ACI 6.0(2) 32-bit/64-bit image boundary can require more free space than the cleanup process normally maintains. Insufficient space can prevent an image from being downloaded or extracted and may cause the switch upgrade to fail.
+
+The ACI Pre-Upgrade Validation script uses APIC API data to compare each switch's available `/bootflash` space with the space required for the target switch release. The requirement is calculated dynamically from the current and target switch images rather than from a fixed utilization percentage.
+
+The calculation generally reserves twice the applicable target image size. This accounts for space used by the downloaded image and additional space needed while the image is extracted. For an upgrade that crosses the 6.0(2) image boundary, the calculation accounts for both the 32-bit and 64-bit target images and the space recovered when the current image is removed.
+
+Switches that have already downloaded the target image are still checked because image extraction and later upgrade stages can require additional space. Because the downloaded image is already reflected in the switch's available-space value, the check evaluates only the remaining space required to complete the upgrade.
+
+If a switch does not have enough available space, the check reports an upgrade failure and displays the available and required space. Remove old, unused switch images to recover space, then run the validation again. Contact Cisco TAC if sufficient space cannot be recovered. If the current switch version, target firmware image, or `/bootflash` information is unavailable, the check reports that a manual review is required.
 
 
 ### APIC SSD Health
@@ -2374,6 +2320,28 @@ See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Gu
 See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
 
 
+### Preferred Group Shared Service Provider
+
+ACI 4.2 and later configurations can be affected by CSCvm63145 and CSCvv51121 when a Preferred Group member provides a tenant- or global-scope shared-service contract to a consumer in another VRF.
+
+The script reports only materialized, cross-VRF provider-to-consumer relationships represented by `vzFromEPg` and `vzToEPg`. A configured provider without such a relationship is not reported. Tenant-scope contracts are considered only when the contract, provider, and consumer belong to the same tenant. Shared/global pcTags `17` through `16385` are treated as fabric-wide identities; VRF separation is determined independently from the context-definition DNs.
+
+Before 6.0(1g), any consumer class in a materialized cross-VRF relationship can be affected. Depending on the release, the forwarding risk can be silent or the contract can be rejected with F0467 and `invalid-contract-config: Shared service provider cannot be in a Preferred Group`.
+
+Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains only when the Preferred Group provider has a materialized relationship with an L3Out or `vzAny` consumer in another VRF. Same-VRF L3Out and `vzAny` relationships are not reported. Starting with 6.1(3f), this condition may be reported through F4684.
+
+Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
+
+
+### Host interface policy set to auto
+As detailed in the [Cisco APIC Basic Configuration Guide][79], for **Interface Speed**, use the default value, `Inherit`.
+With this value, Cisco APIC determines the interface speed based on the transceiver installed in the switch port.
+
+In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
+Changing the speed to "inherit" resolves this situation, which is also a best practice.
+Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
+
+
 ## Defect Check Details
 
 ### EP Announce Compatibility
@@ -2755,15 +2723,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
-### Port Tracking Active Fabric Port Zero
-
-Due to [CSCwp91797][78], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
-
-The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
-
-Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
-
-
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2880,6 +2839,14 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+### Port Tracking Active Fabric Port Zero
+
+Due to [CSCwp91797][80], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
+
+The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
+
+Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2957,4 +2924,6 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
-[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
+[79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
+[80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797

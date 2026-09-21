@@ -1,0 +1,10 @@
+[
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-102/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-103/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-2/node-205/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-2/node-206/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-1002/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-1001/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-2/node-2001/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}},
+  {"maintUpgJob": {"attributes": {"dn": "topology/pod-1/node-101/sys/maintupgjob", "dnldStatus": "downloaded", "dnldPercent": "100"}}}
+]
