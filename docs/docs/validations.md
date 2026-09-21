@@ -2847,6 +2847,16 @@ The confirmed affected target releases checked by this validation are 6.0(9d) an
 
 Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
 
+
+### FX3 Breakout Port Transceiver and Fec mode Compatibility Check
+
+Due to bug [CSCww67193][81], the following issue occurs on YC-FX3/TC-FX3 leaf switches, downlink converted ports 49-52 support 4x breakout. If these ports are populated with a CISCO-INNOLIGHT QSFP-100G-SR4 or QSFP-100G-AOC transceiver, the interface is administratively up (`adminSt: up`), and FEC is enabled on that interface, the first breakout sub-interface (`brkoutport-1`) may fail to come back up after the leaf reboots during the upgrade.
+
+This affects upgrades from a current version older than 5.2(8h) to a target version newer than 5.3(1a) that is either older than 6.1(6a), or exactly 6.2(1g).
+
+The script reports the first breakout sub-interface (`brkoutport-1`) of the affected port. Before upgrading, disable FEC on the affected interface(s) on both sides to keep the link up or Contact Cisco TAC for guidance.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
