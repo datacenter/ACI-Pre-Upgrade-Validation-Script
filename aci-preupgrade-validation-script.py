@@ -6153,7 +6153,7 @@ def isis_database_byte_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-# Subprocess check - ls + cat + acidiag
+# Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
 def apic_database_size_check(cversion, **kwargs):
     result = PASS
@@ -6181,16 +6181,6 @@ def apic_database_size_check(cversion, **kwargs):
         apic_id_to_name = {"2": apic_id_to_name["2"]}
 
     if cversion.older_than("6.1(3a)"):
-        # Populate the dynamic /debug namespace before reading legacy counter files.
-        try:
-            run_cmd('/bin/ls /debug >/dev/null 2>&1', splitlines=False)
-        except subprocess.CalledProcessError as error:
-            # Keep the preflight best-effort; per-file reads remain authoritative.
-            log.warning(
-                'Unable to initialize /debug before APIC database collection: %s',
-                error,
-            )
-
         for dme in dme_svc_list:
             for id in apic_id_to_name:
                 apic_hostname = apic_id_to_name[id]
