@@ -213,6 +213,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
+[Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -252,6 +253,7 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
+[d39]: #port-tracking-active-fabric-port-zero
 
 ## General Check Details
 
@@ -2721,7 +2723,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
-
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2838,6 +2839,14 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+### Port Tracking Active Fabric Port Zero
+
+Due to [CSCwp91797][80], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
+
+The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
+
+Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2917,3 +2926,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
 [79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
+[80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
