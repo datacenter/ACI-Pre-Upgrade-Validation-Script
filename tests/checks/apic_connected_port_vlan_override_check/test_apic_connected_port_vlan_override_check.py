@@ -5,15 +5,26 @@ import pytest
 
 script = importlib.import_module("aci-preupgrade-validation-script")
 
-test_function = "port_configured_for_apic_check"
+test_function = "apic_connected_port_vlan_override_check"
 
-fault_api = 'faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"port-configured-for-apic")'
+lldp_inst_api = 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")'
 controller_adjacency_api = 'lldpCtrlrAdjEp.json'
 path_attachment_api = 'fvRsPathAtt.json'
 
 APIC_PORT = ("1", "101", "eth1/1")
 EPG_DN = "uni/tn-example/ap-app/epg-web"
 PATH_ATTACHMENT_DN = EPG_DN + "/rspathAtt-[topology/pod-1/paths-101/pathep-[eth1/1]]"
+
+
+def lldp_inst(infra_vlan="vlan-3967"):
+    return {
+        "lldpInst": {
+            "attributes": {
+                "dn": "topology/pod-1/node-1/sys/lldp/inst",
+                "infraVlan": infra_vlan,
+            }
+        }
+    }
 
 
 def controller_adjacency(pod="1", node="101", port="eth1/1"):
@@ -39,41 +50,21 @@ def path_attachment(dn=PATH_ATTACHMENT_DN, tdn="topology/pod-1/paths-101/pathep-
     }
 
 
-def apic_fault():
-    return {
-        "faultInst": {
-            "attributes": {
-                "code": "F0467",
-                "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[{}]/node-101/stpathatt-[eth1/1]/nwissues/fault-F0467".format(EPG_DN),
-            }
-        }
-    }
-
-
 @pytest.mark.parametrize(
     "icurl_outputs, expected_result, expected_data",
     [
         (
             {
-                fault_api: [],
+                lldp_inst_api: [lldp_inst()],
                 controller_adjacency_api: [controller_adjacency()],
                 path_attachment_api: [path_attachment()],
             },
             script.FAIL_UF,
-            [["Tenant static path attachment", *APIC_PORT, EPG_DN, "vlan-3967", PATH_ATTACHMENT_DN]],
+            [[*APIC_PORT, EPG_DN, "vlan-3967", "3967", PATH_ATTACHMENT_DN]],
         ),
         (
             {
-                fault_api: [apic_fault()],
-                controller_adjacency_api: [controller_adjacency()],
-                path_attachment_api: [path_attachment()],
-            },
-            script.FAIL_UF,
-            [["F0467", *APIC_PORT, EPG_DN, "vlan-3967", PATH_ATTACHMENT_DN]],
-        ),
-        (
-            {
-                fault_api: [],
+                lldp_inst_api: [lldp_inst()],
                 controller_adjacency_api: [controller_adjacency()],
                 path_attachment_api: [path_attachment(tdn="topology/pod-1/paths-102/pathep-[eth1/1]")],
             },
@@ -87,4 +78,12 @@ def test_logic(run_check, mock_icurl, icurl_outputs, expected_result, expected_d
 
     assert result.result == expected_result
     assert result.data == expected_data
-    assert result.headers == ["Finding", "Pod", "Node", "Port", "EPG", "VLAN", "Configuration DN"]
+    assert result.headers == ["Pod", "Node", "Port", "EPG", "Configured VLAN", "InfraVLAN", "Configuration DN"]
+
+
+@pytest.mark.parametrize("icurl_outputs", [{lldp_inst_api: []}])
+def test_returns_error_when_infravlan_cannot_be_determined(run_check, mock_icurl, icurl_outputs):
+    result = run_check()
+
+    assert result.result == script.ERROR
+    assert result.msg == "Unable to determine InfraVLAN from lldpInst."

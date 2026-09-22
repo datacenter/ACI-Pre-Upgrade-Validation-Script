@@ -70,7 +70,7 @@ Items                                         | Faults         | This Script    
 [Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4)
 [APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1)
 [Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1)
-[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic<br>CSCwn64461 | :white_check_mark: | :white_check_mark: 6.0(1g)
+[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g)
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:
@@ -209,6 +209,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
+[APIC Connected Port VLAN Override][d39]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -248,6 +249,7 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
+[d39]: #apic-connected-port-vlan-override
 
 ## General Check Details
 
@@ -826,10 +828,6 @@ To confirm if this is genuine or false alarm, run the SSD Lifetime Validation sc
 ### Config On APIC Connected Port
 
 In a healthy ACI deployment, there should be no EPG or policy deployment pushed to any interfaces where a Cisco APIC is connected. When a Cisco APIC is connected to a leaf switch, LLDP validation occurs between the Cisco APIC and the leaf switch to allow it into the fabric without any configuration by the user. When a policy is pushed to a leaf switch interface that is connected to a Cisco APIC, that configuration will be denied and a fault will be raised. However, if the link to the Cisco APIC flaps for any reason, primarily during an upgrade when the Cisco APIC reboots, the policy can then be deployed to that leaf switch interface. This results in the Cisco APIC being blocked from re-joining the fabric after it has reloaded.
-
-This validation addresses CSCwn64461. In addition to the `F0467` `port-configured-for-apic` fault, it correlates current APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. This proactively reports a tenant policy on an APIC-connected port even when the fault is not currently raised. The reported configuration DN and VLAN identify the policy that must be removed.
-
-This is separate from the **InfraVLAN Overlap in Access Policy VLAN Pools** validation for CSCwt58626, which detects an InfraVLAN inside an external VLAN-pool range and the related F4701/new-EPG association condition.
 
 It is critical that you resolve these issues before the upgrade to prevent any issues. You can run the moquery below on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well.
 
@@ -2874,6 +2872,15 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+
+### APIC Connected Port VLAN Override
+
+[CSCwn64461][78] concerns user VLAN configuration overriding the InfraVLAN on a leaf port connected to an APIC. This validation correlates live APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. It reports the configured VLAN, the fabric InfraVLAN, and the configuration DN for each attachment found on an APIC-connected port.
+
+This is a configuration validation for CSCwn64461, not the `F0467` `port-configured-for-apic` fault validation. It can identify the configuration while the fault is absent. Remove the listed tenant static EPG path attachment before the upgrade.
+
+This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2951,3 +2958,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461

@@ -2892,35 +2892,60 @@ def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
 @check_wrapper(check_title="Config On APIC Connected Port (F0467 port-configured-for-apic)")
 def port_configured_for_apic_check(**kwargs):
     result = FAIL_UF
-    headers = ["Finding", "Pod", "Node", "Port", "EPG", "VLAN", "Configuration DN"]
+    headers = ["Fault", "Pod", "Node", "Port", "EPG"]
     data = []
     unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
-    recommended_action = 'Remove tenant policy configuration from APIC Connected Interfaces'
+    recommended_action = 'Remove config overlapping with APIC Connected Interfaces'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#config-on-apic-connected-port"
 
     dn_regex = node_regex + r'/.+fv-\[(?P<epg>.+)\]/node-\d{3,4}/.+\[(?P<port>eth\d{1,2}/\d{1,2}).+/nwissues'
-    controller_adj_dn_regex = node_regex + r'/sys/lldp/inst/if-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
-    path_dn_regex = r'topology/pod-(?P<pod>\d+)/paths-(?P<node>\d+)/pathep-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
-    epg_dn_regex = r'^(?P<epg>uni/tn-[^/]+/ap-[^/]+/epg-[^/]+)/rspathAtt-'
-    findings_by_key = {}
-
     faultInsts = icurl('class',
                        'faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"port-configured-for-apic")')
     for faultInst in faultInsts:
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         if dn:
-            row = [fc, dn.group("pod"), dn.group("node"), dn.group("port"), dn.group("epg"), '-', '-']
-            findings_by_key[tuple(row[1:5])] = len(data)
-            data.append(row)
+            data.append([fc, dn.group("pod"), dn.group("node"), dn.group("port"), dn.group("epg")])
         else:
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
+    if not data and not unformatted_data:
+        result = PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
-    # CSCwn64461 can be avoided proactively by finding tenant static path
-    # attachments on interfaces currently connected to an APIC.  The existing
-    # F0467 fault remains the primary signal; this correlation also covers a
-    # policy that is present before the fault is raised.
+
+@check_wrapper(check_title="APIC Connected Port VLAN Override (CSCwn64461)")
+def apic_connected_port_vlan_override_check(**kwargs):
+    result = FAIL_UF
+    headers = ["Pod", "Node", "Port", "EPG", "Configured VLAN", "InfraVLAN", "Configuration DN"]
+    data = []
+    recommended_action = 'Remove tenant static EPG path attachments from APIC Connected Interfaces'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-connected-port-vlan-override"
+
+    controller_adj_dn_regex = node_regex + r'/sys/lldp/inst/if-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
+    path_dn_regex = r'topology/pod-(?P<pod>\d+)/paths-(?P<node>\d+)/pathep-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
+    epg_dn_regex = r'^(?P<epg>uni/tn-[^/]+/ap-[^/]+/epg-[^/]+)/rspathAtt-'
+
+    infra_vlan = None
+    lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
+    for lldpInst in lldpInsts:
+        infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
+        match = re.search(r'\d+', str(infra_vlan_id)) if infra_vlan_id else None
+        if match:
+            infra_vlan = match.group(0)
+            break
+
+    if infra_vlan is None:
+        return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
+
     apic_ports = set()
     for adjacency in icurl('class', 'lldpCtrlrAdjEp.json'):
         adj_attr = adjacency.get('lldpCtrlrAdjEp', {}).get('attributes', {})
@@ -2941,34 +2966,19 @@ def port_configured_for_apic_check(**kwargs):
             if port_key not in apic_ports:
                 continue
 
-            finding_key = port_key + (epg_dn.group('epg'),)
-            encap = path_attr.get('encap') or '-'
-            if finding_key in findings_by_key:
-                row = data[findings_by_key[finding_key]]
-                row[5] = encap
-                row[6] = config_dn
-            else:
-                data.append([
-                    'Tenant static path attachment',
-                    path_dn.group('pod'),
-                    path_dn.group('node'),
-                    path_dn.group('port'),
-                    epg_dn.group('epg'),
-                    encap,
-                    config_dn,
-                ])
+            data.append([
+                path_dn.group('pod'),
+                path_dn.group('node'),
+                path_dn.group('port'),
+                epg_dn.group('epg'),
+                path_attr.get('encap') or '-',
+                infra_vlan,
+                config_dn,
+            ])
 
-    if not data and not unformatted_data:
+    if not data:
         result = PASS
-    return Result(
-        result=result,
-        headers=headers,
-        data=data,
-        unformatted_headers=unformatted_headers,
-        unformatted_data=unformatted_data,
-        recommended_action=recommended_action,
-        doc_url=doc_url,
-    )
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 @check_wrapper(check_title="Overlapping VLAN Pools")
@@ -7216,6 +7226,7 @@ class CheckManager:
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,
+        apic_connected_port_vlan_override_check,
         
     ]
     ssh_checks = [
