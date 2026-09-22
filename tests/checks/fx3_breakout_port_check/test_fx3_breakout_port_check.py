@@ -47,6 +47,59 @@ def l1physif_query(legs):
     ).format(dn_filter)
 
 
+def make_batch_test_case():
+    """5 nodes x ports 49-52 = 20 legs, which exceeds the check's 18-legs-per-batch
+    limit and forces the l1PhysIf query to be issued in 2 separate batches."""
+    node_ids = [201, 202, 203, 204, 205]
+    ports = ["49", "50", "51", "52"]
+    legs = [(nid, port) for nid in node_ids for port in ports]
+
+    fabric_nodes = [
+        {"fabricNode": {"attributes": {"id": str(nid), "name": "leaf{}".format(nid), "model": "N9K-C93180YC-FX3"}}}
+        for nid in node_ids
+    ]
+    eqptBrkoutPs = [
+        {"eqptBrkoutP": {"attributes": {
+            "dn": "topology/pod-1/node-{}/sys/ch/lcslot-1/lc/leafport-{}/brkoutport-1".format(nid, port),
+        }}}
+        for nid, port in legs
+    ]
+    ethpmFcots = [
+        {"ethpmFcot": {"attributes": {
+            "dn": "topology/pod-1/node-{}/sys/phys-[eth1/{}/1]/phys/fcot".format(nid, port),
+            "guiName": "CISCO-INNOLIGHT", "guiCiscoEID": "QSFP-100G-SR4",
+        }}}
+        for nid, port in legs
+    ]
+
+    l1_legs = [(1, nid, "eth1/{}/1".format(port)) for nid, port in legs]
+    batch1, batch2 = l1_legs[:18], l1_legs[18:]
+
+    def l1physif_entries(batch):
+        return [
+            {"l1PhysIf": {"attributes": {
+                "dn": "topology/pod-{}/node-{}/sys/phys-[{}]".format(pod, nid, intf),
+                "fecMode": "cl91-fec",
+            }}}
+            for pod, nid, intf in batch
+        ]
+
+    icurl_outputs = {
+        BRKOUT_QUERY: eqptBrkoutPs,
+        FCOT_QUERY: ethpmFcots,
+        l1physif_query(batch1): l1physif_entries(batch1),
+        l1physif_query(batch2): l1physif_entries(batch2),
+    }
+    expected_data = [
+        ["1", str(nid), "leaf{}".format(nid), "N9K-C93180YC-FX3", "eth1/{}/1".format(port), "QSFP-100G-SR4", "cl91-fec"]
+        for nid, port in legs
+    ]
+    return fabric_nodes, icurl_outputs, expected_data
+
+
+BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case()
+
+
 @pytest.mark.parametrize(
     "cversion, tversion, fabric_nodes, icurl_outputs, expected_result, expected_msg, expected_data",
     [
@@ -173,6 +226,14 @@ def l1physif_query(legs):
                 ["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/51/1", "QSFP-100G-AOC3M", "cl74-fec"],
                 ["1", "102", "leaf102", "N9K-C93108TC-FX3", "eth1/50/1", "QSFP-100G-SR4", "cl91-fec"],
             ],
+        ),
+        # 20 legs (5 nodes x ports 49-52) exceeds the 18-legs-per-batch limit,
+        # so the l1PhysIf query is issued in 2 batches; results must still merge correctly.
+        (
+            "5.2(8g)", "5.3(2a)",
+            BATCH_FX3_NODES,
+            BATCH_ICURL_OUTPUTS,
+            script.FAIL_O, FAIL_MSG, BATCH_EXPECTED_DATA,
         ),
     ],
 )

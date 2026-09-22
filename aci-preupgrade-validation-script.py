@@ -7423,11 +7423,11 @@ def host_interface_policy_set_speed_check(tversion, **kwargs):
 def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
     result = PASS
     msg = ''
-    headers = ["Pod-ID", "Node-ID", "Node Name", "Model", "Breakout Port", "Transceiver (guiCiscoEID)", "FEC Mode"]
+    headers = ["Pod-ID", "Node-ID", "Node Name", "Model", "Breakout Port", "Transceiver", "FEC Mode"]
     data = []
     recommended_action = (
-        'Disable FEC (fecMode: disable-fec) on the affected breakout interface(s), or replace the transceiver, '
-        'prior to upgrade to avoid an outage during the leaf upgrade. Contact Cisco TAC for guidance.'
+        'Disable FEC (fecMode: disable-fec) on the highlighted breakout interface(s) to avoid an outage during '
+        'the leaf upgrade or choose target code where bug is fixed. '
     )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fx3-breakout-port-transceiver-and-fec-mode-compatibility-check'
 
@@ -7460,7 +7460,7 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
     # {node_id: set of breakout-enabled ports (49-52) found on that FX3 node}
     brkout_ports_per_node = defaultdict(set)
     for brkout in eqptBrkoutPs:
-        dn = brkout['eqptBrkoutP']['attributes']['dn']
+        dn = brkout['eqptBrkoutP']['attributes'].get('dn', '')
         m = re.search(brkout_regex, dn)
         if not m or m.group('node') not in fx3_nodes or m.group('port') not in brkout_ports_of_interest:
             continue
@@ -7485,7 +7485,7 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
     ethpmFcots = icurl('class', fcot_api)
     for fcot in ethpmFcots:
         attrs = fcot['ethpmFcot']['attributes']
-        m = re.search(fcot_regex, attrs['dn'])
+        m = re.search(fcot_regex, attrs.get('dn', ''))
         if not m:
             continue
         node_id = m.group('node')
@@ -7505,20 +7505,25 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
         return Result(result=PASS, msg='No affected breakout transceivers found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
 
     # Only flag interfaces that are admin up with FEC not disabled; use the exact
-    # dn of each candidate interface (collected above) to keep this query targeted
-    # instead of pulling every l1PhysIf in the fabric.
-    dn_filter = ','.join(
-        'eq(l1PhysIf.dn,"{}")'.format(l1physif_dn(leg["pod"], node_id, leg["intf"]))
-        for (node_id, port), leg in first_leg_per_port.items()
-    )
-    l1physif_api = (
-        'l1PhysIf.json?query-target-filter=and(ne(l1PhysIf.fecMode,"disable-fec"),'
-        'eq(l1PhysIf.adminSt,"up"),or({}))'
-    ).format(dn_filter)
-    fec_mode_by_dn = {
-        l1['l1PhysIf']['attributes']['dn']: l1['l1PhysIf']['attributes']['fecMode']
-        for l1 in icurl('class', l1physif_api)
-    }
+    # instead of pulling every l1PhysIf in the fabric. APIC enforces a max of 20 filter expressions per query-target-filter
+    # filters to stay safely under that limit.
+    max_dn_filters_per_batch = 18
+    legs = list(first_leg_per_port.items())
+    fec_mode_by_dn = {}
+    for i in range(0, len(legs), max_dn_filters_per_batch):
+        batch = legs[i:i + max_dn_filters_per_batch]
+        dn_filter = ','.join(
+            'eq(l1PhysIf.dn,"{}")'.format(l1physif_dn(leg["pod"], node_id, leg["intf"]))
+            for (node_id, port), leg in batch
+        )
+        l1physif_api = (
+            'l1PhysIf.json?query-target-filter=and(ne(l1PhysIf.fecMode,"disable-fec"),'
+            'eq(l1PhysIf.adminSt,"up"),or({}))'
+        ).format(dn_filter)
+        fec_mode_by_dn.update({
+            l1['l1PhysIf']['attributes']['dn']: l1['l1PhysIf']['attributes']['fecMode']
+            for l1 in icurl('class', l1physif_api)
+        })
 
     for (node_id, port), leg in first_leg_per_port.items():
         dn = l1physif_dn(leg["pod"], node_id, leg["intf"])
