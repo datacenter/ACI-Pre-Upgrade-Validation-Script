@@ -214,6 +214,7 @@ Items                                           | Defect       | This Script    
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
+[FX3 Breakout Port Transceiver and Fec mode Compatibility Check][d40] |  CSCww67193  | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -254,6 +255,7 @@ Items                                           | Defect       | This Script    
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
 [d39]: #port-tracking-active-fabric-port-zero
+[d40]: #fx3-breakout-port-transceiver-and-fec-mode-compatibility-check
 
 ## General Check Details
 
@@ -2839,6 +2841,7 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+
 ### Port Tracking Active Fabric Port Zero
 
 Due to [CSCwp91797][80], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
@@ -2937,3 +2940,4 @@ The script reports the first breakout sub-interface (`brkoutport-1`) of the affe
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
 [79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCww67193
