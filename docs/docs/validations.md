@@ -88,6 +88,7 @@ Items                                         | Faults         | This Script    
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 [APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
 [Switch RTC Battery Voltage][f23]              | F2421: RTC battery voltage is low | :white_check_mark: | :no_entry_sign:
+[Certificate Expiration Check][f24]            | F4501/F4502: KeyRing expiring/expired<br>F4617/F4503: TP expiring/expired<br>F3081/F3082: SAML expiring/expired<br>F4752/F4753: Factory expiring/expired | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -112,6 +113,7 @@ Items                                         | Faults         | This Script    
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
 [f23]: #switch-rtc-battery-voltage
+[f24]: #certificate-expiration-check
 
 ### Configuration Checks
 
@@ -1604,6 +1606,106 @@ To recover from this fault, try the following action
 This check detects active F2421 equipment diagnostic faults whose reason is `The RTC battery voltage is low`. The RTC battery maintains the switch system clock while the switch is powered off. If the battery voltage is low, a power cycle during an upgrade can reset the clock and prevent certificate validation, which can stop the switch from rejoining the fabric.
 
 The RTC battery should be replaced before upgrading or power cycling an affected switch. Contact Cisco TAC to coordinate replacement and confirm that the fault has cleared.
+
+
+### Certificate Expiration Check
+
+ACI uses various X.509 certificates for security and authentication purposes. If these certificates expire or are about to expire, it can cause service disruptions or failures. The fabric will raise different faults depending on the certificate type.
+
+**Certificates Approaching Expiry:**
+
+* **F4501**: KeyRing X.509 Certificate expiring - This fault occurs when a custom KeyRing X.509 Certificate is going to expire in one month.
+
+* **F3081**: SAML X.509 Certificate expiring - This fault occurs when the SAML X.509 Certificate is going to expire in one month.
+
+* **F4617**: TP X.509 Certificate expiring - This fault occurs when a Trust Point X.509 Certificate is expiring.
+
+* **F4752**: Factory X.509 Certificate expiring - This fault occurs when the factory Certificate is expiring.
+
+
+**Expired Certificates:**
+
+* **F4502**: KeyRing X.509 Certificate expired - This fault occurs when a custom KeyRing X.509 Certificate has expired.
+
+* **F4503**: TP X.509 Certificate expired - This fault occurs when a Trust Point X.509 Certificate has expired.
+
+* **F3082**: SAML X.509 Certificate expired - This fault occurs when the SAML Encryption X.509 Certificate has expired.
+
+* **F4753**: Factory X.509 Certificate expired - This fault occurs when the factory Certificate has expired.
+
+
+**Recommended Actions:**
+
+Any certificate fault listed above is upgrade-blocking whenever its lifecycle contains `raised`. This includes compound lifecycle values such as `raised,soaking`; `soaking` by itself does not indicate a live fault. Resolve every live certificate fault before starting the upgrade.
+
+* For expiring certificates (F4501, F3081, F4617, F4752): Renew the certificate(s) before they expire to avoid service disruption.
+
+* For expired certificates (F4502, F4503, F3082, F4753): Renew the certificate(s) immediately to restore functionality.
+
+#### Manually verify factory certificates in API-only mode
+
+On APIC releases earlier than 6.1(5e), the F4752 and F4753 factory-certificate faults are not available. The script normally connects to each APIC over SSH and checks the factory certificate directly. When the script is run with `--api-only`, SSH credentials are unavailable, so the check reports `MANUAL` instead of treating the unevaluated certificate as a pass.
+
+If the check reports that no APIC controllers were found, verify the APIC cluster and node inventory health, then rerun the validation. If the inventory cannot be restored, manually identify and check every APIC using the procedure below; do not treat the result as a pass.
+
+To verify the factory certificate manually:
+
+1. Connect to each APIC controller over SSH. Every controller must be checked independently.
+2. Run the following commands:
+
+    ```bash
+    date -u
+    acidiag verifyapic
+    ```
+
+3. In the `Manufacturing certificate details` section, locate the `notAfter` value. For example:
+
+    ```text
+    openssl_check: Manufacturing certificate details
+    notAfter=Aug  1 06:57:40 2026 GMT
+    ```
+
+4. Compare `notAfter` with the UTC date reported by the same APIC:
+
+    * If `notAfter` has passed, the factory certificate is expired. Renew it immediately before the upgrade.
+    * If `notAfter` is within the next 30 days, the factory certificate is expiring. Renew it before starting the upgrade.
+    * If `notAfter` is more than 30 days away, the factory certificate is valid for this check.
+
+5. Repeat the procedure on every APIC. A valid certificate on one controller does not validate the other controllers.
+
+If `acidiag verifyapic` fails, or its output does not contain a readable `notAfter` value, consider the factory certificate unverified. Re-run the script with SSH credentials or resolve the command/output issue before the upgrade; do not treat the result as a pass.
+
+If a certificate requiring action is found while another APIC cannot be verified, the overall result remains `FAIL - OUTAGE WARNING!!`. Resolve the confirmed certificate condition and manually verify every APIC that reported an error.
+
+!!! example "Fault Example (F4502: Expired KeyRing Certificate)"
+    The following shows an example of an expired KeyRing certificate:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4502"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F4502
+    cause            : cert-expired
+    descr            : KeyRing Certificate THD_KEYRING expired
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4502
+    lc               : raised
+    rule             : pki-key-ring-custom-key-ring-expired
+    ```
+
+!!! example "Fault Example (F4501: Expiring KeyRing Certificate)"
+    The following shows an example of a KeyRing certificate expiring in one month:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4501"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F4501
+    cause            : cert-expiring
+    descr            : KeyRing Certificate THD_KEYRING expiring in one month
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4501
+    lc               : raised
+    rule             : pki-key-ring-custom-key-ring-expiring
+    ```
 
 
 ## Configuration Check Details
