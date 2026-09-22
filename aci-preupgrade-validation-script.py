@@ -7481,7 +7481,9 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
 
     # All breakout sub-interfaces of the same physical port report the same
     # transceiver, so keep only the lowest sub-port (brkoutport-1) per port.
-    first_leg_per_port = {}  # (node_id, port) -> {"subport", "pod", "intf", "gui_cisco_eid"}
+    # OrderedDict keeps insertion order deterministic on Python 2.7 as well,
+    # which matters since the order determines how legs are split into batches.
+    first_leg_per_port = OrderedDict()  # (node_id, port) -> {"subport", "pod", "intf", "gui_cisco_eid"}
     ethpmFcots = icurl('class', fcot_api)
     for fcot in ethpmFcots:
         attrs = fcot['ethpmFcot']['attributes']
