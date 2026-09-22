@@ -70,7 +70,7 @@ Items                                         | Faults         | This Script    
 [Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4)
 [APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1)
 [Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1)
-[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g)
+[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic<br>CSCwn64461 | :white_check_mark: | :white_check_mark: 6.0(1g)
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:
@@ -826,6 +826,10 @@ To confirm if this is genuine or false alarm, run the SSD Lifetime Validation sc
 ### Config On APIC Connected Port
 
 In a healthy ACI deployment, there should be no EPG or policy deployment pushed to any interfaces where a Cisco APIC is connected. When a Cisco APIC is connected to a leaf switch, LLDP validation occurs between the Cisco APIC and the leaf switch to allow it into the fabric without any configuration by the user. When a policy is pushed to a leaf switch interface that is connected to a Cisco APIC, that configuration will be denied and a fault will be raised. However, if the link to the Cisco APIC flaps for any reason, primarily during an upgrade when the Cisco APIC reboots, the policy can then be deployed to that leaf switch interface. This results in the Cisco APIC being blocked from re-joining the fabric after it has reloaded.
+
+This validation addresses CSCwn64461. In addition to the `F0467` `port-configured-for-apic` fault, it correlates current APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. This proactively reports a tenant policy on an APIC-connected port even when the fault is not currently raised. The reported configuration DN and VLAN identify the policy that must be removed.
+
+This is separate from the **InfraVLAN Overlap in Access Policy VLAN Pools** validation for CSCwt58626, which detects an InfraVLAN inside an external VLAN-pool range and the related F4701/new-EPG association condition.
 
 It is critical that you resolve these issues before the upgrade to prevent any issues. You can run the moquery below on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well.
 

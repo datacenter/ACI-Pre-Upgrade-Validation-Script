@@ -2892,23 +2892,72 @@ def apic_ssd_check(cversion, username, password, fabric_nodes, **kwargs):
 @check_wrapper(check_title="Config On APIC Connected Port (F0467 port-configured-for-apic)")
 def port_configured_for_apic_check(**kwargs):
     result = FAIL_UF
-    headers = ["Fault", "Pod", "Node", "Port", "EPG"]
+    headers = ["Finding", "Pod", "Node", "Port", "EPG", "VLAN", "Configuration DN"]
     data = []
     unformatted_headers = ['Fault', 'Fault DN']
     unformatted_data = []
-    recommended_action = 'Remove config overlapping with APIC Connected Interfaces'
+    recommended_action = 'Remove tenant policy configuration from APIC Connected Interfaces'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#config-on-apic-connected-port"
 
     dn_regex = node_regex + r'/.+fv-\[(?P<epg>.+)\]/node-\d{3,4}/.+\[(?P<port>eth\d{1,2}/\d{1,2}).+/nwissues'
+    controller_adj_dn_regex = node_regex + r'/sys/lldp/inst/if-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
+    path_dn_regex = r'topology/pod-(?P<pod>\d+)/paths-(?P<node>\d+)/pathep-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
+    epg_dn_regex = r'^(?P<epg>uni/tn-[^/]+/ap-[^/]+/epg-[^/]+)/rspathAtt-'
+    findings_by_key = {}
+
     faultInsts = icurl('class',
                        'faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"port-configured-for-apic")')
     for faultInst in faultInsts:
         fc = faultInst['faultInst']['attributes']['code']
         dn = re.search(dn_regex, faultInst['faultInst']['attributes']['dn'])
         if dn:
-            data.append([fc, dn.group("pod"), dn.group("node"), dn.group("port"), dn.group("epg")])
+            row = [fc, dn.group("pod"), dn.group("node"), dn.group("port"), dn.group("epg"), '-', '-']
+            findings_by_key[tuple(row[1:5])] = len(data)
+            data.append(row)
         else:
             unformatted_data.append([fc, faultInst['faultInst']['attributes']['dn']])
+
+    # CSCwn64461 can be avoided proactively by finding tenant static path
+    # attachments on interfaces currently connected to an APIC.  The existing
+    # F0467 fault remains the primary signal; this correlation also covers a
+    # policy that is present before the fault is raised.
+    apic_ports = set()
+    for adjacency in icurl('class', 'lldpCtrlrAdjEp.json'):
+        adj_attr = adjacency.get('lldpCtrlrAdjEp', {}).get('attributes', {})
+        adj_dn = re.search(controller_adj_dn_regex, adj_attr.get('dn', ''))
+        if adj_dn:
+            apic_ports.add((adj_dn.group('pod'), adj_dn.group('node'), adj_dn.group('port')))
+
+    if apic_ports:
+        for path_attachment in icurl('class', 'fvRsPathAtt.json'):
+            path_attr = path_attachment.get('fvRsPathAtt', {}).get('attributes', {})
+            config_dn = path_attr.get('dn', '')
+            epg_dn = re.search(epg_dn_regex, config_dn)
+            path_dn = re.search(path_dn_regex, path_attr.get('tDn', ''))
+            if not epg_dn or not path_dn:
+                continue
+
+            port_key = (path_dn.group('pod'), path_dn.group('node'), path_dn.group('port'))
+            if port_key not in apic_ports:
+                continue
+
+            finding_key = port_key + (epg_dn.group('epg'),)
+            encap = path_attr.get('encap') or '-'
+            if finding_key in findings_by_key:
+                row = data[findings_by_key[finding_key]]
+                row[5] = encap
+                row[6] = config_dn
+            else:
+                data.append([
+                    'Tenant static path attachment',
+                    path_dn.group('pod'),
+                    path_dn.group('node'),
+                    path_dn.group('port'),
+                    epg_dn.group('epg'),
+                    encap,
+                    config_dn,
+                ])
+
     if not data and not unformatted_data:
         result = PASS
     return Result(
