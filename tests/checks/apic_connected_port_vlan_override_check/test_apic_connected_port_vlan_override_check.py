@@ -60,7 +60,7 @@ def path_attachment(dn=PATH_ATTACHMENT_DN, tdn="topology/pod-1/paths-101/pathep-
                 path_attachment_api: [path_attachment()],
             },
             script.FAIL_UF,
-            [[*APIC_PORT, EPG_DN, "vlan-3967", "3967", PATH_ATTACHMENT_DN]],
+            [list(APIC_PORT) + [EPG_DN, "vlan-3967", "3967", PATH_ATTACHMENT_DN]],
         ),
         (
             {
