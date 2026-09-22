@@ -70,7 +70,7 @@ Items                                         | Faults         | This Script    
 [Switch Node `/bootflash` usage][f3]          | F1821: 90% or more | :white_check_mark: | :white_check_mark: 4.2(4)
 [APIC SSD Health][f4]                         | F2730: less than 10% remaining<br>F2731: less than 5% remaining<br>F2732: less than 1% remaining | :white_check_mark: | :white_check_mark: 4.2(1)
 [Switch SSD Health][f5]                       | F3074: reached 80% lifetime<br>F3073: reached 90% lifetime<br> | :white_check_mark: | :white_check_mark: 4.2(1)
-[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic<br>CSCwn64461 | :white_check_mark: | :white_check_mark: 6.0(1g)
+[Config On APIC Connected Port][f6]           | F0467: port-configured-for-apic | :white_check_mark: | :white_check_mark: 6.0(1g)
 [L3 Port Config][f7]                          | F0467: port-configured-as-l2 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [L2 Port Config][f8]                          | F0467: port-configured-as-l3 | :white_check_mark: | :white_check_mark: 5.2(4d)
 [Access (Untagged) Port Config][f9]           | F0467: native-or-untagged-encap-failure | :white_check_mark: | :no_entry_sign:
@@ -222,6 +222,7 @@ Items                                           | Defect       | This Script    
 [APIC OOB Connectivity][d41]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
 [vnsRsCIfAtt Deprecation Check][d42]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 [Service-EP Flag in BD without PBR][d43]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
+[APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -266,6 +267,7 @@ Items                                           | Defect       | This Script    
 [d41]: #apic-oob-connectivity
 [d42]: #vnsrscifatt-deprecation-check
 [d43]: #service-ep-flag-in-bd-without-pbr
+[d44]: #apic-connected-port-vlan-override
 
 ## General Check Details
 
@@ -786,10 +788,6 @@ To confirm if this is genuine or false alarm, run the SSD Lifetime Validation sc
 ### Config On APIC Connected Port
 
 In a healthy ACI deployment, there should be no EPG or policy deployment pushed to any interfaces where a Cisco APIC is connected. When a Cisco APIC is connected to a leaf switch, LLDP validation occurs between the Cisco APIC and the leaf switch to allow it into the fabric without any configuration by the user. When a policy is pushed to a leaf switch interface that is connected to a Cisco APIC, that configuration will be denied and a fault will be raised. However, if the link to the Cisco APIC flaps for any reason, primarily during an upgrade when the Cisco APIC reboots, the policy can then be deployed to that leaf switch interface. This results in the Cisco APIC being blocked from re-joining the fabric after it has reloaded.
-
-This validation addresses CSCwn64461. In addition to the `F0467` `port-configured-for-apic` fault, it correlates current APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. This proactively reports a tenant policy on an APIC-connected port even when the fault is not currently raised. The reported configuration DN and VLAN identify the policy that must be removed.
-
-This is separate from the **InfraVLAN Overlap in Access Policy VLAN Pools** validation for CSCwt58626, which detects an InfraVLAN inside an external VLAN-pool range and the related F4701/new-EPG association condition.
 
 It is critical that you resolve these issues before the upgrade to prevent any issues. You can run the moquery below on the CLI of any Cisco APIC to check if these faults exist on the system. The faults are visible within the GUI as well.
 
@@ -3013,6 +3011,15 @@ On affected releases, [CSCwi17652][84] may enable `service-ep` for a service dev
 
 For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies flagged service EPGs whose deployed service graph has no PBR redirect policy. It reports the leaf, service EPG, bridge domain, and graph connector for review with Cisco TAC before upgrading. A finding indicates a possible behavior change, not a certain outage. If the graph cannot be classified, the check requests manual review.
 
+
+### APIC Connected Port VLAN Override
+
+[CSCwn64461][87] concerns user VLAN configuration overriding the InfraVLAN on a leaf port connected to an APIC. This validation correlates live APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. It reports the configured VLAN, the fabric InfraVLAN, and the configuration DN for each attachment found on an APIC-connected port.
+
+This is a configuration validation for CSCwn64461, not the `F0467` `port-configured-for-apic` fault validation. It can identify the configuration while the fault is absent. Remove the listed tenant static EPG path attachment before the upgrade.
+
+This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3099,3 +3106,4 @@ For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies
 [84]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi17652
 [85]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
 [86]: https://cs.co/FNSNV
+[87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
