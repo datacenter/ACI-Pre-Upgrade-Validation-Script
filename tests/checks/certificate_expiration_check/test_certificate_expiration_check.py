@@ -607,6 +607,36 @@ def test_soaking_fault_is_not_upgrade_blocking(run_check, mock_icurl):
     assert result.data == []
 
 
+@pytest.mark.parametrize(
+    "icurl_outputs",
+    [
+        {
+            faultInst: [{
+                "faultInst": {
+                    "attributes": {
+                        "code": "F4502",
+                        "severity": "critical",
+                        "descr": "KeyRing certificate expired",
+                        "lc": lifecycle,
+                    }
+                }
+            }]
+        }
+        for lifecycle in ("raised,soaking", "soaking, raised")
+    ],
+)
+def test_compound_raised_fault_is_upgrade_blocking(run_check, mock_icurl):
+    result = run_check(
+        cversion=script.AciVersion("6.1(5e)"),
+        username=None,
+        password=None,
+        fabric_nodes=[],
+    )
+
+    assert result.result == script.FAIL_O
+    assert result.data == [["F4502", "KeyRing certificate expired"]]
+
+
 @pytest.mark.parametrize("icurl_outputs", [{faultInst_pre_factory: []}])
 def test_api_only_requires_manual_factory_certificate_verification(run_check, mock_icurl):
     result = run_check(

@@ -7536,7 +7536,10 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes,
         fault_filter = ",".join('eq(faultInst.code,"{}")'.format(code) for code in applicable_codes)
         for faultInst in icurl('class', 'faultInst.json?query-target-filter=or({})'.format(fault_filter)):
             fault_attrs = faultInst['faultInst']['attributes']
-            if fault_attrs.get('lc') != "raised":
+            lifecycle_states = {
+                state.strip() for state in fault_attrs.get('lc', '').split(',')
+            }
+            if "raised" not in lifecycle_states:
                 continue
             data.append([fault_attrs['code'], fault_attrs.get('descr', '')])
             has_blocking_certificate = True

@@ -1634,7 +1634,7 @@ ACI uses various X.509 certificates for security and authentication purposes. If
 
 **Recommended Actions:**
 
-Any certificate fault listed above with a lifecycle state of `raised` is upgrade-blocking. Resolve every raised certificate fault before starting the upgrade.
+Any certificate fault listed above is upgrade-blocking whenever its lifecycle contains `raised`. This includes compound lifecycle values such as `raised,soaking`; `soaking` by itself does not indicate a live fault. Resolve every live certificate fault before starting the upgrade.
 
 * For expiring certificates (F4501, F3081, F4617, F4752): Renew the certificate(s) before they expire to avoid service disruption.
 
