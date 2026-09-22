@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F3082",
+                "severity": "critical",
+                "lc": "raised",
+                "descr": "SAML Encryption Certificate has expired",
+                "dn": "uni/userext/samlext/samlencert-default/fault-F3082"
+            }
+        }
+    }
+]

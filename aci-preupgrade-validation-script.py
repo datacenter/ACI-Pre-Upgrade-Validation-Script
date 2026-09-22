@@ -7418,6 +7418,206 @@ def host_interface_policy_set_speed_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+def collect_factory_certificate_status(username, password, fabric_nodes):
+    """Collect pre-6.1(5e) APIC factory certificate status over SSH."""
+    data = []
+    has_blocking_certificate = False
+    has_error = False
+    controller_inventory_unavailable = False
+    controllers = [
+        node for node in (fabric_nodes or [])
+        if node.get("fabricNode", {}).get("attributes", {}).get("role") == "controller"
+    ]
+
+    if not controllers:
+        data.append([
+            "N/A",
+            "No APIC controllers were found; factory certificate expiry could not be verified.",
+        ])
+        has_error = True
+        controller_inventory_unavailable = True
+
+    date_format = "%b %d %H:%M:%S %Y"
+    current_date_re = re.compile(
+        r'(?m)^[ \t\r]*(?P<epoch>\d{9,})[ \t\r]*$'
+    )
+    cert_expiry_re = re.compile(
+        r'notAfter=(?P<date>[A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})'
+    )
+
+    for controller in controllers:
+        controller_attrs = controller.get("fabricNode", {}).get("attributes", {})
+        controller_id = controller_attrs.get("id", "N/A")
+        controller_name = controller_attrs.get("name", "N/A")
+        controller_address = controller_attrs.get("address")
+
+        if not controller_address:
+            data.append(["N/A",
+                         "APIC {} ({}): unable to determine controller address".format(controller_id, controller_name)])
+            has_error = True
+            continue
+
+        try:
+            c = Connection(controller_address)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+
+            c.cmd("date -u +%s; acidiag verifyapic")
+            current_date_match = current_date_re.search(c.output)
+            cert_expiry_match = cert_expiry_re.search(c.output)
+        except Exception as e:
+            data.append(["N/A",
+                         "APIC {} ({}): unable to verify factory certificate - {}".format(controller_id, controller_name, e)])
+            has_error = True
+            continue
+
+        try:
+            current_date = datetime.utcfromtimestamp(
+                int(current_date_match.group("epoch"))
+            )
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            data.append(["N/A",
+                         "APIC {} ({}): unable to determine current date".format(controller_id, controller_name)])
+            has_error = True
+            continue
+
+        try:
+            cert_expiry = datetime.strptime(" ".join(cert_expiry_match.group("date").split()), date_format)
+        except (AttributeError, ValueError):
+            data.append(["N/A",
+                         "APIC {} ({}): unable to determine factory certificate expiry date".format(controller_id, controller_name)])
+            has_error = True
+            continue
+
+        if cert_expiry <= current_date:
+            data.append(["N/A",
+                         "APIC {} ({}): factory certificate expired on {} UTC".format(controller_id, controller_name, cert_expiry)])
+            has_blocking_certificate = True
+        elif (cert_expiry - current_date).days <= 30:
+            data.append(["N/A",
+                         "APIC {} ({}): factory certificate expiring on {} UTC".format(controller_id, controller_name, cert_expiry)])
+            has_blocking_certificate = True
+
+    return {
+        "data": data,
+        "has_blocking_certificate": has_blocking_certificate,
+        "has_error": has_error,
+        "controller_inventory_unavailable": controller_inventory_unavailable,
+    }
+
+
+@check_wrapper(check_title='Certificate Expiration Check')
+def certificate_expiration_check(cversion, username, password, fabric_nodes,
+                                 factory_certificate_status=None, **kwargs):
+    result = PASS
+    headers = ["Fault Code", "Description"]
+    data = []
+    recommended_action = ""
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#certificate-expiration-check'
+
+    fault_min_versions = [
+        ("F4501", "6.0(4c)"), ("F4502", "6.0(4c)"),  # KeyRing cert expiring/expired
+        ("F4503", "6.1(1e)"), ("F4617", "6.1(1e)"),  # TP cert expired/expiring
+        ("F3081", "3.1(2f)"), ("F3082", "3.1(2f)"),  # SAML encryption cert expiring/expired
+        ("F4752", "6.1(5e)"), ("F4753", "6.1(5e)"),  # Factory certificate expired/expiring
+    ]
+    FACTORY_CERT_MIN_VERSION = "6.1(5e)"
+    has_blocking_certificate = has_error = False
+    factory_check_required = cversion.older_than(FACTORY_CERT_MIN_VERSION)
+    factory_check_unavailable = (
+        factory_check_required and not (username and password)
+    )
+    controller_inventory_unavailable = False
+
+    applicable_codes = [code for code, ver in fault_min_versions if not cversion.older_than(ver)]
+    if applicable_codes:
+        fault_filter = ",".join('eq(faultInst.code,"{}")'.format(code) for code in applicable_codes)
+        for faultInst in icurl('class', 'faultInst.json?query-target-filter=or({})'.format(fault_filter)):
+            fault_attrs = faultInst['faultInst']['attributes']
+            lifecycle_states = {
+                state.strip() for state in fault_attrs.get('lc', '').split(',')
+            }
+            if "raised" not in lifecycle_states:
+                continue
+            data.append([fault_attrs['code'], fault_attrs.get('descr', '')])
+            has_blocking_certificate = True
+
+    if factory_check_unavailable:
+        data.append([
+            "N/A",
+            "Factory certificate expiry was not checked because SSH credentials are unavailable.",
+        ])
+    elif factory_check_required:
+        if factory_certificate_status is None:
+            data.append([
+                "N/A",
+                "Factory certificate expiry could not be collected before the check ran.",
+            ])
+            has_error = True
+        else:
+            data.extend(factory_certificate_status["data"])
+            has_blocking_certificate = (
+                has_blocking_certificate
+                or factory_certificate_status["has_blocking_certificate"]
+            )
+            has_error = factory_certificate_status["has_error"]
+            controller_inventory_unavailable = factory_certificate_status[
+                "controller_inventory_unavailable"
+            ]
+
+    if data:
+        if has_blocking_certificate:
+            result = FAIL_O
+            recommended_action = (
+                'Resolve all certificate conditions before starting the upgrade. Renew expired certificates '
+                'immediately and renew certificates approaching expiry before they expire. See {} for '
+                'verification and remediation guidance.'.format(doc_url)
+            )
+
+            if has_error:
+                if controller_inventory_unavailable:
+                    verification_action = (
+                        "Factory certificate status could not be verified because no APIC controllers were "
+                        "found. Verify APIC cluster and node inventory health, then follow the manual factory "
+                        "certificate verification procedure in {}".format(doc_url)
+                    )
+                else:
+                    verification_action = (
+                        "Certificate status could not be verified on all APICs. Manually verify the affected "
+                        "APICs using the procedure in {}".format(doc_url)
+                    )
+                recommended_action = "{} {}".format(recommended_action, verification_action)
+        elif has_error:
+            result = ERROR
+            if controller_inventory_unavailable:
+                recommended_action = (
+                    "Verify APIC cluster and node inventory health, then rerun the validation. If inventory "
+                    "cannot be restored, follow the manual factory certificate verification procedure in {}"
+                    .format(doc_url)
+                )
+            else:
+                recommended_action = (
+                    "Manually verify certificate expiry for all affected nodes. "
+                    "\n\tFor APIC factory certificates, run `acidiag verifyapic` on each affected APIC."
+                )
+
+    if factory_check_unavailable:
+        if result == PASS:
+            result = MANUAL
+        manual_verification_action = (
+            "Re-run without `--api-only` using SSH credentials, or follow the manual factory certificate "
+            "verification procedure in {}".format(doc_url)
+        )
+        if recommended_action:
+            recommended_action = "{} {}".format(recommended_action, manual_verification_action)
+        else:
+            recommended_action = manual_verification_action
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -7533,6 +7733,7 @@ class CheckManager:
         apic_vmm_inventory_sync_faults_check,
         apic_storage_inode_check,
         rtc_battery_voltage_low_check,
+        certificate_expiration_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -7691,6 +7892,19 @@ class CheckManager:
             check_func(initialize_check=self.initialize_check)
 
     def run_checks(self, common_data):
+        common_data = dict(common_data)
+        if (
+            certificate_expiration_check in self.check_funcs
+            and common_data.get("cversion")
+            and common_data["cversion"].older_than("6.1(5e)")
+            and common_data.get("username")
+            and common_data.get("password")
+        ):
+            common_data["factory_certificate_status"] = collect_factory_certificate_status(
+                common_data["username"],
+                common_data["password"],
+                common_data.get("fabric_nodes"),
+            )
         tm = ThreadManager(
             funcs=self.check_funcs,
             common_kwargs=dict({"finalize_check": self.finalize_check}, **common_data),
