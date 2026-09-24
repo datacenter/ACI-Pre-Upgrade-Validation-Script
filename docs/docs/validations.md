@@ -216,6 +216,7 @@ Items                                           | Defect       | This Script    
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
+[vnsRsCIfAtt Deprecation Check][d40]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -256,6 +257,7 @@ Items                                           | Defect       | This Script    
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
 [d39]: #port-tracking-active-fabric-port-zero
+[d40]: #vnsrscifatt-deprecation-check
 
 ## General Check Details
 
@@ -2871,7 +2873,6 @@ This issue happens only when the target version is specifically 6.1(4h).
 
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
-
 ### Inband Management Policy Misconfiguration
 
 Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
@@ -2934,7 +2935,6 @@ Affected versions: 6.1(5e) and below, or 6.2(1g).
 
 Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
 
-
 ### Infravlan Overlap Access Policy Check
 
 Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.1(3f), 6.1(3g), 6.1(4h), 6.1(5e) and 6.2(1g), be aware of fault F4701 being raised if the InfraVLAN overlaps with any user-configured VLAN pool in Access Policies. This also affects vlan pool created by NDO/MSO, VMM, Kubernetes. After the upgrade, domains associated with those VLAN pools cannot be linked to new EPGs, although existing EPGs continue to function.
@@ -2948,6 +2948,19 @@ Due to [CSCwp91797][80], if port tracking is enabled and the number of active fa
 The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
 
 Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
+
+### vnsRsCIfAtt Deprecation Check
+
+Due to [CSCwr51759][81], after upgrading ACI to 6.0(3d) or later release, one or more L4-L7 service graph device cluster interfaces are missing their concrete interface attachment, causing the service graph to fail to render and resulting in a traffic outage for PBR/L4-L7 redirected traffic.
+
+This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later. 
+Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster interface still relying solely on it loses its concrete interface mapping, and no equivalent vnsRsCIfAttN object exists to take its place.
+
+Before upgrading (current version older than 6.0(3d)): Reattach the concrete interface via the APIC GUI without deleting the existing attachment object — Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → select the interface → Submit. This creates the new vnsRsCIfAttN object alongside the old one so the mapping survives the upgrade.
+After upgrading (current version 6.0(3d) or later), verify all concrete device interface attachments to ensure there are none missing, then reattach the concrete interface using the same UI path to recreate the missing vnsRsCIfAttN object.
+
+Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete interface attachment changed: the legacy relation object vnsRsCIfAtt (under vnsLIf) was deprecated in favor of vnsRsCIfAttN. vnsRsCIfAtt objects are removed by the switchover/upgrade to 6.0(3d) or later, but this removal is not paired with an automatic creation of the equivalent vnsRsCIfAttN object for cluster interfaces that had never been re-attached under the new object.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -3029,3 +3042,5 @@ Upgrade to a fixed release when possible. If an affected release must be used, e
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
 [79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
+

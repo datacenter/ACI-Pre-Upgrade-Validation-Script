@@ -1,0 +1,30 @@
+[
+  {
+    "vnsLDevCtx": {
+      "attributes": {
+        "dn": "uni/tn-tenantB/ldevCtx-c-svc-graph-g-webfw-n-node",
+        "ctrctNameOrLbl": "svc-graph",
+        "graphNameOrLbl": "webfw"
+      },
+      "children": [
+        {
+          "vnsLIfCtx": {
+            "attributes": {
+              "dn": "uni/tn-tenantB/ldevCtx-c-svc-graph-g-webfw-n-node/lifCtx-cons"
+            },
+            "children": [
+              {
+                "vnsRsLIfCtxToLIf": {
+                  "attributes": {
+                    "tCl": "vnsLIf",
+                    "tDn": "uni/tn-tenantB/lDevVip-tenantB-device/lIf-tenantB-cons"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]
