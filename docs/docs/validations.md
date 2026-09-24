@@ -2961,6 +2961,7 @@ After upgrading (current version 6.0(3d) or later), verify all concrete device i
 
 Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete interface attachment changed: the legacy relation object vnsRsCIfAtt (under vnsLIf) was deprecated in favor of vnsRsCIfAttN. vnsRsCIfAtt objects are removed by the switchover/upgrade to 6.0(3d) or later, but this removal is not paired with an automatic creation of the equivalent vnsRsCIfAttN object for cluster interfaces that had never been re-attached under the new object.
 
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
