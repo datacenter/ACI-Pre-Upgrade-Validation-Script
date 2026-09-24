@@ -1,0 +1,18 @@
+[
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-common/lDevVip-common-device/lIf-common-cons"
+      },
+      "children": []
+    }
+  },
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-common/lDevVip-common-device/lIf-common-prov"
+      },
+      "children": []
+    }
+  }
+]

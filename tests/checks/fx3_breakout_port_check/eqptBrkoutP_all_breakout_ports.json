@@ -1,0 +1,30 @@
+[
+    {
+        "eqptBrkoutP": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101/sys/ch/lcslot-1/lc/leafport-49/brkoutport-1"
+            }
+        }
+    },
+    {
+        "eqptBrkoutP": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101/sys/ch/lcslot-1/lc/leafport-49/brkoutport-2"
+            }
+        }
+    },
+    {
+        "eqptBrkoutP": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101/sys/ch/lcslot-1/lc/leafport-51/brkoutport-1"
+            }
+        }
+    },
+    {
+        "eqptBrkoutP": {
+            "attributes": {
+                "dn": "topology/pod-1/node-102/sys/ch/lcslot-1/lc/leafport-50/brkoutport-1"
+            }
+        }
+    }
+]

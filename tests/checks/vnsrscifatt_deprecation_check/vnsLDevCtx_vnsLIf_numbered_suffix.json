@@ -1,0 +1,47 @@
+[
+  {
+    "vnsLDevCtx": {
+      "attributes": {
+        "dn": "uni/tn-common/ldevCtx-c-epg-epg-g-test-n-test-node",
+        "ctrctNameOrLbl": "epg-epg",
+        "graphNameOrLbl": "test"
+      },
+      "children": [
+        {
+          "vnsLIfCtx": {
+            "attributes": {
+              "dn": "uni/tn-common/ldevCtx-c-epg-epg-g-test-n-test-node/lifCtx-cons"
+            },
+            "children": [
+              {
+                "vnsRsLIfCtxToLIf": {
+                  "attributes": {
+                    "tCl": "vnsLIf",
+                    "tDn": "uni/tn-common/lDevVip-common-device/lIf-common-cons-1"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "vnsLIfCtx": {
+            "attributes": {
+              "dn": "uni/tn-common/ldevCtx-c-epg-epg-g-test-n-test-node/lifCtx-prov"
+            },
+            "children": [
+              {
+                "vnsRsLIfCtxToLIf": {
+                  "attributes": {
+                    "tCl": "vnsLIf",
+                    "tDn": "uni/tn-common/lDevVip-common-device/lIf-common-prov-1"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]
