@@ -370,7 +370,7 @@ def test_logic(run_check, mock_icurl, icurl_outputs, tversion, expected_result, 
             None,
             script.MANUAL,
             [],
-            script.CVER_MISSING,
+            "Current version not supplied. Skipping.",
         ),
         # Post-cifatt-delete (cversion >= 6.0(3d)): deployed LIF missing vnsRsCIfAttN, and the LIF's tenant
         # ("common") differs from the referencing contract's tenant ("user") -> implicit-objects message

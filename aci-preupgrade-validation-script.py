@@ -7659,7 +7659,7 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     if tversion.older_than("6.0(3d)"):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
     if not cversion:
-        return Result(result=MANUAL, msg=CVER_MISSING, doc_url=doc_url)
+        return Result(result=MANUAL, msg="Current version not supplied. Skipping.", doc_url=doc_url)
 
     post_cifatt_delete = cversion.same_as("6.0(3d)") or cversion.newer_than("6.0(3d)")
     if post_cifatt_delete:
