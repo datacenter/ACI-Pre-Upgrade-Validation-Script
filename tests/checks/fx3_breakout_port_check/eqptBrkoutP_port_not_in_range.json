@@ -1,9 +1,0 @@
-[
-    {
-        "eqptBrkoutP": {
-            "attributes": {
-                "dn": "topology/pod-1/node-101/sys/ch/lcslot-1/lc/leafport-10/brkoutport-1"
-            }
-        }
-    }
-]
