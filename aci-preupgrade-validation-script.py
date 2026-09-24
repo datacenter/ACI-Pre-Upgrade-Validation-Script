@@ -7340,7 +7340,7 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
 
     # Pre-6.1(4): the impacted graph is still 'applied', so scope to that state to limit load.
     # 6.1(4)+: a later re-render can leave it failed-to-apply, so poll all states.
-    graph_subtree = '&rsp-subtree=full&rsp-subtree-class=vnsTermNodeInst,vnsConnectionInst,vnsRsConnectionInstConns'
+    graph_subtree = '&rsp-subtree=full&rsp-subtree-class=vnsNodeInst,vnsTermNodeInst,vnsConnectionInst,vnsRsConnectionInstConns'
     if cversion and not cversion.newer_than("6.1(3g)"):
         graph_query = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")' + graph_subtree
     else:
@@ -7357,10 +7357,17 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
     # Key by contract with a list of instances so multiple VRFs sharing one contract are all retained.
     sg_by_contract = defaultdict(list)
     for graph_inst_mo in graph_insts:
-        gi_attrs = graph_inst_mo.get('vnsGraphInst', {}).get('attributes', {})
+        graph_inst = graph_inst_mo.get('vnsGraphInst', {})
+        gi_attrs = graph_inst.get('attributes', {})
         gi_dn = gi_attrs.get('dn', '')
-        contract_dn = gi_attrs.get('ctrctDn', '')
-        if not contract_dn:
+        children = graph_inst.get('children', [])
+
+        # CSCwt14573/CSCwn95571 apply only to PBR service graphs (a node with routingMode "Redirect").
+        is_pbr = any(
+            child.get('vnsNodeInst', {}).get('attributes', {}).get('routingMode') == 'Redirect'
+            for child in children
+        )
+        if not is_pbr:
             continue
 
         # Skip NDO/MSC-managed graphs; their translation entries are created by NDO.
@@ -7368,13 +7375,24 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
         if 'orchestrator:msc' in annotation:
             continue
 
+        contract_dn = gi_attrs.get('ctrctDn', '')
+        if not contract_dn:
+            has_error = True
+            unformatted_data.append([gi_dn or 'unknown', 'Service graph instance missing contract DN (ctrctDn)'])
+            continue
+
         graph_name_match = re.search(r'-G-\[uni/tn-[^/]+/AbsGraph-([^\]]+)\]', gi_dn)
         graph_name = graph_name_match.group(1) if graph_name_match else ''
+
         scope_match = re.search(r'-S-\[(.*?)\]', gi_dn)
-        scope_dn = scope_match.group(1) if scope_match else ''
+        if not scope_match:
+            has_error = True
+            unformatted_data.append([gi_dn or contract_dn, 'Unable to parse the VRF scope from the graph instance DN'])
+            continue
+        scope_dn = scope_match.group(1)
 
         first_node_name = None
-        for graph_component_mo in graph_inst_mo.get('vnsGraphInst', {}).get('children', []):
+        for graph_component_mo in children:
             if 'vnsTermNodeInst' not in graph_component_mo:
                 continue
             term_attrs = graph_component_mo['vnsTermNodeInst'].get('attributes', {})
@@ -7404,6 +7422,10 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
         })
 
     if not sg_by_contract:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
         return Result(result=PASS, msg="No locally-managed service graphs with contracts found", doc_url=doc_url)
 
     stretched_vrf_dns = set()
@@ -7422,6 +7444,10 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
         return Result(result=ERROR, msg='Error querying stretched VRFs: {}'.format(str(e)), doc_url=doc_url)
 
     if not stretched_vrf_dns:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
         return Result(result=PASS, msg="No stretched VRFs found", doc_url=doc_url)
 
     # Key by (contract, VRF) so each scoped vzAny relationship is preserved.
@@ -7441,6 +7467,8 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
             rel_dn = rel_attrs.get('dn', '')
             vrf_dn_match = re.match(r'(uni/tn-[^/]+/ctx-[^/]+)', rel_dn)
             if not vrf_dn_match:
+                has_error = True
+                unformatted_data.append([rel_dn or '-', 'Unable to parse the VRF scope from the {} DN'.format(rel_class)])
                 continue
             vrf_dn = vrf_dn_match.group(1)
             if vrf_dn not in stretched_vrf_dns:

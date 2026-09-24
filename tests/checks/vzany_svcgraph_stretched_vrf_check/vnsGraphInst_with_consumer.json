@@ -8,6 +8,11 @@
             },
             "children": [
                 {
+                    "vnsNodeInst": {
+                        "attributes": {"routingMode": "Redirect"}
+                    }
+                },
+                {
                     "vnsTermNodeInst": {
                         "attributes": {"type": "consumer"},
                         "children": [

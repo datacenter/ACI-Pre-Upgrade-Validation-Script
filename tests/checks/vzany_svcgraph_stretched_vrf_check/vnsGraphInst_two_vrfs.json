@@ -8,6 +8,11 @@
             },
             "children": [
                 {
+                    "vnsNodeInst": {
+                        "attributes": {"routingMode": "Redirect"}
+                    }
+                },
+                {
                     "vnsTermNodeInst": {
                         "attributes": {"type": "consumer"},
                         "children": [
@@ -38,6 +43,11 @@
                 "ctrctDn": "uni/tn-Tenant1/brc-Contract1"
             },
             "children": [
+                {
+                    "vnsNodeInst": {
+                        "attributes": {"routingMode": "Redirect"}
+                    }
+                },
                 {
                     "vnsTermNodeInst": {
                         "attributes": {"type": "consumer"},

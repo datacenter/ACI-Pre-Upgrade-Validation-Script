@@ -2,7 +2,7 @@
     {
         "vnsGraphInst": {
             "attributes": {
-                "dn": "uni/tn-Tenant1/GraphInst_C-[uni/tn-Tenant1/brc-Contract1]-G-[uni/tn-Tenant1/AbsGraph-Graph1]-S-[uni/tn-Tenant1/ctx-VRF1]",
+                "dn": "uni/tn-Tenant1/GraphInst_C-[uni/tn-Tenant1/brc-Contract1]-G-[uni/tn-Tenant1/AbsGraph-Graph1]",
                 "configSt": "applied",
                 "ctrctDn": "uni/tn-Tenant1/brc-Contract1"
             },
@@ -10,12 +10,6 @@
                 {
                     "vnsNodeInst": {
                         "attributes": {"routingMode": "Redirect"}
-                    }
-                },
-                {
-                    "vnsTermNodeInst": {
-                        "attributes": {"type": "consumer"},
-                        "children": []
                     }
                 }
             ]

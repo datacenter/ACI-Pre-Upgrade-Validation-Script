@@ -2840,7 +2840,7 @@ This check detects configurations where **all** of the following conditions are 
 
 1. The VRF is stretched across multiple sites (has `fvSiteAssociated` with `fvRemoteId` children)
 2. vzAny is used as either consumer **or** provider on the stretched VRF
-3. The contract has a service graph attached (any type — PBR is **not** required)
+3. The contract has a **PBR** service graph attached (a node with `routingMode` set to `Redirect`)
 4. The service graph is **not** managed by NDO/MSC (no `orchestrator:msc` annotation)
 5. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
 
@@ -2850,7 +2850,7 @@ When upgrading from a release earlier than 6.1(4), the impacted graph is still i
     The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
 
 !!! note
-    This applies to **all** service graph types including firewalls with PBR, load balancers without PBR, and any other L4-L7 service devices.
+    This applies to PBR service graphs (policy-based redirect) used with vzAny on stretched VRFs. Non-PBR service graphs are not affected and are not flagged.
 
 Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][79].
 
