@@ -28,9 +28,9 @@ f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.co
             {f182x_api: read_data(dir, "faultInst_pos.json")},
             script.FAIL_UF,
             [
-                ["1", "101", "F1820", 98, "Disk usage for /mnt/ifc/log is high on node 101 of fabric POD1 with a hostname leaf1"],
-                ["1", "102", "F1821", 97, "Disk usage for /mnt/ifc/cfg is high on node 102 of fabric POD1 with a hostname leaf2"],
-                ["1", "104", "F1821", 100, "Disk usage for / is high on node 104 of fabric POD1 with a hostname LEAF-104"],
+                ["1", "101", "F1820", "98", "Disk usage for /mnt/ifc/log is high on node 101 of fabric POD1 with a hostname leaf1"],
+                ["1", "102", "F1821", "97", "Disk usage for /mnt/ifc/cfg is high on node 102 of fabric POD1 with a hostname leaf2"],
+                ["1", "104", "F1821", "100", "Disk usage for / is high on node 104 of fabric POD1 with a hostname LEAF-104"],
             ],
             [[
                 "topology/pod-1/node-[103]/sys/eqptcapacity/fspartition-ifc:cfg/fault-F1821",
@@ -41,7 +41,7 @@ f182x_api += '?query-target-filter=or(eq(faultInst.code,"F1820"),eq(faultInst.co
         (
             {f182x_api: read_data(dir, "faultInst_compact.json")},
             script.FAIL_UF,
-            [["1", "107", "F1820", 81, "Disk usage for /mnt/ifc/cfg is above normal"]],
+            [["1", "107", "F1820", "81", "Disk usage for /mnt/ifc/cfg is above normal"]],
             [],
         ),
     ],
@@ -58,4 +58,4 @@ def test_logic(
     assert result.data == expected_data
     assert result.unformatted_data == expected_unformatted_data
     for row in result.data:
-        assert isinstance(row[3], int)
+        assert isinstance(row[3], str)

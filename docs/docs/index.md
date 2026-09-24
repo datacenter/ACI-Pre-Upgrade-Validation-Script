@@ -105,7 +105,7 @@ You have chosen version "aci-apic-dk9.5.2.1d.bin"
 
 [Check 11/47] Switch Upgrade Group Guidelines... No upgrade groups found!                                            MANUAL CHECK REQUIRED
 [Check 12/47] APIC Disk Space Usage (F1527, F1528, F1529 equipment-full)...                                                           PASS
-[Check 13/47] Switch Node /bootflash usage... all below 50%                                                                           PASS
+[Check 13/47] Switch Node /bootflash usage... All nodes have sufficient bootflash space                                               PASS
 [Check 14/47] Standby APIC Disk Space Usage... No standby APIC found                                                                   N/A
 [Check 15/47] APIC SSD Health...                                                                                                      PASS
 [Check 16/47] Switch SSD Health (F3073, F3074 equipment-flash-warning)...                                                             PASS

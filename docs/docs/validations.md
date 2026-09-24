@@ -87,6 +87,8 @@ Items                                         | Faults         | This Script    
 [Equipment Disk Limits][f20]                  | F1820: 80% -minor<br>F1821: -major<br>F1822: -critical | :white_check_mark: | :no_entry_sign:
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 [APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
+[Switch RTC Battery Voltage][f23]              | F2421: RTC battery voltage is low | :white_check_mark: | :no_entry_sign:
+[Certificate Expiration Check][f24]            | F4501/F4502: KeyRing expiring/expired<br>F4617/F4503: TP expiring/expired<br>F3081/F3082: SAML expiring/expired<br>F4752/F4753: Factory expiring/expired | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -110,6 +112,8 @@ Items                                         | Faults         | This Script    
 [f20]: #equipment-disk-limits
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
+[f23]: #switch-rtc-battery-voltage
+[f24]: #certificate-expiration-check
 
 ### Configuration Checks
 
@@ -139,6 +143,8 @@ Items                                         | Faults         | This Script    
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
+[Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
+[Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -164,6 +170,8 @@ Items                                         | Faults         | This Script    
 [c22]: #service-graph-bd-forceful-routing
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
+[c25]: #preferred-group-shared-service-provider
+[c26]: #host-interface-policy-set-to-auto
 
 ### Defect Condition Checks
 
@@ -207,7 +215,8 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
-[vnsRsCIfAtt Deprecation Check][d39]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
+[Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
+[vnsRsCIfAtt Deprecation Check][d40]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -247,7 +256,8 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
-[d39]: #vnsrscifatt-deprecation-check
+[d39]: #port-tracking-active-fabric-port-zero
+[d40]: #vnsrscifatt-deprecation-check
 
 ## General Check Details
 
@@ -263,6 +273,8 @@ The script performs the equivalent check by querying objects `compatRsUpgRel`.
 The script checks the minimum recommended CIMC version for the given APIC model on the target version by querying `compatRsSuppHw` objects.
 
 As the `compatRsSuppHw` object recommendation is strictly tied to the target software image, it is possible that the [Release Note Documentation][4] for your model/target version has a different recommendation than what the software recommends. Always check the release note of your Target version and APIC model to ensure you are getting the latest recommendations.
+
+The APIC release notes explicitly support multiple model-specific CIMC releases that may be older than the image catalog recommendation. The check uses release-note support data refreshed from Cisco documentation during script release preparation before applying the image catalog recommendation to other CIMC releases. The released validator remains standalone and does not require internet access.
 
 Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
 
@@ -632,84 +644,26 @@ The script performs SSH into each standby Cisco APIC as `rescue-user`, then run 
 
 ### Switch Node `/bootflash` usage
 
-ACI switches mainly have two different faults about the filesystem usage of each partition:
+ACI switches mainly have two different faults related to filesystem usage on each partition:
 
-* **F1820**: A minor level fault for switch partition usage. This is raised when the utilization of the partition exceeds the minor threshold.
+* **F1820**: A minor-level fault raised when partition utilization exceeds the minor threshold.
 
-* **F1821**: A major level fault for switch partition usage. This is raised when the utilization of the partition exceeds the major threshold.
-
-!!! note
-    The threshold for minor and major depends on partitions. The critical one for upgrades is `/bootflash`. The threshold of bootflash is 80% for minor and 90% for major threshold.
-
-On top of this, there is a built-in behavior added to every switch node where it will take action to ensure that the `/bootflash` directory maintains 50% capacity. This is specifically to ensure that switch upgrades are able to successfully transfer and extract the switch image over during an upgrade.
-
-To do this, there is an internal script that is monitoring `/bootflash` usage and, if over 50% usage, it will start removing files to free up the filesystem. Given its aggressiveness, there are some corner case scenarios where this cleanup script could potentially trigger against the switch image it is intending to use, which can result in a switch upgrade booting a switch into the loader prompt given that the boot image was removed from `/bootflash`.
-
-To prevent this, check the `/bootflash` prior to an upgrade and take the necessary steps to understand what is written there and why. Once understood, take the necessary steps to clear up unnecessary `/bootflash` files to ensure there is enough space to prevent the auto-cleanup corner case scenario.
-
-The pre-upgrade validation built into Cisco APIC upgrade workflow monitors the fault F1821, which can capture the high utilization of any partition. When this fault is present, we recommend that you resolve it prior to the upgrade even if the fault is not for bootflash.
-
-The ACI Pre-Upgrade Validation script (this script) focuses on the utilization of bootflash on each switch specifically to see if there are any issues with bootflash where the usage is more than 50%, which might trigger the internal cleanup script.
-
-!!! example "Example of a query used by this script"
-    The script is calculating the bootflash usage using `avail` and `used` in the object `eqptcapacityFSPartition` for each switch.
-    ```
-    f2-apic1# moquery -c eqptcapacityFSPartition -f 'eqptcapacity.FSPartition.path=="/bootflash"'
-    Total Objects shown: 6
-
-    # eqptcapacity.FSPartition
-    name            : bootflash
-    avail           : 7214920
-    childAction     :
-    dn              : topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash
-    memAlert        : normal
-    modTs           : never
-    monPolDn        : uni/fabric/monfab-default
-    path            : /bootflash
-    rn              : fspartition-bootflash
-    status          :
-    used            : 4320184
-    --- omit ---
-    ```
-
-!!! tip
-    Alternatively you can log into a leaf switch CLI, and check `/bootflash` usage `df -h`
-    ```
-    leaf1# df -h
-    Filesystem             Size    Used   Avail   Use%   Mounted on
-    rootfs                 2.5G    935M   1.6G    38%    /bin
-    /dev/sda4               12G    5.7G   4.9G    54%    /bootflash
-    /dev/sda2              4.7G    9.6M   4.4G     1%    /recovery
-    /dev/mapper/map-sda9    11G    5.7G   4.2G    58%    /isan/lib
-    none                   3.0G    602M   2.5G    20%    /dev/shm
-    none                    50M    3.4M    47M     7%    /etc
-    /dev/sda6               56M    1.3M    50M     3%    /mnt/cfg/1
-    /dev/sda5               56M    1.3M    50M     3%    /mnt/cfg/0
-    /dev/sda8               15G    140M    15G     1%    /mnt/ifc/log
-    /dev/sda3              115M     52M    54M    50%    /mnt/pss
-    none                   1.5G    2.3M   1.5G     1%    /tmp
-    none                    50M    240K    50M     1%    /var/log
-    /dev/sda7               12G    1.4G   9.3G    13%    /logflash
-    none                   350M     54M   297M    16%    /var/log/dme/log/dme_logs
-    none                   512M     24M   489M     5%    /var/sysmgr/mem_logs
-    none                    40M    4.0K    40M     1%    /var/sysmgr/startup-cfg
-    none                   500M     0     500M     0%    /volatile
-    ```
+* **F1821**: A major-level fault raised when partition utilization exceeds the major threshold.
 
 !!! note
-    If you suspect that the auto cleanup removed some files within `/bootflash`, you can review a log to validate this:
+    Thresholds vary by partition. For `/bootflash`, the minor threshold is 80% utilization and the major threshold is 90%.
 
-    ```
-    leaf1# egrep "higher|removed" /mnt/pss/core_control.log
-    [2020-07-22 16:52:08.928318] Bootflash Usage is higher than 50%!!
-    [2020-07-22 16:52:08.931990] File: MemoryLog.65%_usage removed !!
-    [2020-07-22 16:52:08.943914] File: mem_log.txt.old.gz removed !!
-    [2020-07-22 16:52:08.955376] File: libmon.logs removed !!
-    [2020-07-22 16:52:08.966686] File: urib_api_log.txt removed !!
-    [2020-07-22 16:52:08.977832] File: disk_log.txt removed !!
-    [2020-07-22 16:52:08.989102] File: mem_log.txt removed !!
-    [2020-07-22 16:52:09.414572] File: aci-n9000-dk9.13.2.1m.bin removed !!
-    ```
+ACI switches also include an internal cleanup process intended to maintain sufficient free `/bootflash` capacity for switch upgrades. When usage exceeds approximately 50%, the process can remove eligible files to make space for transferring and extracting switch images.
+
+The fixed cleanup threshold does not cover every upgrade scenario. Larger target images, files that cannot be removed, and upgrades that cross the ACI 6.0(2) 32-bit/64-bit image boundary can require more free space than the cleanup process normally maintains. Insufficient space can prevent an image from being downloaded or extracted and may cause the switch upgrade to fail.
+
+The ACI Pre-Upgrade Validation script uses APIC API data to compare each switch's available `/bootflash` space with the space required for the target switch release. The requirement is calculated dynamically from the current and target switch images rather than from a fixed utilization percentage.
+
+The calculation generally reserves twice the applicable target image size. This accounts for space used by the downloaded image and additional space needed while the image is extracted. For an upgrade that crosses the 6.0(2) image boundary, the calculation accounts for both the 32-bit and 64-bit target images and the space recovered when the current image is removed.
+
+Switches that have already downloaded the target image are still checked because image extraction and later upgrade stages can require additional space. Because the downloaded image is already reflected in the switch's available-space value, the check evaluates only the remaining space required to complete the upgrade.
+
+If a switch does not have enough available space, the check reports an upgrade failure and displays the available and required space. Remove old, unused switch images to recover space, then run the validation again. Contact Cisco TAC if sufficient space cannot be recovered. If the current switch version, target firmware image, or `/bootflash` information is unavailable, the check reports that a manual review is required.
 
 
 ### APIC SSD Health
@@ -1391,7 +1345,9 @@ The fault F3545 occurs when the switch fails to activate a contract rule (zoning
 
 The script checks faults raised under `eqptcapacityEntity`, which are TCA (Threshold Crossed Alert) faults for various objects monitored in the **Capacity Dashboard** from `Operations > Capacity Dashboard > Leaf Capacity` on the Cisco APIC GUI.
 
-It is important to ensure that any capacity does not exceed its limit. When it's exceeding the limit, it may cause inconsistency on resources that are deployed before and after an upgrade just like it was warned for [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
+A raised TCA indicates that a configured capacity threshold was crossed; it does not necessarily indicate a current outage. The script reports `FAIL - OUTAGE WARNING!!` because switch reboots during an upgrade can cause endpoints, routes, contracts, and other programmed resources to be temporarily redistributed to the remaining switches. This spillover can push a resource that is already near its limit, such as Policy CAM at 90%, beyond supported capacity and cause programming failures or traffic disruption. Similar post-reboot resource inconsistencies are described under [Policy CAM Programming for Contracts (F3545) and L3Out Subnets Programming for Contracts (F3544)][f15].
+
+Before upgrading, review the affected node and resource under `Operations > Capacity Dashboard > Leaf Capacity` and examine the capacity headroom based on your network design, server connectivity and so on.
 
 Examples of what's monitored via `Operations > Capacity Dashboard > Leaf Capacity` are the number of endpoints such as MAC (Learned), IPv4 (Learned), Policy CAM, LPM, host routes, VLANs and so on.
 
@@ -1644,8 +1600,114 @@ To recover from this fault, try the following action
     subject         : equipment-full
     type            : operational
     ```
-    
-    
+
+### Switch RTC Battery Voltage
+
+This check detects active F2421 equipment diagnostic faults whose reason is `The RTC battery voltage is low`. The RTC battery maintains the switch system clock while the switch is powered off. If the battery voltage is low, a power cycle during an upgrade can reset the clock and prevent certificate validation, which can stop the switch from rejoining the fabric.
+
+The RTC battery should be replaced before upgrading or power cycling an affected switch. Contact Cisco TAC to coordinate replacement and confirm that the fault has cleared.
+
+
+### Certificate Expiration Check
+
+ACI uses various X.509 certificates for security and authentication purposes. If these certificates expire or are about to expire, it can cause service disruptions or failures. The fabric will raise different faults depending on the certificate type.
+
+**Certificates Approaching Expiry:**
+
+* **F4501**: KeyRing X.509 Certificate expiring - This fault occurs when a custom KeyRing X.509 Certificate is going to expire in one month.
+
+* **F3081**: SAML X.509 Certificate expiring - This fault occurs when the SAML X.509 Certificate is going to expire in one month.
+
+* **F4617**: TP X.509 Certificate expiring - This fault occurs when a Trust Point X.509 Certificate is expiring.
+
+* **F4752**: Factory X.509 Certificate expiring - This fault occurs when the factory Certificate is expiring.
+
+
+**Expired Certificates:**
+
+* **F4502**: KeyRing X.509 Certificate expired - This fault occurs when a custom KeyRing X.509 Certificate has expired.
+
+* **F4503**: TP X.509 Certificate expired - This fault occurs when a Trust Point X.509 Certificate has expired.
+
+* **F3082**: SAML X.509 Certificate expired - This fault occurs when the SAML Encryption X.509 Certificate has expired.
+
+* **F4753**: Factory X.509 Certificate expired - This fault occurs when the factory Certificate has expired.
+
+
+**Recommended Actions:**
+
+Any certificate fault listed above is upgrade-blocking whenever its lifecycle contains `raised`. This includes compound lifecycle values such as `raised,soaking`; `soaking` by itself does not indicate a live fault. Resolve every live certificate fault before starting the upgrade.
+
+* For expiring certificates (F4501, F3081, F4617, F4752): Renew the certificate(s) before they expire to avoid service disruption.
+
+* For expired certificates (F4502, F4503, F3082, F4753): Renew the certificate(s) immediately to restore functionality.
+
+#### Manually verify factory certificates in API-only mode
+
+On APIC releases earlier than 6.1(5e), the F4752 and F4753 factory-certificate faults are not available. The script normally connects to each APIC over SSH and checks the factory certificate directly. When the script is run with `--api-only`, SSH credentials are unavailable, so the check reports `MANUAL` instead of treating the unevaluated certificate as a pass.
+
+If the check reports that no APIC controllers were found, verify the APIC cluster and node inventory health, then rerun the validation. If the inventory cannot be restored, manually identify and check every APIC using the procedure below; do not treat the result as a pass.
+
+To verify the factory certificate manually:
+
+1. Connect to each APIC controller over SSH. Every controller must be checked independently.
+2. Run the following commands:
+
+    ```bash
+    date -u
+    acidiag verifyapic
+    ```
+
+3. In the `Manufacturing certificate details` section, locate the `notAfter` value. For example:
+
+    ```text
+    openssl_check: Manufacturing certificate details
+    notAfter=Aug  1 06:57:40 2026 GMT
+    ```
+
+4. Compare `notAfter` with the UTC date reported by the same APIC:
+
+    * If `notAfter` has passed, the factory certificate is expired. Renew it immediately before the upgrade.
+    * If `notAfter` is within the next 30 days, the factory certificate is expiring. Renew it before starting the upgrade.
+    * If `notAfter` is more than 30 days away, the factory certificate is valid for this check.
+
+5. Repeat the procedure on every APIC. A valid certificate on one controller does not validate the other controllers.
+
+If `acidiag verifyapic` fails, or its output does not contain a readable `notAfter` value, consider the factory certificate unverified. Re-run the script with SSH credentials or resolve the command/output issue before the upgrade; do not treat the result as a pass.
+
+If a certificate requiring action is found while another APIC cannot be verified, the overall result remains `FAIL - OUTAGE WARNING!!`. Resolve the confirmed certificate condition and manually verify every APIC that reported an error.
+
+!!! example "Fault Example (F4502: Expired KeyRing Certificate)"
+    The following shows an example of an expired KeyRing certificate:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4502"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F4502
+    cause            : cert-expired
+    descr            : KeyRing Certificate THD_KEYRING expired
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4502
+    lc               : raised
+    rule             : pki-key-ring-custom-key-ring-expired
+    ```
+
+!!! example "Fault Example (F4501: Expiring KeyRing Certificate)"
+    The following shows an example of a KeyRing certificate expiring in one month:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4501"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F4501
+    cause            : cert-expiring
+    descr            : KeyRing Certificate THD_KEYRING expiring in one month
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4501
+    lc               : raised
+    rule             : pki-key-ring-custom-key-ring-expiring
+    ```
+
+
 ## Configuration Check Details
 
 ### VPC-paired Leaf switches                       
@@ -2248,7 +2310,7 @@ This check will look for configured Pre-shared keys (PSK) within your APIC clust
 
 ### Out-of-Service Ports
 
-Any Port that has been disabled via policy creates a `fabricRsOosPath` object and marks the ports usage as `blacklist`, or `blacklist,epg` if policy was applied to it. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
+Any access/downlink or fabric port that has been disabled via policy creates a `fabricRsOosPath` object. The check covers operationally up ports with the `blacklist`, `blacklist,epg`, `blacklist,fabric`, or `blacklist,fabric,fabric-ext` usage. `fabricRsOosPath` objects can be found within the UI at the "Fabric" > "Disabled Interfaces and Decommissioned Switches" view.
 
 While generally not recommended, there are policy bypass methods to bring up ports which are out-of-service via policy. The problem arises from the ports active state deviating from ports configured policy, and this fact generally remains undetected as policy was bypassed. If an event occurs which causes Switch Nodes to receive and reprogram policy from the APICs, the configured out-of-service policy will bring the out-of-service ports down, as expected.
 
@@ -2360,6 +2422,28 @@ When Rule Expansion takes place after an upgrade, the increase in the TCAM space
 See [Inter-VRF contract with vzAny as the consumer][60] in Cisco ACI Contract Guide for details about Rule Expansion and calculate the potential TCAM space usage when the Rule Expansion takes place. If there is a risk of TCAM overflow, consider enabling the policy compression directive on contract filters to mitigate the increase of TCAM usage. However, note that enabling the policy compression directive will result in loss of the statistics capability for those rules. Also, note that policy compression for contracts with PBR is supported only from 6.1(4).
 
 See [Enable Policy Compression in Cisco ACI Contract Guide][61] for details about Policy Compression.
+
+
+### Preferred Group Shared Service Provider
+
+ACI 4.2 and later configurations can be affected by CSCvm63145 and CSCvv51121 when a Preferred Group member provides a tenant- or global-scope shared-service contract to a consumer in another VRF.
+
+The script reports only materialized, cross-VRF provider-to-consumer relationships represented by `vzFromEPg` and `vzToEPg`. A configured provider without such a relationship is not reported. Tenant-scope contracts are considered only when the contract, provider, and consumer belong to the same tenant. Shared/global pcTags `17` through `16385` are treated as fabric-wide identities; VRF separation is determined independently from the context-definition DNs.
+
+Before 6.0(1g), any consumer class in a materialized cross-VRF relationship can be affected. Depending on the release, the forwarding risk can be silent or the contract can be rejected with F0467 and `invalid-contract-config: Shared service provider cannot be in a Preferred Group`.
+
+Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains only when the Preferred Group provider has a materialized relationship with an L3Out or `vzAny` consumer in another VRF. Same-VRF L3Out and `vzAny` relationships are not reported. Starting with 6.1(3f), this condition may be reported through F4684.
+
+Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
+
+
+### Host interface policy set to auto
+As detailed in the [Cisco APIC Basic Configuration Guide][79], for **Interface Speed**, use the default value, `Inherit`.
+With this value, Cisco APIC determines the interface speed based on the transceiver installed in the switch port.
+
+In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
+Changing the speed to "inherit" resolves this situation, which is also a best practice.
+Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
 
 
 ## Defect Check Details
@@ -2743,7 +2827,6 @@ Due to [CSCwp95515][59], upgrading to an affected version while having any `conf
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
 
-
 ### Auto Firmware Update on Switch Discovery
 
 [Auto Firmware Update on Switch Discovery][63] automatically upgrades a new switch to the target firmware version before registering it to the ACI fabric. This feature activates in three scenarios:
@@ -2858,9 +2941,19 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+
+### Port Tracking Active Fabric Port Zero
+
+Due to [CSCwp91797][80], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
+
+The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
+
+Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
+
+
 ### vnsRsCIfAtt Deprecation Check
 
-Due to [CSCwr51759][78], after upgrading ACI to 6.0(3d) or later release, one or more L4-L7 service graph device cluster interfaces are missing their concrete interface attachment, causing the service graph to fail to render and resulting in a traffic outage for PBR/L4-L7 redirected traffic.
+Due to [CSCwr51759][81], after upgrading ACI to 6.0(3d) or later release, one or more L4-L7 service graph device cluster interfaces are missing their concrete interface attachment, causing the service graph to fail to render and resulting in a traffic outage for PBR/L4-L7 redirected traffic.
 
 This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later. 
 Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster interface still relying solely on it loses its concrete interface mapping, and no equivalent vnsRsCIfAttN object exists to take its place.
@@ -2868,7 +2961,8 @@ Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster inter
 Before upgrading (current version older than 6.0(3d)): Reattach the concrete interface via the APIC GUI without deleting the existing attachment object — Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → select the interface → Submit. This creates the new vnsRsCIfAttN object alongside the old one so the mapping survives the upgrade.
 After upgrading (current version 6.0(3d) or later), verify all concrete device interface attachments to ensure there are none missing, then reattach the concrete interface using the same UI path to recreate the missing vnsRsCIfAttN object.
 
-Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete interface attachment changed: the legacy relation object vnsRsCIfAtt (under vnsLIf) was deprecated in favor of vnsRsCIfAttN. vnsRsCIfAtt objects are removed by the switchover/upgrade to 6.0(3d) or later, but this removal is not paired with an automatic creation of the equivalent vnsRsCIfAttN object for cluster interfaces that had never been re-attached under the new object.
+Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete interface attachment changed: the legacy relation object vnsRsCIfAtt (under vnsLIf) was deprecated in
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -2947,5 +3041,7 @@ Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete int
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
-[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
-
+[78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
+[79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
+[80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
