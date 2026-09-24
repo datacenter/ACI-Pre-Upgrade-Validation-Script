@@ -209,6 +209,7 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
+[APIC Connected Port VLAN Override][d39]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -248,6 +249,7 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
+[d39]: #apic-connected-port-vlan-override
 
 ## General Check Details
 
@@ -2870,6 +2872,15 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+
+### APIC Connected Port VLAN Override
+
+[CSCwn64461][78] concerns user VLAN configuration overriding the InfraVLAN on a leaf port connected to an APIC. This validation correlates live APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. It reports the configured VLAN, the fabric InfraVLAN, and the configuration DN for each attachment found on an APIC-connected port.
+
+This is a configuration validation for CSCwn64461, not the `F0467` `port-configured-for-apic` fault validation. It can identify the configuration while the fault is absent. Remove the listed tenant static EPG path attachment before the upgrade.
+
+This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -2947,3 +2958,4 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
+[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
