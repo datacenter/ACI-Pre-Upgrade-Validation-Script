@@ -7,5 +7,14 @@
         "graphDn": "uni/tn-user-11/AbsGraph-test"
       }
     }
+  },
+  {
+    "vnsGraphInst": {
+      "attributes": {
+        "configSt": "applied",
+        "ctrctDn": "uni/tn-common/brc-epg-epg",
+        "graphDn": "uni/tn-common/AbsGraph-test"
+      }
+    }
   }
 ]

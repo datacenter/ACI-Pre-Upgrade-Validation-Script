@@ -329,6 +329,19 @@ vnsLDevCtx_all_api = (
             ],
             "",
         ),
+        # Regression (tenant-scoped graph matching): a different tenant's inactive context with the
+        # same contract/graph *names* as another tenant's applied graph must not be treated as deployed
+        (
+            {
+                vnsGraphInst_api: read_data(dir, "vnsGraphInst_applied_tenantA.json"),
+                vnsLDevCtx_all_api: read_data(dir, "vnsLDevCtx_vnsLIf_tenantB_namecollision.json"),
+                vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_tenantB_empty.json"),
+            },
+            "6.1(5e)",
+            script.PASS,
+            [],
+            "No deployed service graph interfaces found.",
+        ),
     ],
 )
 def test_logic(run_check, mock_icurl, icurl_outputs, tversion, expected_result, expected_data, expected_msg):

@@ -7671,8 +7671,8 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         recommended_action = "Please reattach concrete interfaces again using the UI (without deleting the existing attachment objects): Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
 
     # ── Step 1: Collect deployed service-graph LIF DNs ──────────────────────
-    # Build (contract_name, graph_name) keys from applied vnsGraphInst objects
-    graph_keys = set()
+    # Build (contract_name, graph_name) -> set(tenants) from applied vnsGraphInst objects
+    graph_keys = defaultdict(set)
     for entry in icurl("class", "vnsGraphInst.json?rsp-prop-include=config-only") or []:
         attrs = safe_extract_attrs(lambda: (
             entry["vnsGraphInst"]["attributes"]["ctrctDn"].strip(),
@@ -7681,10 +7681,11 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         if attrs is None:
             continue
         contract_dn, graph_dn = attrs
+        contract_tenant_match = re.search(tn_regex, contract_dn)
         contract_match = re.search(r"/brc-([^/]+)$", contract_dn)
         graph_match = re.search(r"/AbsGraph-([^/]+)$", graph_dn)
-        if contract_match and graph_match:
-            graph_keys.add((contract_match.group(1), graph_match.group(1)))
+        if contract_tenant_match and contract_match and graph_match:
+            graph_keys[(contract_match.group(1), graph_match.group(1))].add(contract_tenant_match.group(1))
 
     lif_dns = set()
     lif_source_tenants = {}    # lif_dn -> set(contract tenants) for implicit-object detection
@@ -7714,7 +7715,13 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         if graph_keys:
             c_norm = contract.split("-", 1)[-1] if "-" in contract else contract
             g_norm = graph[:-9] if graph.endswith("-imported") else graph
-            if not any((c, g) in graph_keys for c in (contract, c_norm) for g in (graph, g_norm)):
+            applied_tenants = set()
+            for c in (contract, c_norm):
+                for g in (graph, g_norm):
+                    applied_tenants |= graph_keys.get((c, g), set())
+            # tenant "common" is shared fabric-wide, so a match on either side is enough;
+            # otherwise the applied graph's tenant must equal this context's tenant.
+            if not any(t == ctx_tenant or "common" in (t, ctx_tenant) for t in applied_tenants):
                 continue
         elif not contract or not graph:
             continue  # Fallback mode: skip incomplete contexts
