@@ -216,7 +216,7 @@ Items                                           | Defect       | This Script    
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
-[APIC OOB Connectivity][d40]                      | CSCwu91693   | :white_check_mark: | :no_entry_sign:
+[APIC OOB Connectivity][d40]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
