@@ -1,0 +1,10 @@
+[
+    {
+        "l1PhysIf": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101/sys/phys-[eth1/49/1]",
+                "fecMode": "cl91-fec"
+            }
+        }
+    }
+]

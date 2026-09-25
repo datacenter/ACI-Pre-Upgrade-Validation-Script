@@ -216,6 +216,7 @@ Items                                           | Defect       | This Script    
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
+[FX3 Breakout Port Transceiver and Fec mode Compatibility Check][d40] |  CSCww67193  | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -256,6 +257,7 @@ Items                                           | Defect       | This Script    
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
 [d39]: #port-tracking-active-fabric-port-zero
+[d40]: #fx3-breakout-port-transceiver-and-fec-mode-compatibility-check
 
 ## General Check Details
 
@@ -2941,6 +2943,7 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
+
 ### Port Tracking Active Fabric Port Zero
 
 Due to [CSCwp91797][80], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
@@ -2948,6 +2951,16 @@ Due to [CSCwp91797][80], if port tracking is enabled and the number of active fa
 The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
 
 Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
+
+
+### FX3 Breakout Port Transceiver and Fec mode Compatibility Check
+
+Due to bug [CSCww67193][81], the following issue occurs on YC-FX3/TC-FX3 leaf switches, downlink converted ports 49-52 support 4x breakout. If these ports are populated with a CISCO-INNOLIGHT QSFP-100G-SR4 or QSFP-100G-AOC transceiver, the interface is administratively up (`adminSt: up`), and FEC is enabled on that interface, the first breakout sub-interface (`brkoutport-1`) may fail to come back up after the leaf reboots during the upgrade.
+
+This affects upgrades from a current version older than 5.2(8h) to a target version newer than 5.3(1a) that is either older than 6.1(6a), or exactly 6.2(1g).
+
+The script reports the first breakout sub-interface (`brkoutport-1`) of the affected port. Before upgrading, disable FEC on the affected interface(s) on both sides to keep the link up or Contact Cisco TAC for guidance.
+
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -3029,3 +3042,4 @@ Upgrade to a fixed release when possible. If an affected release must be used, e
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
 [79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCww67193
