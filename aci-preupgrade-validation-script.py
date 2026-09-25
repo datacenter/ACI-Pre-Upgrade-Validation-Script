@@ -7618,6 +7618,193 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes,
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="APIC OOB Connectivity check")
+def apic_oob_connectivity_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Node ID", "OOB IP", "Port", "Status"]
+    recommended_action = "Restore OOB management connectivity between all APICs and ensure the required HTTPS ports are reachable across the OOB network."
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity'
+    pod_policy_groups_query = 'fabricPodPGrp.json?rsp-subtree=children&rsp-subtree-class=fabricRsCommPol'
+    pod_profiles_query = 'fabricPodP.json?rsp-subtree=full'
+    default_https_query = 'uni/fabric/comm-default/https.json'
+
+    def get_port(comm_https, comm_policy_dn):
+        expected_dn = '{}/https'.format(comm_policy_dn)
+        matches = [mo for mo in comm_https
+                   if mo.get('commHttps', {}).get('attributes', {}).get('dn') == expected_dn]
+        if len(matches) != 1:
+            raise ValueError('Could not find exactly one commHttps object for {}.'.format(comm_policy_dn))
+        try:
+            port = int(matches[0]['commHttps']['attributes']['port'])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError('Could not read HTTPS port from {}.'.format(expected_dn))
+        if port < 1 or port > 65535:
+            raise ValueError('HTTPS port from {} is outside the valid range.'.format(expected_dn))
+        return port
+
+    def get_effective_ports(apics):
+        pod_policy_groups = icurl('class', pod_policy_groups_query)
+        policy_dn_by_group = {}
+        for mo in pod_policy_groups:
+            attrs = mo.get('fabricPodPGrp', {}).get('attributes', {})
+            group_dn = attrs.get('dn')
+            relations = [child['fabricRsCommPol']['attributes']
+                         for child in mo.get('fabricPodPGrp', {}).get('children', [])
+                         if 'fabricRsCommPol' in child]
+            if not group_dn or len(relations) != 1 or not relations[0].get('tDn'):
+                raise ValueError('Could not resolve the Management Access Policy for a Pod Policy Group.')
+            policy_dn_by_group[group_dn] = relations[0]['tDn']
+
+        if not policy_dn_by_group:
+            raise ValueError('No Pod Policy Groups were found.')
+
+        policy_dns = set(policy_dn_by_group.values())
+        if policy_dns == set(['uni/fabric/comm-default']):
+            default_https = icurl('mo', default_https_query)
+            port = get_port(default_https, 'uni/fabric/comm-default')
+            return dict((apic['topSystem']['attributes'].get('id', ''), port) for apic in apics)
+
+        pod_profiles = icurl('class', pod_profiles_query)
+        group_dn_by_pod = {}
+        for mo in pod_profiles:
+            for selector in mo.get('fabricPodP', {}).get('children', []):
+                if 'fabricPodS' not in selector:
+                    continue
+                selector = selector['fabricPodS']
+                selector_attrs = selector.get('attributes', {})
+                relations = [child['fabricRsPodPGrp']['attributes']
+                             for child in selector.get('children', [])
+                             if 'fabricRsPodPGrp' in child]
+                if len(relations) != 1 or not relations[0].get('tDn'):
+                    continue
+                group_dn = relations[0]['tDn']
+                if selector_attrs.get('type', '').upper() == 'ALL':
+                    pod_ids = set(re.findall(r'pod-(\d+)', ' '.join(
+                        apic['topSystem']['attributes'].get('dn', '') for apic in apics)))
+                else:
+                    pod_ids = set()
+                    for child in selector.get('children', []):
+                        if 'fabricPodBlk' not in child:
+                            continue
+                        block_attrs = child['fabricPodBlk'].get('attributes', {})
+                        try:
+                            start = int(block_attrs['from_'])
+                            end = int(block_attrs.get('to_', block_attrs['from_']))
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                        pod_ids.update(str(pod_id) for pod_id in range(start, end + 1))
+                for pod_id in pod_ids:
+                    if pod_id in group_dn_by_pod and group_dn_by_pod[pod_id] != group_dn:
+                        raise ValueError('Pod {} resolves to conflicting Pod Policy Groups.'.format(pod_id))
+                    group_dn_by_pod[pod_id] = group_dn
+
+        policy_dn_by_node = {}
+        for apic in apics:
+            attrs = apic['topSystem']['attributes']
+            pod_match = re.search(r'topology/pod-(\d+)/', attrs.get('dn', ''))
+            if not pod_match:
+                raise ValueError('Could not determine the pod for APIC {}.'.format(attrs.get('id', '')))
+            group_dn = group_dn_by_pod.get(pod_match.group(1))
+            if not group_dn or group_dn not in policy_dn_by_group:
+                raise ValueError('Could not resolve the Pod Policy Group for APIC {}.'.format(attrs.get('id', '')))
+            policy_dn_by_node[attrs.get('id', '')] = policy_dn_by_group[group_dn]
+
+        comm_https = icurl('class', 'commHttps.json')
+        active_policy_dns = set(policy_dn_by_node.values())
+        ports_by_policy = dict((policy_dn, get_port(comm_https, policy_dn)) for policy_dn in active_policy_dns)
+        ports_by_node = dict((node_id, ports_by_policy[policy_dn])
+                             for node_id, policy_dn in policy_dn_by_node.items())
+        return ports_by_node
+
+    def get_apic_oob_connectivity(apic_id_ip, ports_by_node):
+        data = []
+        has_error = False
+        has_failure = False
+        has_manual = False
+        oob_endpoints = []
+
+        for apic in apic_id_ip:
+            attrs = apic['topSystem']['attributes']
+            node_id = attrs.get('id', '')
+            port = ports_by_node[node_id]
+
+            if attrs.get('oobMgmtAddr', '0.0.0.0') != '0.0.0.0':
+                ip = attrs.get('oobMgmtAddr')
+            elif attrs.get('oobMgmtAddr6', '::') not in ('', '::', '0:0:0:0:0:0:0:0'):
+                ip = attrs.get('oobMgmtAddr6')
+            else:
+                data.append([node_id, 'N/A', str(port), 'OOB address is not reported by APIC inventory'])
+                has_manual = True
+                continue
+
+            oob_endpoints.append((node_id, ip, port))
+            try:
+                ip_formatted = '[{}]'.format(ip) if ':' in ip else ip
+                with open(os.devnull, 'wb') as devnull:
+                    if subprocess.call(
+                        ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull,
+                         'https://{}:{}'.format(ip_formatted, port)],
+                        stderr=devnull
+                    ) != 0:
+                        data.append([node_id, ip, str(port), "Unreachable"])
+                        has_failure = True
+            except Exception as e:
+                log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
+                data.append([node_id, ip, str(port), "Error"])
+                has_error = True
+                continue
+
+        manual_commands = []
+        if len(oob_endpoints) > 1:
+            for source_node, _, _ in oob_endpoints:
+                for destination_node, destination_ip, destination_port in oob_endpoints:
+                    if source_node == destination_node:
+                        continue
+                    destination = '[{}]'.format(destination_ip) if ':' in destination_ip else destination_ip
+                    manual_commands.append(
+                        'On APIC node {}: curl --max-time 5 -k -s -o /dev/null https://{}:{}'.format(
+                            source_node, destination, destination_port
+                        )
+                    )
+            has_manual = True
+
+        return data, has_error, has_failure, has_manual, manual_commands
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if cversion.older_than("6.0(2a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    apic_id_ip = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+    if not apic_id_ip:
+        return Result(result=ERROR, msg="APIC controller inventory could not be retrieved; cannot validate OOB connectivity.", headers=headers, recommended_action=recommended_action, doc_url=doc_url)
+
+    try:
+        ports_by_node = get_effective_ports(apic_id_ip)
+    except ValueError as e:
+        log.warning("Could not resolve effective HTTPS policy: %s", e)
+        return Result(result=ERROR, msg=str(e), headers=headers, recommended_action=recommended_action, doc_url=doc_url)
+
+    data, has_error, has_failure, has_manual, manual_commands = get_apic_oob_connectivity(apic_id_ip, ports_by_node)
+
+    msg = ''
+    if has_error:
+        result = ERROR
+    elif has_failure:
+        result = FAIL_UF
+    elif has_manual:
+        result = MANUAL
+
+    if manual_commands:
+        msg = (
+            'The automatic probes ran from the APIC executing this script. '
+            'Run the following commands from the indicated APIC nodes to validate '
+            'all inter-APIC OOB connectivity directions:\n{}'.format('\n'.join(manual_commands))
+        )
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 # ---- Script Execution ----
 
 
@@ -7799,7 +7986,7 @@ class CheckManager:
         infravlan_overlap_access_policy_check,
         port_tracking_active_fabric_port_check,
         host_interface_policy_set_speed_check,
-        
+        apic_oob_connectivity_check,
     ]
     ssh_checks = [
         # General

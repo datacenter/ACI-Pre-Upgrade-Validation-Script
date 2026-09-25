@@ -1,0 +1,35 @@
+[
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "1",
+                "dn": "topology/pod-1/node-1/sys",
+                "role": "controller",
+                "oobMgmtAddr": "10.30.10.189",
+                "oobMgmtAddr6": "::"
+            }
+        }
+    },
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "2",
+                "dn": "topology/pod-1/node-2/sys",
+                "role": "controller",
+                "oobMgmtAddr": "10.30.10.191",
+                "oobMgmtAddr6": "::"
+            }
+        }
+    },
+    {
+        "topSystem": {
+            "attributes": {
+                "id": "3",
+                "dn": "topology/pod-1/node-3/sys",
+                "role": "controller",
+                "oobMgmtAddr": "10.30.10.193",
+                "oobMgmtAddr6": "::"
+            }
+        }
+    }
+]
