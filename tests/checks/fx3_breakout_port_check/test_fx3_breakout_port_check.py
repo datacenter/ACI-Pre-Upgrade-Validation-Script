@@ -206,6 +206,21 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
             script.FAIL_O, FAIL_MSG,
             [["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/51/1", "QSFP-100G-AOC3M", "cl91-fec"]],
         ),
+        # Regression: ethpmFcot reports the optic at the cage/parent-level dn
+        # (phys-[eth1/49], no subport) instead of the breakout child. The check
+        # must still derive and query the brkoutport-1 child (eth1/49/1) from
+        # eqptBrkoutP, not rely on ethpmFcot's dn for the interface name.
+        (
+            "5.2(8g)", "5.3(2a)",
+            FX3_NODES,
+            {
+                BRKOUT_QUERY: ALL_BRKOUT_PORTS,
+                FCOT_QUERY: read_data(dir, "ethpmFcot_node101_port49_sr4_cage_level.json"),
+                l1physif_query([(1, 101, "eth1/49/1")]): read_data(dir, "l1PhysIf_node101_port49_fec_enabled.json"),
+            },
+            script.FAIL_O, FAIL_MSG,
+            [["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/49/1", "QSFP-100G-SR4", "cl91-fec"]],
+        ),
         # Two breakout ports (49, 51) on the same node, plus a second node (50)
         # -- this single case also covers the "multiple nodes both affected" scenario,
         # -> each port reported once; the extra brkoutport-2 leg on node 101's

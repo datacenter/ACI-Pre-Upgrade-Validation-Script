@@ -7625,7 +7625,7 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
     headers = ["Pod-ID", "Node-ID", "Node Name", "Model", "Breakout Port", "Transceiver", "FEC Mode"]
     data = []
     recommended_action = (
-        'Disable FEC (fecMode: disable-fec) on the highlighted breakout interface(s) to avoid an outage during '
+        'Disable FEC (fecMode: disable-fec) on both sides of the link for highlighted breakout interface(s) to avoid an outage during '
         'the leaf upgrade or choose target code where bug is fixed. '
     )
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fx3-breakout-port-transceiver-and-fec-mode-compatibility-check'
@@ -7653,19 +7653,23 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
         return Result(result=NA, msg='No YC-FX3/TC-FX3 switches found. Skipping.', doc_url=doc_url)
 
     brkout_ports_of_interest = {'49', '50', '51', '52'}
-    brkout_regex = node_regex + r'/sys/ch/lcslot-\d+/lc/leafport-(?P<port>\d+)/brkoutport-\d+'
+    # Capture the line-card slot too so the brkoutport-1 child interface
+    # (eth<card>/<port>/1) can be built directly, without depending on
+    # ethpmFcot's DN having a subport (see below).
+    brkout_regex = node_regex + r'/sys/ch/lcslot-(?P<card>\d+)/lc/leafport-(?P<port>\d+)/brkoutport-\d+'
 
     eqptBrkoutPs = icurl('class', 'eqptBrkoutP.json')
-    # {node_id: set of breakout-enabled ports (49-52) found on that FX3 node}
-    brkout_ports_per_node = defaultdict(set)
+    # {(node_id, port): card} for breakout-enabled ports (49-52) found on FX3 nodes
+    brkout_leg_per_port = OrderedDict()
     for brkout in eqptBrkoutPs:
         dn = brkout['eqptBrkoutP']['attributes'].get('dn', '')
         m = re.search(brkout_regex, dn)
         if not m or m.group('node') not in fx3_nodes or m.group('port') not in brkout_ports_of_interest:
             continue
-        brkout_ports_per_node[m.group('node')].add(m.group('port'))
+        key = (m.group('node'), m.group('port'))
+        brkout_leg_per_port.setdefault(key, {"pod": m.group('pod'), "card": m.group('card')})
 
-    if not brkout_ports_per_node:
+    if not brkout_leg_per_port:
         return Result(result=PASS, msg='No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
 
     fcot_api = 'ethpmFcot.json'
@@ -7673,16 +7677,18 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
     fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4")),'
     fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),wcard(ethpmFcot.guiCiscoEID,"QSFP-100G-AOC"))'
     fcot_api += ')'
-    fcot_regex = node_regex + r'/sys/phys-\[eth(?P<card>\d+)/(?P<port>\d+)(?:/(?P<subport>\d+))?\]'
+    # The transceiver is physically inserted into the port cage, so APIC may
+    # report ethpmFcot's dn at the cage level (e.g. phys-[eth1/49]) rather than
+    # the breakout child (phys-[eth1/49/1]); the subport is therefore optional
+    # and, when present, intentionally ignored below.
+    fcot_regex = node_regex + r'/sys/phys-\[eth\d+/(?P<port>\d+)(?:/\d+)?\]'
 
     def l1physif_dn(pod, node_id, intf):
         return 'topology/pod-{}/node-{}/sys/phys-[{}]'.format(pod, node_id, intf)
 
-    # All breakout sub-interfaces of the same physical port report the same
-    # transceiver, so keep only the lowest sub-port (brkoutport-1) per port.
     # OrderedDict keeps insertion order deterministic on Python 2.7 as well,
     # which matters since the order determines how legs are split into batches.
-    first_leg_per_port = OrderedDict()  # (node_id, port) -> {"subport", "pod", "intf", "gui_cisco_eid"}
+    first_leg_per_port = OrderedDict()  # (node_id, port) -> {"pod", "intf", "gui_cisco_eid"}
     ethpmFcots = icurl('class', fcot_api)
     for fcot in ethpmFcots:
         attrs = fcot['ethpmFcot']['attributes']
@@ -7691,16 +7697,17 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
             continue
         node_id = m.group('node')
         port = m.group('port')
-        if port not in brkout_ports_per_node.get(node_id, set()):
-            continue
-        subport = int(m.group('subport')) if m.group('subport') else 0
-        intf_name = 'eth{}/{}{}'.format(m.group('card'), port, '/' + m.group('subport') if m.group('subport') else '')
         key = (node_id, port)
-        if key not in first_leg_per_port or subport < first_leg_per_port[key]["subport"]:
-            first_leg_per_port[key] = {
-                "subport": subport, "pod": m.group('pod'),
-                "intf": intf_name, "gui_cisco_eid": attrs['guiCiscoEID'],
-            }
+        leg = brkout_leg_per_port.get(key)
+        if not leg or key in first_leg_per_port:
+            continue
+        # Always target the brkoutport-1 child interface, regardless of
+        # whether ethpmFcot's dn was reported at the cage or child level.
+        first_leg_per_port[key] = {
+            "pod": leg["pod"],
+            "intf": 'eth{}/{}/1'.format(leg["card"], port),
+            "gui_cisco_eid": attrs['guiCiscoEID'],
+        }
 
     if not first_leg_per_port:
         return Result(result=PASS, msg='No affected breakout transceivers found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
