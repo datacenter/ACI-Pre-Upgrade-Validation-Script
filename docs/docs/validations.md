@@ -216,6 +216,7 @@ Items                                           | Defect       | This Script    
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
+[APIC OOB Connectivity][d40]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -256,6 +257,7 @@ Items                                           | Defect       | This Script    
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
 [d39]: #port-tracking-active-fabric-port-zero
+[d40]: #apic-oob-connectivity
 
 ## General Check Details
 
@@ -2949,6 +2951,14 @@ The confirmed affected target releases checked by this validation are 6.0(9d) an
 
 Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
 
+### APIC OOB Connectivity
+
+Starting from 6.0(2), APIC firmware upgrades are triggered via an HTTPS POST request (bootx) sent to each peer APIC over its out-of-band (OOB) management interface. Due to [CSCwu91693][81], if OOB connectivity to a peer APIC is unavailable at the time this trigger is sent, that APIC does not receive it and silently fails to start the upgrade, while the remaining reachable APICs proceed normally. This results in a partially upgraded cluster with no explicit error raised at the time of failure.
+
+This check applies when the current APIC version is 6.0(2a) or later. It resolves the effective Management Access Policy for the Pod Policy Group assigned to each APIC's pod, then uses that policy's `commHttps` port. If every Pod Policy Group resolves to the default Management Access Policy, the script queries only the default `commHttps` object. It looks up Pod Profiles only when a custom policy is in use.
+
+The script runs on one APIC, so it can automatically validate only connections originating from that APIC. It attempts an HTTPS connection to every APIC with an OOB address on its effective port, using a 5-second timeout. For a multi-APIC cluster, it reports `MANUAL CHECK REQUIRED` and supplies `curl` commands for every inter-APIC source-to-destination direction; run each command on the indicated APIC node. If an APIC OOB address is not reported by the APIC inventory, the check also reports `MANUAL CHECK REQUIRED` rather than treating it as reachable. An unreachable automatic probe is reported as an upgrade-failure risk; a probe execution error is reported as an error.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3029,3 +3039,4 @@ Upgrade to a fixed release when possible. If an affected release must be used, e
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
 [79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
