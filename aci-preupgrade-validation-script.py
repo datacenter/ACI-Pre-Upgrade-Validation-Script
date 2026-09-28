@@ -7320,6 +7320,7 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+
 @check_wrapper(check_title='Port Tracking Minimal Uplink Zero')
 def port_tracking_active_fabric_port_check(tversion, vpc_node_ids, **kwargs):
     headers = ["Admin State", "Port Tracking Active Fabric Ports"]
@@ -7617,7 +7618,139 @@ def certificate_expiration_check(cversion, username, password, fabric_nodes,
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+@check_wrapper(check_title='FX3 Breakout Port Transceiver and Fec mode Compatibility Check')
+def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
+    result = PASS
+    msg = ''
+    headers = ["Pod-ID", "Node-ID", "Node Name", "Model", "Breakout Port", "Transceiver", "FEC Mode"]
+    data = []
+    recommended_action = (
+        'Disable FEC (fecMode: disable-fec) on both sides of the link for highlighted breakout interface(s) to avoid an outage during '
+        'the leaf upgrade or choose target code where bug is fixed. '
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fx3-breakout-port-transceiver-and-fec-mode-compatibility-check'
 
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    # Affected when upgrading from a cversion older than 5.2(8h) to a tversion
+    # newer than 5.3(1a) that is either older than 6.1(6a) or exactly 6.2(1g).
+    affected = (
+        cversion.older_than("5.2(8h)")
+        and tversion.newer_than("5.3(1a)")
+        and (tversion.older_than("6.1(6a)") or tversion.same_as("6.2(1g)"))
+    )
+    if not affected:
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    fx3_nodes = {
+        node['fabricNode']['attributes']['id']: node['fabricNode']['attributes']
+        for node in fabric_nodes
+        if 'YC-FX3' in node['fabricNode']['attributes']['model']
+        or 'TC-FX3' in node['fabricNode']['attributes']['model']
+    }
+    if not fx3_nodes:
+        return Result(result=NA, msg='No YC-FX3/TC-FX3 switches found. Skipping.', doc_url=doc_url)
+
+    brkout_ports_of_interest = {'49', '50', '51', '52'}
+    # Capture the line-card slot too so the brkoutport-1 child interface
+    # (eth<card>/<port>/1) can be built directly, without depending on
+    # ethpmFcot's DN having a subport (see below).
+    brkout_regex = node_regex + r'/sys/ch/lcslot-(?P<card>\d+)/lc/leafport-(?P<port>\d+)/brkoutport-\d+'
+
+    eqptBrkoutPs = icurl('class', 'eqptBrkoutP.json')
+    # {(node_id, port): card} for breakout-enabled ports (49-52) found on FX3 nodes
+    brkout_leg_per_port = OrderedDict()
+    for brkout in eqptBrkoutPs:
+        dn = brkout['eqptBrkoutP']['attributes'].get('dn', '')
+        m = re.search(brkout_regex, dn)
+        if not m or m.group('node') not in fx3_nodes or m.group('port') not in brkout_ports_of_interest:
+            continue
+        key = (m.group('node'), m.group('port'))
+        brkout_leg_per_port.setdefault(key, {"pod": m.group('pod'), "card": m.group('card')})
+
+    if not brkout_leg_per_port:
+        return Result(result=PASS, msg='No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
+
+    fcot_api = 'ethpmFcot.json'
+    fcot_api += '?query-target-filter=or('
+    fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4")),'
+    fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),wcard(ethpmFcot.guiCiscoEID,"QSFP-100G-AOC"))'
+    fcot_api += ')'
+    # The transceiver is physically inserted into the port cage, so APIC may
+    # report ethpmFcot's dn at the cage level (e.g. phys-[eth1/49]) rather than
+    # the breakout child (phys-[eth1/49/1]); the subport is therefore optional
+    # and, when present, intentionally ignored below.
+    fcot_regex = node_regex + r'/sys/phys-\[eth\d+/(?P<port>\d+)(?:/\d+)?\]'
+
+    def l1physif_dn(pod, node_id, intf):
+        return 'topology/pod-{}/node-{}/sys/phys-[{}]'.format(pod, node_id, intf)
+
+    # OrderedDict keeps insertion order deterministic on Python 2.7 as well,
+    # which matters since the order determines how legs are split into batches.
+    first_leg_per_port = OrderedDict()  # (node_id, port) -> {"pod", "intf", "gui_cisco_eid"}
+    ethpmFcots = icurl('class', fcot_api)
+    for fcot in ethpmFcots:
+        attrs = fcot['ethpmFcot']['attributes']
+        m = re.search(fcot_regex, attrs.get('dn', ''))
+        if not m:
+            continue
+        node_id = m.group('node')
+        port = m.group('port')
+        key = (node_id, port)
+        leg = brkout_leg_per_port.get(key)
+        if not leg or key in first_leg_per_port:
+            continue
+        # Always target the brkoutport-1 child interface, regardless of
+        # whether ethpmFcot's dn was reported at the cage or child level.
+        first_leg_per_port[key] = {
+            "pod": leg["pod"],
+            "intf": 'eth{}/{}/1'.format(leg["card"], port),
+            "gui_cisco_eid": attrs['guiCiscoEID'],
+        }
+
+    if not first_leg_per_port:
+        return Result(result=PASS, msg='No affected breakout transceivers found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
+
+    # Only flag interfaces that are admin up with FEC not disabled; use the exact
+    # instead of pulling every l1PhysIf in the fabric. APIC enforces a max of 20 filter expressions per query-target-filter
+    # filters to stay safely under that limit.
+    max_dn_filters_per_batch = 18
+    legs = list(first_leg_per_port.items())
+    fec_mode_by_dn = {}
+    for i in range(0, len(legs), max_dn_filters_per_batch):
+        batch = legs[i:i + max_dn_filters_per_batch]
+        dn_filter = ','.join(
+            'eq(l1PhysIf.dn,"{}")'.format(l1physif_dn(leg["pod"], node_id, leg["intf"]))
+            for (node_id, port), leg in batch
+        )
+        l1physif_api = (
+            'l1PhysIf.json?query-target-filter=and(ne(l1PhysIf.fecMode,"disable-fec"),'
+            'eq(l1PhysIf.adminSt,"up"),or({}))'
+        ).format(dn_filter)
+        fec_mode_by_dn.update({
+            l1['l1PhysIf']['attributes']['dn']: l1['l1PhysIf']['attributes']['fecMode']
+            for l1 in icurl('class', l1physif_api)
+        })
+
+    for (node_id, port), leg in first_leg_per_port.items():
+        dn = l1physif_dn(leg["pod"], node_id, leg["intf"])
+        fec_mode = fec_mode_by_dn.get(dn)
+        if not fec_mode:
+            continue  # FEC already disabled on this interface; not at risk
+        node_attrs = fx3_nodes[node_id]
+        data.append([
+            leg["pod"], node_id, node_attrs['name'], node_attrs['model'],
+            leg["intf"], leg["gui_cisco_eid"], fec_mode,
+        ])
+
+    if data:
+        result = FAIL_O
+        msg = 'Affected breakout transceivers with FEC not disabled found. This may cause an outage during the leaf upgrade.'
+
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+  
+  
 # ---- Script Execution ----
 
 
@@ -7799,7 +7932,7 @@ class CheckManager:
         infravlan_overlap_access_policy_check,
         port_tracking_active_fabric_port_check,
         host_interface_policy_set_speed_check,
-        
+        fx3_breakout_port_check,
     ]
     ssh_checks = [
         # General
