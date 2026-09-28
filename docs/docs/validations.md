@@ -218,6 +218,7 @@ Items                                           | Defect       | This Script    
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
 [FX3 Breakout Port Transceiver and Fec mode Compatibility Check][d40] |  CSCww67193  | :white_check_mark: | :no_entry_sign:
 [APIC OOB Connectivity][d41]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
+[Service-EP Flag in BD without PBR][d42]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -260,6 +261,7 @@ Items                                           | Defect       | This Script    
 [d39]: #port-tracking-active-fabric-port-zero
 [d40]: #fx3-breakout-port-transceiver-and-fec-mode-compatibility-check
 [d41]: #apic-oob-connectivity
+[d42]: #service-ep-flag-in-bd-without-pbr
 
 ## General Check Details
 
@@ -2972,6 +2974,16 @@ This check applies when the current APIC version is 6.0(2a) or later. It resolve
 
 The script runs on one APIC, so it can automatically validate only connections originating from that APIC. It attempts an HTTPS connection to every APIC with an OOB address on its effective port, using a 5-second timeout. For a multi-APIC cluster, it reports `MANUAL CHECK REQUIRED` and supplies `curl` commands for every inter-APIC source-to-destination direction; run each command on the indicated APIC node. If an APIC OOB address is not reported by the APIC inventory, the check also reports `MANUAL CHECK REQUIRED` rather than treating it as reachable. An unreachable automatic probe is reported as an upgrade-failure risk; a probe execution error is reported as an error.
 
+### Service-EP Flag in BD without PBR
+
+On ACI releases 5.2.5c/6.0.1g and 16.0.8e/6.1.1f, the Service-ep flag is set on the Service epg (vlanCktEp) even when PBR (vnsRsLIfCtxToSvcRedirectPol) is not configured.
+The service-ep ctrl setting configures the Don't Learn (DL) Bit to 1 when forwarding the traffic to destination.
+The DL bit being set on traffic coming from service device causes more BUM traffic on customer network.
+
+When customers upgrade to a version >= 16.0.8e/6.1.1f, due to the fix of [CSCwi17652][83] the Service-ep flag gets removed for the specific service EPGs vlanCktEp without PBR
+
+This may affect working service graphs. If any instances of missing `vnsRsLIfCtxToSvcRedirectPol` are flagged by this script, Cisco TAC must be contacted to identify and resolve any underlying issue before performing the upgrade.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3054,3 +3066,4 @@ The script runs on one APIC, so it can automatically validate only connections o
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
 [81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCww67193
 [82]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
+[83]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi17652

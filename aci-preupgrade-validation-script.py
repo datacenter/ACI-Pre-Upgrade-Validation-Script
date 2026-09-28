@@ -6302,6 +6302,77 @@ def isis_database_byte_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='Service EP Flag in BD without PBR')
+def service_ep_flag_bd_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Tenant ", "Bridge Domain ", "Service Graph Device", "Device Node Name" ]
+    data = []
+    unformatted_headers = ["DN of vnsLIfCtx"]
+    unformatted_data = []
+    recommended_action = (
+        "\n\tConfirm that within these BDs the PBR configuration is complete."
+        "\n\tPlease check the reference document for details."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+    if (
+        # Older versions not affected
+            cversion.older_than("5.2(5c)") and tversion.older_than("5.2(5c)")
+        ) or (
+        # Current version not affected target version fixed
+            cversion.older_than("5.2(5b)") and tversion.newer_than("6.0(8e)")
+        ) or (
+        # Current version and target version fixed
+            cversion.newer_than("6.0(8e)") and tversion.newer_than("6.0(8e)")
+        ):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    bd_dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)"
+
+    sg_regex = r"uni/tn-(?P<sg_tn>[^/]+)/"
+    sg_regex += r"ldevCtx-c-(?P<ldev_ctrc>[^-][^g]+)"
+    sg_regex += r"-g-(?P<ldev_graph>[^-][^n]+)"
+    sg_regex += r"-n-(?P<ldev_node>[^/]+)/"
+    sg_regex += r"lIfCtx-c-(?P<ldev_conn>.+)"
+
+    # pbr_regex = r"uni/tn-(?P<pbr_tn>[^/]+)/"
+    # pbr_regex += r"svcCont/svcRedirectPol-(?P<pbr_name>.+)"
+
+    vnsLIfCtx_api = "vnsLIfCtx.json"
+    vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
+    vnsLIfCtxs = icurl("class", vnsLIfCtx_api)
+
+    for vnsLIfCtx in vnsLIfCtxs:
+        if ("vnsRsLIfCtxToSvcRedirectPol" not in vnsLIfCtx["vnsLIfCtx"]["children"][0]):
+            #  vnsRsLIfCtxToSvcRedirectPol missing,
+            sg_graph_name = re.search(sg_regex, vnsLIfCtx["vnsLIfCtx"]["attributes"]["dn"])
+            result = FAIL_O
+            for child in vnsLIfCtx["vnsLIfCtx"]["children"]:
+                if "vnsRsLIfCtxToBD" in child:
+                    bd_name = re.search(bd_dn_regex, child["vnsRsLIfCtxToBD"]["attributes"]["tDn"])
+                    if sg_graph_name and bd_name:
+                        data.append([
+                            sg_graph_name.group("sg_tn"),
+                            bd_name.group("bd"),
+                            sg_graph_name.group("ldev_graph"),
+                            sg_graph_name.group("ldev_node")
+                        ])
+                    break
+
+    if unformatted_data:
+        result = MANUAL
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
 def apic_database_size_check(cversion, **kwargs):
@@ -8106,6 +8177,7 @@ class CheckManager:
         standby_sup_sync_check,
         isis_database_byte_check,
         configpush_shard_check,
+        service_ep_flag_bd_check,
         auto_firmware_update_on_switch_check,
         rogue_ep_coop_exception_mac_check,
         n9k_c9408_model_lem_count_check,
