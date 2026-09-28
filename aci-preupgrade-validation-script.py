@@ -6355,6 +6355,37 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
     def manual(leaf_dn, epg_dn, reason):
         unformatted_data.append([leaf_dn, epg_dn, reason])
 
+    def query_dns(class_name, dns, extra_params=""):
+        """Query selected DNs with bounded predicates and encoded URL length."""
+        max_terms = 10  # Keep DN clauses well below the stated 20-item limit.
+        max_query_length = 3000
+        page_suffix = "&page=999999&page-size=1000"
+        objects = []
+        oversized = set()
+        batch = []
+
+        def make_query(dn_batch):
+            terms = ["eq({}.dn,{})".format(class_name, json.dumps(dn))
+                     for dn in dn_batch]
+            expression = terms[0] if len(terms) == 1 else "or({})".format(",".join(terms))
+            return "{}.json?query-target-filter={}{}".format(
+                class_name, quote(expression, safe="(),"), extra_params)
+
+        for dn in sorted(set(dn for dn in dns if dn)):
+            candidate = batch + [dn]
+            if (len(candidate) > max_terms or
+                    len(make_query(candidate) + page_suffix) > max_query_length):
+                if batch:
+                    objects.extend(icurl("class", make_query(batch), page_size=1000))
+                    batch = []
+                if len(make_query([dn]) + page_suffix) > max_query_length:
+                    oversized.add(dn)
+                    continue
+            batch.append(dn)
+        if batch:
+            objects.extend(icurl("class", make_query(batch), page_size=1000))
+        return objects, oversized
+
     leaf_versions = {}
     for node in kwargs.get("fabric_nodes") or []:
         attrs = node.get("fabricNode", {}).get("attributes", {})
@@ -6393,27 +6424,24 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
                       unformatted_data=unformatted_data,
                       recommended_action=recommended_action, doc_url=doc_url)
 
-    # Match only the service EPGs found on affected leaves. Ten DNs per query
-    # keeps the APIC filter and URL bounded even on large fabrics.
+    # Match only the service EPGs found on affected leaves.
     epg_dns = sorted(set(epg_dn for _, epg_dn in affected))
     epp_by_dn = {}
-    for offset in range(0, len(epg_dns), 10):
-        terms = ["eq(vnsEPpInfo.dn,{})".format(json.dumps(dn))
-                 for dn in epg_dns[offset:offset + 10]]
-        expression = terms[0] if len(terms) == 1 else "or({})".format(",".join(terms))
-        epp_query = (
-            "vnsEPpInfo.json?query-target-filter={}"
-            "&rsp-subtree=children"
-            "&rsp-subtree-class=vnsRtEPpInfoAtt,vnsRsEPpInfoToBD"
-        ).format(quote(expression, safe="(),"))
-        for item in icurl("class", epp_query, page_size=1000):
-            epp = item.get("vnsEPpInfo", {})
-            dn = epp.get("attributes", {}).get("dn")
-            if dn:
-                epp_by_dn[dn] = epp
+    epp_items, oversized_epps = query_dns(
+        "vnsEPpInfo", epg_dns,
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRtEPpInfoAtt,vnsRsEPpInfoToBD")
+    for item in epp_items:
+        epp = item.get("vnsEPpInfo", {})
+        dn = epp.get("attributes", {}).get("dn")
+        if dn:
+            epp_by_dn[dn] = epp
 
     pending = []
     for leaf_dn, epg_dn in affected:
+        if epg_dn in oversized_epps:
+            manual(leaf_dn, epg_dn, "Service EPG DN exceeds the bounded APIC query length.")
+            continue
         epp = epp_by_dn.get(epg_dn)
         if not epp:
             manual(leaf_dn, epg_dn, "Service EPG information was not found.")
@@ -6432,22 +6460,42 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
                       unformatted_data=unformatted_data,
                       recommended_action=recommended_action, doc_url=doc_url)
 
-    # A service EPG can be shared by several graph connectors. Reverse
-    # relations identify every deployed graph that uses this same EPG.
+    # A service EPG can be shared by several graph connectors. Query only the
+    # graph nodes referenced by those EPGs, then only their connector contexts.
+    node_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" in ref_dn and "/EPgDef-" in ref_dn:
+                node_dns.add(ref_dn.split("/LegVNode-", 1)[0])
+    node_relation_dns = [dn + "/rsNodeInstToLDevCtx" for dn in node_dns]
+    node_items, oversized_nodes = query_dns(
+        "vnsRsNodeInstToLDevCtx", node_relation_dns)
     node_relations = defaultdict(list)
-    for item in icurl("class", "vnsRsNodeInstToLDevCtx.json", page_size=1000):
+    for item in node_items:
         attrs = item.get("vnsRsNodeInstToLDevCtx", {}).get("attributes", {})
         dn = attrs.get("dn", "")
         if dn.endswith("/rsNodeInstToLDevCtx"):
             node_relations[dn.rsplit("/", 1)[0]].append(attrs.get("tDn", ""))
 
-    ctx_query = (
-        "vnsLIfCtx.json?query-target=self&rsp-subtree=children"
+    candidate_context_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                continue
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-" + connector)
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-Any")
+    ctx_items, oversized_contexts = query_dns(
+        "vnsLIfCtx", candidate_context_dns,
+        "&query-target=self&rsp-subtree=children"
         "&rsp-subtree-class=vnsRsLIfCtxToBD,"
-        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol"
-    )
+        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol")
     contexts = {}
-    for item in icurl("class", ctx_query, page_size=1000):
+    for item in ctx_items:
         ctx = item.get("vnsLIfCtx", {})
         dn = ctx.get("attributes", {}).get("dn")
         if dn:
@@ -6463,15 +6511,24 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
                 continue
             node_dn = ref_dn.split("/LegVNode-", 1)[0]
             connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            if node_dn + "/rsNodeInstToLDevCtx" in oversized_nodes:
+                problems.append("Graph node DN exceeds the bounded APIC query length.")
+                continue
             ldev_dns = node_relations.get(node_dn, [])
             if len(ldev_dns) != 1 or not ldev_dns[0]:
                 problems.append("Graph node does not resolve to one device context.")
                 continue
             parent_dn = ldev_dns[0]
             ctx_dn = parent_dn + "/lIfCtx-c-" + connector
+            if ctx_dn in oversized_contexts:
+                problems.append("Graph connector DN exceeds the bounded APIC query length.")
+                continue
             ctx = contexts.get(ctx_dn)
             if not ctx:
                 ctx_dn = parent_dn + "/lIfCtx-c-Any"
+                if ctx_dn in oversized_contexts:
+                    problems.append("Fallback graph connector DN exceeds the bounded APIC query length.")
+                    continue
                 ctx = contexts.get(ctx_dn)
             if not ctx:
                 problems.append("Graph connector context was not found.")

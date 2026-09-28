@@ -1,4 +1,9 @@
+import copy
 import importlib
+import json
+import re
+
+from six.moves.urllib.parse import parse_qs
 
 import pytest
 
@@ -21,6 +26,16 @@ LDEV_DN = "uni/tn-test/ldevCtx-c-contract-g-graph-n-N1"
 CTX_DN = LDEV_DN + "/lIfCtx-c-consumer"
 POLICY_DN = "uni/tn-test/svcCont/svcRedirectPol-policy"
 FLAG_QUERY = 'vlanCktEp.json?query-target-filter=allbits(vlanCktEp.ctrl,"service-ep")'
+
+
+def requested_dns(query):
+    params = parse_qs(query.split("?", 1)[1])
+    assert len(params) + 2 <= 20  # icurl appends page and page-size.
+    expression = params["query-target-filter"][0]
+    terms = re.findall(r'eq\([^,]+,("(?:[^"\\]|\\.)*")\)', expression)
+    assert 1 <= len(terms) <= 10
+    assert len(query + "&page=999999&page-size=1000") <= 3000
+    return set(json.loads(term) for term in terms)
 
 
 def make_payload(redirect=False):
@@ -77,13 +92,18 @@ def run_case(monkeypatch, run_check, payload, leaf_version="5.2(8h)",
         if query == FLAG_QUERY:
             return payload["flagged"]
         if query.startswith("vnsEPpInfo.json?"):
-            assert "query-target-filter=" in query
-            return payload["epps"]
-        if query == "vnsRsNodeInstToLDevCtx.json":
-            return payload["node_relations"]
+            dns = requested_dns(query)
+            return [item for item in payload["epps"]
+                    if item["vnsEPpInfo"]["attributes"]["dn"] in dns]
+        if query.startswith("vnsRsNodeInstToLDevCtx.json?"):
+            dns = requested_dns(query)
+            return [item for item in payload["node_relations"]
+                    if item["vnsRsNodeInstToLDevCtx"]["attributes"]["dn"] in dns]
         if query.startswith("vnsLIfCtx.json?"):
             assert "rsp-subtree-class=" in query
-            return payload["contexts"]
+            dns = requested_dns(query)
+            return [item for item in payload["contexts"]
+                    if item["vnsLIfCtx"]["attributes"]["dn"] in dns]
         raise AssertionError("Unexpected API query: {}".format(query))
 
     monkeypatch.setattr(script, "icurl", fake_icurl)
@@ -252,3 +272,81 @@ def test_shared_service_epg_with_one_pbr_connector_is_expected(monkeypatch, run_
     result, _ = run_case(monkeypatch, run_check, payload)
     assert result.result == script.PASS
     assert result.data == []
+
+
+def test_graph_queries_exclude_unrelated_inventory(monkeypatch, run_check):
+    payload = make_payload()
+    unrelated_node = GRAPH_DN + "/NodeInst-unrelated"
+    unrelated_ctx = LDEV_DN + "/lIfCtx-c-unrelated"
+    payload["node_relations"].append({
+        "vnsRsNodeInstToLDevCtx": {"attributes": {
+            "dn": unrelated_node + "/rsNodeInstToLDevCtx", "tDn": LDEV_DN,
+        }}
+    })
+    payload["contexts"].append({
+        "vnsLIfCtx": {"attributes": {"dn": unrelated_ctx}, "children": []}
+    })
+    result, calls = run_case(monkeypatch, run_check, payload)
+    assert result.result == script.FAIL_O
+    node_queries = [q for q in calls if q.startswith("vnsRsNodeInstToLDevCtx.json?")]
+    ctx_queries = [q for q in calls if q.startswith("vnsLIfCtx.json?")]
+    assert len(node_queries) == len(ctx_queries) == 1
+    assert requested_dns(node_queries[0]) == {NODE_DN + "/rsNodeInstToLDevCtx"}
+    assert requested_dns(ctx_queries[0]) == {
+        CTX_DN, LDEV_DN + "/lIfCtx-c-Any",
+    }
+
+
+def test_graph_queries_batch_beyond_twenty_candidate_dns(monkeypatch, run_check):
+    payload = make_payload()
+    for index in range(2, 12):
+        node_dn = GRAPH_DN + "/NodeInst-N{}".format(index)
+        ldev_dn = LDEV_DN + "-{}".format(index)
+        ctx_dn = ldev_dn + "/lIfCtx-c-consumer"
+        payload["epps"][0]["vnsEPpInfo"]["children"].append({
+            "vnsRtEPpInfoAtt": {"attributes": {
+                "tDn": node_dn + "/LegVNode-0/EPgDef-consumer",
+            }}
+        })
+        payload["node_relations"].append({
+            "vnsRsNodeInstToLDevCtx": {"attributes": {
+                "dn": node_dn + "/rsNodeInstToLDevCtx", "tDn": ldev_dn,
+            }}
+        })
+        payload["contexts"].append({
+            "vnsLIfCtx": {"attributes": {"dn": ctx_dn}, "children": [
+                {"vnsRsLIfCtxToBD": {"attributes": {"tDn": BD_DN}}},
+            ]}
+        })
+
+    result, calls = run_case(monkeypatch, run_check, payload)
+    assert result.result == script.FAIL_O
+    node_queries = [q for q in calls if q.startswith("vnsRsNodeInstToLDevCtx.json?")]
+    ctx_queries = [q for q in calls if q.startswith("vnsLIfCtx.json?")]
+    assert len(node_queries) == 2  # 11 graph nodes, at most ten per request.
+    assert len(ctx_queries) == 3  # 11 exact and 11 Any candidates.
+    assert len(calls) == 7  # Flag and EPG, then two node and three context batches.
+    assert sum(len(requested_dns(q)) for q in node_queries) == 11
+    assert sum(len(requested_dns(q)) for q in ctx_queries) == 22
+
+
+def test_long_dns_split_before_encoded_url_limit(monkeypatch, run_check):
+    payload = make_payload()
+    other_flag = copy.deepcopy(payload["flagged"][0])
+    other_epp = copy.deepcopy(payload["epps"][0])
+    first_dn = EPG_DN + "-" + "a" * 1600
+    second_dn = EPG_DN + "-" + "b" * 1600
+    payload["flagged"][0]["vlanCktEp"]["attributes"]["epgDn"] = first_dn
+    payload["epps"][0]["vnsEPpInfo"]["attributes"]["dn"] = first_dn
+    other_flag["vlanCktEp"]["attributes"]["epgDn"] = second_dn
+    other_epp["vnsEPpInfo"]["attributes"]["dn"] = second_dn
+    payload["flagged"].append(other_flag)
+    payload["epps"].append(other_epp)
+
+    result, calls = run_case(monkeypatch, run_check, payload)
+    epp_queries = [q for q in calls if q.startswith("vnsEPpInfo.json?")]
+    assert result.result == script.FAIL_O
+    assert len(epp_queries) == 2
+    assert {dn for q in epp_queries for dn in requested_dns(q)} == {
+        first_dn, second_dn,
+    }
