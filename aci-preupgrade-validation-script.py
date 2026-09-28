@@ -7986,7 +7986,6 @@ class CheckManager:
         infravlan_overlap_access_policy_check,
         port_tracking_active_fabric_port_check,
         host_interface_policy_set_speed_check,
-        apic_oob_connectivity_check,
     ]
     ssh_checks = [
         # General
@@ -8003,6 +8002,7 @@ class CheckManager:
     cli_checks = [
         # General
         apic_database_size_check,
+        apic_oob_connectivity_check,
 
         # Bugs
         apic_ca_cert_validation,
