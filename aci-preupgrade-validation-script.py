@@ -33,7 +33,6 @@ import time
 import pexpect
 import logging
 import subprocess
-import socket
 import json
 import sys
 import os
@@ -7739,20 +7738,20 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                 continue
 
             oob_endpoints.append((node_id, ip, port))
-            family = socket.AF_INET6 if ':' in ip else socket.AF_INET
-            sock = socket.socket(family, socket.SOCK_STREAM)
-            sock.settimeout(5)
             try:
-                if sock.connect_ex((ip, port)) != 0:
-                    data.append([node_id, ip, str(port), "Unreachable"])
-                    has_failure = True
+                ip_formatted = '[{}]'.format(ip) if ':' in ip else ip
+                with open(os.devnull, 'wb') as devnull:
+                    if subprocess.call(
+                        ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull,
+                         'https://{}:{}'.format(ip_formatted, port)],
+                        stderr=devnull
+                    ) != 0:
+                        data.append([node_id, ip, str(port), "Unreachable"])
+                        has_failure = True
             except Exception as e:
                 log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
                 data.append([node_id, ip, str(port), "Error"])
                 has_error = True
-                continue
-            finally:
-                sock.close()
 
         manual_commands = []
         if len(oob_endpoints) > 1:

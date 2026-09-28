@@ -85,7 +85,7 @@ def custom_policy_outputs(port="8443"):
 
 
 @pytest.mark.parametrize(
-    "icurl_outputs, cversion, tversion, connect_exit_codes, expected_result, expected_headers, expected_data",
+    "icurl_outputs, cversion, tversion, curl_exit_codes, expected_result, expected_headers, expected_data",
     [
         # tversion not provided -> MANUAL
         (
@@ -280,35 +280,29 @@ def custom_policy_outputs(port="8443"):
         ),
     ],
 )
-def test_logic(run_check, mock_icurl, monkeypatch, icurl_outputs, cversion, tversion, connect_exit_codes, expected_result, expected_headers, expected_data):
+def test_logic(run_check, mock_icurl, monkeypatch, icurl_outputs, cversion, tversion, curl_exit_codes, expected_result, expected_headers, expected_data):
     policy_outputs = icurl_outputs.pop("_policy_outputs", DEFAULT_POLICY_OUTPUTS)
     for query, output in policy_outputs.items():
         icurl_outputs[query] = copy.deepcopy(output)
     idx = [0]
 
-    class FakeSocket:
-        def __init__(self, family, type_):
-            self.family = family
+    def mock_subprocess_call(cmd, stderr=None):
+        assert cmd[:7] == ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull]
+        assert stderr is not None
+        url = cmd[-1]
+        assert url.startswith('https://')
+        host = url[len('https://'):].rsplit(':', 1)[0]
+        if ':' in host:
+            assert host.startswith('[') and host.endswith(']'), (
+                "IPv6 address in curl URL must be wrapped in square brackets, got: {}".format(url)
+            )
+        if idx[0] >= len(curl_exit_codes):
+            raise AssertionError("Unexpected curl invocation: {}".format(url))
+        code = curl_exit_codes[idx[0]]
+        idx[0] += 1
+        return code
 
-        def settimeout(self, timeout):
-            pass
-
-        def connect_ex(self, address):
-            host, port = address
-            # IPv6 addresses must be passed raw (no brackets) to socket.connect_ex
-            assert not host.startswith('['), "IPv6 address must not be bracketed for connect_ex, got: {}".format(host)
-            expected_family = script.socket.AF_INET6 if ':' in host else script.socket.AF_INET
-            assert self.family == expected_family
-            if idx[0] >= len(connect_exit_codes):
-                raise AssertionError("Unexpected connection attempt to {}:{}".format(host, port))
-            code = connect_exit_codes[idx[0]]
-            idx[0] += 1
-            return code
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr(script.socket, "socket", lambda family, type_: FakeSocket(family, type_))
+    monkeypatch.setattr(script.subprocess, "call", mock_subprocess_call)
     result = run_check(
         cversion=script.AciVersion(cversion),
         tversion=script.AciVersion(tversion) if tversion else None,
@@ -316,27 +310,14 @@ def test_logic(run_check, mock_icurl, monkeypatch, icurl_outputs, cversion, tver
     assert result.result == expected_result
     assert result.headers == expected_headers
     assert result.data == expected_data
-    assert idx[0] == len(connect_exit_codes)
+    assert idx[0] == len(curl_exit_codes)
 
 
 def test_manual_mesh_commands(run_check, mock_icurl, monkeypatch, icurl_outputs):
     icurl_outputs[topSystem] = read_data(dir, "topSystem_3apics_oob.json")
     icurl_outputs.update(copy.deepcopy(DEFAULT_POLICY_OUTPUTS))
 
-    class FakeSocket:
-        def __init__(self, family, type_):
-            pass
-
-        def settimeout(self, timeout):
-            pass
-
-        def connect_ex(self, address):
-            return 0
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr(script.socket, "socket", lambda family, type_: FakeSocket(family, type_))
+    monkeypatch.setattr(script.subprocess, "call", lambda *args, **kwargs: 0)
 
     result = run_check(
         cversion=script.AciVersion("6.0(2a)"),
