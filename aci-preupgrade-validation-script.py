@@ -6310,10 +6310,10 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
     unformatted_headers = ["Leaf", "Service EPG or VLAN DN", "Reason"]
     unformatted_data = []
     recommended_action = (
-        "The listed service EPGs currently have service-ep without a resolved "
-        "PBR redirect policy. A fixed target release may remove that flag and "
-        "change Don't Learn behavior. Contact Cisco TAC to assess the service "
-        "graph and traffic impact before upgrading."
+        "Review the listed service EPGs for PBR redirect use. A fixed target "
+        "release may remove service-ep when PBR is absent and change Don't Learn "
+        "behavior. Contact Cisco TAC to assess the service graph and traffic "
+        "impact before upgrading."
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
 
@@ -6544,7 +6544,9 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
                 + child_attributes(ctx, "vnsRsLIfCtxToRemoteSvcRedirectPol")
             )
             if redirects:
-                if any(attrs.get("tDn") and attrs.get("state") == "formed"
+                # Some APIC responses omit state on a configured relation.
+                # An explicit unformed state still needs manual review.
+                if any(attrs.get("tDn") and attrs.get("state") in (None, "formed")
                        for attrs in redirects):
                     pbr_found = True
                 else:

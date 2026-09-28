@@ -193,6 +193,23 @@ def test_formed_redirect_after_other_children_is_not_flagged(monkeypatch, run_ch
     assert result.data == []
 
 
+@pytest.mark.parametrize("relation_class", [
+    "vnsRsLIfCtxToSvcRedirectPol",
+    "vnsRsLIfCtxToRemoteSvcRedirectPol",
+])
+def test_redirect_without_state_is_configured_pbr(monkeypatch, run_check,
+                                                   relation_class):
+    payload = make_payload(redirect=True)
+    children = payload["contexts"][0]["vnsLIfCtx"]["children"]
+    children[-1] = {relation_class: {"attributes": {
+        "rType": "mo", "tCl": "vnsSvcRedirectPol", "tDn": POLICY_DN,
+        "tType": "mo",
+    }}}
+    result, calls = run_case(monkeypatch, run_check, payload)
+    assert result.result == script.PASS
+    assert len(calls) == 4
+
+
 def test_unresolved_redirect_requires_manual_review(monkeypatch, run_check):
     payload = make_payload(redirect=True)
     redirect = payload["contexts"][0]["vnsLIfCtx"]["children"][-1]
@@ -200,6 +217,14 @@ def test_unresolved_redirect_requires_manual_review(monkeypatch, run_check):
     result, _ = run_case(monkeypatch, run_check, payload)
     assert result.result == script.MANUAL
     assert result.unformatted_data[0][:2] == [LEAF_DN, EPG_DN]
+
+
+def test_redirect_without_target_requires_manual_review(monkeypatch, run_check):
+    payload = make_payload(redirect=True)
+    redirect = payload["contexts"][0]["vnsLIfCtx"]["children"][-1]
+    del redirect["vnsRsLIfCtxToSvcRedirectPol"]["attributes"]["tDn"]
+    result, _ = run_case(monkeypatch, run_check, payload)
+    assert result.result == script.MANUAL
 
 
 def test_missing_bd_is_not_an_outage_warning(monkeypatch, run_check):
