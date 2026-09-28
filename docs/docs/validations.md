@@ -2976,13 +2976,11 @@ The script runs on one APIC, so it can automatically validate only connections o
 
 ### Service-EP Flag in BD without PBR
 
-On ACI releases 5.2.5c/6.0.1g and 16.0.8e/6.1.1f, the Service-ep flag is set on the Service epg (vlanCktEp) even when PBR (vnsRsLIfCtxToSvcRedirectPol) is not configured.
-The service-ep ctrl setting configures the Don't Learn (DL) Bit to 1 when forwarding the traffic to destination.
-The DL bit being set on traffic coming from service device causes more BUM traffic on customer network.
+On affected releases, [CSCwi17652][83] can set `service-ep` on a service EPG's operational `vlanCktEp` even when that EPG has no PBR redirect policy. The flag sets the Don't Learn bit on traffic from the service device. Fixed releases remove the erroneous flag, so an upgrade may change the traffic behavior of a working service graph. The known fixed boundaries are 6.0(8e) and 6.1(1f); this check also treats later release trains as containing the fix.
 
-When customers upgrade to a version >= 16.0.8e/6.1.1f, due to the fix of [CSCwi17652][83] the Service-ep flag gets removed for the specific service EPGs vlanCktEp without PBR
+For upgrades to a fixed release, the check first finds `vlanCktEp` entries with `service-ep` on affected leaf releases. It follows each entry's service EPG and deployed graph relationships to the bridge domain and logical interface contexts. A formed redirect-policy relationship on any matching connector means the flag has a PBR use and this defect warning is not raised. If the flag is present and no matching connector has a redirect policy, the check reports the leaf, service EPG, BD, and connector for Cisco TAC review before upgrade. If an object cannot be mapped reliably, the result requires manual review.
 
-This may affect working service graphs. If any instances of missing `vnsRsLIfCtxToSvcRedirectPol` are flagged by this script, Cisco TAC must be contacted to identify and resolve any underlying issue before performing the upgrade.
+This check identifies a possible change in Don't Learn behavior; it does not establish that customer traffic will fail after the upgrade.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html

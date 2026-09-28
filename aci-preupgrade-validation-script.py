@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 from six import iteritems, text_type
 from six.moves import input
+from six.moves.urllib.parse import quote
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict, OrderedDict
@@ -6302,67 +6303,205 @@ def isis_database_byte_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='Service EP Flag in BD without PBR')
+@check_wrapper(check_title='Service EP Flag without PBR')
 def service_ep_flag_bd_check(cversion, tversion, **kwargs):
-    result = PASS
-    headers = ["Tenant ", "Bridge Domain ", "Service Graph Device", "Device Node Name" ]
+    headers = ["Leaf", "Service EPG DN", "Bridge Domain DN", "Graph Connector DN"]
     data = []
-    unformatted_headers = ["DN of vnsLIfCtx"]
+    unformatted_headers = ["Leaf", "Service EPG or VLAN DN", "Reason"]
     unformatted_data = []
     recommended_action = (
-        "\n\tConfirm that within these BDs the PBR configuration is complete."
-        "\n\tPlease check the reference document for details."
+        "The listed service EPGs currently have service-ep without a resolved "
+        "PBR redirect policy. A fixed target release may remove that flag and "
+        "change Don't Learn behavior. Contact Cisco TAC to assess the service "
+        "graph and traffic impact before upgrading."
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
-    if (
-        # Older versions not affected
-            cversion.older_than("5.2(5c)") and tversion.older_than("5.2(5c)")
-        ) or (
-        # Current version not affected target version fixed
-            cversion.older_than("5.2(5b)") and tversion.newer_than("6.0(8e)")
-        ) or (
-        # Current version and target version fixed
-            cversion.newer_than("6.0(8e)") and tversion.newer_than("6.0(8e)")
-        ):
+
+    def at_least(version, boundary):
+        return version.same_as(boundary) or version.newer_than(boundary)
+
+    def source_affected(version):
+        if version.major_version == "5.2":
+            return at_least(version, "5.2(5c)")
+        if version.major_version == "6.0":
+            return at_least(version, "6.0(1g)") and version.older_than("6.0(8e)")
+        if version.major_version == "6.1":
+            return version.older_than("6.1(1f)")
+        if version.older_than("5.2(5c)") or at_least(version, "6.1(1f)"):
+            return False
+        return None  # No verified boundary for this release train.
+
+    # The target must contain the fix. Current leaf versions are checked per
+    # operational entry because a fabric can contain mixed switch releases.
+    target_fixed = (
+        (tversion.major_version == "6.0" and at_least(tversion, "6.0(8e)"))
+        or (tversion.major_version == "6.1" and at_least(tversion, "6.1(1f)"))
+        or (int(tversion.major1) == 6 and int(tversion.major2) >= 2)
+        or int(tversion.major1) > 6
+    )
+    if not target_fixed:
         return Result(result=NA, msg=VER_NOT_AFFECTED)
 
-    bd_dn_regex = r"uni/tn-(?P<bd_tn>[^/]+)/BD-(?P<bd>[^/]+)"
+    def child_attributes(obj, class_name):
+        return [
+            child[class_name].get("attributes", {})
+            for child in obj.get("children") or []
+            if isinstance(child, dict) and class_name in child
+        ]
 
-    sg_regex = r"uni/tn-(?P<sg_tn>[^/]+)/"
-    sg_regex += r"ldevCtx-c-(?P<ldev_ctrc>[^-][^g]+)"
-    sg_regex += r"-g-(?P<ldev_graph>[^-][^n]+)"
-    sg_regex += r"-n-(?P<ldev_node>[^/]+)/"
-    sg_regex += r"lIfCtx-c-(?P<ldev_conn>.+)"
+    def manual(leaf_dn, epg_dn, reason):
+        unformatted_data.append([leaf_dn, epg_dn, reason])
 
-    # pbr_regex = r"uni/tn-(?P<pbr_tn>[^/]+)/"
-    # pbr_regex += r"svcCont/svcRedirectPol-(?P<pbr_name>.+)"
+    leaf_versions = {}
+    for node in kwargs.get("fabric_nodes") or []:
+        attrs = node.get("fabricNode", {}).get("attributes", {})
+        if attrs.get("role") == "leaf":
+            leaf_versions[attrs.get("dn")] = attrs.get("version")
 
-    vnsLIfCtx_api = "vnsLIfCtx.json"
-    vnsLIfCtx_api += "?query-target=self&rsp-subtree=children"
-    vnsLIfCtxs = icurl("class", vnsLIfCtx_api)
+    flag_query = 'vlanCktEp.json?query-target-filter=allbits(vlanCktEp.ctrl,"service-ep")'
+    flagged = icurl("class", flag_query, page_size=1000)
+    affected = []
+    for item in flagged:
+        attrs = item.get("vlanCktEp", {}).get("attributes", {})
+        leaf_match = re.match(r"^(topology/pod-\d+/node-\d+)/", attrs.get("dn") or "")
+        leaf_dn = leaf_match.group(1) if leaf_match else ""
+        epg_dn = attrs.get("epgDn") or ""
+        if not epg_dn:
+            manual(leaf_dn, attrs.get("dn") or "", "Flagged entry has no service EPG DN.")
+            continue
+        version_string = leaf_versions.get(leaf_dn)
+        try:
+            leaf_version = AciVersion(version_string) if version_string else None
+        except ValueError:
+            leaf_version = None
+        if not leaf_version:
+            manual(leaf_dn, epg_dn, "Current leaf version is unavailable.")
+            continue
+        impact = source_affected(leaf_version)
+        if impact is None:
+            manual(leaf_dn, epg_dn, "Source release has no verified CSCwi17652 boundary.")
+        elif impact:
+            affected.append((leaf_dn, epg_dn))
 
-    for vnsLIfCtx in vnsLIfCtxs:
-        if ("vnsRsLIfCtxToSvcRedirectPol" not in vnsLIfCtx["vnsLIfCtx"]["children"][0]):
-            #  vnsRsLIfCtxToSvcRedirectPol missing,
-            sg_graph_name = re.search(sg_regex, vnsLIfCtx["vnsLIfCtx"]["attributes"]["dn"])
-            result = FAIL_O
-            for child in vnsLIfCtx["vnsLIfCtx"]["children"]:
-                if "vnsRsLIfCtxToBD" in child:
-                    bd_name = re.search(bd_dn_regex, child["vnsRsLIfCtxToBD"]["attributes"]["tDn"])
-                    if sg_graph_name and bd_name:
-                        data.append([
-                            sg_graph_name.group("sg_tn"),
-                            bd_name.group("bd"),
-                            sg_graph_name.group("ldev_graph"),
-                            sg_graph_name.group("ldev_node")
-                        ])
-                    break
+    affected = sorted(set(affected))
+    if not affected:
+        result = MANUAL if unformatted_data else PASS
+        return Result(result=result, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
 
-    if unformatted_data:
-        result = MANUAL
+    # Match only the service EPGs found on affected leaves. Ten DNs per query
+    # keeps the APIC filter and URL bounded even on large fabrics.
+    epg_dns = sorted(set(epg_dn for _, epg_dn in affected))
+    epp_by_dn = {}
+    for offset in range(0, len(epg_dns), 10):
+        terms = ["eq(vnsEPpInfo.dn,{})".format(json.dumps(dn))
+                 for dn in epg_dns[offset:offset + 10]]
+        expression = terms[0] if len(terms) == 1 else "or({})".format(",".join(terms))
+        epp_query = (
+            "vnsEPpInfo.json?query-target-filter={}"
+            "&rsp-subtree=children"
+            "&rsp-subtree-class=vnsRtEPpInfoAtt,vnsRsEPpInfoToBD"
+        ).format(quote(expression, safe="(),"))
+        for item in icurl("class", epp_query, page_size=1000):
+            epp = item.get("vnsEPpInfo", {})
+            dn = epp.get("attributes", {}).get("dn")
+            if dn:
+                epp_by_dn[dn] = epp
+
+    pending = []
+    for leaf_dn, epg_dn in affected:
+        epp = epp_by_dn.get(epg_dn)
+        if not epp:
+            manual(leaf_dn, epg_dn, "Service EPG information was not found.")
+            continue
+        bd_dns = set(attrs.get("tDn") for attrs in
+                     child_attributes(epp, "vnsRsEPpInfoToBD") if attrs.get("tDn"))
+        refs = [attrs.get("tDn") for attrs in
+                child_attributes(epp, "vnsRtEPpInfoAtt") if attrs.get("tDn")]
+        if len(bd_dns) != 1 or not refs:
+            manual(leaf_dn, epg_dn, "BD or deployed graph relation is missing or ambiguous.")
+            continue
+        pending.append((leaf_dn, epg_dn, next(iter(bd_dns)), refs))
+
+    if not pending:
+        return Result(result=MANUAL, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # A service EPG can be shared by several graph connectors. Reverse
+    # relations identify every deployed graph that uses this same EPG.
+    node_relations = defaultdict(list)
+    for item in icurl("class", "vnsRsNodeInstToLDevCtx.json", page_size=1000):
+        attrs = item.get("vnsRsNodeInstToLDevCtx", {}).get("attributes", {})
+        dn = attrs.get("dn", "")
+        if dn.endswith("/rsNodeInstToLDevCtx"):
+            node_relations[dn.rsplit("/", 1)[0]].append(attrs.get("tDn", ""))
+
+    ctx_query = (
+        "vnsLIfCtx.json?query-target=self&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsLIfCtxToBD,"
+        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol"
+    )
+    contexts = {}
+    for item in icurl("class", ctx_query, page_size=1000):
+        ctx = item.get("vnsLIfCtx", {})
+        dn = ctx.get("attributes", {}).get("dn")
+        if dn:
+            contexts[dn] = ctx
+
+    for leaf_dn, epg_dn, bd_dn, refs in pending:
+        pbr_found = False
+        context_dns = []
+        problems = []
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                problems.append("Cannot parse deployed graph reference.")
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                problems.append("Graph node does not resolve to one device context.")
+                continue
+            parent_dn = ldev_dns[0]
+            ctx_dn = parent_dn + "/lIfCtx-c-" + connector
+            ctx = contexts.get(ctx_dn)
+            if not ctx:
+                ctx_dn = parent_dn + "/lIfCtx-c-Any"
+                ctx = contexts.get(ctx_dn)
+            if not ctx:
+                problems.append("Graph connector context was not found.")
+                continue
+            context_dns.append(ctx_dn)
+            ctx_bds = set(attrs.get("tDn") for attrs in
+                          child_attributes(ctx, "vnsRsLIfCtxToBD") if attrs.get("tDn"))
+            if bd_dn not in ctx_bds:
+                problems.append("Graph connector BD does not match the service EPG BD.")
+                continue
+            redirects = (
+                child_attributes(ctx, "vnsRsLIfCtxToSvcRedirectPol")
+                + child_attributes(ctx, "vnsRsLIfCtxToRemoteSvcRedirectPol")
+            )
+            if redirects:
+                if any(attrs.get("tDn") and attrs.get("state") == "formed"
+                       for attrs in redirects):
+                    pbr_found = True
+                else:
+                    problems.append("Redirect policy relationship is unresolved.")
+
+        if pbr_found:
+            continue
+        if problems or not context_dns:
+            manual(leaf_dn, epg_dn, "; ".join(sorted(set(problems))) or
+                   "No graph connector could be resolved.")
+            continue
+        data.append([leaf_dn, epg_dn, bd_dn, ", ".join(sorted(set(context_dns)))])
+
+    result = FAIL_O if data else MANUAL if unformatted_data else PASS
     return Result(
         result=result,
         headers=headers,
