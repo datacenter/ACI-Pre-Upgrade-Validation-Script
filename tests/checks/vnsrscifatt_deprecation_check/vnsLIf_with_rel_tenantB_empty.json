@@ -1,0 +1,10 @@
+[
+  {
+    "vnsLIf": {
+      "attributes": {
+        "dn": "uni/tn-tenantB/lDevVip-tenantB-device/lIf-tenantB-cons"
+      },
+      "children": []
+    }
+  }
+]
