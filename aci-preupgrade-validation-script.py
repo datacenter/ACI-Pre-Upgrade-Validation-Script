@@ -7990,25 +7990,30 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
         recommended_action = "Please reattach concrete interfaces again using the UI (without deleting the existing attachment objects): Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
 
-    # ── Step 1: Collect service-graph LIF DNs ───────────────────────────────
-    # Build (contract_name, graph_name) -> set(tenants) from applied vnsGraphInst objects
+    # ── Step 1: Collect LIF DNs referenced by applied service graphs ────────
+    # Build (contract_name, graph_name) -> set(tenants) from applied vnsGraphInst objects.
     graph_keys = defaultdict(set)
-    for entry in icurl("class", 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")') or []:
+    for entry in icurl("class", 'vnsGraphInst.json?query-target-filter=and(eq(vnsGraphInst.configSt,"applied"))') or []:
         attrs = safe_extract_attrs(lambda: (
+            entry["vnsGraphInst"]["attributes"]["configSt"].strip(),
             entry["vnsGraphInst"]["attributes"]["ctrctDn"].strip(),
             entry["vnsGraphInst"]["attributes"]["graphDn"].strip(),
         ))
         if attrs is None:
             continue
-        contract_dn, graph_dn = attrs
+        config_st, contract_dn, graph_dn = attrs
+        if config_st != "applied":
+            continue
         contract_tenant_match = re.search(tn_regex, contract_dn)
         contract_match = re.search(r"/brc-([^/]+)$", contract_dn)
         graph_match = re.search(r"/AbsGraph-([^/]+)$", graph_dn)
         if contract_tenant_match and contract_match and graph_match:
             graph_keys[(contract_match.group(1), graph_match.group(1))].add(contract_tenant_match.group(1))
 
+    if not graph_keys:
+        return Result(result=PASS, msg="No applied service graph instances found.", doc_url=doc_url)
+
     lif_dns = set()
-    manual_lif_dns = set()
     lif_source_tenants = {}    # lif_dn -> set(contract tenants) for implicit-object detection
     dev_source_tenants = {}    # device-prefix DN -> set(contract tenants)
 
@@ -8042,8 +8047,8 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
                 applied_tenants |= graph_keys.get((c, g), set())
         # tenant "common" is shared fabric-wide, so a match on either side is enough;
         # otherwise the applied graph's tenant must equal this context's tenant.
-        is_applied = any(t == ctx_tenant or "common" in (t, ctx_tenant) for t in applied_tenants)
-        context_lif_dns = lif_dns if is_applied else manual_lif_dns
+        if not any(t == ctx_tenant or "common" in (t, ctx_tenant) for t in applied_tenants):
+            continue
 
         # DFS through vnsLIfCtx children to collect vnsRsLIfCtxToLIf references
         stack = [ldev_ctx_mo]
@@ -8063,9 +8068,9 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
                     continue
 
                 if target_class == "vnsLIf" or re.search(lif_dn_regex, target_dn):
-                    context_lif_dns.add(target_dn)
+                    lif_dns.add(target_dn)
                     lif_dn_match = re.search(lif_dn_regex, target_dn)
-                    if is_applied and lif_dn_match and ctx_tenant:
+                    if lif_dn_match and ctx_tenant:
                         dev_dn = device_dn_from_lif_match(lif_dn_match)
                         lif_source_tenants.setdefault(target_dn, set()).add(ctx_tenant)
                         dev_source_tenants.setdefault(dev_dn, set()).add(ctx_tenant)
@@ -8073,22 +8078,17 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
                     ldeviflif_match = re.search(ldeviflif_regex, target_dn)
                     if ldeviflif_match:
                         converted = "{}/lIf-{}".format(ldeviflif_match.group("base"), ldeviflif_match.group("lif"))
-                        context_lif_dns.add(converted)
-                        if is_applied and ctx_tenant:
+                        lif_dns.add(converted)
+                        if ctx_tenant:
                             lif_source_tenants.setdefault(converted, set()).add(ctx_tenant)
                             dev_source_tenants.setdefault(ldeviflif_match.group("base"), set()).add(ctx_tenant)
 
     # Expand to all LIFs under the same device clusters
     dev_prefixes = set()
-    manual_dev_prefixes = set()
     for lif_dn in lif_dns:
         lif_dn_match = re.search(lif_dn_regex, lif_dn)
         if lif_dn_match:
             dev_prefixes.add(device_dn_from_lif_match(lif_dn_match))
-    for lif_dn in manual_lif_dns:
-        lif_dn_match = re.search(lif_dn_regex, lif_dn)
-        if lif_dn_match:
-            manual_dev_prefixes.add(device_dn_from_lif_match(lif_dn_match))
 
     # One consolidated collection for vnsLIf + vnsRsCIfAtt + vnsRsCIfAttN.
     vns_lif_with_rel_query = (
@@ -8109,14 +8109,14 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         lif_mo, lif_dn = parsed
 
         lif_dn_match = re.search(lif_dn_regex, lif_dn)
-        if lif_dn_match:
-            dev_dn = device_dn_from_lif_match(lif_dn_match)
-            if dev_dn in dev_prefixes:
-                lif_dns.add(lif_dn)
-                if dev_source_tenants.get(dev_dn):
-                    lif_source_tenants.setdefault(lif_dn, set()).update(dev_source_tenants[dev_dn])
-            elif dev_dn in manual_dev_prefixes:
-                manual_lif_dns.add(lif_dn)
+        if not lif_dn_match:
+            continue
+        dev_dn = device_dn_from_lif_match(lif_dn_match)
+        if dev_dn not in dev_prefixes:
+            continue
+        lif_dns.add(lif_dn)
+        if dev_source_tenants.get(dev_dn):
+            lif_source_tenants.setdefault(lif_dn, set()).update(dev_source_tenants[dev_dn])
 
         for child in lif_mo.get("children", []) or []:
             if not isinstance(child, dict):
@@ -8127,65 +8127,16 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
                 vnsRsCIfAttNs.append(child)
                 lifs_with_new_relation.add(lif_dn)
 
-    manual_lif_dns.difference_update(lif_dns)
-
-    # A configured context without an applied graph is only a future risk. Keep
-    # these rows separate so they cannot turn a current outage check into FAIL_O.
-    manual_rows = []
-    for lif_dn in sorted(manual_lif_dns):
-        if lif_dn not in lifs_with_new_relation:
-            manual_rows.append(build_row(lif_dn, re.search(lif_dn_regex, lif_dn)))
-
-    if not post_cifatt_delete:
-        new_dn_keys_for_manual = set()
-        for relation_mo in vnsRsCIfAttNs:
-            relation_dn = safe_extract_attrs(lambda: relation_mo["vnsRsCIfAttN"]["attributes"]["dn"].strip())
-            if relation_dn:
-                new_dn_keys_for_manual.add(relation_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1))
-        for old_relation_mo in vnsRsCIfAtts:
-            old_dn = safe_extract_attrs(lambda: old_relation_mo["vnsRsCIfAtt"]["attributes"]["dn"].strip())
-            if not old_dn or old_dn in new_dn_keys_for_manual:
-                continue
-            old_lif_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/", old_dn)
-            old_lif = old_lif_match.group(1) if old_lif_match else ""
-            if old_lif not in manual_lif_dns or old_lif not in lifs_with_new_relation:
-                continue
-            old_relation_match = re.search(
-                r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)/"
-                r"rscIfAtt-\[.*?/cIf-\[(?P<cif>[^\]]+)\]\]", old_dn)
-            if old_relation_match:
-                manual_rows.append([
-                    old_relation_match.group("tenant"), old_relation_match.group("device"),
-                    old_relation_match.group("lif"), old_relation_match.group("cif"), old_dn,
-                ])
-    manual_rows = sorted(set(tuple(row) for row in manual_rows))
-    if post_cifatt_delete:
-        manual_rows = [row[:3] for row in manual_rows]
-
-    manual_action = ("Configured-only interfaces (MANUAL): These interfaces are not deployed and do "
-                     "not represent a current outage. If they are deployed before the upgrade "
-                     "completes, the condition described in CSCwr51759 may occur. Verify their "
-                     "concrete interface attachments and reattach any missing or mismatched mapping "
-                     "using the APIC UI before deployment.")
-
-    def include_manual_result(active_result):
+    def format_deployed_result(active_result):
         if active_result.result == FAIL_O:
             if active_result.msg:
                 active_result.recommended_action = active_result.msg.rstrip(". ") + ". " + active_result.recommended_action
             active_result.recommended_action = "Deployed interfaces (FAIL_O): " + active_result.recommended_action
             active_result.msg = ""
-        if not manual_rows:
-            return active_result
-        if active_result.result == PASS:
-            return Result(result=MANUAL, headers=headers,
-                          data=manual_rows, recommended_action=manual_action, doc_url=doc_url)
-        active_result.unformatted_headers = ["MANUAL review: Tenant"] + headers[1:]
-        active_result.unformatted_data = [list(row) for row in manual_rows]
-        active_result.recommended_action = active_result.recommended_action.rstrip(". ") + ". " + manual_action
         return active_result
 
     if not lif_dns:
-        return include_manual_result(Result(result=PASS, msg="No deployed service graph interfaces found.", doc_url=doc_url))
+        return Result(result=PASS, msg="No deployed service graph interfaces found.", doc_url=doc_url)
 
     # ── Step 2: Missing vnsRsCIfAttN under deployed LIFs (from consolidated data) ──
 
@@ -8206,21 +8157,21 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         if missing_rscifattn_rows:
             missing_rscifattn_rows.sort(key=lambda r: r[-1])
             msg = "Graph is rendered with implicit objects" if has_implicit_objects else "vnsRsCIfAttN is missing under deployed L4-L7 cluster interfaces."
-            return include_manual_result(Result(result=FAIL_O, msg=msg, headers=headers, data=[[r[0], r[1], r[2]] for r in missing_rscifattn_rows], recommended_action=recommended_action, doc_url=doc_url))
-        return include_manual_result(Result(result=PASS, msg="All deployed service graph interfaces have vnsRsCIfAttN.", doc_url=doc_url))
+            return format_deployed_result(Result(result=FAIL_O, msg=msg, headers=headers, data=[[r[0], r[1], r[2]] for r in missing_rscifattn_rows], recommended_action=recommended_action, doc_url=doc_url))
+        return Result(result=PASS, msg="All deployed service graph interfaces have vnsRsCIfAttN.", doc_url=doc_url)
 
     # version not having new object path reuses relation objects collected above.
 
     if missing_rscifattn_rows:
         missing_rscifattn_rows.sort(key=lambda r: r[-1])
         msg = "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency." if not vnsRsCIfAtts and not vnsRsCIfAttNs else ""
-        return include_manual_result(Result(result=FAIL_O, msg=msg, headers=headers, data=missing_rscifattn_rows, recommended_action=recommended_action, doc_url=doc_url))
+        return format_deployed_result(Result(result=FAIL_O, msg=msg, headers=headers, data=missing_rscifattn_rows, recommended_action=recommended_action, doc_url=doc_url))
 
     if not vnsRsCIfAtts and not vnsRsCIfAttNs:
-        return include_manual_result(Result(result=FAIL_O, msg="Both vnsRsCIfAtt and vnsRsCIfAttN are missing. Reattach concrete interface mappings before upgrade.", headers=headers, data=[], recommended_action=recommended_action, doc_url=doc_url))
+        return format_deployed_result(Result(result=FAIL_O, msg="Both vnsRsCIfAtt and vnsRsCIfAttN are missing. Reattach concrete interface mappings before upgrade.", headers=headers, data=[], recommended_action=recommended_action, doc_url=doc_url))
 
     if not vnsRsCIfAtts:
-        return include_manual_result(Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url))
+        return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
 
     # Build new-object lookup sets in a single pass over vnsRsCIfAttNs
     new_lif_dns = set(lifs_with_new_relation)   # LIF DNs covered by vnsRsCIfAttN (for coverage check)
@@ -8244,7 +8195,7 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         lif_dn_match = re.search(lif_dn_regex, lif_dn)
         data.append(build_row(lif_dn, lif_dn_match))
     if data:
-        return include_manual_result(Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
+        return format_deployed_result(Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
 
     # Consistency check: each old vnsRsCIfAtt must have a matching new vnsRsCIfAttN
     data = []
@@ -8277,7 +8228,7 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     if data:
         result = FAIL_O
 
-    return include_manual_result(Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
+    return format_deployed_result(Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
 
 
   

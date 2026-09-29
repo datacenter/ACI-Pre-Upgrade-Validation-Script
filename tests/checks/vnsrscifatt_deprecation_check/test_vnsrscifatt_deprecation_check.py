@@ -9,13 +9,13 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 test_function = "vnsRsCIfAtt_deprecation_check"
 
-# icurl queries (only the 3 queries vnsRsCIfAtt_deprecation_check actually issues)
+# icurl queries (the context and relation queries run only when applied graphs exist)
 vnsLIf_with_rel_api = (
     "vnsLIf.json?rsp-prop-include=config-only"
     "&rsp-subtree=children"
     "&rsp-subtree-class=vnsRsCIfAtt,vnsRsCIfAttN"
 )
-vnsGraphInst_api = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")'
+vnsGraphInst_api = 'vnsGraphInst.json?query-target-filter=and(eq(vnsGraphInst.configSt,"applied"))'
 vnsLDevCtx_all_api = (
     'vnsLDevCtx.json?'
     'rsp-prop-include=config-only'
@@ -61,7 +61,7 @@ vnsLDevCtx_all_api = (
             "6.0(3d)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # Both vnsRsCIfAtt and vnsRsCIfAttN are missing but service graph is unconfigured -> PASS
         (
@@ -73,7 +73,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # Both vnsRsCIfAtt and vnsRsCIfAttN are missing while vnsLIf exists, but service graph is unconfigured -> PASS
         (
@@ -85,7 +85,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # Legacy behavior: when vnsRsCIfAtt is absent but vnsRsCIfAttN exists, return PASS
         (
@@ -97,7 +97,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # All vnsRsCIfAtt relations have matching vnsRsCIfAttN relations
         (
@@ -109,7 +109,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # One vnsRsCIfAtt relation (cons) missing in vnsRsCIfAttN, but service graph unconfigured -> PASS
         (
@@ -121,7 +121,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # vnsRsCIfAttN is empty and old relations exist, but service graph unconfigured -> PASS
         (
@@ -133,7 +133,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.PASS,
             [],
-            "No deployed service graph interfaces found.",
+            "No applied service graph instances found.",
         ),
         # vnsLIf target from vnsLIfCtx relation is covered when global vnsRsCIfAttN exists
         (
@@ -329,7 +329,7 @@ vnsLDevCtx_all_api = (
             ],
             "",
         ),
-        # A same-name context in another tenant is configured-only, never an outage result.
+        # A same-name context in another tenant is not part of the applied graph.
         (
             {
                 vnsGraphInst_api: read_data(dir, "vnsGraphInst_applied_tenantA.json"),
@@ -337,9 +337,9 @@ vnsLDevCtx_all_api = (
                 vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_tenantB_empty.json"),
             },
             "6.1(5e)",
-            script.MANUAL,
-            [["tenantB", "tenantB-device", "tenantB-cons", "cons", "uni/tn-tenantB/lDevVip-tenantB-device/lIf-tenantB-cons"]],
-            "",
+            script.PASS,
+            [],
+            "No deployed service graph interfaces found.",
         ),
     ],
 )
@@ -435,16 +435,25 @@ def test_cversion_and_post_delete_branch(run_check, mock_icurl, icurl_outputs, t
     vnsLDevCtx_all_api: read_data(dir, "vnsLDevCtx_vnsLIf_cons_and_prov.json"),
     vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_only.json"),
 }])
-def test_configured_only_context_is_manual(run_check, mock_icurl, cversion):
+def test_configured_only_context_is_excluded(run_check, mock_icurl, cversion):
     result = run_check(cversion=script.AciVersion(cversion), tversion=script.AciVersion("6.1(5e)"))
-    assert result.result == script.MANUAL
-    assert len(result.data) == 2
-    assert all(row[0] == "user-11" for row in result.data)
-    assert result.msg == ""
-    assert result.recommended_action.startswith("Configured-only interfaces (MANUAL): ")
-    assert "not represent a current outage" in result.recommended_action
-    assert "before the upgrade completes" in result.recommended_action
-    assert "before deployment" in result.recommended_action
+    assert result.result == script.PASS
+    assert result.data == []
+    assert result.msg == "No applied service graph instances found."
+
+
+@pytest.mark.parametrize("icurl_outputs", [
+    {vnsGraphInst_api: []},
+    {vnsGraphInst_api: [{"vnsGraphInst": {"attributes": {
+        "configSt": "configured",
+        "ctrctDn": "uni/tn-user-11/brc-epg-epg",
+        "graphDn": "uni/tn-user-11/AbsGraph-test",
+    }}}]},
+])
+def test_no_applied_graph_skips_context_and_relation_queries(run_check, mock_icurl):
+    result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
+    assert result.result == script.PASS
+    assert result.msg == "No applied service graph instances found."
 
 
 @pytest.mark.parametrize("icurl_outputs", [{
@@ -469,11 +478,11 @@ def test_deployed_failure_moves_condition_to_recommended_action(run_check, mock_
     vnsLDevCtx_all_api: read_data(dir, "vnsLDevCtx_vnsLIf_cons_and_prov.json"),
     vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_old_only.json"),
 }])
-def test_old_only_relations_on_configured_context_are_manual(run_check, mock_icurl):
+def test_old_only_relations_on_configured_context_are_excluded(run_check, mock_icurl):
     result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
-    assert result.result == script.MANUAL
-    assert len(result.data) == 2
-    assert all(row[0] == "user-11" for row in result.data)
+    assert result.result == script.PASS
+    assert result.data == []
+    assert result.msg == "No applied service graph instances found."
 
 
 @pytest.mark.parametrize("icurl_outputs", [{
@@ -487,16 +496,13 @@ def test_old_only_relations_on_configured_context_are_manual(run_check, mock_icu
         + read_data(dir, "vnsLIf_with_rel_tenantB_empty.json")
     ),
 }])
-def test_deployed_failure_lists_configured_only_for_manual_review(run_check, mock_icurl):
+def test_deployed_failure_excludes_unapplied_context(run_check, mock_icurl):
     result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
     assert result.result == script.FAIL_O
+    assert len(result.data) == 2
     assert all(row[0] == "user-11" for row in result.data)
-    assert result.unformatted_headers[0].startswith("MANUAL review:")
-    assert len(result.unformatted_data) == 1
-    assert result.unformatted_data[0][0] == "tenantB"
+    assert result.unformatted_data == []
     assert result.msg == ""
-    assert "Missing concrete interface mapping can cause service graph inconsistency." in result.recommended_action
     assert result.recommended_action.startswith("Deployed interfaces (FAIL_O): ")
-    assert ". Configured-only interfaces (MANUAL): " in result.recommended_action
-    assert "not represent a current outage" in result.recommended_action
-    assert "If they are deployed before the upgrade completes, the condition described in CSCwr51759 may occur." in result.recommended_action
+    assert "Missing concrete interface mapping can cause service graph inconsistency." in result.recommended_action
+    assert "MANUAL" not in result.recommended_action
