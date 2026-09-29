@@ -2177,11 +2177,11 @@ This script checks the ISIS Redistribution Metric via `redistribMetric` of an ob
 
 ### POD PTEP Overlap with External Routable TEP Pool
 
-A Multi-Pod data plane TEP (POD PTEP) can conflict with an address that APIC allocates dynamically from an external routable TEP pool. This can assign the same address to a remote leaf routable TEP and a POD PTEP, causing traffic loss. See [issue #419](https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script/issues/419).
+A Multi-Pod data plane TEP (POD PTEP) can conflict with an address that APIC allocates dynamically from an external routable TEP pool. This can assign the same address to a remote leaf routable TEP and a POD PTEP, causing traffic loss.
 
 The check reads the `fvIp.addr` children of `fvPodConnP` and compares each POD PTEP with every `fabricExtRoutablePodSubnet.pool`. The `reserveAddressCount` addresses at the beginning of a pool are excluded from dynamic allocation and are valid locations for a POD PTEP. For example, with pool `192.30.30.0/24` and a reserved count of 3, `.1` through `.3` are reserved; `.4` and later addresses in the pool fail this check. With a reserved count of 0, any POD PTEP inside the pool fails.
 
-Move a conflicting POD PTEP outside the unreserved pool range, or recreate the pool with enough reserved addresses to include it. Cisco's [external routable subnet guide](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html) describes how to change the subnet and its reservation.
+Move a conflicting POD PTEP outside the unreserved pool range, or recreate the pool with enough reserved addresses to include it. Cisco's [external routable subnet guide][83] describes how to change the subnet and its reservation.
 
 
 ### BGP Route-target Type for GOLF over L2EVPN
@@ -3065,3 +3065,4 @@ The script runs on one APIC, so it can automatically validate only connections o
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
 [81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCww67193
 [82]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
+[83]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
