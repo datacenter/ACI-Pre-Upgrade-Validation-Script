@@ -1,0 +1,11 @@
+[
+    {
+        "ethpmFcot": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101/sys/phys-[eth1/51/1]/phys/fcot",
+                "guiCiscoEID": "QSFP-100G-AOC3M",
+                "guiName": "CISCO-INNOLIGHT"
+            }
+        }
+    }
+]
