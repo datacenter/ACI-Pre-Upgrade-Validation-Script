@@ -15,7 +15,7 @@ vnsLIf_with_rel_api = (
     "&rsp-subtree=children"
     "&rsp-subtree-class=vnsRsCIfAtt,vnsRsCIfAttN"
 )
-vnsGraphInst_api = 'vnsGraphInst.json?rsp-prop-include=config-only'
+vnsGraphInst_api = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")'
 vnsLDevCtx_all_api = (
     'vnsLDevCtx.json?'
     'rsp-prop-include=config-only'
@@ -329,8 +329,7 @@ vnsLDevCtx_all_api = (
             ],
             "",
         ),
-        # Regression (tenant-scoped graph matching): a different tenant's inactive context with the
-        # same contract/graph *names* as another tenant's applied graph must not be treated as deployed
+        # A same-name context in another tenant is configured-only, never an outage result.
         (
             {
                 vnsGraphInst_api: read_data(dir, "vnsGraphInst_applied_tenantA.json"),
@@ -338,9 +337,9 @@ vnsLDevCtx_all_api = (
                 vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_tenantB_empty.json"),
             },
             "6.1(5e)",
-            script.PASS,
-            [],
-            "No deployed service graph interfaces found.",
+            script.MANUAL,
+            [["tenantB", "tenantB-device", "tenantB-cons", "cons", "uni/tn-tenantB/lDevVip-tenantB-device/lIf-tenantB-cons"]],
+            "Heads up: these configured service graph interfaces are not deployed. If deployed before the upgrade is complete, they may hit CSCwr51759.",
         ),
     ],
 )
@@ -428,3 +427,52 @@ def test_cversion_and_post_delete_branch(run_check, mock_icurl, icurl_outputs, t
     assert result.result == expected_result
     assert result.data == expected_data
     assert result.msg == expected_msg
+
+
+@pytest.mark.parametrize("cversion", ["5.2(8h)", "6.1(5e)"])
+@pytest.mark.parametrize("icurl_outputs", [{
+    vnsGraphInst_api: [],
+    vnsLDevCtx_all_api: read_data(dir, "vnsLDevCtx_vnsLIf_cons_and_prov.json"),
+    vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_only.json"),
+}])
+def test_configured_only_context_is_manual(run_check, mock_icurl, cversion):
+    result = run_check(cversion=script.AciVersion(cversion), tversion=script.AciVersion("6.1(5e)"))
+    assert result.result == script.MANUAL
+    assert len(result.data) == 2
+    assert all(row[0] == "user-11" for row in result.data)
+    assert "not deployed" in result.msg
+    assert "before the upgrade is complete" in result.msg
+    assert "Before deploying" in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [{
+    vnsGraphInst_api: [],
+    vnsLDevCtx_all_api: read_data(dir, "vnsLDevCtx_vnsLIf_cons_and_prov.json"),
+    vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_old_only.json"),
+}])
+def test_old_only_relations_on_configured_context_are_manual(run_check, mock_icurl):
+    result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
+    assert result.result == script.MANUAL
+    assert len(result.data) == 2
+    assert all(row[0] == "user-11" for row in result.data)
+
+
+@pytest.mark.parametrize("icurl_outputs", [{
+    vnsGraphInst_api: read_data(dir, "vnsGraphInst_applied_single.json"),
+    vnsLDevCtx_all_api: (
+        read_data(dir, "vnsLDevCtx_vnsLIf_cons_and_prov.json")
+        + read_data(dir, "vnsLDevCtx_vnsLIf_tenantB_namecollision.json")
+    ),
+    vnsLIf_with_rel_api: (
+        read_data(dir, "vnsLIf_with_rel_only.json")
+        + read_data(dir, "vnsLIf_with_rel_tenantB_empty.json")
+    ),
+}])
+def test_deployed_failure_keeps_configured_only_heads_up(run_check, mock_icurl):
+    result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
+    assert result.result == script.FAIL_O
+    assert all(row[0] == "user-11" for row in result.data)
+    assert result.unformatted_headers[0].startswith("Configured Only:")
+    assert len(result.unformatted_data) == 1
+    assert result.unformatted_data[0][0] == "tenantB"
+    assert "Heads up:" in result.msg

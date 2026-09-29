@@ -2956,6 +2956,8 @@ Due to [CSCwr51759][81], after upgrading ACI to 6.0(3d) or later release, one or
 This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later. 
 Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster interface still relying solely on it loses its concrete interface mapping, and no equivalent vnsRsCIfAttN object exists to take its place.
 
+The check returns `FAIL - OUTAGE WARNING!!` for affected interfaces in applied service graphs. It returns `MANUAL CHECK REQUIRED` for affected interfaces found only in configured, non-deployed graph contexts. The manual result is a heads-up: if those remnant configurations are deployed before the upgrade is complete, they may encounter the same issue. Verify their attachments before deploying them. When both types are found, the check retains the outage result and lists the configured-only interfaces separately as a heads-up.
+
 Before upgrading (current version older than 6.0(3d)): Reattach the concrete interface via the APIC GUI without deleting the existing attachment object — Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → select the interface → Submit. This creates the new vnsRsCIfAttN object alongside the old one so the mapping survives the upgrade.
 After upgrading (current version 6.0(3d) or later), verify all concrete device interface attachments to ensure there are none missing, then reattach the concrete interface using the same UI path to recreate the missing vnsRsCIfAttN object.
 
@@ -3043,4 +3045,3 @@ Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete int
 [79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
 [81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
-
