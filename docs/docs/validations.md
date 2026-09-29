@@ -2678,7 +2678,7 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+If alerted, enter the serial numbers reported by the check in the [Field Notice Serial Number Validator][79] to check for applicable Field Notices, including FN64251. Review [FN64251][39] for details. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
 
 The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
@@ -2959,3 +2959,4 @@ This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** fo
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
 [78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
+[79]: https://cs.co/FNSNV
