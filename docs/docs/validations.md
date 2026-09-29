@@ -2976,11 +2976,9 @@ The script runs on one APIC, so it can automatically validate only connections o
 
 ### Service-EP Flag in BD without PBR
 
-On affected releases, [CSCwi17652][83] can set `service-ep` on a service EPG's operational `vlanCktEp` even when that EPG has no PBR redirect policy. The flag sets the Don't Learn bit on traffic from the service device. Fixed releases remove the erroneous flag, so an upgrade may change the traffic behavior of a working service graph. The known fixed boundaries are 6.0(8e) and 6.1(1f); this check also treats later release trains as containing the fix.
+On affected releases, [CSCwi17652][83] may enable `service-ep` for a service device that does not use policy based redirect (PBR). Because the flag affects endpoint learning, upgrading to a fixed release may change traffic behavior when the unintended flag is removed.
 
-For upgrades to a fixed release, the check first finds `vlanCktEp` entries with `service-ep` on affected leaf releases. It follows each entry's service EPG and deployed graph relationships to the bridge domain and logical interface contexts. A redirect-policy relationship with a target DN and no explicit unformed state on any matching connector means the flag has a configured PBR use and this defect warning is not raised. This includes APIC responses that omit the relation's `state`. An explicitly unformed relation requires manual review. If the flag is present and no matching connector has a redirect policy, the check reports the leaf, service EPG, BD, and connector for Cisco TAC review before upgrade. If an object cannot be mapped reliably, the result requires manual review.
-
-This check identifies a possible change in Don't Learn behavior; it does not establish that customer traffic will fail after the upgrade.
+For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies flagged service EPGs whose deployed service graph has no PBR redirect policy. It reports the leaf, service EPG, bridge domain, and graph connector for review with Cisco TAC before upgrading. A finding indicates a possible behavior change, not a certain outage. If the graph cannot be classified, the check requests manual review.
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
