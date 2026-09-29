@@ -1498,6 +1498,8 @@ This fault also occurs when the MTS buffer memory usage increases beyond its thr
 
 The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
 
+For F1820 on `/mnt/ifc/log`, the check ignores the fault when its reported utilization is below 80%. CSCwc67099 can raise this fault below the intended threshold. At 80% or above, the fault blocks the upgrade. If utilization cannot be calculated, the fault remains in the output so its disk usage can be verified manually. Other F1820 partitions and F1821/F1822 faults retain their fault-based behavior.
+
 Recommended Action:
 
 1. Check `df -h` output on affected node to see the usage of the partition.
