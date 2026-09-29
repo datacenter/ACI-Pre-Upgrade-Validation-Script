@@ -14,7 +14,7 @@
                 },
                 {
                     "vnsTermNodeInst": {
-                        "attributes": {"type": "consumer"},
+                        "attributes": {"name": "T1"},
                         "children": []
                     }
                 }

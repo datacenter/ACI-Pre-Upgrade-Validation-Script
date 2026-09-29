@@ -11,7 +11,7 @@ dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "vzany_svcgraph_stretched_vrf_check"
 
 # icurl query keys (in execution order)
-_graph_subtree = "&rsp-subtree=full&rsp-subtree-class=vnsNodeInst,vnsTermNodeInst,vnsConnectionInst,vnsRsConnectionInstConns"
+_graph_subtree = "&rsp-subtree=children&rsp-subtree-class=vnsNodeInst"
 # cversion < 6.1(4): scoped to applied graphs
 vnsGraphInst_applied_query = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")' + _graph_subtree
 # cversion >= 6.1(4): all graph states (catches failed-to-apply on re-render)
@@ -19,6 +19,7 @@ vnsGraphInst_all_query = "vnsGraphInst.json?" + _graph_subtree.lstrip("&")
 fvCtx_query = "fvCtx.json?rsp-subtree=children&rsp-subtree-class=fvSiteAssociated&rsp-subtree-include=required"
 vzRsAnyToCons_query = "vzRsAnyToCons.json"
 vzRsAnyToProv_query = "vzRsAnyToProv.json"
+vnsEPgDef_query = 'vnsEPgDef.json?query-target-filter=eq(vnsEPgDef.name,"consumer")'
 
 # Graph instance DN reused across fixtures (VRF1 scope)
 GI_DN_VRF1 = (
@@ -45,6 +46,8 @@ XLATE_DN_VRF2 = (
     "-S-[uni/tn-Tenant1/ctx-VRF2]"
     "/NodeInst-FirstNode/LegVNode-0/EPgDef-consumer].json"
 )
+ALT_EPG_DN = GI_DN_VRF1 + "/TermNodeInst-T1/LegVNode-3/EPgDef-consumer"
+ALT_XLATE_DN = "uni/tn-Tenant1/mscGraphXlateCont/epgDefXlate-[{}].json".format(ALT_EPG_DN)
 
 
 @pytest.mark.parametrize(
@@ -117,6 +120,7 @@ XLATE_DN_VRF2 = (
                 fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
                 vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
                 vzRsAnyToProv_query: [],
+                vnsEPgDef_query: read_data(dir, "vnsEPgDef_consumer.json"),
                 XLATE_DN: read_data(dir, "mscGraphXlateCont_with_xlate.json"),
             },
             "6.0(1a)",
@@ -133,6 +137,7 @@ XLATE_DN_VRF2 = (
                 fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
                 vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
                 vzRsAnyToProv_query: [],
+                vnsEPgDef_query: read_data(dir, "vnsEPgDef_consumer.json"),
                 XLATE_DN: [],
             },
             "6.0(1a)",
@@ -173,6 +178,7 @@ XLATE_DN_VRF2 = (
                 fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
                 vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
                 vzRsAnyToProv_query: [],
+                vnsEPgDef_query: read_data(dir, "vnsEPgDef_consumer.json"),
                 XLATE_DN: [],
             },
             "6.1(4a)",
@@ -189,6 +195,7 @@ XLATE_DN_VRF2 = (
                 fvCtx_query: read_data(dir, "fvCtx_two_stretched_vrfs.json"),
                 vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_two_vrfs.json"),
                 vzRsAnyToProv_query: [],
+                vnsEPgDef_query: read_data(dir, "vnsEPgDef_two_vrfs.json"),
                 XLATE_DN: read_data(dir, "mscGraphXlateCont_with_xlate.json"),
                 XLATE_DN_VRF2: [],
             },
@@ -199,19 +206,69 @@ XLATE_DN_VRF2 = (
             None,
             None,
         ),
-        # First consumer node cannot be determined -> ERROR with retained evidence
+        # Eligible graph without an instantiated consumer EPgDef is indeterminate, not PASS
         (
             {
                 vnsGraphInst_applied_query: read_data(dir, "vnsGraphInst_no_firstnode.json"),
                 fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
                 vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
                 vzRsAnyToProv_query: [],
+                vnsEPgDef_query: [],
             },
             "6.0(1a)",
             "6.1(4a)",
             script.ERROR,
             [],
-            [[GI_DN_VRF1, "Unable to determine the first consumer node"]],
+            [[GI_DN_VRF1, "Expected one instantiated consumer EPgDef; found 0"]],
+            None,
+        ),
+        # A failed-to-apply graph may lack EPgDef objects; do not classify it as PASS.
+        (
+            {
+                vnsGraphInst_all_query: read_data(dir, "vnsGraphInst_failed_to_apply.json"),
+                fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
+                vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
+                vzRsAnyToProv_query: [],
+                vnsEPgDef_query: [],
+            },
+            "6.1(4a)",
+            "6.1(5a)",
+            script.ERROR,
+            [],
+            [[GI_DN_VRF1, "Expected one instantiated consumer EPgDef; found 0"]],
+            None,
+        ),
+        # Do not guess the first node when more than one consumer leg is instantiated.
+        (
+            {
+                vnsGraphInst_applied_query: read_data(dir, "vnsGraphInst_with_consumer.json"),
+                fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
+                vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
+                vzRsAnyToProv_query: [],
+                vnsEPgDef_query: read_data(dir, "vnsEPgDef_ambiguous.json"),
+            },
+            "6.0(1a)",
+            "6.1(4a)",
+            script.ERROR,
+            [],
+            [[GI_DN_VRF1, "Expected one instantiated consumer EPgDef; found 2"]],
+            None,
+        ),
+        # Use APIC's DN directly; valid EPgDefs are not always under NodeInst/LegVNode-0.
+        (
+            {
+                vnsGraphInst_applied_query: read_data(dir, "vnsGraphInst_with_consumer.json"),
+                fvCtx_query: read_data(dir, "fvCtx_stretched_vrf.json"),
+                vzRsAnyToCons_query: read_data(dir, "vzRsAnyToCons_consumer.json"),
+                vzRsAnyToProv_query: [],
+                vnsEPgDef_query: [{"vnsEPgDef": {"attributes": {"name": "consumer", "dn": ALT_EPG_DN}}}],
+                ALT_XLATE_DN: [],
+            },
+            "6.0(1a)",
+            "6.1(4a)",
+            script.FAIL_O,
+            [["Tenant1", "VRF1", "Contract1", "Graph1", "Missing vnsEpgDefXlate for 1st node consumer leg"]],
+            None,
             None,
         ),
         # Graph instance missing contract DN -> ERROR with retained evidence

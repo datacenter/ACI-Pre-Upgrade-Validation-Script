@@ -2834,7 +2834,7 @@ To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does
 
 Due to [CSCwn95571][80], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
 
-The validation checks whether `vnsEpgDefXlate` translation entries exist for the first node's consumer leg of the service graph. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail.
+The validation uses the instantiated `vnsEPgDef` object's DN to check whether a `vnsEpgDefXlate` translation entry exists for the service graph's consumer leg. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail. If an otherwise qualifying graph has no consumer `vnsEPgDef`, or has more than one and the first leg cannot be identified unambiguously, the check reports ERROR rather than treating it as a pass.
 
 This check detects configurations where **all** of the following conditions are true:
 
@@ -2842,7 +2842,7 @@ This check detects configurations where **all** of the following conditions are 
 2. vzAny is used as either consumer **or** provider on the stretched VRF
 3. The contract has a **PBR** service graph attached (a node with `routingMode` set to `Redirect`)
 4. The service graph is **not** managed by NDO/MSC (no `orchestrator:msc` annotation)
-5. No `vnsEpgDefXlate` MOs exist for the service graph's first node consumer leg
+5. No `vnsEpgDefXlate` MO exists for the graph's instantiated consumer leg
 
 When upgrading from a release earlier than 6.1(4), the impacted graph is still in the `applied` state, so the check scopes the query to applied graph instances. When the current release is already 6.1(4) or later, the graph may have failed to render, so the check evaluates graph instances in all states (a later re-render can re-expose the same condition).
 

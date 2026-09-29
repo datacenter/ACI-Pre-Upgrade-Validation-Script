@@ -1,0 +1,18 @@
+[
+    {
+        "vnsEPgDef": {
+            "attributes": {
+                "dn": "uni/tn-Tenant1/GraphInst_C-[uni/tn-Tenant1/brc-Contract1]-G-[uni/tn-Tenant1/AbsGraph-Graph1]-S-[uni/tn-Tenant1/ctx-VRF1]/NodeInst-FirstNode/LegVNode-0/EPgDef-consumer",
+                "name": "consumer"
+            }
+        }
+    },
+    {
+        "vnsEPgDef": {
+            "attributes": {
+                "dn": "uni/tn-Tenant1/GraphInst_C-[uni/tn-Tenant1/brc-Contract1]-G-[uni/tn-Tenant1/AbsGraph-Graph1]-S-[uni/tn-Tenant1/ctx-VRF1]/NodeInst-SecondNode/LegVNode-1/EPgDef-consumer",
+                "name": "consumer"
+            }
+        }
+    }
+]

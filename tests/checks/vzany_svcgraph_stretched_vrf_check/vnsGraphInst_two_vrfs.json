@@ -14,22 +14,7 @@
                 },
                 {
                     "vnsTermNodeInst": {
-                        "attributes": {"type": "consumer"},
-                        "children": [
-                            {
-                                "vnsConnectionInst": {
-                                    "children": [
-                                        {
-                                            "vnsRsConnectionInstConns": {
-                                                "attributes": {
-                                                    "tDn": "uni/tn-Tenant1/GraphInst/NodeInst-FirstNode"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
+                        "attributes": {"name": "T1"}
                     }
                 }
             ]
@@ -50,22 +35,7 @@
                 },
                 {
                     "vnsTermNodeInst": {
-                        "attributes": {"type": "consumer"},
-                        "children": [
-                            {
-                                "vnsConnectionInst": {
-                                    "children": [
-                                        {
-                                            "vnsRsConnectionInstConns": {
-                                                "attributes": {
-                                                    "tDn": "uni/tn-Tenant1/GraphInst/NodeInst-FirstNode"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
+                        "attributes": {"name": "T1"}
                     }
                 }
             ]

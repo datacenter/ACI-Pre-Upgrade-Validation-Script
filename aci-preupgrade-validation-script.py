@@ -7340,7 +7340,7 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
 
     # Pre-6.1(4): the impacted graph is still 'applied', so scope to that state to limit load.
     # 6.1(4)+: a later re-render can leave it failed-to-apply, so poll all states.
-    graph_subtree = '&rsp-subtree=full&rsp-subtree-class=vnsNodeInst,vnsTermNodeInst,vnsConnectionInst,vnsRsConnectionInstConns'
+    graph_subtree = '&rsp-subtree=children&rsp-subtree-class=vnsNodeInst'
     if cversion and not cversion.newer_than("6.1(3g)"):
         graph_query = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")' + graph_subtree
     else:
@@ -7391,34 +7391,10 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
             continue
         scope_dn = scope_match.group(1)
 
-        first_node_name = None
-        for graph_component_mo in children:
-            if 'vnsTermNodeInst' not in graph_component_mo:
-                continue
-            term_attrs = graph_component_mo['vnsTermNodeInst'].get('attributes', {})
-            if term_attrs.get('type') != 'consumer':
-                continue
-            for term_connection_mo in graph_component_mo['vnsTermNodeInst'].get('children', []):
-                if 'vnsConnectionInst' not in term_connection_mo:
-                    continue
-                for conn_rel_mo in term_connection_mo['vnsConnectionInst'].get('children', []):
-                    if 'vnsRsConnectionInstConns' not in conn_rel_mo:
-                        continue
-                    node_tDn = conn_rel_mo['vnsRsConnectionInstConns'].get('attributes', {}).get('tDn', '')
-                    node_match = re.search(r'/NodeInst-([^\]]+)', node_tDn)
-                    if node_match:
-                        first_node_name = node_match.group(1)
-                        break
-                if first_node_name:
-                    break
-            if first_node_name:
-                break
-
         sg_by_contract[contract_dn].append({
             'gi_dn': gi_dn,
             'graph_name': graph_name,
             'scope_dn': scope_dn,
-            'first_node': first_node_name,
         })
 
     if not sg_by_contract:
@@ -7477,8 +7453,29 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
             vrf_name = vrf_name_match.group(1) if vrf_name_match else vrf_dn
             vzany_on_stretched[(contract_dn, vrf_dn)] = {'vrf_name': vrf_name}
 
-    if not vzany_on_stretched and not has_error:
+    if not vzany_on_stretched:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
         return Result(result=PASS, msg="No vzAny service graph contracts on stretched VRFs", doc_url=doc_url)
+
+    # Use APIC's instantiated EPgDef DNs rather than inferring a node from terminal
+    # objects. TermNodeInst has no consumer type, and ConnectionInst is its sibling.
+    try:
+        epg_defs = icurl('class', 'vnsEPgDef.json?query-target-filter=eq(vnsEPgDef.name,"consumer")')
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying service graph EPg definitions: {}'.format(str(e)), doc_url=doc_url)
+
+    consumer_epg_defs = defaultdict(list)
+    for epg_def_mo in epg_defs:
+        epg_attrs = epg_def_mo.get('vnsEPgDef', {}).get('attributes', {})
+        epg_dn = epg_attrs.get('dn', '')
+        if epg_attrs.get('name') != 'consumer':
+            continue
+        graph_match = re.match(r'^(.*-S-\[[^\]]+\])/', epg_dn)
+        if graph_match:
+            consumer_epg_defs[graph_match.group(1)].append(epg_dn)
 
     for (contract_dn, vrf_dn), vrf_info in vzany_on_stretched.items():
         contract_match = re.match(r'uni/tn-([^/]+)/brc-([^/]+)', contract_dn)
@@ -7497,14 +7494,14 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
 
             gi_dn = sg_info['gi_dn']
             graph_name = sg_info['graph_name']
-            first_node_name = sg_info['first_node']
-            if not first_node_name:
+            epg_def_dns = consumer_epg_defs.get(gi_dn, [])
+            if len(epg_def_dns) != 1:
                 has_error = True
-                unformatted_data.append([gi_dn or contract_dn, 'Unable to determine the first consumer node'])
+                unformatted_data.append([gi_dn or contract_dn,
+                                         'Expected one instantiated consumer EPgDef; found {}'.format(len(epg_def_dns))])
                 continue
 
-            # Build the exact DN from the real graph instance DN (no reconstruction).
-            epg_def_dn = "{}/NodeInst-{}/LegVNode-0/EPgDef-consumer".format(gi_dn, first_node_name)
+            epg_def_dn = epg_def_dns[0]
             xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
 
             try:
