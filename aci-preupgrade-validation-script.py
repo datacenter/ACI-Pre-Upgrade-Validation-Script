@@ -7841,22 +7841,21 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     if post_cifatt_delete:
         manual_rows = [row[:3] for row in manual_rows]
 
-    manual_msg = ("Configured service graph interfaces require manual review. They are not currently "
-                  "deployed; deploying them before the upgrade completes may cause the condition "
-                  "described in CSCwr51759.")
-    manual_action = ("Verify the concrete interface attachments of the listed configured-only "
-                     "interfaces and reattach any missing or mismatched mapping using the APIC UI "
-                     "before deployment.")
+    manual_action = ("The listed configured-only service graph interfaces are not currently deployed. "
+                     "Deploying them before the upgrade completes may cause the condition described "
+                     "in CSCwr51759. Verify their concrete interface attachments and reattach any "
+                     "missing or mismatched mapping using the APIC UI before deployment.")
 
     def include_manual_result(active_result):
+        if active_result.result == FAIL_O:
+            if active_result.msg:
+                active_result.recommended_action = active_result.msg.rstrip(". ") + ". " + active_result.recommended_action
+            active_result.msg = ""
         if not manual_rows:
             return active_result
         if active_result.result == PASS:
-            return Result(result=MANUAL, msg=manual_msg, headers=headers,
+            return Result(result=MANUAL, headers=headers,
                           data=manual_rows, recommended_action=manual_action, doc_url=doc_url)
-        active_result.msg = (active_result.msg + " " if active_result.msg else "") + \
-            "Additional configured-only interfaces are not currently deployed; deploying them " \
-            "before the upgrade completes may cause the condition described in CSCwr51759."
         active_result.unformatted_headers = ["MANUAL review: Tenant"] + headers[1:]
         active_result.unformatted_data = [list(row) for row in manual_rows]
         active_result.recommended_action = active_result.recommended_action.rstrip(". ") + ". " + manual_action

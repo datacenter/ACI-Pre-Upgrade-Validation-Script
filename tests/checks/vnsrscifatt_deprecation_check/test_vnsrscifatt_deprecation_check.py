@@ -224,7 +224,7 @@ vnsLDevCtx_all_api = (
                     "uni/tn-common/lDevVip-common-device/lIf-common-prov",
                 ],
             ],
-            "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency.",
+            "",
         ),
         # Imported graph label should still map to applied graph and detect missing common interfaces
         (
@@ -251,7 +251,7 @@ vnsLDevCtx_all_api = (
                     "uni/tn-common/lDevVip-common-device/lIf-common-prov",
                 ],
             ],
-            "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency.",
+            "",
         ),
         # If both vnsRsCIfAtt and vnsRsCIfAttN are globally empty, result should be FAIL
         (
@@ -278,7 +278,7 @@ vnsLDevCtx_all_api = (
                     "uni/tn-common/lDevVip-common-device/lIf-common-prov",
                 ],
             ],
-            "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency.",
+            "",
         ),
         # LIF names with a numeric multi-connector suffix (e.g. "-cons-1") must still resolve the
         # missing concrete interface role to "cons"/"prov", not the trailing digit
@@ -306,7 +306,7 @@ vnsLDevCtx_all_api = (
                     "uni/tn-common/lDevVip-common-device/lIf-common-prov-1",
                 ],
             ],
-            "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency.",
+            "",
         ),
         # Consistency check: a stale vnsRsCIfAtt pointing at a different concrete interface than the
         # matching vnsRsCIfAttN must still be flagged, even though the LIF itself is otherwise covered
@@ -339,7 +339,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.MANUAL,
             [["tenantB", "tenantB-device", "tenantB-cons", "cons", "uni/tn-tenantB/lDevVip-tenantB-device/lIf-tenantB-cons"]],
-            "Configured service graph interfaces require manual review. They are not currently deployed; deploying them before the upgrade completes may cause the condition described in CSCwr51759.",
+            "",
         ),
     ],
 )
@@ -385,7 +385,7 @@ def test_logic(run_check, mock_icurl, icurl_outputs, tversion, expected_result, 
             [
                 ["common", "common-device", "common-cons"],
             ],
-            "Graph is rendered with implicit objects",
+            "",
         ),
         # Post-cifatt-delete (cversion >= 6.0(3d)): deployed LIFs missing vnsRsCIfAttN, but the tenant is
         # not "common" so the implicit-objects check does not apply -> generic missing message
@@ -402,7 +402,7 @@ def test_logic(run_check, mock_icurl, icurl_outputs, tversion, expected_result, 
                 ["user-11", "test", "intf-cons"],
                 ["user-11", "test", "intf-prov"],
             ],
-            "vnsRsCIfAttN is missing under deployed L4-L7 cluster interfaces.",
+            "",
         ),
         # Post-cifatt-delete (cversion >= 6.0(3d)): deployed LIF already has vnsRsCIfAttN -> PASS
         (
@@ -440,9 +440,27 @@ def test_configured_only_context_is_manual(run_check, mock_icurl, cversion):
     assert result.result == script.MANUAL
     assert len(result.data) == 2
     assert all(row[0] == "user-11" for row in result.data)
-    assert "not currently deployed" in result.msg
-    assert "before the upgrade completes" in result.msg
+    assert result.msg == ""
+    assert "not currently deployed" in result.recommended_action
+    assert "before the upgrade completes" in result.recommended_action
     assert "before deployment" in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [{
+    vnsGraphInst_api: read_data(dir, "vnsGraphInst_applied_single.json"),
+    vnsLDevCtx_all_api: read_data(dir, "vnsLDevCtx_vnsLIf_cons_and_prov.json"),
+    vnsLIf_with_rel_api: read_data(dir, "vnsLIf_with_rel_only.json"),
+}])
+def test_deployed_failure_moves_condition_to_recommended_action(run_check, mock_icurl):
+    result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
+    assert result.result == script.FAIL_O
+    assert result.msg == ""
+    assert len(result.data) == 2
+    assert not result.unformatted_data
+    assert result.recommended_action.startswith(
+        "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. "
+        "Missing concrete interface mapping can cause service graph inconsistency."
+    )
 
 
 @pytest.mark.parametrize("icurl_outputs", [{
@@ -475,6 +493,7 @@ def test_deployed_failure_lists_configured_only_for_manual_review(run_check, moc
     assert result.unformatted_headers[0].startswith("MANUAL review:")
     assert len(result.unformatted_data) == 1
     assert result.unformatted_data[0][0] == "tenantB"
-    assert "Additional configured-only interfaces are not currently deployed" in result.msg
-    assert "before the upgrade completes may cause the condition described in CSCwr51759" in result.msg
-    assert ". Verify the concrete interface attachments of the listed configured-only interfaces" in result.recommended_action
+    assert result.msg == ""
+    assert "Missing concrete interface mapping can cause service graph inconsistency." in result.recommended_action
+    assert "Deploying them before the upgrade completes may cause the condition described in CSCwr51759." in result.recommended_action
+    assert ". The listed configured-only service graph interfaces are not currently deployed." in result.recommended_action
