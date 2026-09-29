@@ -4064,6 +4064,49 @@ def isis_redis_metric_mpod_msite_check(**kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="POD PTEP Overlap with External Routable TEP Pool")
+def pod_ptep_routable_pool_overlap_check(**kwargs):
+    result = PASS
+    headers = ["POD PTEP DN", "POD PTEP IP", "External Pool DN", "External Routable TEP Pool", "Reserved Addresses"]
+    data = []
+    recommended_action = (
+        "Move the POD PTEP outside the external routable TEP pool's unreserved addresses, "
+        "or recreate the pool with the PTEP address reserved."
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#pod-ptep-overlap-with-external-routable-tep-pool'
+
+    pod_profiles = icurl('class', 'fvPodConnP.json?rsp-subtree=children')
+    routable_pools = icurl('class', 'fabricExtRoutablePodSubnet.json')
+
+    for profile in pod_profiles:
+        for child in profile['fvPodConnP'].get('children', []):
+            if 'fvIp' not in child:
+                continue
+            ptep = child['fvIp']['attributes']
+            ptep_ip = ptep['addr'].split('/')[0]
+            # The POD PTEP is an IPv4 host address; other child classes are not PTEPs.
+            if ':' in ptep_ip:
+                continue
+
+            for pool_mo in routable_pools:
+                pool = pool_mo['fabricExtRoutablePodSubnet']['attributes']
+                subnet = pool['pool']
+                if ':' in subnet or not IPAddress.ip_in_subnet(ptep_ip, subnet):
+                    continue
+
+                pool_ip, prefix_len = subnet.split('/')
+                network_address = int(IPAddress.get_network_binary(pool_ip, prefix_len).ljust(32, '0'), 2)
+                address_offset = int(IPAddress.ipv4_to_binary(ptep_ip), 2) - network_address
+                reserved_count = int(pool['reserveAddressCount'])
+                # APIC reserves the first usable addresses: with count 3, .1-.3 are allowed.
+                if reserved_count == 0 or address_offset > reserved_count:
+                    result = FAIL_O
+                    data.append([ptep['dn'], ptep['addr'], pool['dn'], subnet, reserved_count])
+
+    return Result(result=result, headers=headers, data=data,
+                  recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="BGP route target type for GOLF over L2EVPN")
 def bgp_golf_route_target_type_check(cversion, tversion, **kwargs):
     result = FAIL_O
@@ -8063,6 +8106,7 @@ class CheckManager:
         l3out_overlapping_loopback_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
+        pod_ptep_routable_pool_overlap_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
         uplink_limit_check,
