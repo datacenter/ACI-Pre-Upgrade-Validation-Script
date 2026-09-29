@@ -7477,6 +7477,7 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
         if graph_match:
             consumer_epg_defs[graph_match.group(1)].append(epg_dn)
 
+    xlate_results = {}
     for (contract_dn, vrf_dn), vrf_info in vzany_on_stretched.items():
         contract_match = re.match(r'uni/tn-([^/]+)/brc-([^/]+)', contract_dn)
         if not contract_match:
@@ -7487,9 +7488,9 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
         contract = contract_match.group(2)
         vrf_name = vrf_info['vrf_name']
 
-        # Evaluate every graph instance scoped to this specific VRF.
+        # A graph can be scoped to the VRF, its tenant, or globally (uni).
         for sg_info in sg_by_contract.get(contract_dn, []):
-            if sg_info['scope_dn'] != vrf_dn:
+            if sg_info['scope_dn'] not in (vrf_dn, vrf_dn.rsplit('/', 1)[0], 'uni'):
                 continue
 
             gi_dn = sg_info['gi_dn']
@@ -7504,14 +7505,20 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
             epg_def_dn = epg_def_dns[0]
             xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
 
-            try:
-                has_xlate = len(icurl('mo', '{}.json'.format(xlate_dn))) > 0
-            except Exception:
+            # Tenant/global graph instances can match multiple stretched VRFs.
+            # Reuse the result rather than querying the same xlate for each VRF.
+            if xlate_dn not in xlate_results:
+                try:
+                    xlate_results[xlate_dn] = len(icurl('mo', '{}.json'.format(xlate_dn))) > 0
+                except Exception:
+                    xlate_results[xlate_dn] = None
+
+            if xlate_results[xlate_dn] is None:
                 has_error = True
                 data.append([tenant, vrf_name, contract, graph_name, 'Error querying vnsEpgDefXlate'])
                 continue
 
-            if not has_xlate:
+            if not xlate_results[xlate_dn]:
                 data.append([tenant, vrf_name, contract, graph_name, 'Missing vnsEpgDefXlate for 1st node consumer leg'])
 
     if has_error:

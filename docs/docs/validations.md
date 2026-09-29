@@ -2846,6 +2846,8 @@ This check detects configurations where **all** of the following conditions are 
 
 When upgrading from a release earlier than 6.1(4), the impacted graph is still in the `applied` state, so the check scopes the query to applied graph instances. When the current release is already 6.1(4) or later, the graph may have failed to render, so the check evaluates graph instances in all states (a later re-render can re-expose the same condition).
 
+The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant- and globally-scoped instances are checked against each stretched VRF using the contract. The same translation entry is queried only once even when several VRFs share the graph instance.
+
 !!! note
     The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
 
