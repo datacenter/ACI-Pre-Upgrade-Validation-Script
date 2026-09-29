@@ -218,6 +218,7 @@ Items                                           | Defect       | This Script    
 [Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
 [FX3 Breakout Port Transceiver and Fec mode Compatibility Check][d40] |  CSCww67193  | :white_check_mark: | :no_entry_sign:
 [APIC OOB Connectivity][d41]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
+[vnsRsCIfAtt Deprecation Check][d42]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -260,6 +261,7 @@ Items                                           | Defect       | This Script    
 [d39]: #port-tracking-active-fabric-port-zero
 [d40]: #fx3-breakout-port-transceiver-and-fec-mode-compatibility-check
 [d41]: #apic-oob-connectivity
+[d42]: #vnsrscifatt-deprecation-check
 
 ## General Check Details
 
@@ -2972,6 +2974,22 @@ This check applies when the current APIC version is 6.0(2a) or later. It resolve
 
 The script runs on one APIC, so it can automatically validate only connections originating from that APIC. It attempts an HTTPS connection to every APIC with an OOB address on its effective port, using a 5-second timeout. For a multi-APIC cluster, it reports `MANUAL CHECK REQUIRED` and supplies `curl` commands for every inter-APIC source-to-destination direction; run each command on the indicated APIC node. If an APIC OOB address is not reported by the APIC inventory, the check also reports `MANUAL CHECK REQUIRED` rather than treating it as reachable. An unreachable automatic probe is reported as an upgrade-failure risk; a probe execution error is reported as an error.
 
+
+### vnsRsCIfAtt Deprecation Check
+
+Due to [CSCwr51759][83], after upgrading ACI to 6.0(3d) or later release, one or more L4-L7 service graph device cluster interfaces are missing their concrete interface attachment, causing the service graph to fail to render and resulting in a traffic outage for PBR/L4-L7 redirected traffic.
+
+This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later.
+Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster interface still relying solely on it loses its concrete interface mapping, and no equivalent vnsRsCIfAttN object exists to take its place.
+
+The check evaluates only graph instances whose `vnsGraphInst.configSt` is `applied`. It returns `FAIL - OUTAGE WARNING!!` for affected interfaces in those graphs and excludes configured-only, non-applied graph contexts. When no applied graph instances are found, the check returns `PASS`. For outage findings, the status line has no additional message; condition details and guidance appear under `Recommended Action`.
+
+Before upgrading (current version older than 6.0(3d)): Reattach the concrete interface via the APIC GUI without deleting the existing attachment object — Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → select the interface → Submit. This creates the new vnsRsCIfAttN object alongside the old one so the mapping survives the upgrade.
+After upgrading (current version 6.0(3d) or later), verify all concrete device interface attachments to ensure there are none missing, then reattach the concrete interface using the same UI path to recreate the missing vnsRsCIfAttN object.
+
+Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete interface attachment changed: the legacy relation object vnsRsCIfAtt (under vnsLIf) was deprecated in favor of vnsRsCIfAttN. vnsRsCIfAtt objects are removed by the switchover/upgrade to 6.0(3d) or later, but this removal is not paired with an automatic creation of the equivalent vnsRsCIfAttN object for cluster interfaces that had never been re-attached under the new object.
+
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3054,3 +3072,4 @@ The script runs on one APIC, so it can automatically validate only connections o
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
 [81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCww67193
 [82]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
+[83]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
