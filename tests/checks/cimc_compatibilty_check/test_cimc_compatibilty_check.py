@@ -23,6 +23,8 @@ compatRsSuppHwL4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[
 compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
 compatRsSuppHwL3_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl3].json'
 compatRsSuppHwM3_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm3].json'
+compatRsSuppHwM4_531_api = 'uni/fabric/compcat-default/ctlrfw-apic-5.3(1)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
+compatRsSuppHwL4_531_api = 'uni/fabric/compcat-default/ctlrfw-apic-5.3(1)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4].json'
 
 release_note_supported_615_outputs = {
     eqptCh_api: read_data(dir, "eqptCh_615_supported_423e.json"),
@@ -30,6 +32,8 @@ release_note_supported_615_outputs = {
     compatRsSuppHwM3_api: read_data(dir, "compatRsSuppHw_615_M5.json"),
     compatRsSuppHwL4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
     compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
+    compatRsSuppHwL4_531_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.0(2g)"}}}],
+    compatRsSuppHwM4_531_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.0(2g)"}}}],
 }
 
 def release_note_supported_outputs(model, cimc_version):
@@ -88,12 +92,12 @@ release_note_supported_cases = [
             "5.2(8g)",
             script.PASS,
         ),
-        # The release-note exception must not bypass the CSCwo74485 upgrade ordering check.
+        # The release-note exception avoids a required CIMC upgrade, but still warns about CSCwo74485.
         (
             release_note_supported_615_outputs,
             "6.1(5e)",
             "5.3(1d)",
-            script.FAIL_UF,
+            script.MANUAL,
         ),
         # Other CIMC versions below the catalog recommendation remain unsupported.
         (
@@ -192,3 +196,76 @@ def test_release_note_supported_versions(run_check, mock_icurl):
         cversion=script.AciVersion("5.2(8g)"),
     )
     assert result.result == script.PASS
+
+
+def m4l4_compatibility_outputs(model="M4", cimc_version="4.3(4.241063)",
+                               target_recommendation="4.0(2g)", current_recommendation="4.0(2g)"):
+    model_key = "apic" + model.lower()
+    target_api = ('uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-'
+                  '[uni/fabric/compcat-default/ctlrhw-{}].json').format(model_key)
+    current_api = ('uni/fabric/compcat-default/ctlrfw-apic-5.3(1)/rssuppHw-'
+                   '[uni/fabric/compcat-default/ctlrhw-{}].json').format(model_key)
+    return {
+        eqptCh_api: [{"eqptCh": {"attributes": {
+            "cimcVersion": cimc_version,
+            "descr": "APIC-SERVER-" + model,
+            "dn": "topology/pod-1/node-1/sys/ch",
+        }}}],
+        target_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": target_recommendation}}}],
+        current_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": current_recommendation}}}],
+    }
+
+
+@pytest.mark.parametrize("icurl_outputs, model", [
+    (m4l4_compatibility_outputs("M4"), "M4"),
+    (m4l4_compatibility_outputs("L4"), "L4"),
+])
+def test_cscwo74485_supported_on_current_and_target(run_check, mock_icurl, model, icurl_outputs):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.MANUAL
+    assert result.data == [["node-1", "APIC-SERVER-" + model, "4.3(4.241063)", "4.0(2g)",
+                            "Avoid a CIMC upgrade before fixing APIC for CSCwo74485."]]
+    assert result.recommended_action == (
+        "CIMC upgrade is not required. If you choose to upgrade it, do not upgrade CIMC to "
+        "4.3(5) or later BEFORE upgrading your APICs to a fixed version "
+        "[6.0(9e)+ or 6.1(4h)+] of CSCwo74485."
+    )
+
+
+@pytest.mark.parametrize("icurl_outputs, expected_result, expected_action", [
+    (m4l4_compatibility_outputs(target_recommendation="4.3(5)"), script.FAIL_UF, "BEFORE upgrading CIMC"),
+    (m4l4_compatibility_outputs(current_recommendation="4.3(5)"), script.MANUAL, "Review the current APIC/CIMC"),
+    (m4l4_compatibility_outputs(cimc_version="4.3(5)"), script.PASS, "Check Release note"),
+])
+def test_cscwo74485_compatibility_boundaries(run_check, mock_icurl, expected_result, expected_action):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == expected_result
+    assert expected_action in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [dict(m4l4_compatibility_outputs(), **{compatRsSuppHwM4_531_api: []})])
+def test_cscwo74485_missing_current_compatibility(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.MANUAL
+    assert result.data[0][-1] == "Current APIC/CIMC compatibility information unavailable."
+
+
+def mixed_m4l4_outputs():
+    outputs = m4l4_compatibility_outputs()
+    l4_outputs = m4l4_compatibility_outputs("L4", target_recommendation="4.3(5)")
+    l4_node = l4_outputs[eqptCh_api][0]
+    l4_node["eqptCh"]["attributes"]["dn"] = "topology/pod-1/node-2/sys/ch"
+    outputs[eqptCh_api].append(l4_node)
+    for key, value in l4_outputs.items():
+        if key != eqptCh_api:
+            outputs[key] = value
+    return outputs
+
+
+@pytest.mark.parametrize("icurl_outputs", [mixed_m4l4_outputs()])
+def test_cscwo74485_required_and_optional_upgrades(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert [row[0] for row in result.data] == ["node-1", "node-2"]
+    assert "BEFORE upgrading CIMC" in result.recommended_action
+    assert "For the nodes with CIMC supported by both APIC versions, CIMC upgrade is not required" in result.recommended_action
