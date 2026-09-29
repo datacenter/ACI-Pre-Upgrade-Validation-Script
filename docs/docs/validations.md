@@ -2877,6 +2877,7 @@ This issue happens only when the target version is specifically 6.1(4h).
 
 To avoid this issue, change the target version to another version. Or verify that the `bootscript` file exists in the bootflash of each modular spine switch prior to upgrading to 6.1(4h). If the file is missing, you have to do clean reboot on the impacted spine to ensure that `/bootflash/bootscript` gets created again. In case you already upgraded your spine and you are experiencing the traffic impact due to this issue, clean reboot of the spine will restore the traffic.
 
+
 ### Inband Management Policy Misconfiguration
 
 Due to the defect [CSCwh80837][67], starting from version 6.0(4c), mgmtRsInBStNode policy get modified in leaf/spine during Apic upgrade.
@@ -2939,6 +2940,7 @@ Affected versions: 6.1(5e) and below, or 6.2(1g).
 
 Contact Cisco TAC for next steps. For more details, refer to the workaround in [CSCwt69100][75].
 
+
 ### Infravlan Overlap Access Policy Check
 
 Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.1(3f), 6.1(3g), 6.1(4h), 6.1(5e) and 6.2(1g), be aware of fault F4701 being raised if the InfraVLAN overlaps with any user-configured VLAN pool in Access Policies. This also affects vlan pool created by NDO/MSO, VMM, Kubernetes. After the upgrade, domains associated with those VLAN pools cannot be linked to new EPGs, although existing EPGs continue to function.
@@ -2977,7 +2979,7 @@ The script runs on one APIC, so it can automatically validate only connections o
 
 Due to [CSCwr51759][83], after upgrading ACI to 6.0(3d) or later release, one or more L4-L7 service graph device cluster interfaces are missing their concrete interface attachment, causing the service graph to fail to render and resulting in a traffic outage for PBR/L4-L7 redirected traffic.
 
-This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later. 
+This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later.
 Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster interface still relying solely on it loses its concrete interface mapping, and no equivalent vnsRsCIfAttN object exists to take its place.
 
 The check evaluates only graph instances whose `vnsGraphInst.configSt` is `applied`. It returns `FAIL - OUTAGE WARNING!!` for affected interfaces in those graphs and excludes configured-only, non-applied graph contexts. When no applied graph instances are found, the check returns `PASS`. For outage findings, the status line has no additional message; condition details and guidance appear under `Recommended Action`.

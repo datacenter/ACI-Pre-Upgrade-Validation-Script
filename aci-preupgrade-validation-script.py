@@ -7224,10 +7224,10 @@ def stale_dbgacEpgSummaryTask_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
 
     try:
-        from datetime import timezone
-        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+        from datetime import timezone 
+        threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24) 
     except ImportError:
-        threshold = datetime.utcnow() - timedelta(hours=24)
+        threshold = datetime.utcnow() - timedelta(hours=24) 
 
     for obj in icurl("class", 'dbgacEpgSummaryTask.json?query-target-filter=eq(dbgacEpgSummaryTask.operSt,"processing")'):
         attr = obj["dbgacEpgSummaryTask"]["attributes"]
@@ -7673,12 +7673,11 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
     if not brkout_leg_per_port:
         return Result(result=PASS, msg='No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
 
-    fcot_api = (
-        'ethpmFcot.json?query-target-filter=or('
-        'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4")),'
-        'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),wcard(ethpmFcot.guiCiscoEID,"QSFP-100G-AOC"))'
-        ')'
-    )
+    fcot_api = 'ethpmFcot.json'
+    fcot_api += '?query-target-filter=or('
+    fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4")),'
+    fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),wcard(ethpmFcot.guiCiscoEID,"QSFP-100G-AOC"))'
+    fcot_api += ')'
     # The transceiver is physically inserted into the port cage, so APIC may
     # report ethpmFcot's dn at the cage level (e.g. phys-[eth1/49]) rather than
     # the breakout child (phys-[eth1/49/1]); the subport is therefore optional
@@ -7938,7 +7937,6 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
         )
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
-  
 @check_wrapper(check_title="vnsRsCIfAtt Deprecation Check")
 def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     result = PASS
@@ -8231,8 +8229,7 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     return format_deployed_result(Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
 
 
-  
-  # ---- Script Execution ----
+# ---- Script Execution ----
 
 
 def parse_args(args):
@@ -8324,7 +8321,7 @@ class CheckManager:
         fabric_link_redundancy_check,
         apic_downgrade_compat_warning_check,
         svccore_excessive_data_check,
-        
+
         # Faults
         apic_disk_space_faults_check,
         switch_bootflash_usage_check,
