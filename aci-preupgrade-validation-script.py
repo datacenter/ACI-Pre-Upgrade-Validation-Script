@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 from six import iteritems, text_type
 from six.moves import input
+from six.moves.urllib.parse import quote
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict, OrderedDict
@@ -6302,6 +6303,274 @@ def isis_database_byte_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='Service EP Flag without PBR')
+def service_ep_flag_bd_check(cversion, tversion, **kwargs):
+    headers = ["Leaf", "Service EPG DN", "Bridge Domain DN", "Graph Connector DN"]
+    data = []
+    unformatted_headers = ["Leaf", "Service EPG or VLAN DN", "Reason"]
+    unformatted_data = []
+    recommended_action = (
+        "Review the listed service EPGs for PBR redirect use. A fixed target "
+        "release may remove service-ep when PBR is absent and change Don't Learn "
+        "behavior. Contact Cisco TAC to assess the service graph and traffic "
+        "impact before upgrading."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    def at_least(version, boundary):
+        return version.same_as(boundary) or version.newer_than(boundary)
+
+    def source_affected(version):
+        if version.major_version == "5.2":
+            return at_least(version, "5.2(5c)")
+        if version.major_version == "6.0":
+            return at_least(version, "6.0(1g)") and version.older_than("6.0(8e)")
+        if version.major_version == "6.1":
+            return version.older_than("6.1(1f)")
+        if version.older_than("5.2(5c)") or at_least(version, "6.1(1f)"):
+            return False
+        return None  # No verified boundary for this release train.
+
+    # The target must contain the fix. Current leaf versions are checked per
+    # operational entry because a fabric can contain mixed switch releases.
+    target_fixed = (
+        (tversion.major_version == "6.0" and at_least(tversion, "6.0(8e)"))
+        or (tversion.major_version == "6.1" and at_least(tversion, "6.1(1f)"))
+        or (int(tversion.major1) == 6 and int(tversion.major2) >= 2)
+        or int(tversion.major1) > 6
+    )
+    if not target_fixed:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    def child_attributes(obj, class_name):
+        return [
+            child[class_name].get("attributes", {})
+            for child in obj.get("children") or []
+            if isinstance(child, dict) and class_name in child
+        ]
+
+    def manual(leaf_dn, epg_dn, reason):
+        unformatted_data.append([leaf_dn, epg_dn, reason])
+
+    def query_dns(class_name, dns, extra_params=""):
+        """Query selected DNs with bounded predicates and encoded URL length."""
+        max_terms = 10  # Keep DN clauses well below the stated 20-item limit.
+        max_query_length = 3000
+        page_suffix = "&page=999999&page-size=1000"
+        objects = []
+        oversized = set()
+        batch = []
+
+        def make_query(dn_batch):
+            terms = ["eq({}.dn,{})".format(class_name, json.dumps(dn))
+                     for dn in dn_batch]
+            expression = terms[0] if len(terms) == 1 else "or({})".format(",".join(terms))
+            return "{}.json?query-target-filter={}{}".format(
+                class_name, quote(expression, safe="(),"), extra_params)
+
+        for dn in sorted(set(dn for dn in dns if dn)):
+            candidate = batch + [dn]
+            if (len(candidate) > max_terms or
+                    len(make_query(candidate) + page_suffix) > max_query_length):
+                if batch:
+                    objects.extend(icurl("class", make_query(batch), page_size=1000))
+                    batch = []
+                if len(make_query([dn]) + page_suffix) > max_query_length:
+                    oversized.add(dn)
+                    continue
+            batch.append(dn)
+        if batch:
+            objects.extend(icurl("class", make_query(batch), page_size=1000))
+        return objects, oversized
+
+    leaf_versions = {}
+    for node in kwargs.get("fabric_nodes") or []:
+        attrs = node.get("fabricNode", {}).get("attributes", {})
+        if attrs.get("role") == "leaf":
+            leaf_versions[attrs.get("dn")] = attrs.get("version")
+
+    flag_query = 'vlanCktEp.json?query-target-filter=allbits(vlanCktEp.ctrl,"service-ep")'
+    flagged = icurl("class", flag_query, page_size=1000)
+    affected = []
+    for item in flagged:
+        attrs = item.get("vlanCktEp", {}).get("attributes", {})
+        leaf_match = re.match(r"^(topology/pod-\d+/node-\d+)/", attrs.get("dn") or "")
+        leaf_dn = leaf_match.group(1) if leaf_match else ""
+        epg_dn = attrs.get("epgDn") or ""
+        if not epg_dn:
+            manual(leaf_dn, attrs.get("dn") or "", "Flagged entry has no service EPG DN.")
+            continue
+        version_string = leaf_versions.get(leaf_dn)
+        try:
+            leaf_version = AciVersion(version_string) if version_string else None
+        except ValueError:
+            leaf_version = None
+        if not leaf_version:
+            manual(leaf_dn, epg_dn, "Current leaf version is unavailable.")
+            continue
+        impact = source_affected(leaf_version)
+        if impact is None:
+            manual(leaf_dn, epg_dn, "Source release has no verified CSCwi17652 boundary.")
+        elif impact:
+            affected.append((leaf_dn, epg_dn))
+
+    affected = sorted(set(affected))
+    if not affected:
+        result = MANUAL if unformatted_data else PASS
+        return Result(result=result, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # Match only the service EPGs found on affected leaves.
+    epg_dns = sorted(set(epg_dn for _, epg_dn in affected))
+    epp_by_dn = {}
+    epp_items, oversized_epps = query_dns(
+        "vnsEPpInfo", epg_dns,
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRtEPpInfoAtt,vnsRsEPpInfoToBD")
+    for item in epp_items:
+        epp = item.get("vnsEPpInfo", {})
+        dn = epp.get("attributes", {}).get("dn")
+        if dn:
+            epp_by_dn[dn] = epp
+
+    pending = []
+    for leaf_dn, epg_dn in affected:
+        if epg_dn in oversized_epps:
+            manual(leaf_dn, epg_dn, "Service EPG DN exceeds the bounded APIC query length.")
+            continue
+        epp = epp_by_dn.get(epg_dn)
+        if not epp:
+            manual(leaf_dn, epg_dn, "Service EPG information was not found.")
+            continue
+        bd_dns = set(attrs.get("tDn") for attrs in
+                     child_attributes(epp, "vnsRsEPpInfoToBD") if attrs.get("tDn"))
+        refs = [attrs.get("tDn") for attrs in
+                child_attributes(epp, "vnsRtEPpInfoAtt") if attrs.get("tDn")]
+        if len(bd_dns) != 1 or not refs:
+            manual(leaf_dn, epg_dn, "BD or deployed graph relation is missing or ambiguous.")
+            continue
+        pending.append((leaf_dn, epg_dn, next(iter(bd_dns)), refs))
+
+    if not pending:
+        return Result(result=MANUAL, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # A service EPG can be shared by several graph connectors. Query only the
+    # graph nodes referenced by those EPGs, then only their connector contexts.
+    node_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" in ref_dn and "/EPgDef-" in ref_dn:
+                node_dns.add(ref_dn.split("/LegVNode-", 1)[0])
+    node_relation_dns = [dn + "/rsNodeInstToLDevCtx" for dn in node_dns]
+    node_items, oversized_nodes = query_dns(
+        "vnsRsNodeInstToLDevCtx", node_relation_dns)
+    node_relations = defaultdict(list)
+    for item in node_items:
+        attrs = item.get("vnsRsNodeInstToLDevCtx", {}).get("attributes", {})
+        dn = attrs.get("dn", "")
+        if dn.endswith("/rsNodeInstToLDevCtx"):
+            node_relations[dn.rsplit("/", 1)[0]].append(attrs.get("tDn", ""))
+
+    candidate_context_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                continue
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-" + connector)
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-Any")
+    ctx_items, oversized_contexts = query_dns(
+        "vnsLIfCtx", candidate_context_dns,
+        "&query-target=self&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsLIfCtxToBD,"
+        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol")
+    contexts = {}
+    for item in ctx_items:
+        ctx = item.get("vnsLIfCtx", {})
+        dn = ctx.get("attributes", {}).get("dn")
+        if dn:
+            contexts[dn] = ctx
+
+    for leaf_dn, epg_dn, bd_dn, refs in pending:
+        pbr_found = False
+        context_dns = []
+        problems = []
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                problems.append("Cannot parse deployed graph reference.")
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            if node_dn + "/rsNodeInstToLDevCtx" in oversized_nodes:
+                problems.append("Graph node DN exceeds the bounded APIC query length.")
+                continue
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                problems.append("Graph node does not resolve to one device context.")
+                continue
+            parent_dn = ldev_dns[0]
+            ctx_dn = parent_dn + "/lIfCtx-c-" + connector
+            if ctx_dn in oversized_contexts:
+                problems.append("Graph connector DN exceeds the bounded APIC query length.")
+                continue
+            ctx = contexts.get(ctx_dn)
+            if not ctx:
+                ctx_dn = parent_dn + "/lIfCtx-c-Any"
+                if ctx_dn in oversized_contexts:
+                    problems.append("Fallback graph connector DN exceeds the bounded APIC query length.")
+                    continue
+                ctx = contexts.get(ctx_dn)
+            if not ctx:
+                problems.append("Graph connector context was not found.")
+                continue
+            context_dns.append(ctx_dn)
+            ctx_bds = set(attrs.get("tDn") for attrs in
+                          child_attributes(ctx, "vnsRsLIfCtxToBD") if attrs.get("tDn"))
+            if bd_dn not in ctx_bds:
+                problems.append("Graph connector BD does not match the service EPG BD.")
+                continue
+            redirects = (
+                child_attributes(ctx, "vnsRsLIfCtxToSvcRedirectPol")
+                + child_attributes(ctx, "vnsRsLIfCtxToRemoteSvcRedirectPol")
+            )
+            if redirects:
+                # Some APIC responses omit state on a configured relation.
+                # An explicit unformed state still needs manual review.
+                if any(attrs.get("tDn") and attrs.get("state") in (None, "formed")
+                       for attrs in redirects):
+                    pbr_found = True
+                else:
+                    problems.append("Redirect policy relationship is unresolved.")
+
+        if pbr_found:
+            continue
+        if problems or not context_dns:
+            manual(leaf_dn, epg_dn, "; ".join(sorted(set(problems))) or
+                   "No graph connector could be resolved.")
+            continue
+        data.append([leaf_dn, epg_dn, bd_dn, ", ".join(sorted(set(context_dns)))])
+
+    result = FAIL_O if data else MANUAL if unformatted_data else PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
 def apic_database_size_check(cversion, **kwargs):
@@ -8412,6 +8681,7 @@ class CheckManager:
         host_interface_policy_set_speed_check,
         fx3_breakout_port_check,
         vnsRsCIfAtt_deprecation_check,
+        service_ep_flag_bd_check,
     ]
     ssh_checks = [
         # General
