@@ -2791,7 +2791,7 @@ This check will count the number of relevant PBR policies across the entire ACI 
 
 ### Standby Sup Image Sync
 
-Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
+Due to [CSCwa44220][48], the Standby Supervisor Modules within Modular Chassis running an affected switch release will be unable to successfully install switch images greater than 2 Gigs. The fix is present in 4.2(7t) and 5.2(4d) and later releases in those trains.
 
 If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
 

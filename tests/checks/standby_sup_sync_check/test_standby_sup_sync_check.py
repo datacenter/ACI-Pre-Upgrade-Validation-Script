@@ -19,7 +19,7 @@ eqptSupC_api += '?query-target-filter=eq(eqptSupC.rdSt,"standby")'
 Bug cversion/tversion matrix based on image size
 
 4.2(7t)+ - fixed versions LT 2 Gigs: 4.2(7t)+
-5.2(5d)+ - fixed versions LT 2 Gigs: 5.2(7f)+
+5.2(4d)+ - fixed versions LT 2 Gigs: 5.2(7f)+
 5.3(1d)+ - fixed versions LT 2 Gigs: 5.3(1d)+
 6.0(1g)+ - fixed versions LT 2 Gigs: 6.0(1g), 6.0(1j). 32-bit only: 6.0(2h), 6.0(2j). 64-bit: NONE
 6.1(1f)+ - fixed versions LT 2 Gigs: NONE
@@ -128,6 +128,20 @@ Bug cversion/tversion matrix based on image size
             "5.2(4a)",
             "6.1(1f)",
             script.FAIL_UF,
+        ),
+        # Last affected 5.2 patch still needs an interim image.
+        (
+            {eqptSupC_api: read_data(dir, "eqptSupC_POS.json")},
+            "5.2(4c)",
+            "6.0(8f)",
+            script.FAIL_UF,
+        ),
+        # CSCwa44220 is fixed in switch release 15.2(4d).
+        (
+            {eqptSupC_api: read_data(dir, "eqptSupC_POS.json")},
+            "5.2(4d)",
+            "6.0(8f)",
+            script.PASS,
         ),
         # cversion 5.2 -fix, tversion 6.1 -fix but over 2G
         (
