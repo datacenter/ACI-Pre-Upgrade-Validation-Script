@@ -7841,11 +7841,12 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     if post_cifatt_delete:
         manual_rows = [row[:3] for row in manual_rows]
 
-    manual_msg = ("Heads up: these configured service graph interfaces are not deployed. "
-                  "If deployed before the upgrade is complete, they may hit CSCwr51759.")
-    manual_action = ("Before deploying these configured interfaces, verify their concrete interface "
-                     "attachments and reattach any missing mapping using the APIC UI. "
-                     "This is a precaution for a possible future deployment.")
+    manual_msg = ("Configured service graph interfaces require manual review. They are not currently "
+                  "deployed; deploying them before the upgrade completes may cause the condition "
+                  "described in CSCwr51759.")
+    manual_action = ("Verify the concrete interface attachments of the listed configured-only "
+                     "interfaces and reattach any missing or mismatched mapping using the APIC UI "
+                     "before deployment.")
 
     def include_manual_result(active_result):
         if not manual_rows:
@@ -7853,9 +7854,12 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
         if active_result.result == PASS:
             return Result(result=MANUAL, msg=manual_msg, headers=headers,
                           data=manual_rows, recommended_action=manual_action, doc_url=doc_url)
-        active_result.msg = (active_result.msg + " " if active_result.msg else "") + manual_msg
-        active_result.unformatted_headers = ["Configured Only: Tenant"] + headers[1:]
+        active_result.msg = (active_result.msg + " " if active_result.msg else "") + \
+            "Additional configured-only interfaces are not currently deployed; deploying them " \
+            "before the upgrade completes may cause the condition described in CSCwr51759."
+        active_result.unformatted_headers = ["MANUAL review: Tenant"] + headers[1:]
         active_result.unformatted_data = [list(row) for row in manual_rows]
+        active_result.recommended_action = active_result.recommended_action.rstrip(". ") + ". " + manual_action
         return active_result
 
     if not lif_dns:

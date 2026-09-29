@@ -339,7 +339,7 @@ vnsLDevCtx_all_api = (
             "6.1(5e)",
             script.MANUAL,
             [["tenantB", "tenantB-device", "tenantB-cons", "cons", "uni/tn-tenantB/lDevVip-tenantB-device/lIf-tenantB-cons"]],
-            "Heads up: these configured service graph interfaces are not deployed. If deployed before the upgrade is complete, they may hit CSCwr51759.",
+            "Configured service graph interfaces require manual review. They are not currently deployed; deploying them before the upgrade completes may cause the condition described in CSCwr51759.",
         ),
     ],
 )
@@ -440,9 +440,9 @@ def test_configured_only_context_is_manual(run_check, mock_icurl, cversion):
     assert result.result == script.MANUAL
     assert len(result.data) == 2
     assert all(row[0] == "user-11" for row in result.data)
-    assert "not deployed" in result.msg
-    assert "before the upgrade is complete" in result.msg
-    assert "Before deploying" in result.recommended_action
+    assert "not currently deployed" in result.msg
+    assert "before the upgrade completes" in result.msg
+    assert "before deployment" in result.recommended_action
 
 
 @pytest.mark.parametrize("icurl_outputs", [{
@@ -468,11 +468,13 @@ def test_old_only_relations_on_configured_context_are_manual(run_check, mock_icu
         + read_data(dir, "vnsLIf_with_rel_tenantB_empty.json")
     ),
 }])
-def test_deployed_failure_keeps_configured_only_heads_up(run_check, mock_icurl):
+def test_deployed_failure_lists_configured_only_for_manual_review(run_check, mock_icurl):
     result = run_check(cversion=script.AciVersion("5.2(8h)"), tversion=script.AciVersion("6.1(5e)"))
     assert result.result == script.FAIL_O
     assert all(row[0] == "user-11" for row in result.data)
-    assert result.unformatted_headers[0].startswith("Configured Only:")
+    assert result.unformatted_headers[0].startswith("MANUAL review:")
     assert len(result.unformatted_data) == 1
     assert result.unformatted_data[0][0] == "tenantB"
-    assert "Heads up:" in result.msg
+    assert "Additional configured-only interfaces are not currently deployed" in result.msg
+    assert "before the upgrade completes may cause the condition described in CSCwr51759" in result.msg
+    assert ". Verify the concrete interface attachments of the listed configured-only interfaces" in result.recommended_action
