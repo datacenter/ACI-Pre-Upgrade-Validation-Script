@@ -5871,7 +5871,8 @@ def clock_signal_component_failure_check(**kwargs):
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
     recommended_action = (
-        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
+        'Check the listed serial numbers with the Field Notice Serial Number Validator at https://cs.co/FNSNV '
+        'for applicable Field Notices, including FN64251. Products shipped after December 5, 2016 are not affected '
         'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
         'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
         'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
