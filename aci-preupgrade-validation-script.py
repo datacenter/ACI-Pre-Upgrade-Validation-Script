@@ -2997,7 +2997,7 @@ def nxos_ipn_release_assessment(version):
     if version in NXOS_IPN_UNPATCHED_RELEASES:
         return "Listed as unpatched in CSCwt59437"
     if version == '10.5(2)':
-        return "Issue #444 flags this release; defect status is unconfirmed"
+        return "10.5(2) is not listed as unpatched in CSCwt59437; verify manually"
     if re.match(r'^10\.5\([2345](?:\.[0-9]+)?[a-z]?\)|^10\.6\([12][a-z]?\)', version):
         return "Release variant is not individually listed in CSCwt59437"
     return ""

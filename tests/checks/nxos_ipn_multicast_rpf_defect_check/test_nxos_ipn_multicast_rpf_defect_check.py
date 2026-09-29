@@ -71,7 +71,7 @@ def test_affected_106_release_from_cdp_is_manual(run_check, mock_icurl, fabric_n
 
 
 @pytest.mark.parametrize("version, expected, assessment", [
-    ("10.5(2)", script.MANUAL, "Issue #444 flags this release; defect status is unconfirmed"),
+    ("10.5(2)", script.MANUAL, "10.5(2) is not listed as unpatched in CSCwt59437; verify manually"),
     ("10.5(4a)", script.MANUAL, "Release variant is not individually listed in CSCwt59437"),
     ("10.5(4)SMU(1)", script.MANUAL, "Release variant is not individually listed in CSCwt59437"),
     ("10.5(4)SMU(16)", script.PASS, None),
