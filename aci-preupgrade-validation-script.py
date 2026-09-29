@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 from six import iteritems, text_type
 from six.moves import input
+from six.moves.urllib.parse import quote
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict, OrderedDict
@@ -6345,6 +6346,274 @@ def isis_database_byte_check(tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='Service EP Flag without PBR')
+def service_ep_flag_bd_check(cversion, tversion, **kwargs):
+    headers = ["Leaf", "Service EPG DN", "Bridge Domain DN", "Graph Connector DN"]
+    data = []
+    unformatted_headers = ["Leaf", "Service EPG or VLAN DN", "Reason"]
+    unformatted_data = []
+    recommended_action = (
+        "Review the listed service EPGs for PBR redirect use. A fixed target "
+        "release may remove service-ep when PBR is absent and change Don't Learn "
+        "behavior. Contact Cisco TAC to assess the service graph and traffic "
+        "impact before upgrading."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    def at_least(version, boundary):
+        return version.same_as(boundary) or version.newer_than(boundary)
+
+    def source_affected(version):
+        if version.major_version == "5.2":
+            return at_least(version, "5.2(5c)")
+        if version.major_version == "6.0":
+            return at_least(version, "6.0(1g)") and version.older_than("6.0(8e)")
+        if version.major_version == "6.1":
+            return version.older_than("6.1(1f)")
+        if version.older_than("5.2(5c)") or at_least(version, "6.1(1f)"):
+            return False
+        return None  # No verified boundary for this release train.
+
+    # The target must contain the fix. Current leaf versions are checked per
+    # operational entry because a fabric can contain mixed switch releases.
+    target_fixed = (
+        (tversion.major_version == "6.0" and at_least(tversion, "6.0(8e)"))
+        or (tversion.major_version == "6.1" and at_least(tversion, "6.1(1f)"))
+        or (int(tversion.major1) == 6 and int(tversion.major2) >= 2)
+        or int(tversion.major1) > 6
+    )
+    if not target_fixed:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    def child_attributes(obj, class_name):
+        return [
+            child[class_name].get("attributes", {})
+            for child in obj.get("children") or []
+            if isinstance(child, dict) and class_name in child
+        ]
+
+    def manual(leaf_dn, epg_dn, reason):
+        unformatted_data.append([leaf_dn, epg_dn, reason])
+
+    def query_dns(class_name, dns, extra_params=""):
+        """Query selected DNs with bounded predicates and encoded URL length."""
+        max_terms = 10  # Keep DN clauses well below the stated 20-item limit.
+        max_query_length = 3000
+        page_suffix = "&page=999999&page-size=1000"
+        objects = []
+        oversized = set()
+        batch = []
+
+        def make_query(dn_batch):
+            terms = ["eq({}.dn,{})".format(class_name, json.dumps(dn))
+                     for dn in dn_batch]
+            expression = terms[0] if len(terms) == 1 else "or({})".format(",".join(terms))
+            return "{}.json?query-target-filter={}{}".format(
+                class_name, quote(expression, safe="(),"), extra_params)
+
+        for dn in sorted(set(dn for dn in dns if dn)):
+            candidate = batch + [dn]
+            if (len(candidate) > max_terms or
+                    len(make_query(candidate) + page_suffix) > max_query_length):
+                if batch:
+                    objects.extend(icurl("class", make_query(batch), page_size=1000))
+                    batch = []
+                if len(make_query([dn]) + page_suffix) > max_query_length:
+                    oversized.add(dn)
+                    continue
+            batch.append(dn)
+        if batch:
+            objects.extend(icurl("class", make_query(batch), page_size=1000))
+        return objects, oversized
+
+    leaf_versions = {}
+    for node in kwargs.get("fabric_nodes") or []:
+        attrs = node.get("fabricNode", {}).get("attributes", {})
+        if attrs.get("role") == "leaf":
+            leaf_versions[attrs.get("dn")] = attrs.get("version")
+
+    flag_query = 'vlanCktEp.json?query-target-filter=allbits(vlanCktEp.ctrl,"service-ep")'
+    flagged = icurl("class", flag_query, page_size=1000)
+    affected = []
+    for item in flagged:
+        attrs = item.get("vlanCktEp", {}).get("attributes", {})
+        leaf_match = re.match(r"^(topology/pod-\d+/node-\d+)/", attrs.get("dn") or "")
+        leaf_dn = leaf_match.group(1) if leaf_match else ""
+        epg_dn = attrs.get("epgDn") or ""
+        if not epg_dn:
+            manual(leaf_dn, attrs.get("dn") or "", "Flagged entry has no service EPG DN.")
+            continue
+        version_string = leaf_versions.get(leaf_dn)
+        try:
+            leaf_version = AciVersion(version_string) if version_string else None
+        except ValueError:
+            leaf_version = None
+        if not leaf_version:
+            manual(leaf_dn, epg_dn, "Current leaf version is unavailable.")
+            continue
+        impact = source_affected(leaf_version)
+        if impact is None:
+            manual(leaf_dn, epg_dn, "Source release has no verified CSCwi17652 boundary.")
+        elif impact:
+            affected.append((leaf_dn, epg_dn))
+
+    affected = sorted(set(affected))
+    if not affected:
+        result = MANUAL if unformatted_data else PASS
+        return Result(result=result, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # Match only the service EPGs found on affected leaves.
+    epg_dns = sorted(set(epg_dn for _, epg_dn in affected))
+    epp_by_dn = {}
+    epp_items, oversized_epps = query_dns(
+        "vnsEPpInfo", epg_dns,
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRtEPpInfoAtt,vnsRsEPpInfoToBD")
+    for item in epp_items:
+        epp = item.get("vnsEPpInfo", {})
+        dn = epp.get("attributes", {}).get("dn")
+        if dn:
+            epp_by_dn[dn] = epp
+
+    pending = []
+    for leaf_dn, epg_dn in affected:
+        if epg_dn in oversized_epps:
+            manual(leaf_dn, epg_dn, "Service EPG DN exceeds the bounded APIC query length.")
+            continue
+        epp = epp_by_dn.get(epg_dn)
+        if not epp:
+            manual(leaf_dn, epg_dn, "Service EPG information was not found.")
+            continue
+        bd_dns = set(attrs.get("tDn") for attrs in
+                     child_attributes(epp, "vnsRsEPpInfoToBD") if attrs.get("tDn"))
+        refs = [attrs.get("tDn") for attrs in
+                child_attributes(epp, "vnsRtEPpInfoAtt") if attrs.get("tDn")]
+        if len(bd_dns) != 1 or not refs:
+            manual(leaf_dn, epg_dn, "BD or deployed graph relation is missing or ambiguous.")
+            continue
+        pending.append((leaf_dn, epg_dn, next(iter(bd_dns)), refs))
+
+    if not pending:
+        return Result(result=MANUAL, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # A service EPG can be shared by several graph connectors. Query only the
+    # graph nodes referenced by those EPGs, then only their connector contexts.
+    node_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" in ref_dn and "/EPgDef-" in ref_dn:
+                node_dns.add(ref_dn.split("/LegVNode-", 1)[0])
+    node_relation_dns = [dn + "/rsNodeInstToLDevCtx" for dn in node_dns]
+    node_items, oversized_nodes = query_dns(
+        "vnsRsNodeInstToLDevCtx", node_relation_dns)
+    node_relations = defaultdict(list)
+    for item in node_items:
+        attrs = item.get("vnsRsNodeInstToLDevCtx", {}).get("attributes", {})
+        dn = attrs.get("dn", "")
+        if dn.endswith("/rsNodeInstToLDevCtx"):
+            node_relations[dn.rsplit("/", 1)[0]].append(attrs.get("tDn", ""))
+
+    candidate_context_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                continue
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-" + connector)
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-Any")
+    ctx_items, oversized_contexts = query_dns(
+        "vnsLIfCtx", candidate_context_dns,
+        "&query-target=self&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsLIfCtxToBD,"
+        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol")
+    contexts = {}
+    for item in ctx_items:
+        ctx = item.get("vnsLIfCtx", {})
+        dn = ctx.get("attributes", {}).get("dn")
+        if dn:
+            contexts[dn] = ctx
+
+    for leaf_dn, epg_dn, bd_dn, refs in pending:
+        pbr_found = False
+        context_dns = []
+        problems = []
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                problems.append("Cannot parse deployed graph reference.")
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            if node_dn + "/rsNodeInstToLDevCtx" in oversized_nodes:
+                problems.append("Graph node DN exceeds the bounded APIC query length.")
+                continue
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                problems.append("Graph node does not resolve to one device context.")
+                continue
+            parent_dn = ldev_dns[0]
+            ctx_dn = parent_dn + "/lIfCtx-c-" + connector
+            if ctx_dn in oversized_contexts:
+                problems.append("Graph connector DN exceeds the bounded APIC query length.")
+                continue
+            ctx = contexts.get(ctx_dn)
+            if not ctx:
+                ctx_dn = parent_dn + "/lIfCtx-c-Any"
+                if ctx_dn in oversized_contexts:
+                    problems.append("Fallback graph connector DN exceeds the bounded APIC query length.")
+                    continue
+                ctx = contexts.get(ctx_dn)
+            if not ctx:
+                problems.append("Graph connector context was not found.")
+                continue
+            context_dns.append(ctx_dn)
+            ctx_bds = set(attrs.get("tDn") for attrs in
+                          child_attributes(ctx, "vnsRsLIfCtxToBD") if attrs.get("tDn"))
+            if bd_dn not in ctx_bds:
+                problems.append("Graph connector BD does not match the service EPG BD.")
+                continue
+            redirects = (
+                child_attributes(ctx, "vnsRsLIfCtxToSvcRedirectPol")
+                + child_attributes(ctx, "vnsRsLIfCtxToRemoteSvcRedirectPol")
+            )
+            if redirects:
+                # Some APIC responses omit state on a configured relation.
+                # An explicit unformed state still needs manual review.
+                if any(attrs.get("tDn") and attrs.get("state") in (None, "formed")
+                       for attrs in redirects):
+                    pbr_found = True
+                else:
+                    problems.append("Redirect policy relationship is unresolved.")
+
+        if pbr_found:
+            continue
+        if problems or not context_dns:
+            manual(leaf_dn, epg_dn, "; ".join(sorted(set(problems))) or
+                   "No graph connector could be resolved.")
+            continue
+        data.append([leaf_dn, epg_dn, bd_dn, ", ".join(sorted(set(context_dns)))])
+
+    result = FAIL_O if data else MANUAL if unformatted_data else PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
 def apic_database_size_check(cversion, **kwargs):
@@ -7979,6 +8248,299 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
             'all inter-APIC OOB connectivity directions:\n{}'.format('\n'.join(manual_commands))
         )
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+@check_wrapper(check_title="vnsRsCIfAtt Deprecation Check")
+def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
+    result = PASS
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnsrscifatt-deprecation-check"
+
+    lif_dn_regex = r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)$"
+    ldeviflif_regex = r"^uni/tn-[^/]+/lDevIf-\[(?P<base>uni/tn-[^\]]+/lDevVip-[^\]]+)\]/lDevIfLIf-(?P<lif>[^/]+)$"
+    tn_regex = r"^uni/tn-([^/]+)/"
+
+    def device_dn_from_lif_match(lif_dn_match):
+        return "uni/tn-{}/lDevVip-{}".format(lif_dn_match.group("tenant"), lif_dn_match.group("device"))
+
+    def cif_name_from_lif_name(lif_name):
+        # LIF names may carry a numeric suffix for multi-connector graphs (e.g. "intf-cons-1"),
+        # so the cons/prov role must be matched explicitly rather than taking the last "-" token.
+        role_match = re.search(r"-(cons|prov)(?:-\d+)?$", lif_name)
+        if role_match:
+            return role_match.group(1)
+        return lif_name.rsplit("-", 1)[-1]
+
+    def build_row(lif_dn, lif_dn_match):
+        lif_name = lif_dn_match.group("lif") if lif_dn_match else ""
+        return [
+            lif_dn_match.group("tenant") if lif_dn_match else "",
+            lif_dn_match.group("device") if lif_dn_match else "",
+            lif_name,
+            cif_name_from_lif_name(lif_name),
+            lif_dn,
+        ]
+
+    def safe_extract_attrs(fn):
+        try:
+            return fn()
+        except (KeyError, TypeError, AttributeError):
+            return None
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+    if tversion.older_than("6.0(3d)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+    if not cversion:
+        return Result(result=MANUAL, msg="Current version not supplied. Skipping.", doc_url=doc_url)
+
+    post_cifatt_delete = cversion.same_as("6.0(3d)") or cversion.newer_than("6.0(3d)")
+    if post_cifatt_delete:
+        headers = ["Tenant", "Device Name", "Cluster Interface"]
+        recommended_action = "Please review the concrete interface attachments under the flagged device cluster interfaces and reattach them using the UI: Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
+    else:
+        headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
+        recommended_action = "Please reattach concrete interfaces again using the UI (without deleting the existing attachment objects): Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
+
+    # ── Step 1: Collect LIF DNs referenced by applied service graphs ────────
+    # Build (contract_name, graph_name) -> set(tenants) from applied vnsGraphInst objects.
+    graph_keys = defaultdict(set)
+    for entry in icurl("class", 'vnsGraphInst.json?query-target-filter=and(eq(vnsGraphInst.configSt,"applied"))') or []:
+        attrs = safe_extract_attrs(lambda: (
+            entry["vnsGraphInst"]["attributes"]["configSt"].strip(),
+            entry["vnsGraphInst"]["attributes"]["ctrctDn"].strip(),
+            entry["vnsGraphInst"]["attributes"]["graphDn"].strip(),
+        ))
+        if attrs is None:
+            continue
+        config_st, contract_dn, graph_dn = attrs
+        if config_st != "applied":
+            continue
+        contract_tenant_match = re.search(tn_regex, contract_dn)
+        contract_match = re.search(r"/brc-([^/]+)$", contract_dn)
+        graph_match = re.search(r"/AbsGraph-([^/]+)$", graph_dn)
+        if contract_tenant_match and contract_match and graph_match:
+            graph_keys[(contract_match.group(1), graph_match.group(1))].add(contract_tenant_match.group(1))
+
+    if not graph_keys:
+        return Result(result=PASS, msg="No applied service graph instances found.", doc_url=doc_url)
+
+    lif_dns = set()
+    lif_source_tenants = {}    # lif_dn -> set(contract tenants) for implicit-object detection
+    dev_source_tenants = {}    # device-prefix DN -> set(contract tenants)
+
+    ldev_ctx_query = (
+        "vnsLDevCtx.json?rsp-prop-include=config-only"
+        "&rsp-subtree=full"
+        "&rsp-subtree-class=vnsLIfCtx,vnsRsLIfCtxToLIf"
+        "&rsp-subtree-include=required"
+    )
+    for entry in icurl("class", ldev_ctx_query) or []:
+        parsed = safe_extract_attrs(lambda: (
+            entry["vnsLDevCtx"],
+            entry["vnsLDevCtx"]["attributes"]["ctrctNameOrLbl"].strip(),
+            entry["vnsLDevCtx"]["attributes"]["graphNameOrLbl"].strip(),
+            entry["vnsLDevCtx"]["attributes"]["dn"].strip(),
+        ))
+        if parsed is None:
+            continue
+        ldev_ctx_mo, contract, graph, ctx_dn = parsed
+
+        ctx_tenant_match = re.search(tn_regex, ctx_dn)
+        ctx_tenant = ctx_tenant_match.group(1) if ctx_tenant_match else ""
+
+        if not contract or not graph:
+            continue
+        c_norm = contract.split("-", 1)[-1] if "-" in contract else contract
+        g_norm = graph[:-9] if graph.endswith("-imported") else graph
+        applied_tenants = set()
+        for c in (contract, c_norm):
+            for g in (graph, g_norm):
+                applied_tenants |= graph_keys.get((c, g), set())
+        # tenant "common" is shared fabric-wide, so a match on either side is enough;
+        # otherwise the applied graph's tenant must equal this context's tenant.
+        if not any(t == ctx_tenant or "common" in (t, ctx_tenant) for t in applied_tenants):
+            continue
+
+        # DFS through vnsLIfCtx children to collect vnsRsLIfCtxToLIf references
+        stack = [ldev_ctx_mo]
+        while stack:
+            current_ctx = stack.pop()
+            for child in current_ctx.get("children", []) or []:
+                if child.get("vnsLIfCtx"):
+                    stack.append(child["vnsLIfCtx"])
+                lif_relation = child.get("vnsRsLIfCtxToLIf")
+                if not lif_relation:
+                    continue
+                parsed = safe_extract_attrs(lambda: (lif_relation["attributes"].get("tCl", ""), lif_relation["attributes"]["tDn"].strip()))
+                if parsed is None:
+                    continue
+                target_class, target_dn = parsed
+                if not target_dn:
+                    continue
+
+                if target_class == "vnsLIf" or re.search(lif_dn_regex, target_dn):
+                    lif_dns.add(target_dn)
+                    lif_dn_match = re.search(lif_dn_regex, target_dn)
+                    if lif_dn_match and ctx_tenant:
+                        dev_dn = device_dn_from_lif_match(lif_dn_match)
+                        lif_source_tenants.setdefault(target_dn, set()).add(ctx_tenant)
+                        dev_source_tenants.setdefault(dev_dn, set()).add(ctx_tenant)
+                elif target_class == "vnsLDevIfLIf" or ("/lDevIf-[" in target_dn and "/lDevIfLIf-" in target_dn):
+                    ldeviflif_match = re.search(ldeviflif_regex, target_dn)
+                    if ldeviflif_match:
+                        converted = "{}/lIf-{}".format(ldeviflif_match.group("base"), ldeviflif_match.group("lif"))
+                        lif_dns.add(converted)
+                        if ctx_tenant:
+                            lif_source_tenants.setdefault(converted, set()).add(ctx_tenant)
+                            dev_source_tenants.setdefault(ldeviflif_match.group("base"), set()).add(ctx_tenant)
+
+    # Expand to all LIFs under the same device clusters
+    dev_prefixes = set()
+    for lif_dn in lif_dns:
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        if lif_dn_match:
+            dev_prefixes.add(device_dn_from_lif_match(lif_dn_match))
+
+    # One consolidated collection for vnsLIf + vnsRsCIfAtt + vnsRsCIfAttN.
+    vns_lif_with_rel_query = (
+        "vnsLIf.json?rsp-prop-include=config-only"
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsCIfAtt,vnsRsCIfAttN"
+    )
+    vns_lif_mos = icurl("class", vns_lif_with_rel_query) or []
+
+    vnsRsCIfAtts = []
+    vnsRsCIfAttNs = []
+    lifs_with_new_relation = set()
+
+    for entry in vns_lif_mos:
+        parsed = safe_extract_attrs(lambda: (entry["vnsLIf"], entry["vnsLIf"]["attributes"]["dn"].strip()))
+        if parsed is None:
+            continue
+        lif_mo, lif_dn = parsed
+
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        if not lif_dn_match:
+            continue
+        dev_dn = device_dn_from_lif_match(lif_dn_match)
+        if dev_dn not in dev_prefixes:
+            continue
+        lif_dns.add(lif_dn)
+        if dev_source_tenants.get(dev_dn):
+            lif_source_tenants.setdefault(lif_dn, set()).update(dev_source_tenants[dev_dn])
+
+        for child in lif_mo.get("children", []) or []:
+            if not isinstance(child, dict):
+                continue
+            if child.get("vnsRsCIfAtt"):
+                vnsRsCIfAtts.append(child)
+            if child.get("vnsRsCIfAttN"):
+                vnsRsCIfAttNs.append(child)
+                lifs_with_new_relation.add(lif_dn)
+
+    def format_deployed_result(active_result):
+        if active_result.result == FAIL_O:
+            if active_result.msg:
+                active_result.recommended_action = active_result.msg.rstrip(". ") + ". " + active_result.recommended_action
+            active_result.recommended_action = "Deployed interfaces (FAIL_O): " + active_result.recommended_action
+            active_result.msg = ""
+        return active_result
+
+    if not lif_dns:
+        return Result(result=PASS, msg="No deployed service graph interfaces found.", doc_url=doc_url)
+
+    # ── Step 2: Missing vnsRsCIfAttN under deployed LIFs (from consolidated data) ──
+
+    missing_rscifattn_rows = []
+    has_implicit_objects = False
+    for lif_dn in sorted(lif_dns):
+        if lif_dn in lifs_with_new_relation:
+            continue
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        missing_rscifattn_rows.append(build_row(lif_dn, lif_dn_match))
+        if post_cifatt_delete and lif_dn_match and lif_dn_match.group("tenant") == "common":
+            if any(t and t != "common" for t in lif_source_tenants.get(lif_dn, set())):
+                has_implicit_objects = True
+
+    # ── Step 3: Return results ───────────────────────────────────────────────
+
+    if post_cifatt_delete:
+        if missing_rscifattn_rows:
+            missing_rscifattn_rows.sort(key=lambda r: r[-1])
+            msg = "Graph is rendered with implicit objects" if has_implicit_objects else "vnsRsCIfAttN is missing under deployed L4-L7 cluster interfaces."
+            return format_deployed_result(Result(result=FAIL_O, msg=msg, headers=headers, data=[[r[0], r[1], r[2]] for r in missing_rscifattn_rows], recommended_action=recommended_action, doc_url=doc_url))
+        return Result(result=PASS, msg="All deployed service graph interfaces have vnsRsCIfAttN.", doc_url=doc_url)
+
+    # version not having new object path reuses relation objects collected above.
+
+    if missing_rscifattn_rows:
+        missing_rscifattn_rows.sort(key=lambda r: r[-1])
+        msg = "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency." if not vnsRsCIfAtts and not vnsRsCIfAttNs else ""
+        return format_deployed_result(Result(result=FAIL_O, msg=msg, headers=headers, data=missing_rscifattn_rows, recommended_action=recommended_action, doc_url=doc_url))
+
+    if not vnsRsCIfAtts and not vnsRsCIfAttNs:
+        return format_deployed_result(Result(result=FAIL_O, msg="Both vnsRsCIfAtt and vnsRsCIfAttN are missing. Reattach concrete interface mappings before upgrade.", headers=headers, data=[], recommended_action=recommended_action, doc_url=doc_url))
+
+    if not vnsRsCIfAtts:
+        return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
+
+    # Build new-object lookup sets in a single pass over vnsRsCIfAttNs
+    new_lif_dns = set(lifs_with_new_relation)   # LIF DNs covered by vnsRsCIfAttN (for coverage check)
+    new_dn_keys = set()   # New DNs rewritten as old-style keys (for consistency check)
+    for relation_mo in vnsRsCIfAttNs:
+        relation_dn = safe_extract_attrs(lambda: relation_mo["vnsRsCIfAttN"]["attributes"]["dn"].strip())
+        if relation_dn is None:
+            continue
+        if not relation_dn:
+            continue
+        lif_parent_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/rscIfAttN-\[", relation_dn)
+        if lif_parent_match:
+            new_lif_dns.add(lif_parent_match.group(1))
+        new_dn_keys.add(relation_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1))
+
+    # Secondary coverage check: any deployed LIF not yet covered by a vnsRsCIfAttN
+    data = []
+    for lif_dn in sorted(lif_dns):
+        if lif_dn in new_lif_dns:
+            continue
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        data.append(build_row(lif_dn, lif_dn_match))
+    if data:
+        return format_deployed_result(Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
+
+    # Consistency check: each old vnsRsCIfAtt must have a matching new vnsRsCIfAttN
+    data = []
+    for old_relation_mo in vnsRsCIfAtts:
+        old_dn = safe_extract_attrs(lambda: old_relation_mo["vnsRsCIfAtt"]["attributes"]["dn"].strip())
+        if old_dn is None:
+            continue
+        if not old_dn:
+            continue
+        old_lif_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/", old_dn)
+        old_lif = old_lif_match.group(1) if old_lif_match else ""
+        if lif_dns and old_lif and old_lif not in lif_dns:
+            continue
+        if old_dn in new_dn_keys:
+            continue
+        old_relation_match = re.search(
+            r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)/"
+            r"rscIfAtt-\[.*?/cIf-\[(?P<cif>[^\]]+)\]\]",
+            old_dn,
+        )
+        data.append([
+            old_relation_match.group("tenant") if old_relation_match else "",
+            old_relation_match.group("device") if old_relation_match else "",
+            old_relation_match.group("lif") if old_relation_match else "",
+            old_relation_match.group("cif") if old_relation_match else "",
+            old_dn,
+        ])
+
+    data.sort(key=lambda r: r[-1])
+    if data:
+        result = FAIL_O
+
+    return format_deployed_result(Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
+
+
 # ---- Script Execution ----
 
 
@@ -8162,6 +8724,8 @@ class CheckManager:
         port_tracking_active_fabric_port_check,
         host_interface_policy_set_speed_check,
         fx3_breakout_port_check,
+        vnsRsCIfAtt_deprecation_check,
+        service_ep_flag_bd_check,
     ]
     ssh_checks = [
         # General
