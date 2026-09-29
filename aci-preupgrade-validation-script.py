@@ -7841,15 +7841,17 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     if post_cifatt_delete:
         manual_rows = [row[:3] for row in manual_rows]
 
-    manual_action = ("The listed configured-only service graph interfaces are not currently deployed. "
-                     "Deploying them before the upgrade completes may cause the condition described "
-                     "in CSCwr51759. Verify their concrete interface attachments and reattach any "
-                     "missing or mismatched mapping using the APIC UI before deployment.")
+    manual_action = ("Configured-only interfaces (MANUAL): These interfaces are not deployed and do "
+                     "not represent a current outage. If they are deployed before the upgrade "
+                     "completes, the condition described in CSCwr51759 may occur. Verify their "
+                     "concrete interface attachments and reattach any missing or mismatched mapping "
+                     "using the APIC UI before deployment.")
 
     def include_manual_result(active_result):
         if active_result.result == FAIL_O:
             if active_result.msg:
                 active_result.recommended_action = active_result.msg.rstrip(". ") + ". " + active_result.recommended_action
+            active_result.recommended_action = "Deployed interfaces (FAIL_O): " + active_result.recommended_action
             active_result.msg = ""
         if not manual_rows:
             return active_result

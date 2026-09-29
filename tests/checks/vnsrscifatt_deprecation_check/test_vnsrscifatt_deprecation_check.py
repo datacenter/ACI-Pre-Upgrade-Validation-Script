@@ -441,7 +441,8 @@ def test_configured_only_context_is_manual(run_check, mock_icurl, cversion):
     assert len(result.data) == 2
     assert all(row[0] == "user-11" for row in result.data)
     assert result.msg == ""
-    assert "not currently deployed" in result.recommended_action
+    assert result.recommended_action.startswith("Configured-only interfaces (MANUAL): ")
+    assert "not represent a current outage" in result.recommended_action
     assert "before the upgrade completes" in result.recommended_action
     assert "before deployment" in result.recommended_action
 
@@ -458,7 +459,7 @@ def test_deployed_failure_moves_condition_to_recommended_action(run_check, mock_
     assert len(result.data) == 2
     assert not result.unformatted_data
     assert result.recommended_action.startswith(
-        "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. "
+        "Deployed interfaces (FAIL_O): vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. "
         "Missing concrete interface mapping can cause service graph inconsistency."
     )
 
@@ -495,5 +496,7 @@ def test_deployed_failure_lists_configured_only_for_manual_review(run_check, moc
     assert result.unformatted_data[0][0] == "tenantB"
     assert result.msg == ""
     assert "Missing concrete interface mapping can cause service graph inconsistency." in result.recommended_action
-    assert "Deploying them before the upgrade completes may cause the condition described in CSCwr51759." in result.recommended_action
-    assert ". The listed configured-only service graph interfaces are not currently deployed." in result.recommended_action
+    assert result.recommended_action.startswith("Deployed interfaces (FAIL_O): ")
+    assert ". Configured-only interfaces (MANUAL): " in result.recommended_action
+    assert "not represent a current outage" in result.recommended_action
+    assert "If they are deployed before the upgrade completes, the condition described in CSCwr51759 may occur." in result.recommended_action
