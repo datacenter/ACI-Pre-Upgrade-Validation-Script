@@ -5934,7 +5934,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (
-        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(4d)")))
+        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
         and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))
     ):
         eqptSupC = icurl('class', eqptSupC_api)
