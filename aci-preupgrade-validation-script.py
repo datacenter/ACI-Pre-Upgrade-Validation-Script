@@ -2031,11 +2031,8 @@ def switch_status_check(fabric_nodes, **kwargs):
 @check_wrapper(check_title="APIC Upgrade in Mixed-Version Fabric")
 def apic_upgrade_mixed_version_check(cversion, tversion, fabric_nodes, **kwargs):
     """Avoid starting another APIC upgrade while active switches are on another release."""
-    doc_url = ('https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/'
-               'apic-installation-aci-upgrade-downgrade/'
-               'Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/'
-               'g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/'
-               'mixed-os-support.html')
+    doc_url = ('https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/'
+               'validations/#apic-upgrade-in-mixed-version-fabric')
     headers = ['Pod', 'Node', 'Name', 'Role', 'Current Version', 'APIC Version', 'Reason']
 
     if not tversion:
