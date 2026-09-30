@@ -222,6 +222,7 @@ Items                                           | Defect       | This Script    
 [APIC OOB Connectivity][d41]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
 [vnsRsCIfAtt Deprecation Check][d42]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 [Service-EP Flag in BD without PBR][d43]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
+[APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -266,6 +267,7 @@ Items                                           | Defect       | This Script    
 [d41]: #apic-oob-connectivity
 [d42]: #vnsrscifatt-deprecation-check
 [d43]: #service-ep-flag-in-bd-without-pbr
+[d44]: #apic-connected-port-vlan-override
 
 ## General Check Details
 
@@ -3009,6 +3011,15 @@ On affected releases, [CSCwi17652][84] may enable `service-ep` for a service dev
 
 For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies flagged service EPGs whose deployed service graph has no PBR redirect policy. It reports the leaf, service EPG, bridge domain, and graph connector for review with Cisco TAC before upgrading. A finding indicates a possible behavior change, not a certain outage. If the graph cannot be classified, the check requests manual review.
 
+
+### APIC Connected Port VLAN Override
+
+[CSCwn64461][87] concerns user VLAN configuration overriding the InfraVLAN on a leaf port connected to an APIC. This validation correlates live APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. It reports the configured VLAN, the fabric InfraVLAN, and the configuration DN for each attachment found on an APIC-connected port.
+
+This is a configuration validation for CSCwn64461, not the `F0467` `port-configured-for-apic` fault validation. It can identify the configuration while the fault is absent. Remove the listed tenant static EPG path attachment before the upgrade.
+
+This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3095,3 +3106,4 @@ For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies
 [84]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi17652
 [85]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
 [86]: https://cs.co/FNSNV
+[87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
