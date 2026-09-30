@@ -209,7 +209,6 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
-[APIC Connected Port VLAN Override][d39]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 [NX-OS IPN Multicast RPF Defect][d40]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
@@ -250,7 +249,6 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
-[d39]: #apic-connected-port-vlan-override
 [d40]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
 
 ## General Check Details
@@ -2680,7 +2678,7 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, enter the serial numbers reported by the check in the [Field Notice Serial Number Validator][79] to check for applicable Field Notices, including FN64251. Review [FN64251][39] for details. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
 
 The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
@@ -2704,7 +2702,7 @@ This check will count the number of relevant PBR policies across the entire ACI 
 
 ### Standby Sup Image Sync
 
-Due to [CSCwa44220][48], the Standby Supervisor Modules within Modular Chassis running an affected switch release will be unable to successfully install switch images greater than 2 Gigs. The fix is present in 4.2(7t) and 5.2(4d) and later releases in those trains.
+Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
 
 If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
 
@@ -2874,15 +2872,6 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
-
-### APIC Connected Port VLAN Override
-
-[CSCwn64461][78] concerns user VLAN configuration overriding the InfraVLAN on a leaf port connected to an APIC. This validation correlates live APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. It reports the configured VLAN, the fabric InfraVLAN, and the configuration DN for each attachment found on an APIC-connected port.
-
-This is a configuration validation for CSCwn64461, not the `F0467` `port-configured-for-apic` fault validation. It can identify the configuration while the fault is absent. Remove the listed tenant static EPG path attachment before the upgrade.
-
-This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
-
 ### NX-OS IPN Multicast RPF Defect (CSCwt59437)
 
 [CSCwt59437][80] can leave multicast RPF pointing at a local loopback after a phantom RP route changes on an NX-OS IPN device. Inter-pod overlay multicast traffic may then be dropped when ACI spines are rebooted or upgraded. The defect describes a PIM bidirectional phantom-RP setup and reports the problem with a `/32` multicast route.
@@ -2968,6 +2957,4 @@ The check reads only what ACI sees from its neighbors. It cannot confirm the IPN
 [75]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt69100
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
-[78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
-[79]: https://cs.co/FNSNV
 [80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437

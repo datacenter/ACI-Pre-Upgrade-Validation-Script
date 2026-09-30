@@ -2929,202 +2929,6 @@ def port_configured_for_apic_check(**kwargs):
     )
 
 
-@check_wrapper(check_title="APIC Connected Port VLAN Override (CSCwn64461)")
-def apic_connected_port_vlan_override_check(**kwargs):
-    result = FAIL_UF
-    headers = ["Pod", "Node", "Port", "EPG", "Configured VLAN", "InfraVLAN", "Configuration DN"]
-    data = []
-    recommended_action = 'Remove tenant static EPG path attachments from APIC Connected Interfaces'
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-connected-port-vlan-override"
-
-    controller_adj_dn_regex = node_regex + r'/sys/lldp/inst/if-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
-    path_dn_regex = r'topology/pod-(?P<pod>\d+)/paths-(?P<node>\d+)/pathep-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
-    epg_dn_regex = r'^(?P<epg>uni/tn-[^/]+/ap-[^/]+/epg-[^/]+)/rspathAtt-'
-
-    infra_vlan = None
-    lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
-    for lldpInst in lldpInsts:
-        infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
-        match = re.search(r'\d+', str(infra_vlan_id)) if infra_vlan_id else None
-        if match:
-            infra_vlan = match.group(0)
-            break
-
-    if infra_vlan is None:
-        return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
-
-    apic_ports = set()
-    for adjacency in icurl('class', 'lldpCtrlrAdjEp.json'):
-        adj_attr = adjacency.get('lldpCtrlrAdjEp', {}).get('attributes', {})
-        adj_dn = re.search(controller_adj_dn_regex, adj_attr.get('dn', ''))
-        if adj_dn:
-            apic_ports.add((adj_dn.group('pod'), adj_dn.group('node'), adj_dn.group('port')))
-
-    if apic_ports:
-        for path_attachment in icurl('class', 'fvRsPathAtt.json'):
-            path_attr = path_attachment.get('fvRsPathAtt', {}).get('attributes', {})
-            config_dn = path_attr.get('dn', '')
-            epg_dn = re.search(epg_dn_regex, config_dn)
-            path_dn = re.search(path_dn_regex, path_attr.get('tDn', ''))
-            if not epg_dn or not path_dn:
-                continue
-
-            port_key = (path_dn.group('pod'), path_dn.group('node'), path_dn.group('port'))
-            if port_key not in apic_ports:
-                continue
-
-            data.append([
-                path_dn.group('pod'),
-                path_dn.group('node'),
-                path_dn.group('port'),
-                epg_dn.group('epg'),
-                path_attr.get('encap') or '-',
-                infra_vlan,
-                config_dn,
-            ])
-
-    if not data:
-        result = PASS
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
-def nxos_ipn_release_assessment(version):
-    """Classify only the NX-OS release families called out for CSCwt59437."""
-    version = version.lower()
-    if version in NXOS_IPN_UNPATCHED_RELEASES:
-        return "Listed as unpatched in CSCwt59437"
-    if version == '10.5(2)':
-        return "10.5(2) is not listed as unpatched in CSCwt59437; verify manually"
-    if re.match(r'^10\.5\([2345][a-z]?\)|^10\.6\([12][a-z]?\)', version):
-        return "Release variant is not individually listed in CSCwt59437"
-    return ""
-
-
-@check_wrapper(check_title="NX-OS IPN Multicast RPF Defect (CSCwt59437)")
-def nxos_ipn_multicast_rpf_defect_check(fabric_nodes, **kwargs):
-    """Warn from ACI-observed IPN neighbor versions; NX-OS state is not inspected."""
-    headers = ["Pod", "Spine", "Port", "IPN Neighbor", "Platform", "NX-OS Version", "Source", "Assessment"]
-    data = []
-    recommended_action = (
-        "Review CSCwt59437 on the IPN NX-OS devices before rebooting or upgrading ACI spines. "
-        "Verify the IPN software release and PIM bidirectional phantom-RP configuration on those devices; "
-        "this ACI check cannot confirm the peer configuration or multicast RPF state."
-    )
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nx-os-ipn-multicast-rpf-defect-cscwt59437"
-
-    spines = {}
-    for node in fabric_nodes:
-        attr = node.get('fabricNode', {}).get('attributes', {})
-        if attr.get('role') != 'spine' or attr.get('fabricSt') != 'active':
-            continue
-        match = re.match(r'^' + node_regex + r'$', attr.get('dn', ''))
-        if match:
-            spines[(match.group('pod'), match.group('node'))] = attr.get('name') or match.group('node')
-
-    if not spines:
-        return Result(result=MANUAL, msg="No active spine nodes found; IPN exposure cannot be assessed.",
-                      doc_url=doc_url)
-    if len(set(pod for pod, node in spines)) < 2:
-        return Result(result=NA, msg="Active spines are in one pod.", doc_url=doc_url)
-
-    ospf_dn_regex = re.compile(
-        r'^' + node_regex + r'/sys/ospf/inst-default/dom-overlay-1/if-\[(?P<interface>[^\]]+)\]/adj-'
-    )
-    ospf_ports = defaultdict(set)
-    for adjacency in icurl('class', 'ospfAdjEp.json?query-target-filter=wcard(ospfAdjEp.dn,"/dom-overlay-1/")'):
-        attr = adjacency.get('ospfAdjEp', {}).get('attributes', {})
-        match = ospf_dn_regex.match(attr.get('dn', ''))
-        if not match:
-            continue
-        spine_key = (match.group('pod'), match.group('node'))
-        if spine_key not in spines:
-            continue
-        interface = match.group('interface')
-        physical = re.match(r'^(eth\d+/\d+)(?:\.\d+)?$', interface)
-        if physical:
-            ospf_ports[spine_key].add(physical.group(1))
-        else:
-            data.append([spine_key[0], spines[spine_key], interface, '-', '-', '-', 'OSPF',
-                         'Cannot map OSPF interface to a physical LLDP/CDP port'])
-
-    if not ospf_ports and not data:
-        return Result(result=MANUAL, msg="No spine overlay OSPF adjacency found; IPN exposure cannot be assessed.",
-                      recommended_action=recommended_action, doc_url=doc_url)
-
-    neighbor_dn_regex = re.compile(
-        r'^' + node_regex + r'/sys/(?P<source>lldp|cdp)/inst/if-\[(?P<port>[^\]]+)\]/adj-'
-    )
-    neighbors = {}
-    for spine_key in sorted(ospf_ports):
-        pod, node = spine_key
-        node_dn = 'topology/pod-{}/node-{}'.format(pod, node)
-        for source in ('lldp', 'cdp'):
-            classname = source + 'AdjEp'
-            query = '{}.json?query-target-filter=wcard({}.dn,"{}/sys/{}/inst/if-")'.format(
-                classname, classname, node_dn, source)
-            for adjacency in icurl('class', query):
-                attr = adjacency.get(classname, {}).get('attributes', {})
-                match = neighbor_dn_regex.match(attr.get('dn', ''))
-                if not match or (match.group('pod'), match.group('node')) != spine_key:
-                    continue
-                port = match.group('port')
-                if port not in ospf_ports[spine_key]:
-                    continue
-                key = (pod, node, port)
-                neighbors.setdefault(key, []).append((source.upper(), attr))
-
-    for spine_key in sorted(ospf_ports):
-        pod, node = spine_key
-        for port in sorted(ospf_ports[spine_key]):
-            key = (pod, node, port)
-            observed = neighbors.get(key, [])
-            if not observed:
-                data.append([pod, spines[spine_key], port, '-', '-', '-', '-',
-                             'No LLDP/CDP neighbor data for the OSPF port'])
-                continue
-
-            findings = {}
-            advertised_versions = {}
-            for source, attr in observed:
-                platform = attr.get('platId') or '-'
-                if platform != '-' and not platform.upper().startswith('N9K-'):
-                    continue
-                description = (attr.get('sysDesc') or '') if source == 'LLDP' else (attr.get('ver') or '')
-                is_nxos = bool(NXOS_SOFTWARE_REGEX.search(description))
-                if not is_nxos and platform == '-' and description:
-                    continue
-                version_match = NXOS_VERSION_REGEX.search(description) if is_nxos else None
-                version = version_match.group(0) if version_match else '-'
-                if version != '-':
-                    advertised_versions[source] = version
-                assessment = (nxos_ipn_release_assessment(version) if version != '-' else
-                              'Neighbor software version could not be read')
-                if not assessment:
-                    continue
-                finding = findings.setdefault(version, {
-                    'neighbor': attr.get('sysName') or attr.get('devId') or attr.get('chassisIdV') or '-',
-                    'platform': platform, 'sources': set(), 'assessment': assessment,
-                })
-                finding['sources'].add(source)
-                if finding['platform'] == '-' and platform != '-':
-                    finding['platform'] = platform
-
-            for version, finding in sorted(findings.items()):
-                data.append([pod, spines[spine_key], port, finding['neighbor'], finding['platform'],
-                             version, '/'.join(sorted(finding['sources'])), finding['assessment']])
-            if len(set(advertised_versions.values())) > 1:
-                data.append([pod, spines[spine_key], port, '-', '-',
-                             ', '.join(sorted(set(advertised_versions.values()))),
-                             '/'.join(sorted(advertised_versions)),
-                             'LLDP and CDP advertise conflicting NX-OS versions'])
-
-    result = MANUAL if data else PASS
-    msg = ("Possible NX-OS IPN exposure or incomplete neighbor data; verify on the IPN devices." if data else
-           "No listed affected NX-OS release advertised by the discovered IPN neighbors.")
-    return Result(result=result, msg=msg, headers=headers, data=data,
-                  recommended_action=recommended_action, doc_url=doc_url)
-
-
 @check_wrapper(check_title="Overlapping VLAN Pools")
 def overlapping_vlan_pools_check(**kwargs):
     result = PASS
@@ -5887,8 +5691,7 @@ def clock_signal_component_failure_check(**kwargs):
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
     recommended_action = (
-        'Check the listed serial numbers with the Field Notice Serial Number Validator at https://cs.co/FNSNV '
-        'for applicable Field Notices, including FN64251. Products shipped after December 5, 2016 are not affected '
+        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
         'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
         'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
         'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
@@ -6078,7 +5881,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (
-        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(4d)")))
+        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
         and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))
     ):
         eqptSupC = icurl('class', eqptSupC_api)
@@ -7259,6 +7062,142 @@ def wrapup_system(no_cleanup):
         shutil.rmtree(DIR)
 
 
+def nxos_ipn_release_assessment(version):
+    """Classify only the NX-OS release families called out for CSCwt59437."""
+    version = version.lower()
+    if version in NXOS_IPN_UNPATCHED_RELEASES:
+        return "Listed as unpatched in CSCwt59437"
+    if version == '10.5(2)':
+        return "10.5(2) is not listed as unpatched in CSCwt59437; verify manually"
+    if re.match(r'^10\.5\([2345][a-z]?\)|^10\.6\([12][a-z]?\)', version):
+        return "Release variant is not individually listed in CSCwt59437"
+    return ""
+
+
+@check_wrapper(check_title="NX-OS IPN Multicast RPF Defect (CSCwt59437)")
+def nxos_ipn_multicast_rpf_defect_check(fabric_nodes, **kwargs):
+    """Warn from ACI-observed IPN neighbor versions; NX-OS state is not inspected."""
+    headers = ["Pod", "Spine", "Port", "IPN Neighbor", "Platform", "NX-OS Version", "Source", "Assessment"]
+    data = []
+    recommended_action = (
+        "Review CSCwt59437 on the IPN NX-OS devices before rebooting or upgrading ACI spines. "
+        "Verify the IPN software release and PIM bidirectional phantom-RP configuration on those devices; "
+        "this ACI check cannot confirm the peer configuration or multicast RPF state."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nx-os-ipn-multicast-rpf-defect-cscwt59437"
+
+    spines = {}
+    for node in fabric_nodes:
+        attr = node.get('fabricNode', {}).get('attributes', {})
+        if attr.get('role') != 'spine' or attr.get('fabricSt') != 'active':
+            continue
+        match = re.match(r'^' + node_regex + r'$', attr.get('dn', ''))
+        if match:
+            spines[(match.group('pod'), match.group('node'))] = attr.get('name') or match.group('node')
+
+    if not spines:
+        return Result(result=MANUAL, msg="No active spine nodes found; IPN exposure cannot be assessed.",
+                      doc_url=doc_url)
+    if len(set(pod for pod, node in spines)) < 2:
+        return Result(result=NA, msg="Active spines are in one pod.", doc_url=doc_url)
+
+    ospf_dn_regex = re.compile(
+        r'^' + node_regex + r'/sys/ospf/inst-default/dom-overlay-1/if-\[(?P<interface>[^\]]+)\]/adj-'
+    )
+    ospf_ports = defaultdict(set)
+    for adjacency in icurl('class', 'ospfAdjEp.json?query-target-filter=wcard(ospfAdjEp.dn,"/dom-overlay-1/")'):
+        attr = adjacency.get('ospfAdjEp', {}).get('attributes', {})
+        match = ospf_dn_regex.match(attr.get('dn', ''))
+        if not match:
+            continue
+        spine_key = (match.group('pod'), match.group('node'))
+        if spine_key not in spines:
+            continue
+        interface = match.group('interface')
+        physical = re.match(r'^(eth\d+/\d+)(?:\.\d+)?$', interface)
+        if physical:
+            ospf_ports[spine_key].add(physical.group(1))
+        else:
+            data.append([spine_key[0], spines[spine_key], interface, '-', '-', '-', 'OSPF',
+                         'Cannot map OSPF interface to a physical LLDP/CDP port'])
+
+    if not ospf_ports and not data:
+        return Result(result=MANUAL, msg="No spine overlay OSPF adjacency found; IPN exposure cannot be assessed.",
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    neighbor_dn_regex = re.compile(
+        r'^' + node_regex + r'/sys/(?P<source>lldp|cdp)/inst/if-\[(?P<port>[^\]]+)\]/adj-'
+    )
+    neighbors = {}
+    for spine_key in sorted(ospf_ports):
+        pod, node = spine_key
+        node_dn = 'topology/pod-{}/node-{}'.format(pod, node)
+        for source in ('lldp', 'cdp'):
+            classname = source + 'AdjEp'
+            query = '{}.json?query-target-filter=wcard({}.dn,"{}/sys/{}/inst/if-")'.format(
+                classname, classname, node_dn, source)
+            for adjacency in icurl('class', query):
+                attr = adjacency.get(classname, {}).get('attributes', {})
+                match = neighbor_dn_regex.match(attr.get('dn', ''))
+                if not match or (match.group('pod'), match.group('node')) != spine_key:
+                    continue
+                port = match.group('port')
+                if port not in ospf_ports[spine_key]:
+                    continue
+                key = (pod, node, port)
+                neighbors.setdefault(key, []).append((source.upper(), attr))
+
+    for spine_key in sorted(ospf_ports):
+        pod, node = spine_key
+        for port in sorted(ospf_ports[spine_key]):
+            key = (pod, node, port)
+            observed = neighbors.get(key, [])
+            if not observed:
+                data.append([pod, spines[spine_key], port, '-', '-', '-', '-',
+                             'No LLDP/CDP neighbor data for the OSPF port'])
+                continue
+
+            findings = {}
+            advertised_versions = {}
+            for source, attr in observed:
+                platform = attr.get('platId') or '-'
+                if platform != '-' and not platform.upper().startswith('N9K-'):
+                    continue
+                description = (attr.get('sysDesc') or '') if source == 'LLDP' else (attr.get('ver') or '')
+                is_nxos = bool(NXOS_SOFTWARE_REGEX.search(description))
+                if not is_nxos and platform == '-' and description:
+                    continue
+                version_match = NXOS_VERSION_REGEX.search(description) if is_nxos else None
+                version = version_match.group(0) if version_match else '-'
+                if version != '-':
+                    advertised_versions[source] = version
+                assessment = (nxos_ipn_release_assessment(version) if version != '-' else
+                              'Neighbor software version could not be read')
+                if not assessment:
+                    continue
+                finding = findings.setdefault(version, {
+                    'neighbor': attr.get('sysName') or attr.get('devId') or attr.get('chassisIdV') or '-',
+                    'platform': platform, 'sources': set(), 'assessment': assessment,
+                })
+                finding['sources'].add(source)
+                if finding['platform'] == '-' and platform != '-':
+                    finding['platform'] = platform
+
+            for version, finding in sorted(findings.items()):
+                data.append([pod, spines[spine_key], port, finding['neighbor'], finding['platform'],
+                             version, '/'.join(sorted(finding['sources'])), finding['assessment']])
+            if len(set(advertised_versions.values())) > 1:
+                data.append([pod, spines[spine_key], port, '-', '-',
+                             ', '.join(sorted(set(advertised_versions.values()))),
+                             '/'.join(sorted(advertised_versions)),
+                             'LLDP and CDP advertise conflicting NX-OS versions'])
+
+    result = MANUAL if data else PASS
+    msg = ("Possible NX-OS IPN exposure or incomplete neighbor data; verify on the IPN devices." if data else
+           "No listed affected NX-OS release advertised by the discovered IPN neighbors.")
+    return Result(result=result, msg=msg, headers=headers, data=data,
+                  recommended_action=recommended_action, doc_url=doc_url)
+
 class CheckManager:
     """Central managing point of all checks.
     Highlevel flows:
@@ -7381,7 +7320,6 @@ class CheckManager:
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,
-        apic_connected_port_vlan_override_check,
         nxos_ipn_multicast_rpf_defect_check,
         
     ]
