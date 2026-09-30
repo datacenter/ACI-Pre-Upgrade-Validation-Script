@@ -2067,9 +2067,7 @@ def apic_upgrade_mixed_version_check(cversion, tversion, fabric_nodes, **kwargs)
                attr.get('version', ''), str(cversion), '']
 
         if role == 'controller':
-            # Older fabricNode objects may contain the placeholder "A". The
-            # common-data query already resolves the APIC release in that case.
-            if row[4] and row[4] != 'A' and not AciVersion(row[4]).same_as(cversion):
+            if row[4] and not AciVersion(row[4]).same_as(cversion):
                 row[6] = 'APICs are on different versions'
                 apic_data.append(row)
             continue
