@@ -13,10 +13,8 @@ test_function = "fx3_breakout_port_check"
 
 BRKOUT_QUERY = "eqptBrkoutP.json"
 FCOT_QUERY = (
-    'ethpmFcot.json?query-target-filter=or('
-    'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4")),'
-    'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),wcard(ethpmFcot.guiCiscoEID,"QSFP-100G-AOC"))'
-    ')'
+    'ethpmFcot.json?query-target-filter=and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),'
+    'eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4"))'
 )
 
 FX3_NODES = read_data(dir, "fabricNode_fx3.json")
@@ -149,7 +147,7 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
             {BRKOUT_QUERY: read_data(dir, "eqptBrkoutP_port_not_in_range.json")},
             script.PASS, "No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.", [],
         ),
-        # Breakout on port 49, but no matching Innolight SR4/AOC transceiver found
+        # Breakout on port 49, but no matching Innolight SR4 transceiver found
         (
             "5.2(8g)", "5.3(2a)",
             FX3_NODES,
@@ -194,18 +192,6 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
             },
             script.PASS, "", [],
         ),
-        # AOC transceiver variant (guiCiscoEID prefix match) is also flagged
-        (
-            "5.2(8g)", "5.3(2a)",
-            FX3_NODES,
-            {
-                BRKOUT_QUERY: ALL_BRKOUT_PORTS,
-                FCOT_QUERY: read_data(dir, "ethpmFcot_node101_port51_aoc.json"),
-                l1physif_query([(1, 101, "eth1/51/1")]): read_data(dir, "l1PhysIf_node101_port51_fec_enabled.json"),
-            },
-            script.FAIL_O, FAIL_MSG,
-            [["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/51/1", "QSFP-100G-AOC3M", "cl91-fec"]],
-        ),
         # Regression: ethpmFcot reports the optic at the cage/parent-level dn
         # (phys-[eth1/49], no subport) instead of the breakout child. The check
         # must still derive and query the brkoutport-1 child (eth1/49/1) from
@@ -221,8 +207,7 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
             script.FAIL_O, FAIL_MSG,
             [["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/49/1", "QSFP-100G-SR4", "cl91-fec"]],
         ),
-        # Two breakout ports (49, 51) on the same node, plus a second node (50)
-        # -- this single case also covers the "multiple nodes both affected" scenario,
+        # Two breakout ports (49, 50) on different nodes
         # -> each port reported once; the extra brkoutport-2 leg on node 101's
         # port 49 is ignored, since only brkoutport-1 is affected.
         (
@@ -231,14 +216,13 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
             {
                 BRKOUT_QUERY: ALL_BRKOUT_PORTS,
                 FCOT_QUERY: read_data(dir, "ethpmFcot_same_node_two_ports.json"),
-                l1physif_query([(1, 101, "eth1/49/1"), (1, 101, "eth1/51/1"), (1, 102, "eth1/50/1")]): read_data(
+                l1physif_query([(1, 101, "eth1/49/1"), (1, 102, "eth1/50/1")]): read_data(
                     dir, "l1PhysIf_same_node_two_ports.json"
                 ),
             },
             script.FAIL_O, FAIL_MSG,
             [
                 ["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/49/1", "QSFP-100G-SR4", "cl91-fec"],
-                ["1", "101", "leaf101", "N9K-C93180YC-FX3", "eth1/51/1", "QSFP-100G-AOC3M", "cl74-fec"],
                 ["1", "102", "leaf102", "N9K-C93108TC-FX3", "eth1/50/1", "QSFP-100G-SR4", "cl91-fec"],
             ],
         ),

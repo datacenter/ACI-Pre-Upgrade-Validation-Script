@@ -7943,10 +7943,7 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
         return Result(result=PASS, msg='No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
 
     fcot_api = 'ethpmFcot.json'
-    fcot_api += '?query-target-filter=or('
-    fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4")),'
-    fcot_api += 'and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),wcard(ethpmFcot.guiCiscoEID,"QSFP-100G-AOC"))'
-    fcot_api += ')'
+    fcot_api += '?query-target-filter=and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4"))'
     # The transceiver is physically inserted into the port cage, so APIC may
     # report ethpmFcot's dn at the cage level (e.g. phys-[eth1/49]) rather than
     # the breakout child (phys-[eth1/49/1]); the subport is therefore optional
