@@ -128,6 +128,7 @@ Items                                         | Faults         | This Script    
 [L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:
 [L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:
 [ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:
+[POD PTEP Overlap with External Routable TEP Pool][c27] | :white_check_mark: | :white_check_mark:
 [BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:
 [APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:
@@ -172,6 +173,7 @@ Items                                         | Faults         | This Script    
 [c24]: #shared-service-with-vzany-consumer
 [c25]: #preferred-group-shared-service-provider
 [c26]: #host-interface-policy-set-to-auto
+[c27]: #pod-ptep-overlap-with-external-routable-tep-pool
 
 ### Defect Condition Checks
 
@@ -2162,7 +2164,7 @@ Note that the overlap may happen across different L3Outs. For example, the loopb
 
 
 
-### ISIS Redistribution Metric for MPod/Msite      
+### ISIS Redistribution Metric for MPod/Msite
 
 ISIS Redistribution Metric is used when a spine redistributes routes from another pod or site into local underlay network (ISIS). If this metric is not set to less than 63, traffic disruption may occur with an upgrade of spine swithces.
 
@@ -2177,7 +2179,16 @@ This script checks the ISIS Redistribution Metric via `redistribMetric` of an ob
     ```
 
 
-### BGP Route-target Type for GOLF over L2EVPN     
+### POD PTEP Overlap with External Routable TEP Pool
+
+A Multi-Pod data plane TEP (POD PTEP) can conflict with an address that APIC allocates dynamically from an external routable TEP pool. This can assign the same address to a remote leaf routable TEP and a POD PTEP, causing traffic loss.
+
+The check reads the `fvIp.addr` children of `fvPodConnP` and compares each POD PTEP with every `fabricExtRoutablePodSubnet.pool`. The `reserveAddressCount` addresses at the beginning of a pool are excluded from dynamic allocation and are valid locations for a POD PTEP. For example, with pool `192.30.30.0/24` and a reserved count of 3, `.1` through `.3` are reserved; `.4` and later addresses in the pool fail this check. With a reserved count of 0, any POD PTEP inside the pool fails.
+
+Move a conflicting POD PTEP outside the unreserved pool range, or recreate the pool with enough reserved addresses to include it. Cisco's [external routable subnet guide][85] describes how to change the subnet and its reservation.
+
+
+### BGP Route-target Type for GOLF over L2EVPN
 
 Prior to upgrading to release 4.2 or later, if you are using the ACI GOLF feature with **Explicit Route Targets**, you must ensure that all **Explicit Route Targets** point to a route-target policy explicitly configured with a `route-target` community type instead of `extended` (CSCvm23100).
 
@@ -3080,3 +3091,4 @@ For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies
 [82]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
 [83]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
 [84]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi17652
+[85]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
