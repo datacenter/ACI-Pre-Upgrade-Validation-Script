@@ -223,6 +223,7 @@ Items                                           | Defect       | This Script    
 [vnsRsCIfAtt Deprecation Check][d42]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 [Service-EP Flag in BD without PBR][d43]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
 [APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
+[NX-OS IPN Multicast RPF Defect][d45]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -268,6 +269,7 @@ Items                                           | Defect       | This Script    
 [d42]: #vnsrscifatt-deprecation-check
 [d43]: #service-ep-flag-in-bd-without-pbr
 [d44]: #apic-connected-port-vlan-override
+[d45]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
 
 ## General Check Details
 
@@ -3020,6 +3022,14 @@ This is a configuration validation for CSCwn64461, not the `F0467` `port-configu
 
 This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
 
+### NX-OS IPN Multicast RPF Defect (CSCwt59437)
+
+[CSCwt59437][88] can leave multicast RPF pointing at a local loopback after a phantom RP route changes on an NX-OS IPN device. Inter-pod overlay multicast traffic may then be dropped when ACI spines are rebooted or upgraded. The defect describes a PIM bidirectional phantom-RP setup and reports the problem with a `/32` multicast route.
+
+For a fabric with active spines in multiple pods, this check finds spine overlay OSPF adjacency interfaces, then reads LLDP and CDP information advertised on their physical ports. It reports `MANUAL CHECK REQUIRED` when an IPN neighbor advertises an NX-OS release listed as unpatched in the defect. It also requests manual review when a related release cannot be classified confidently or neighbor version data is missing or unreadable.
+
+The check reads only what ACI sees from its neighbors. It cannot confirm the IPN device's actual software, PIM configuration, or RPF state. Review the reported devices and the defect directly before an ACI spine reload or upgrade. A result without a warning means only that no listed affected release was advertised on the discovered OSPF-facing neighbors.
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3107,3 +3117,4 @@ This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** fo
 [85]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
 [86]: https://cs.co/FNSNV
 [87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
+[88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
