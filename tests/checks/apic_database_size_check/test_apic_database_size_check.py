@@ -13,7 +13,6 @@ dir = os.path.dirname(os.path.abspath(__file__))
 test_function = "apic_database_size_check"
 
 apic_node_api = 'infraWiNode.json'
-debug_init_cmd = "/bin/ls /debug >/dev/null 2>&1"
 
 apic1_pm_cat = "cat /debug/apic1/policymgr/mitmocounters/mo 2>&1"
 apic1_pd_cat = "cat /debug/apic1/policydist/mitmocounters/mo 2>&1"
@@ -178,7 +177,6 @@ acidiag_neg = """{
         (
             {apic_node_api: read_data(dir, 'infraWiNode_3.json')},
             {
-                debug_init_cmd: {"splitlines": False, "output": ""},
                 apic2_pm_cat: {"splitlines": True, "output": mitcounters_policymgr_pos},
                 apic2_pd_cat: {"splitlines": True, "output": mitcounters_policydist_pos},
                 apic2_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
@@ -191,7 +189,6 @@ acidiag_neg = """{
         (
             {apic_node_api: read_data(dir, 'infraWiNode_3.json')},
             {
-                debug_init_cmd: {"splitlines": False, "output": ""},
                 apic2_pm_cat: {"splitlines": True, "output": mitcounters_neg},
                 apic2_pd_cat: {"splitlines": True, "output": mitcounters_neg},
                 apic2_vmm_cat: {"splitlines": True, "output": mitcounters_neg},
@@ -228,7 +225,6 @@ acidiag_neg = """{
         (
             {apic_node_api: read_data(dir, 'infraWiNode_4.json')},
             {
-                debug_init_cmd: {"splitlines": False, "output": ""},
                 apic1_pm_cat: {"splitlines": True, "output": mitcounters_policymgr_pos},
                 apic1_pd_cat: {"splitlines": True, "output": mitcounters_policydist_pos},
                 apic1_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
@@ -253,7 +249,6 @@ acidiag_neg = """{
         (
             {apic_node_api: read_data(dir, 'infraWiNode_4.json')},
             {
-                debug_init_cmd: {"splitlines": False, "output": ""},
                 apic1_pm_cat: {"splitlines": True, "output": mitcounters_neg},
                 apic1_pd_cat: {"splitlines": True, "output": mitcounters_neg},
                 apic1_vmm_cat: {"splitlines": True, "output": mitcounters_neg},
@@ -375,7 +370,6 @@ def test_missing_mitmocounters_returns_error(
     })
     cmd_outputs.clear()
     cmd_outputs.update({
-        debug_init_cmd: {"splitlines": False, "output": ""},
         apic2_pm_cat: failure_details,
         apic2_pd_cat: failure_details,
         apic2_vmm_cat: failure_details,
@@ -401,7 +395,6 @@ def test_collection_error_preserves_oversized_classes(
     })
     cmd_outputs.clear()
     cmd_outputs.update({
-        debug_init_cmd: {"splitlines": False, "output": ""},
         apic2_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
         apic2_pm_cat: {
             "CalledProcessError": True,
@@ -434,72 +427,6 @@ def test_collection_error_preserves_oversized_classes(
     assert "high object counts" in result.recommended_action
 
 
-def test_debug_namespace_initialized_before_counter_reads(
-    run_check, mock_icurl, icurl_outputs, monkeypatch
-):
-    icurl_outputs.clear()
-    icurl_outputs.update({
-        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
-    })
-    successful_outputs = {
-        apic2_vmm_cat: mitcounters_neg,
-        apic2_pm_cat: mitcounters_neg,
-        apic2_evm_cat: mitcounters_neg,
-        apic2_pd_cat: mitcounters_neg,
-    }
-    namespace_initialized = [False]
-    command_calls = []
-
-    def stateful_run_cmd(cmd, splitlines=False):
-        command_calls.append(cmd)
-        if cmd == debug_init_cmd:
-            namespace_initialized[0] = True
-            return ""
-        if not namespace_initialized[0]:
-            raise CalledProcessError(
-                1,
-                cmd,
-                output=b"cat: file: No such file or directory\n",
-            )
-        output = successful_outputs[cmd]
-        return output.splitlines() if splitlines else output
-
-    monkeypatch.setattr(script, "run_cmd", stateful_run_cmd)
-
-    result = run_check(cversion=script.AciVersion("5.2(2e)"))
-
-    assert result.result == script.PASS
-    assert command_calls[0] == debug_init_cmd
-    assert command_calls.count(debug_init_cmd) == 1
-
-
-def test_debug_namespace_initialization_failure_is_best_effort(
-    run_check, mock_icurl, icurl_outputs, monkeypatch
-):
-    icurl_outputs.clear()
-    icurl_outputs.update({
-        apic_node_api: read_data(dir, 'infraWiNode_3.json'),
-    })
-    successful_outputs = {
-        apic2_vmm_cat: mitcounters_neg,
-        apic2_pm_cat: mitcounters_neg,
-        apic2_evm_cat: mitcounters_neg,
-        apic2_pd_cat: mitcounters_neg,
-    }
-
-    def init_failure_run_cmd(cmd, splitlines=False):
-        if cmd == debug_init_cmd:
-            raise CalledProcessError(1, cmd, output=b"ls: cannot open /debug\n")
-        output = successful_outputs[cmd]
-        return output.splitlines() if splitlines else output
-
-    monkeypatch.setattr(script, "run_cmd", init_failure_run_cmd)
-
-    result = run_check(cversion=script.AciVersion("5.2(2e)"))
-
-    assert result.result == script.PASS
-
-
 def test_transient_counter_read_succeeds_on_retry(
     run_check, mock_icurl, mock_run_cmd, icurl_outputs, cmd_outputs, monkeypatch
 ):
@@ -518,8 +445,6 @@ def test_transient_counter_read_succeeds_on_retry(
 
     def transient_run_cmd(cmd, splitlines=False):
         call_counts[cmd] = call_counts.get(cmd, 0) + 1
-        if cmd == debug_init_cmd:
-            return ""
         if call_counts[cmd] == 1:
             raise CalledProcessError(
                 1,
@@ -535,8 +460,7 @@ def test_transient_counter_read_succeeds_on_retry(
     result = run_check(cversion=script.AciVersion("6.0(8f)"))
 
     assert result.result == script.PASS
-    assert call_counts[debug_init_cmd] == 1
-    assert all(call_counts[cmd] == 2 for cmd in successful_outputs)
+    assert all(call_count == 2 for call_count in call_counts.values())
     assert sleep_calls.count(1) == 4
 
 
@@ -558,8 +482,6 @@ def test_empty_counter_read_succeeds_on_retry(
 
     def transient_run_cmd(cmd, splitlines=False):
         call_counts[cmd] = call_counts.get(cmd, 0) + 1
-        if cmd == debug_init_cmd:
-            return ""
         if call_counts[cmd] == 1:
             return []
         output = successful_outputs[cmd]
@@ -571,8 +493,7 @@ def test_empty_counter_read_succeeds_on_retry(
     result = run_check(cversion=script.AciVersion("6.0(8f)"))
 
     assert result.result == script.PASS
-    assert call_counts[debug_init_cmd] == 1
-    assert all(call_counts[cmd] == 2 for cmd in successful_outputs)
+    assert all(call_count == 2 for call_count in call_counts.values())
     assert sleep_calls.count(1) == 4
 
 
@@ -592,7 +513,6 @@ aboveThreshold                          : 1500001
     })
     cmd_outputs.clear()
     cmd_outputs.update({
-        debug_init_cmd: {"splitlines": False, "output": ""},
         apic2_vmm_cat: {"splitlines": True, "output": unsorted_counters},
         apic2_pm_cat: {"splitlines": True, "output": mitcounters_neg},
         apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
@@ -618,7 +538,6 @@ def test_malformed_counter_preserves_oversized_classes(
     })
     cmd_outputs.clear()
     cmd_outputs.update({
-        debug_init_cmd: {"splitlines": False, "output": ""},
         apic2_vmm_cat: {"splitlines": True, "output": mitcounters_vmmmgr_pos},
         apic2_pm_cat: {"splitlines": True, "output": "brokenClass :"},
         apic2_evm_cat: {"splitlines": True, "output": mitcounters_neg},
@@ -645,7 +564,6 @@ def test_colonless_counter_data_returns_error(
     })
     cmd_outputs.clear()
     cmd_outputs.update({
-        debug_init_cmd: {"splitlines": False, "output": ""},
         apic2_vmm_cat: {
             "splitlines": True,
             "output": "validClass : 10\ntruncatedClass",

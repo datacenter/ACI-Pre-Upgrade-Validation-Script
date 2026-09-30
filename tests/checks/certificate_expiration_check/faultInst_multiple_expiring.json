@@ -1,0 +1,35 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4501",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "KeyRing Certificate THD_KEYRING expiring",
+                "dn": "uni/userext/pkiext/keyring-THD_KEYRING/fault-F4501"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F3081",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "SAML Signing Certificate expiring in one month",
+                "dn": "uni/userext/samlext/samlidp-IDP1/fault-F3081"
+            }
+        }
+    },
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4617",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "TP Certificate expiring",
+                "dn": "uni/fabric/comm-default/https/fault-F4617"
+            }
+        }
+    }
+]

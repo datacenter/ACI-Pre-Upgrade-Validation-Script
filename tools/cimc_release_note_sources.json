@@ -1,0 +1,28 @@
+{
+  "6.1(5)": {
+    "url": "https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/release-notes/cisco-apic-release-notes-615.html#Miscellaneouscompatibilityinformation",
+    "expected_models": [
+      "apicg5",
+      "apicl2",
+      "apicl3",
+      "apicl4",
+      "apicm2",
+      "apicm3",
+      "apicm4"
+    ],
+    "minimum_versions_per_model": {
+      "apicg5": 5,
+      "apicl2": 9,
+      "apicl3": 18,
+      "apicl4": 11,
+      "apicm2": 9,
+      "apicm3": 18,
+      "apicm4": 11
+    },
+    "ignored_unqualified_versions": [
+      "2.0(13i)",
+      "2.0(9c)",
+      "2.0(3i)"
+    ]
+  }
+}
