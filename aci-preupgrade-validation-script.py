@@ -2028,6 +2028,98 @@ def switch_status_check(fabric_nodes, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
 
 
+@check_wrapper(check_title="APIC Upgrade in Mixed-Version Fabric")
+def apic_upgrade_mixed_version_check(cversion, tversion, fabric_nodes, **kwargs):
+    """Avoid starting another APIC upgrade while active switches are on another release."""
+    doc_url = ('https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/'
+               'apic-installation-aci-upgrade-downgrade/'
+               'Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/'
+               'g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/'
+               'mixed-os-support.html')
+    headers = ['Pod', 'Node', 'Name', 'Role', 'Current Version', 'APIC Version', 'Reason']
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+    if not cversion:
+        return Result(result=MANUAL, msg='Current APIC version not found.', doc_url=doc_url)
+    if not tversion.newer_than(cversion):
+        return Result(result=NA, msg='No APIC upgrade is planned.', doc_url=doc_url)
+
+    apic_data = []
+    switch_data = []
+    unknown_data = []
+    active_switches = 0
+    newer_switch_found = False
+
+    for node in fabric_nodes:
+        attr = node['fabricNode']['attributes']
+        role = attr.get('role', '')
+        if role not in ('controller', 'leaf', 'spine'):
+            continue
+        if role != 'controller' and attr.get('fabricSt') != 'active':
+            continue
+
+        dn = attr.get('dn', '')
+        match = re.search(node_regex, dn)
+        pod = match.group('pod') if match else '-'
+        node_id = attr.get('id', '-')
+        row = [pod, node_id, attr.get('name', '-'), role,
+               attr.get('version', ''), str(cversion), '']
+
+        if role == 'controller':
+            # Older fabricNode objects may contain the placeholder "A". The
+            # common-data query already resolves the APIC release in that case.
+            if row[4] and row[4] != 'A' and not AciVersion(row[4]).same_as(cversion):
+                row[6] = 'APICs are on different versions'
+                apic_data.append(row)
+            continue
+
+        active_switches += 1
+        if not row[4]:
+            row[6] = 'Switch version not found'
+            unknown_data.append(row)
+        else:
+            switch_version = AciVersion(row[4])
+            if not switch_version.same_as(cversion):
+                if switch_version.newer_than(cversion):
+                    row[6] = 'Switch newer than APIC'
+                    newer_switch_found = True
+                else:
+                    row[6] = 'Switch differs from APIC'
+                switch_data.append(row)
+
+    if apic_data:
+        return Result(
+            result=FAIL_UF, msg='APICs are running different versions.',
+            headers=headers, data=sorted(apic_data),
+            recommended_action='Complete or resolve the APIC cluster upgrade before starting another upgrade.',
+            doc_url=doc_url)
+
+    if switch_data:
+        if newer_switch_found:
+            msg = 'A switch is newer than the APIC, which violates mixed-version conditions.'
+        elif (int(tversion.major1), int(tversion.major2), int(tversion.maint)) < (6, 2, 1):
+            msg = 'APIC upgrade is unsupported while the fabric is in mixed-version mode.'
+        else:
+            msg = ('Enhanced Mixed Version Support may permit the current state, '
+                   'but another APIC upgrade can introduce a third version.')
+        return Result(
+            result=FAIL_UF, msg=msg, headers=headers,
+            data=sorted(switch_data + unknown_data),
+            recommended_action=('Align all active switches with the current APIC release '
+                                'before upgrading the APIC cluster.'),
+            doc_url=doc_url)
+
+    if not active_switches or unknown_data:
+        msg = ('No active leaf or spine found.' if not active_switches else
+               'One or more active switch versions could not be determined.')
+        return Result(result=MANUAL, msg=msg, headers=headers, data=sorted(unknown_data),
+                      recommended_action='Verify active switch versions before upgrading the APIC cluster.',
+                      doc_url=doc_url)
+
+    return Result(result=PASS, msg='All active switches match the APIC release.', doc_url=doc_url)
+
+
 @check_wrapper(check_title="Firmware/Maintenance Groups when crossing 4.0 Release")
 def maintp_grp_crossing_4_0_check(cversion, tversion, **kwargs):
     result = PASS
@@ -8887,6 +8979,7 @@ class CheckManager:
         cimc_compatibilty_check,
         apic_cluster_health_check,
         switch_status_check,
+        apic_upgrade_mixed_version_check,
         ntp_status_check,
         maintp_grp_crossing_4_0_check,
         features_to_disable_check,
