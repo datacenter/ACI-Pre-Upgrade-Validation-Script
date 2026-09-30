@@ -402,7 +402,7 @@ Check `Fabric > Inventory > Fabric Membership` in the APIC GUI to ensure that al
 
 Before an APIC upgrade, the script compares the current APIC release with every active leaf and spine. An active switch on a different release causes **FAIL - UPGRADE FAILURE**, and the output lists the affected nodes. Inactive switches are handled by the Switch Fabric Membership Status check. If the release of an active switch is unavailable and no mismatch is known, the result requires a manual check. Same-version runs and APIC downgrades are outside this check.
 
-[Cisco's mixed-version guidance](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/mixed-os-support.html) allows at most two releases in the fabric and requires APICs to run the newer release. Enhanced Mixed Version Support begins with APIC 6.2(1) and can permit the current mixed state under the documented conditions. It does not permit introducing a third release through another APIC upgrade while older switches remain. A switch newer than the APIC also violates the mixed-version conditions. Bring all active switches to the current APIC release before starting another APIC upgrade.
+[Cisco's mixed-version guidance][89] allows at most two releases in the fabric and requires APICs to run the newer release. Enhanced Mixed Version Support begins with APIC 6.2(1) and can permit the current mixed state under the documented conditions. It does not permit introducing a third release through another APIC upgrade while older switches remain. A switch newer than the APIC also violates the mixed-version conditions. Bring all active switches to the current APIC release before starting another APIC upgrade.
 
 
 ### NTP Status
@@ -3127,3 +3127,4 @@ The check reads only what ACI sees from its neighbors. It cannot confirm the IPN
 [86]: https://cs.co/FNSNV
 [87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
 [88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
+[89]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/mixed-os-support.html
