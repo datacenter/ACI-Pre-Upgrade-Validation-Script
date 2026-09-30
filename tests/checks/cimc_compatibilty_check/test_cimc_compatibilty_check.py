@@ -284,6 +284,49 @@ def test_cscwo74485_required_and_optional_upgrades(run_check, mock_icurl):
         "For nodes marked CSCwo74485 advisory, the current CIMC is supported; a CIMC "
         "upgrade is not required. If you choose to upgrade CIMC on those nodes, upgrade "
         "APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading "
-        "CIMC. For nodes below the target CIMC recommendation, a CIMC upgrade is required; "
-        "upgrade APICs to a fixed release first, then follow the target catalog recommendation."
+        "CIMC. For affected M4/L4 nodes below the target CIMC recommendation, a CIMC "
+        "upgrade is required; upgrade APICs to a CSCwo74485 fixed release first, then "
+        "follow the target catalog recommendation."
     )
+
+
+def mixed_non_bug_outputs():
+    outputs = m4l4_compatibility_outputs()
+    outputs[eqptCh_api].append({"eqptCh": {"attributes": {
+        "cimcVersion": "4.0(1a)",
+        "descr": "APIC-SERVER-M3",
+        "dn": "topology/pod-1/node-2/sys/ch",
+    }}})
+    m3_api = ('uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-'
+              '[uni/fabric/compcat-default/ctlrhw-apicm3].json')
+    outputs[m3_api] = [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.3(2.250016)"}}}]
+    return outputs
+
+
+@pytest.mark.parametrize("icurl_outputs", [mixed_non_bug_outputs()])
+def test_cscwo74485_advisory_with_unaffected_model_failure(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert [row[1] for row in result.data] == ["APIC-SERVER-M4", "APIC-SERVER-M3"]
+    assert result.recommended_action == (
+        "For nodes marked CSCwo74485 advisory, the current CIMC is supported; a CIMC "
+        "upgrade is not required. If you choose to upgrade CIMC on those nodes, upgrade "
+        "APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading "
+        "CIMC. For other nodes below the target CIMC recommendation, check the APIC model "
+        "and target version release notes to plan the required CIMC upgrade."
+    )
+
+
+@pytest.mark.parametrize("icurl_outputs", [
+    {eqptCh_api: [{"eqptCh": {"attributes": {
+        "cimcVersion": "4.0(1a)",
+        "descr": "APIC-SERVER-M3",
+        "dn": "topology/pod-1/node-2/sys/ch",
+    }}}],
+     'uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm3].json':
+         [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.3(2.250016)"}}}]}
+])
+def test_unaffected_model_failure_keeps_general_action(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert result.recommended_action == 'Check Release note of APIC Model/version for latest recommendations.'

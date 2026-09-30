@@ -3995,6 +3995,7 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
 
     cimc_upgrade_required = False
     cimc_upgrade_order_required = False
+    ordinary_cimc_upgrade_required = False
     cimc_upgrade_optional = False
     current_compatibility_review = False
 
@@ -4038,6 +4039,8 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                             cimc_upgrade_required = True
                             if affected_cimc_upgrade:
                                 cimc_upgrade_order_required = True
+                            else:
+                                ordinary_cimc_upgrade_required = True
                         elif affected_cimc_upgrade:
                             # A target-compatible CIMC needs no upgrade. Verify that it is
                             # also supported on the currently running APIC release.
@@ -4079,15 +4082,19 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                 else:
                     recommended_action = ('The current CIMC is supported; a CIMC upgrade is not required. '
                                           'If you choose to upgrade CIMC, ' + apic_first)
-            if cimc_upgrade_required and cimc_upgrade_optional:
-                recommended_action += (' For nodes below the target CIMC recommendation, a CIMC upgrade is '
-                                       'required; upgrade APICs to a fixed release first, then follow the target '
-                                       'catalog recommendation.')
-            elif cimc_upgrade_order_required:
-                recommended_action = ('The current CIMC is below the target recommendation; a CIMC upgrade is '
-                                      'required. Upgrade APICs to a release fixed for CSCwo74485 '
-                                      '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC, then follow the target '
-                                      'catalog recommendation.')
+            if cimc_upgrade_order_required:
+                if cimc_upgrade_optional:
+                    recommended_action += (' For affected M4/L4 nodes below the target CIMC recommendation, '
+                                           'a CIMC upgrade is required; upgrade APICs to a CSCwo74485 fixed '
+                                           'release first, then follow the target catalog recommendation.')
+                else:
+                    recommended_action = ('The current CIMC is below the target recommendation; a CIMC upgrade is '
+                                          'required. Upgrade APICs to a release fixed for CSCwo74485 '
+                                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC, then follow the target '
+                                          'catalog recommendation.')
+            if ordinary_cimc_upgrade_required and (cimc_upgrade_optional or cimc_upgrade_order_required):
+                recommended_action += (' For other nodes below the target CIMC recommendation, check the APIC '
+                                       'model and target version release notes to plan the required CIMC upgrade.')
             if current_compatibility_review:
                 recommended_action += ' Review the current APIC/CIMC compatibility for the flagged nodes.'
 
