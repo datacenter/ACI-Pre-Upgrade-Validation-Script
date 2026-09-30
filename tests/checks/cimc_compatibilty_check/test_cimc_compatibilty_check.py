@@ -224,12 +224,11 @@ def test_cscwo74485_supported_on_current_and_target(run_check, mock_icurl, model
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == script.MANUAL
     assert result.data == [["node-1", "APIC-SERVER-" + model, "4.3(4.241063)", "4.0(2g)",
-                            "Avoid a CIMC upgrade before fixing APIC for CSCwo74485."]]
+                            "CSCwo74485 advisory"]]
     assert result.recommended_action == (
-        "Upgrade APICs to a fixed version [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC "
-        "due to CSCwo74485. Do not upgrade CIMC to 4.3(5) or later while APICs are on an "
-        "affected release. The installed CIMC supports both the current and target APIC "
-        "versions, so no CIMC upgrade is required for this APIC upgrade."
+        "The current CIMC is supported; a CIMC upgrade is not required. If you choose to "
+        "upgrade CIMC, upgrade APICs to a release fixed for CSCwo74485 "
+        "[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC."
     )
 
 
@@ -242,6 +241,17 @@ def test_cscwo74485_compatibility_boundaries(run_check, mock_icurl, expected_res
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == expected_result
     assert expected_action in result.recommended_action
+
+
+@pytest.mark.parametrize("icurl_outputs", [m4l4_compatibility_outputs(target_recommendation="4.3(5)")])
+def test_cscwo74485_required_upgrade_action(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert result.recommended_action == (
+        "The current CIMC is below the target recommendation; a CIMC upgrade is required. "
+        "Upgrade APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] "
+        "BEFORE upgrading CIMC, then follow the target catalog recommendation."
+    )
 
 
 @pytest.mark.parametrize("icurl_outputs", [dict(m4l4_compatibility_outputs(), **{compatRsSuppHwM4_531_api: []})])
@@ -268,7 +278,12 @@ def test_cscwo74485_required_and_optional_upgrades(run_check, mock_icurl):
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == script.FAIL_UF
     assert [row[0] for row in result.data] == ["node-1", "node-2"]
-    assert "BEFORE upgrading CIMC" in result.recommended_action
-    assert result.recommended_action.startswith("Upgrade APICs to a fixed version")
-    assert "For nodes whose installed CIMC supports both" in result.recommended_action
-    assert "no CIMC upgrade is required for this APIC upgrade" in result.recommended_action
+    assert result.data[0][-1] == "CSCwo74485 advisory"
+    assert result.data[1][-1] == ""
+    assert result.recommended_action == (
+        "For nodes marked CSCwo74485 advisory, the current CIMC is supported; a CIMC "
+        "upgrade is not required. If you choose to upgrade CIMC on those nodes, upgrade "
+        "APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading "
+        "CIMC. For nodes below the target CIMC recommendation, a CIMC upgrade is required; "
+        "upgrade APICs to a fixed release first, then follow the target catalog recommendation."
+    )

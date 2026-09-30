@@ -4062,26 +4062,32 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                             else:
                                 cimc_upgrade_optional = True
                                 data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "Avoid a CIMC upgrade before fixing APIC for CSCwo74485."])
+                                             "CSCwo74485 advisory"])
 
             if cimc_upgrade_required:
                 result = FAIL_UF
             elif cimc_upgrade_optional or current_compatibility_review:
                 result = MANUAL
 
-            if cimc_upgrade_order_required or cimc_upgrade_optional:
-                recommended_action = ('Upgrade APICs to a fixed version [6.0(9e)+ or 6.1(4h)+] '
-                                      'BEFORE upgrading CIMC due to CSCwo74485. Do not upgrade CIMC '
-                                      'to 4.3(5) or later while APICs are on an affected release.')
-            if cimc_upgrade_required and (cimc_upgrade_order_required or cimc_upgrade_optional):
-                recommended_action += ' Upgrade CIMC to the target catalog recommendation after upgrading APICs.'
+            apic_first = ('upgrade APICs to a release fixed for CSCwo74485 '
+                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC.')
             if cimc_upgrade_optional:
                 if cimc_upgrade_required or current_compatibility_review:
-                    recommended_action += (' For nodes whose installed CIMC supports both the current and target '
-                                           'APIC versions, no CIMC upgrade is required for this APIC upgrade.')
+                    recommended_action = ('For nodes marked CSCwo74485 advisory, the current CIMC is supported; '
+                                          'a CIMC upgrade is not required. If you choose to upgrade CIMC on those '
+                                          'nodes, ' + apic_first)
                 else:
-                    recommended_action += (' The installed CIMC supports both the current and target APIC versions, '
-                                           'so no CIMC upgrade is required for this APIC upgrade.')
+                    recommended_action = ('The current CIMC is supported; a CIMC upgrade is not required. '
+                                          'If you choose to upgrade CIMC, ' + apic_first)
+            if cimc_upgrade_required and cimc_upgrade_optional:
+                recommended_action += (' For nodes below the target CIMC recommendation, a CIMC upgrade is '
+                                       'required; upgrade APICs to a fixed release first, then follow the target '
+                                       'catalog recommendation.')
+            elif cimc_upgrade_order_required:
+                recommended_action = ('The current CIMC is below the target recommendation; a CIMC upgrade is '
+                                      'required. Upgrade APICs to a release fixed for CSCwo74485 '
+                                      '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC, then follow the target '
+                                      'catalog recommendation.')
             if current_compatibility_review:
                 recommended_action += ' Review the current APIC/CIMC compatibility for the flagged nodes.'
 
