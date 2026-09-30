@@ -26,6 +26,7 @@ Items                                                        | This Script      
 [APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)
 [APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6)
 [Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:
+[APIC Upgrade in Mixed-Version Fabric][g22]                  | :white_check_mark: | :no_entry_sign:
 [NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5)
 [Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps
@@ -61,6 +62,7 @@ Items                                                        | This Script      
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
+[g22]: #apic-upgrade-in-mixed-version-fabric
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -394,6 +396,13 @@ Check `Fabric > Inventory > Fabric Membership` in the APIC GUI to ensure that al
 **Inactive**: This means that the switch has fabric discovery issues, such as IP reachability from APICs through the ACI infra network. If your switches are currently on release 14.2(1) or later, the command `show discoveryissues` on the switch CLI will check the basic items related to switch fabric discovery for you.
 
 **Maintenance**: This means that the switch is in **Maintenance Mode** through the GIR (Graceful Insertion and Removal) operation. This implies that the switch is isolated from the fabric and does not process most of the APIC communications, including the upgrade-related communications. You must bring the switch back to the **Active** state before you can perform an upgrade. If you want to gracefully upgrade the switch by isolating the switches from the network first, consider **Graceful Upgrade** instead. See the [Graceful Upgrade or Downgrade of ACI Switches][6] section in the ACI Upgrade Guide for details.
+
+
+### APIC Upgrade in Mixed-Version Fabric
+
+Before an APIC upgrade, the script compares the current APIC release with every active leaf and spine. An active switch on a different release causes **FAIL - UPGRADE FAILURE**, and the output lists the affected nodes. Inactive switches are handled by the Switch Fabric Membership Status check. If the release of an active switch is unavailable and no mismatch is known, the result requires a manual check. Same-version runs and APIC downgrades are outside this check.
+
+[Cisco's mixed-version guidance][89] allows at most two releases in the fabric and requires APICs to run the newer release. Enhanced Mixed Version Support begins with APIC 6.2(1) and can permit the current mixed state under the documented conditions. It does not permit introducing a third release through another APIC upgrade while older switches remain. A switch newer than the APIC also violates the mixed-version conditions. Bring all active switches to the current APIC release before starting another APIC upgrade.
 
 
 ### NTP Status
@@ -3118,3 +3127,4 @@ The check reads only what ACI sees from its neighbors. It cannot confirm the IPN
 [86]: https://cs.co/FNSNV
 [87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
 [88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
+[89]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/mixed-os-support.html
