@@ -92,9 +92,8 @@ NXOS_IPN_UNPATCHED_RELEASES = frozenset((
     '10.5(3t)', '10.5(4)', '10.5(5)', '10.6(1)', '10.6(1s)',
     '10.6(2)', '10.6(2n)', '10.6(2s)',
 ))
-NXOS_IPN_FIXED_RELEASES = frozenset(('10.5(4)smu(16)', '10.5(5.28)'))
 NXOS_SOFTWARE_REGEX = re.compile(r'Cisco Nexus Operating System \(NX-OS\) Software', re.I)
-NXOS_VERSION_REGEX = re.compile(r'\b\d+\.\d+\(\d+(?:\.\d+)?[a-z]?\)(?:SMU\(\d+\))?', re.I)
+NXOS_VERSION_REGEX = re.compile(r'\b\d+\.\d+\(\d+[a-z]?\)', re.I)
 port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
 path_regex = (
     r"topology/pod-(?P<pod>\d+)/"
@@ -2992,13 +2991,11 @@ def apic_connected_port_vlan_override_check(**kwargs):
 def nxos_ipn_release_assessment(version):
     """Classify only the NX-OS release families called out for CSCwt59437."""
     version = version.lower()
-    if version in NXOS_IPN_FIXED_RELEASES:
-        return ""
     if version in NXOS_IPN_UNPATCHED_RELEASES:
         return "Listed as unpatched in CSCwt59437"
     if version == '10.5(2)':
         return "10.5(2) is not listed as unpatched in CSCwt59437; verify manually"
-    if re.match(r'^10\.5\([2345](?:\.[0-9]+)?[a-z]?\)|^10\.6\([12][a-z]?\)', version):
+    if re.match(r'^10\.5\([2345][a-z]?\)|^10\.6\([12][a-z]?\)', version):
         return "Release variant is not individually listed in CSCwt59437"
     return ""
 
