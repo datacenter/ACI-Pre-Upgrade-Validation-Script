@@ -6048,30 +6048,71 @@ def fc_ex_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='TEP-to-TEP Atomic Counter scalability')
-def tep_to_tep_ac_counter_check(**kwargs):
-    result = NA
-    headers = ["dbgAcPath Count", "Supported Maximum"]
+@check_wrapper(check_title='Atomic Counter Configuration')
+def atomic_counter_check(tversion, **kwargs):
+    """Check deprecation before the independent scalability and rollback concerns."""
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#atomic-counter-configuration'
+    headers = ['Concern', 'Count', 'Details']
     data = []
-    recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counters-scalability'
+
+    def count_mos(query):
+        response = icurl('class', query)
+        return int(response[0]['moCount']['attributes']['count'])
+
+    if tversion and (int(tversion.major1), int(tversion.major2), int(tversion.maint)) >= (6, 1, 2):
+        # APIC also exposes an unconfigured, built-in IP-to-IP policy in tn-common.
+        tenant_api = (
+            'dbgacTenantSpaceCmn.json?query-target-filter='
+            'ne(dbgacTenantSpaceCmn.dn,"uni/tn-common/acIpToIp-default")'
+            '&rsp-subtree-include=count'
+        )
+        tenant_count = count_mos(tenant_api)
+        path_count = count_mos('dbgAcPathA.json?rsp-subtree-include=count')
+        if tenant_count or path_count:
+            if tenant_count:
+                data.append(['Deprecated tenant policies', tenant_count, 'dbgacTenantSpaceCmn'])
+            if path_count:
+                data.append(['Deprecated TEP paths', path_count, 'dbgAcPathA'])
+            return Result(
+                result=MANUAL,
+                msg='Atomic counters are no longer supported in APIC 6.1(2) and later. Cleanup is mandatory before upgrade.',
+                headers=headers,
+                data=data,
+                recommended_action='Remove configured atomic counter policies before upgrading.',
+                doc_url=doc_url,
+            )
 
     ac_limit = 1600
-    atomic_counter_api = 'dbgAcPath.json'
-    atomic_counter_api += '?rsp-subtree-include=count'
+    path_count = count_mos('dbgAcPath.json?rsp-subtree-include=count')
+    ep_to_ep_count = count_mos('dbgacEpToEp.json?rsp-subtree-include=count')
+    result = PASS if path_count else NA
+    actions = []
 
-    atomic_counter_number = icurl('class', atomic_counter_api)
-    atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
-
-    if atomic_counter_number >= ac_limit:
-        data.append([atomic_counter_number, str(ac_limit)])
-    elif atomic_counter_number > 0 and atomic_counter_number < ac_limit:
-        result = PASS
-
-    if data:
+    if path_count > ac_limit:
+        data.append(['TEP-to-TEP scalability', path_count, 'Supported maximum: {}'.format(ac_limit)])
+        actions.append('Reduce dbgAcPath policies to {} or fewer.'.format(ac_limit))
         result = FAIL_UF
 
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    if ep_to_ep_count:
+        data.append(['Configuration rollback review', ep_to_ep_count, 'dbgacEpToEp policies present'])
+        actions.append('Review endpoint-to-endpoint policy references for cross-tenant or cross-VRF configuration before upgrade.')
+        if result != FAIL_UF:
+            result = MANUAL
+
+    msg = ''
+    if not tversion:
+        msg = 'Target version not supplied; atomic counter deprecation could not be assessed.'
+        if result in (PASS, NA):
+            result = MANUAL
+
+    return Result(
+        result=result,
+        msg=msg,
+        headers=headers,
+        data=data,
+        recommended_action=' '.join(actions),
+        doc_url=doc_url,
+    )
 
 
 @check_wrapper(check_title='Nexus 950X FM or LC Might Fail to boot after reload')
@@ -9030,13 +9071,13 @@ class CheckManager:
         unsupported_fec_configuration_ex_check,
         cloudsec_encryption_depr_check,
         out_of_service_ports_check,
-        tep_to_tep_ac_counter_check,
         https_throttle_rate_check,
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
         consumer_vzany_shared_services_check,
         pg_and_shared_svc_contract_check,
+        atomic_counter_check,
 
         # Bugs
         ep_announce_check,
