@@ -5971,7 +5971,6 @@ def equipment_disk_limits_exceeded(**kwargs):
 
     for faultInst in faults:
         percent = "NA"
-        below_log_threshold = False
         attributes = faultInst['faultInst']['attributes']
 
         avail_match = re.search(avail_regex, attributes['changeSet'])
@@ -5982,13 +5981,6 @@ def equipment_disk_limits_exceeded(**kwargs):
             total = avail + used
             if total:
                 percent = int(round((used / total) * 100))
-                below_log_threshold = used * 100 < total * 80
-
-        # CSCwc67099 can raise a cosmetic F1820 for /mnt/ifc/log below 80%.
-        if (attributes['code'] == 'F1820'
-                and attributes['dn'].endswith('/fspartition-ifc:log/fault-F1820')
-                and below_log_threshold):
-            continue
 
         dn_match = re.search(node_regex, attributes['dn'])
         if dn_match:
