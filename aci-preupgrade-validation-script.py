@@ -5743,8 +5743,7 @@ def clock_signal_component_failure_check(**kwargs):
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
     recommended_action = (
-        'Check the listed serial numbers with the Field Notice Serial Number Validator at https://cs.co/FNSNV '
-        'for applicable Field Notices, including FN64251. Products shipped after December 5, 2016 are not affected '
+        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
         'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
         'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
         'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
@@ -5934,7 +5933,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (
-        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(4d)")))
+        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
         and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))
     ):
         eqptSupC = icurl('class', eqptSupC_api)
@@ -5971,7 +5970,6 @@ def equipment_disk_limits_exceeded(**kwargs):
 
     for faultInst in faults:
         percent = "NA"
-        below_log_threshold = False
         attributes = faultInst['faultInst']['attributes']
 
         avail_match = re.search(avail_regex, attributes['changeSet'])
@@ -5982,13 +5980,6 @@ def equipment_disk_limits_exceeded(**kwargs):
             total = avail + used
             if total:
                 percent = int(round((used / total) * 100))
-                below_log_threshold = used * 100 < total * 80
-
-        # CSCwc67099 can raise a cosmetic F1820 for /mnt/ifc/log below 80%.
-        if (attributes['code'] == 'F1820'
-                and attributes['dn'].endswith('/fspartition-ifc:log/fault-F1820')
-                and below_log_threshold):
-            continue
 
         dn_match = re.search(node_regex, attributes['dn'])
         if dn_match:

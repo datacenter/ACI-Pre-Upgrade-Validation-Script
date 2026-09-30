@@ -1540,8 +1540,6 @@ This fault also occurs when the MTS buffer memory usage increases beyond its thr
 
 The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
 
-For F1820 on `/mnt/ifc/log`, the check ignores the fault when its reported utilization is below 80%. CSCwc67099 can raise this fault below the intended threshold. At 80% or above, the fault blocks the upgrade. If utilization cannot be calculated, the fault remains in the output so its disk usage can be verified manually. Other F1820 partitions and F1821/F1822 faults retain their fault-based behavior.
-
 Recommended Action:
 
 1. Check `df -h` output on affected node to see the usage of the partition.
@@ -2680,7 +2678,7 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, enter the serial numbers reported by the check in the [Field Notice Serial Number Validator][79] to check for applicable Field Notices, including FN64251. Review [FN64251][39] for details. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
 
 The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
@@ -2704,7 +2702,7 @@ This check will count the number of relevant PBR policies across the entire ACI 
 
 ### Standby Sup Image Sync
 
-Due to [CSCwa44220][48], the Standby Supervisor Modules within Modular Chassis running an affected switch release will be unable to successfully install switch images greater than 2 Gigs. The fix is present in 4.2(7t) and 5.2(4d) and later releases in those trains.
+Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
 
 If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
 
@@ -2961,4 +2959,3 @@ This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** fo
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
 [78]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
-[79]: https://cs.co/FNSNV
