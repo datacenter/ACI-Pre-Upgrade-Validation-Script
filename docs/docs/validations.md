@@ -29,6 +29,7 @@ Items                                                        | This Script      
 [NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5)
 [Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps
+[App Center deprecation when crossing 6.1(2)][g22]           | :white_check_mark: | :no_entry_sign:
 [Switch Upgrade Group Guidelines][g12]                       | :white_check_mark: | :grey_exclamation: 4.2(4)<br>Only RR spines (IPN connectivity not checked)
 [Intersight Device Connector upgrade status][g13]            | :white_check_mark: | :white_check_mark: 4.2(5)
 [Mini ACI Upgrade to 6.0(2)+][g14]                           | :white_check_mark: | :no_entry_sign:
@@ -61,6 +62,7 @@ Items                                                        | This Script      
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
+[g22]: #app-center-deprecation-when-crossing-612
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -428,10 +430,27 @@ This is applicable only when you are upgrading your Cisco APICs from pre-4.0 to 
 
 The following features must be disabled prior to upgrades or downgrades:
 
-* App Center apps
+* App Center apps, except when upgrading from a release before 6.1(2) to 6.1(2) or later
 * Maintenance Mode through Fabric > Inventory > Fabric Membership > Maintenance (GIR)
 * Config Zone
 * Rogue Endpoint (only when the running version is 14.1(x) or when upgrading to 14.1(x))
+
+When the upgrade crosses into APIC 6.1(2) or later, this check reports `App Center deprecated on 6.1(2).` instead of treating active applications as features that must be disabled. The separate App Center deprecation check reports the installed applications and their upgrade impact. Config Zone and Rogue Endpoint findings retain their existing outage-warning behavior.
+
+
+### App Center deprecation when crossing 6.1(2)
+
+Starting with APIC release 6.1(2), App Center and its applications can no longer be hosted on APIC because the APIC App Infrastructure is removed. When an upgrade crosses from a release before 6.1(2) to 6.1(2) or later, this check inventories all installed App Center applications, including inactive applications, and returns `MANUAL CHECK REQUIRED` when any are found.
+
+APIC internal/default plugin objects are excluded. The following legacy App Center packages are reported as having equivalent functionality native in APIC 6.1(2) or later:
+
+* `Cisco_PreUpgradeValidator` — Pre-Upgrade Validator
+* `Cisco_NIBASE` — Nexus Insights Cloud Connector
+* `Cisco_ElamAssistant` — ELAM Assistant
+
+Remove these legacy packages before the upgrade and validate the corresponding native functionality afterward. For every other installed application, review its operational dependencies and remove or replace it before upgrading because its App Center-hosted functionality is unavailable after the upgrade.
+
+This validation is not applicable when the current APIC release is already 6.1(2) or later, because the upgrade is no longer crossing the App Infrastructure removal boundary. See the [Cisco DC App Center notice][89] and the [ELAM Assistant native functionality guide][90].
 
 
 ### Switch Upgrade Group Guidelines
@@ -3118,3 +3137,5 @@ The check reads only what ACI sees from its neighbors. It cannot confirm the IPN
 [86]: https://cs.co/FNSNV
 [87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
 [88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
+[89]: https://dcappcenter.cisco.com/elam-assistant.html
+[90]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/elam-assistant-user-guide/elam-assistant-user-guide/m-overview.html
