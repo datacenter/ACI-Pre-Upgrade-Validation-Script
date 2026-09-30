@@ -4069,15 +4069,19 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
             elif cimc_upgrade_optional or current_compatibility_review:
                 result = MANUAL
 
-            if cimc_upgrade_order_required:
-                recommended_action = 'Intentionally Upgrade your APICs to a fixed target version [6.0(9e)+ or (6.1(4h)+] BEFORE upgrading CIMC to avoid hitting CSCwo74485.'
+            if cimc_upgrade_order_required or cimc_upgrade_optional:
+                recommended_action = ('Upgrade APICs to a fixed version [6.0(9e)+ or 6.1(4h)+] '
+                                      'BEFORE upgrading CIMC due to CSCwo74485. Do not upgrade CIMC '
+                                      'to 4.3(5) or later while APICs are on an affected release.')
+            if cimc_upgrade_required and (cimc_upgrade_order_required or cimc_upgrade_optional):
+                recommended_action += ' Upgrade CIMC to the target catalog recommendation after upgrading APICs.'
             if cimc_upgrade_optional:
-                optional_action = ('CIMC upgrade is not required. If you choose to upgrade it, do not upgrade CIMC to '
-                                   '4.3(5) or later BEFORE upgrading your APICs to a fixed version '
-                                   '[6.0(9e)+ or 6.1(4h)+] of CSCwo74485.')
                 if cimc_upgrade_required or current_compatibility_review:
-                    optional_action = 'For the nodes with CIMC supported by both APIC versions, ' + optional_action
-                recommended_action = (recommended_action + ' ' + optional_action) if cimc_upgrade_required else optional_action
+                    recommended_action += (' For nodes whose installed CIMC supports both the current and target '
+                                           'APIC versions, no CIMC upgrade is required for this APIC upgrade.')
+                else:
+                    recommended_action += (' The installed CIMC supports both the current and target APIC versions, '
+                                           'so no CIMC upgrade is required for this APIC upgrade.')
             if current_compatibility_review:
                 recommended_action += ' Review the current APIC/CIMC compatibility for the flagged nodes.'
 

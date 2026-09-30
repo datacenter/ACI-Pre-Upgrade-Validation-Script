@@ -226,9 +226,10 @@ def test_cscwo74485_supported_on_current_and_target(run_check, mock_icurl, model
     assert result.data == [["node-1", "APIC-SERVER-" + model, "4.3(4.241063)", "4.0(2g)",
                             "Avoid a CIMC upgrade before fixing APIC for CSCwo74485."]]
     assert result.recommended_action == (
-        "CIMC upgrade is not required. If you choose to upgrade it, do not upgrade CIMC to "
-        "4.3(5) or later BEFORE upgrading your APICs to a fixed version "
-        "[6.0(9e)+ or 6.1(4h)+] of CSCwo74485."
+        "Upgrade APICs to a fixed version [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC "
+        "due to CSCwo74485. Do not upgrade CIMC to 4.3(5) or later while APICs are on an "
+        "affected release. The installed CIMC supports both the current and target APIC "
+        "versions, so no CIMC upgrade is required for this APIC upgrade."
     )
 
 
@@ -268,4 +269,6 @@ def test_cscwo74485_required_and_optional_upgrades(run_check, mock_icurl):
     assert result.result == script.FAIL_UF
     assert [row[0] for row in result.data] == ["node-1", "node-2"]
     assert "BEFORE upgrading CIMC" in result.recommended_action
-    assert "For the nodes with CIMC supported by both APIC versions, CIMC upgrade is not required" in result.recommended_action
+    assert result.recommended_action.startswith("Upgrade APICs to a fixed version")
+    assert "For nodes whose installed CIMC supports both" in result.recommended_action
+    assert "no CIMC upgrade is required for this APIC upgrade" in result.recommended_action
