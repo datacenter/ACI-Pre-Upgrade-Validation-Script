@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 from six import iteritems, text_type
 from six.moves import input
+from six.moves.urllib.parse import quote
 from textwrap import TextWrapper
 from getpass import getpass
 from collections import defaultdict, OrderedDict
@@ -3065,6 +3066,65 @@ def port_configured_for_apic_check(**kwargs):
     )
 
 
+@check_wrapper(check_title="APIC Connected Port VLAN Override (CSCwn64461)")
+def apic_connected_port_vlan_override_check(**kwargs):
+    result = FAIL_UF
+    headers = ["Pod", "Node", "Port", "EPG", "Configured VLAN", "InfraVLAN", "Configuration DN"]
+    data = []
+    recommended_action = 'Remove tenant static EPG path attachments from APIC Connected Interfaces'
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-connected-port-vlan-override"
+
+    controller_adj_dn_regex = node_regex + r'/sys/lldp/inst/if-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
+    path_dn_regex = r'topology/pod-(?P<pod>\d+)/paths-(?P<node>\d+)/pathep-\[(?P<port>eth\d{1,2}/\d{1,2})\]'
+    epg_dn_regex = r'^(?P<epg>uni/tn-[^/]+/ap-[^/]+/epg-[^/]+)/rspathAtt-'
+
+    infra_vlan = None
+    lldpInsts = icurl('class', 'lldpInst.json?query-target-filter=wcard(lldpInst.dn,"/node-1/")')
+    for lldpInst in lldpInsts:
+        infra_vlan_id = lldpInst.get('lldpInst', {}).get('attributes', {}).get('infraVlan')
+        match = re.search(r'\d+', str(infra_vlan_id)) if infra_vlan_id else None
+        if match:
+            infra_vlan = match.group(0)
+            break
+
+    if infra_vlan is None:
+        return Result(result=ERROR, msg="Unable to determine InfraVLAN from lldpInst.")
+
+    apic_ports = set()
+    for adjacency in icurl('class', 'lldpCtrlrAdjEp.json'):
+        adj_attr = adjacency.get('lldpCtrlrAdjEp', {}).get('attributes', {})
+        adj_dn = re.search(controller_adj_dn_regex, adj_attr.get('dn', ''))
+        if adj_dn:
+            apic_ports.add((adj_dn.group('pod'), adj_dn.group('node'), adj_dn.group('port')))
+
+    if apic_ports:
+        for path_attachment in icurl('class', 'fvRsPathAtt.json'):
+            path_attr = path_attachment.get('fvRsPathAtt', {}).get('attributes', {})
+            config_dn = path_attr.get('dn', '')
+            epg_dn = re.search(epg_dn_regex, config_dn)
+            path_dn = re.search(path_dn_regex, path_attr.get('tDn', ''))
+            if not epg_dn or not path_dn:
+                continue
+
+            port_key = (path_dn.group('pod'), path_dn.group('node'), path_dn.group('port'))
+            if port_key not in apic_ports:
+                continue
+
+            data.append([
+                path_dn.group('pod'),
+                path_dn.group('node'),
+                path_dn.group('port'),
+                epg_dn.group('epg'),
+                path_attr.get('encap') or '-',
+                infra_vlan,
+                config_dn,
+            ])
+
+    if not data:
+        result = PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 @check_wrapper(check_title="Overlapping VLAN Pools")
 def overlapping_vlan_pools_check(**kwargs):
     result = PASS
@@ -4062,6 +4122,49 @@ def isis_redis_metric_mpod_msite_check(**kwargs):
     if not data:
         result = PASS
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="POD PTEP Overlap with External Routable TEP Pool")
+def pod_ptep_routable_pool_overlap_check(**kwargs):
+    result = PASS
+    headers = ["POD PTEP DN", "POD PTEP IP", "External Pool DN", "External Routable TEP Pool", "Reserved Addresses"]
+    data = []
+    recommended_action = (
+        "Move the POD PTEP outside the external routable TEP pool's unreserved addresses, "
+        "or recreate the pool with the PTEP address reserved."
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#pod-ptep-overlap-with-external-routable-tep-pool'
+
+    pod_profiles = icurl('class', 'fvPodConnP.json?rsp-subtree=children')
+    routable_pools = icurl('class', 'fabricExtRoutablePodSubnet.json')
+
+    for profile in pod_profiles:
+        for child in profile['fvPodConnP'].get('children', []):
+            if 'fvIp' not in child:
+                continue
+            ptep = child['fvIp']['attributes']
+            ptep_ip = ptep['addr'].split('/')[0]
+            # The POD PTEP is an IPv4 host address; other child classes are not PTEPs.
+            if ':' in ptep_ip:
+                continue
+
+            for pool_mo in routable_pools:
+                pool = pool_mo['fabricExtRoutablePodSubnet']['attributes']
+                subnet = pool['pool']
+                if ':' in subnet or not IPAddress.ip_in_subnet(ptep_ip, subnet):
+                    continue
+
+                pool_ip, prefix_len = subnet.split('/')
+                network_address = int(IPAddress.get_network_binary(pool_ip, prefix_len).ljust(32, '0'), 2)
+                address_offset = int(IPAddress.ipv4_to_binary(ptep_ip), 2) - network_address
+                reserved_count = int(pool['reserveAddressCount'])
+                # APIC reserves the first usable addresses: with count 3, .1-.3 are allowed.
+                if reserved_count == 0 or address_offset > reserved_count:
+                    result = FAIL_O
+                    data.append([ptep['dn'], ptep['addr'], pool['dn'], subnet, reserved_count])
+
+    return Result(result=result, headers=headers, data=data,
+                  recommended_action=recommended_action, doc_url=doc_url)
 
 
 @check_wrapper(check_title="BGP route target type for GOLF over L2EVPN")
@@ -5827,7 +5930,8 @@ def clock_signal_component_failure_check(**kwargs):
     headers = ['Pod', "Node", "Slot", "Model", "Serial Number"]
     data = []
     recommended_action = (
-        'Review the listed serial numbers using FN64251. Products shipped after December 5, 2016 are not affected '
+        'Check the listed serial numbers with the Field Notice Serial Number Validator at https://cs.co/FNSNV '
+        'for applicable Field Notices, including FN64251. Products shipped after December 5, 2016 are not affected '
         'and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, '
         'contact Cisco TAC to confirm whether they are affected. A V01 Version ID (VID) is only possibly affected '
         'and is not conclusive because some unaffected products also use V01.\n\tSN String:\n\t'
@@ -6017,7 +6121,7 @@ def standby_sup_sync_check(cversion, tversion, **kwargs):
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     if (
-        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(5d)")))
+        (cversion.older_than("4.2(7t)") or (cversion.major_version == "5.2" and cversion.older_than("5.2(4d)")))
         and ((tversion.major_version == "5.2" and tversion.older_than("5.2(7f)")) or tversion.newer_than("6.0(2h)"))
     ):
         eqptSupC = icurl('class', eqptSupC_api)
@@ -6054,6 +6158,7 @@ def equipment_disk_limits_exceeded(**kwargs):
 
     for faultInst in faults:
         percent = "NA"
+        below_log_threshold = False
         attributes = faultInst['faultInst']['attributes']
 
         avail_match = re.search(avail_regex, attributes['changeSet'])
@@ -6064,6 +6169,13 @@ def equipment_disk_limits_exceeded(**kwargs):
             total = avail + used
             if total:
                 percent = int(round((used / total) * 100))
+                below_log_threshold = used * 100 < total * 80
+
+        # CSCwc67099 can raise a cosmetic F1820 for /mnt/ifc/log below 80%.
+        if (attributes['code'] == 'F1820'
+                and attributes['dn'].endswith('/fspartition-ifc:log/fault-F1820')
+                and below_log_threshold):
+            continue
 
         dn_match = re.search(node_regex, attributes['dn'])
         if dn_match:
@@ -6301,6 +6413,274 @@ def isis_database_byte_check(tversion, **kwargs):
         return Result(result=NA, msg=VER_NOT_AFFECTED)
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
+
+@check_wrapper(check_title='Service EP Flag without PBR')
+def service_ep_flag_bd_check(cversion, tversion, **kwargs):
+    headers = ["Leaf", "Service EPG DN", "Bridge Domain DN", "Graph Connector DN"]
+    data = []
+    unformatted_headers = ["Leaf", "Service EPG or VLAN DN", "Reason"]
+    unformatted_data = []
+    recommended_action = (
+        "Review the listed service EPGs for PBR redirect use. A fixed target "
+        "release may remove service-ep when PBR is absent and change Don't Learn "
+        "behavior. Contact Cisco TAC to assess the service graph and traffic "
+        "impact before upgrading."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#service-ep-flag-in-bd-without-pbr"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    def at_least(version, boundary):
+        return version.same_as(boundary) or version.newer_than(boundary)
+
+    def source_affected(version):
+        if version.major_version == "5.2":
+            return at_least(version, "5.2(5c)")
+        if version.major_version == "6.0":
+            return at_least(version, "6.0(1g)") and version.older_than("6.0(8e)")
+        if version.major_version == "6.1":
+            return version.older_than("6.1(1f)")
+        if version.older_than("5.2(5c)") or at_least(version, "6.1(1f)"):
+            return False
+        return None  # No verified boundary for this release train.
+
+    # The target must contain the fix. Current leaf versions are checked per
+    # operational entry because a fabric can contain mixed switch releases.
+    target_fixed = (
+        (tversion.major_version == "6.0" and at_least(tversion, "6.0(8e)"))
+        or (tversion.major_version == "6.1" and at_least(tversion, "6.1(1f)"))
+        or (int(tversion.major1) == 6 and int(tversion.major2) >= 2)
+        or int(tversion.major1) > 6
+    )
+    if not target_fixed:
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    def child_attributes(obj, class_name):
+        return [
+            child[class_name].get("attributes", {})
+            for child in obj.get("children") or []
+            if isinstance(child, dict) and class_name in child
+        ]
+
+    def manual(leaf_dn, epg_dn, reason):
+        unformatted_data.append([leaf_dn, epg_dn, reason])
+
+    def query_dns(class_name, dns, extra_params=""):
+        """Query selected DNs with bounded predicates and encoded URL length."""
+        max_terms = 10  # Keep DN clauses well below the stated 20-item limit.
+        max_query_length = 3000
+        page_suffix = "&page=999999&page-size=1000"
+        objects = []
+        oversized = set()
+        batch = []
+
+        def make_query(dn_batch):
+            terms = ["eq({}.dn,{})".format(class_name, json.dumps(dn))
+                     for dn in dn_batch]
+            expression = terms[0] if len(terms) == 1 else "or({})".format(",".join(terms))
+            return "{}.json?query-target-filter={}{}".format(
+                class_name, quote(expression, safe="(),"), extra_params)
+
+        for dn in sorted(set(dn for dn in dns if dn)):
+            candidate = batch + [dn]
+            if (len(candidate) > max_terms or
+                    len(make_query(candidate) + page_suffix) > max_query_length):
+                if batch:
+                    objects.extend(icurl("class", make_query(batch), page_size=1000))
+                    batch = []
+                if len(make_query([dn]) + page_suffix) > max_query_length:
+                    oversized.add(dn)
+                    continue
+            batch.append(dn)
+        if batch:
+            objects.extend(icurl("class", make_query(batch), page_size=1000))
+        return objects, oversized
+
+    leaf_versions = {}
+    for node in kwargs.get("fabric_nodes") or []:
+        attrs = node.get("fabricNode", {}).get("attributes", {})
+        if attrs.get("role") == "leaf":
+            leaf_versions[attrs.get("dn")] = attrs.get("version")
+
+    flag_query = 'vlanCktEp.json?query-target-filter=allbits(vlanCktEp.ctrl,"service-ep")'
+    flagged = icurl("class", flag_query, page_size=1000)
+    affected = []
+    for item in flagged:
+        attrs = item.get("vlanCktEp", {}).get("attributes", {})
+        leaf_match = re.match(r"^(topology/pod-\d+/node-\d+)/", attrs.get("dn") or "")
+        leaf_dn = leaf_match.group(1) if leaf_match else ""
+        epg_dn = attrs.get("epgDn") or ""
+        if not epg_dn:
+            manual(leaf_dn, attrs.get("dn") or "", "Flagged entry has no service EPG DN.")
+            continue
+        version_string = leaf_versions.get(leaf_dn)
+        try:
+            leaf_version = AciVersion(version_string) if version_string else None
+        except ValueError:
+            leaf_version = None
+        if not leaf_version:
+            manual(leaf_dn, epg_dn, "Current leaf version is unavailable.")
+            continue
+        impact = source_affected(leaf_version)
+        if impact is None:
+            manual(leaf_dn, epg_dn, "Source release has no verified CSCwi17652 boundary.")
+        elif impact:
+            affected.append((leaf_dn, epg_dn))
+
+    affected = sorted(set(affected))
+    if not affected:
+        result = MANUAL if unformatted_data else PASS
+        return Result(result=result, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # Match only the service EPGs found on affected leaves.
+    epg_dns = sorted(set(epg_dn for _, epg_dn in affected))
+    epp_by_dn = {}
+    epp_items, oversized_epps = query_dns(
+        "vnsEPpInfo", epg_dns,
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRtEPpInfoAtt,vnsRsEPpInfoToBD")
+    for item in epp_items:
+        epp = item.get("vnsEPpInfo", {})
+        dn = epp.get("attributes", {}).get("dn")
+        if dn:
+            epp_by_dn[dn] = epp
+
+    pending = []
+    for leaf_dn, epg_dn in affected:
+        if epg_dn in oversized_epps:
+            manual(leaf_dn, epg_dn, "Service EPG DN exceeds the bounded APIC query length.")
+            continue
+        epp = epp_by_dn.get(epg_dn)
+        if not epp:
+            manual(leaf_dn, epg_dn, "Service EPG information was not found.")
+            continue
+        bd_dns = set(attrs.get("tDn") for attrs in
+                     child_attributes(epp, "vnsRsEPpInfoToBD") if attrs.get("tDn"))
+        refs = [attrs.get("tDn") for attrs in
+                child_attributes(epp, "vnsRtEPpInfoAtt") if attrs.get("tDn")]
+        if len(bd_dns) != 1 or not refs:
+            manual(leaf_dn, epg_dn, "BD or deployed graph relation is missing or ambiguous.")
+            continue
+        pending.append((leaf_dn, epg_dn, next(iter(bd_dns)), refs))
+
+    if not pending:
+        return Result(result=MANUAL, unformatted_headers=unformatted_headers,
+                      unformatted_data=unformatted_data,
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    # A service EPG can be shared by several graph connectors. Query only the
+    # graph nodes referenced by those EPGs, then only their connector contexts.
+    node_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" in ref_dn and "/EPgDef-" in ref_dn:
+                node_dns.add(ref_dn.split("/LegVNode-", 1)[0])
+    node_relation_dns = [dn + "/rsNodeInstToLDevCtx" for dn in node_dns]
+    node_items, oversized_nodes = query_dns(
+        "vnsRsNodeInstToLDevCtx", node_relation_dns)
+    node_relations = defaultdict(list)
+    for item in node_items:
+        attrs = item.get("vnsRsNodeInstToLDevCtx", {}).get("attributes", {})
+        dn = attrs.get("dn", "")
+        if dn.endswith("/rsNodeInstToLDevCtx"):
+            node_relations[dn.rsplit("/", 1)[0]].append(attrs.get("tDn", ""))
+
+    candidate_context_dns = set()
+    for _, _, _, refs in pending:
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                continue
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-" + connector)
+            candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-Any")
+    ctx_items, oversized_contexts = query_dns(
+        "vnsLIfCtx", candidate_context_dns,
+        "&query-target=self&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsLIfCtxToBD,"
+        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol")
+    contexts = {}
+    for item in ctx_items:
+        ctx = item.get("vnsLIfCtx", {})
+        dn = ctx.get("attributes", {}).get("dn")
+        if dn:
+            contexts[dn] = ctx
+
+    for leaf_dn, epg_dn, bd_dn, refs in pending:
+        pbr_found = False
+        context_dns = []
+        problems = []
+        for ref_dn in refs:
+            if "/LegVNode-" not in ref_dn or "/EPgDef-" not in ref_dn:
+                problems.append("Cannot parse deployed graph reference.")
+                continue
+            node_dn = ref_dn.split("/LegVNode-", 1)[0]
+            connector = ref_dn.rsplit("/EPgDef-", 1)[1]
+            if node_dn + "/rsNodeInstToLDevCtx" in oversized_nodes:
+                problems.append("Graph node DN exceeds the bounded APIC query length.")
+                continue
+            ldev_dns = node_relations.get(node_dn, [])
+            if len(ldev_dns) != 1 or not ldev_dns[0]:
+                problems.append("Graph node does not resolve to one device context.")
+                continue
+            parent_dn = ldev_dns[0]
+            ctx_dn = parent_dn + "/lIfCtx-c-" + connector
+            if ctx_dn in oversized_contexts:
+                problems.append("Graph connector DN exceeds the bounded APIC query length.")
+                continue
+            ctx = contexts.get(ctx_dn)
+            if not ctx:
+                ctx_dn = parent_dn + "/lIfCtx-c-Any"
+                if ctx_dn in oversized_contexts:
+                    problems.append("Fallback graph connector DN exceeds the bounded APIC query length.")
+                    continue
+                ctx = contexts.get(ctx_dn)
+            if not ctx:
+                problems.append("Graph connector context was not found.")
+                continue
+            context_dns.append(ctx_dn)
+            ctx_bds = set(attrs.get("tDn") for attrs in
+                          child_attributes(ctx, "vnsRsLIfCtxToBD") if attrs.get("tDn"))
+            if bd_dn not in ctx_bds:
+                problems.append("Graph connector BD does not match the service EPG BD.")
+                continue
+            redirects = (
+                child_attributes(ctx, "vnsRsLIfCtxToSvcRedirectPol")
+                + child_attributes(ctx, "vnsRsLIfCtxToRemoteSvcRedirectPol")
+            )
+            if redirects:
+                # Some APIC responses omit state on a configured relation.
+                # An explicit unformed state still needs manual review.
+                if any(attrs.get("tDn") and attrs.get("state") in (None, "formed")
+                       for attrs in redirects):
+                    pbr_found = True
+                else:
+                    problems.append("Redirect policy relationship is unresolved.")
+
+        if pbr_found:
+            continue
+        if problems or not context_dns:
+            manual(leaf_dn, epg_dn, "; ".join(sorted(set(problems))) or
+                   "No graph connector could be resolved.")
+            continue
+        data.append([leaf_dn, epg_dn, bd_dn, ", ".join(sorted(set(context_dns)))])
+
+    result = FAIL_O if data else MANUAL if unformatted_data else PASS
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
 
 # Subprocess check - cat + acidiag
 @check_wrapper(check_title='APIC Database Size')
@@ -7320,6 +7700,912 @@ def infravlan_overlap_access_policy_check(tversion, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, unformatted_headers=unformatted_headers, unformatted_data=unformatted_data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+
+@check_wrapper(check_title='Port Tracking Minimal Uplink Zero')
+def port_tracking_active_fabric_port_check(tversion, vpc_node_ids, **kwargs):
+    headers = ["Admin State", "Port Tracking Active Fabric Ports"]
+    data = []
+    recommended_action = (
+        'Upgrade to a fixed release when possible. If upgrading to an affected release, either disable Port Tracking '
+        'before upgrading the leaf, or set Port Tracking Active Fabric Ports (minLink) to 1 only after verifying every '
+        'affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port '
+        'Tracking, reload the affected switch, and then re-enable Port Tracking.'
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#port-tracking-active-fabric-port-zero'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    affected_versions = ("6.0(9d)", "6.1(3f)")
+    if not any(tversion.same_as(version) for version in affected_versions):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    if not vpc_node_ids:
+        return Result(result=NA, msg="No vPC nodes found. Not susceptible.", doc_url=doc_url)
+
+    port_tracking_api = 'uni/infra/trackEqptFabP-default.json'
+    port_tracking_mo = icurl('mo', port_tracking_api)
+    if not isinstance(port_tracking_mo, list) or len(port_tracking_mo) != 1:
+        object_count = len(port_tracking_mo) if isinstance(port_tracking_mo, list) else 0
+        msg = "Expected exactly one infraPortTrackPol object, but found {}.".format(object_count)
+        return Result(result=ERROR, msg=msg, recommended_action=recommended_action, doc_url=doc_url)
+
+    try:
+        attributes = port_tracking_mo[0]['infraPortTrackPol']['attributes']
+        admin_st = attributes['adminSt']
+        minimal_uplink = attributes['minlinks']
+    except (KeyError, TypeError):
+        msg = "The infraPortTrackPol response is missing required adminSt or minlinks attributes."
+        return Result(result=ERROR, msg=msg, recommended_action=recommended_action, doc_url=doc_url)
+
+    if admin_st not in ("on", "off") or not str(minimal_uplink).isdigit():
+        msg = "The infraPortTrackPol response contains an invalid adminSt or minlinks value."
+        return Result(result=ERROR, msg=msg, recommended_action=recommended_action, doc_url=doc_url)
+
+    result = PASS
+    if admin_st == "on" and str(minimal_uplink) == "0":
+        data.append([admin_st, minimal_uplink])
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title='Host Interface Policy Set to Auto')
+def host_interface_policy_set_speed_check(tversion, **kwargs):
+    result = PASS
+    headers = [
+        "Host Interface Policy",
+        "Set Speed",
+        "Associated Interface Policy Group",
+        "Group Type",
+    ]
+    data = []
+    recommended_action = 'Change the speed to "inherit" to avoid issues with interfaces upon stateless reboot'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#host-interface-policy-set-to-auto'
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    policy_group_types = {
+        "infraAccPortGrp": ("accportgrp-", "Leaf Access"),
+        "infraAccBndlGrp": ("accbundle-", "PC/vPC"),
+        "infraAccBndlPolGrp": ("accbundlepolgrp-", "PC/vPC Override"),
+        "infraSpAccPortGrp": ("spaccportgrp-", "Spine Access"),
+    }
+    host_interface_policy_api = 'fabricHIfPol.json'
+    host_interface_policy_api += '?query-target-filter=and(eq(fabricHIfPol.speed,"auto"))'
+    host_interface_policy_api += '&rsp-subtree=children&rsp-subtree-class=fabricRtHIfPol'
+    host_interface_policies = icurl('class', host_interface_policy_api)
+    if host_interface_policies:
+        for host_interface_policy in host_interface_policies:
+            if "children" in host_interface_policy["fabricHIfPol"]:
+                for policy_group in host_interface_policy["fabricHIfPol"]["children"]:
+                    policy_group_attributes = policy_group["fabricRtHIfPol"]["attributes"]
+                    policy_group_class = policy_group_attributes["tCl"]
+                    policy_group_dn = policy_group_attributes["tDn"]
+                    policy_group_name = policy_group_dn
+                    policy_group_type = policy_group_class
+                    policy_group_details = policy_group_types.get(policy_group_class)
+                    if policy_group_details:
+                        policy_group_prefix = "uni/infra/funcprof/" + policy_group_details[0]
+                        policy_group_type = policy_group_details[1]
+                        if policy_group_dn.startswith(policy_group_prefix):
+                            policy_group_name = policy_group_dn[len(policy_group_prefix):]
+                    fabric_h_if_pol = host_interface_policy["fabricHIfPol"]["attributes"]["dn"]
+                    speed = host_interface_policy["fabricHIfPol"]["attributes"]["speed"]
+                    data.append([fabric_h_if_pol, speed, policy_group_name, policy_group_type])
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+def collect_factory_certificate_status(username, password, fabric_nodes):
+    """Collect pre-6.1(5e) APIC factory certificate status over SSH."""
+    data = []
+    has_blocking_certificate = False
+    has_error = False
+    controller_inventory_unavailable = False
+    controllers = [
+        node for node in (fabric_nodes or [])
+        if node.get("fabricNode", {}).get("attributes", {}).get("role") == "controller"
+    ]
+
+    if not controllers:
+        data.append([
+            "N/A",
+            "No APIC controllers were found; factory certificate expiry could not be verified.",
+        ])
+        has_error = True
+        controller_inventory_unavailable = True
+
+    date_format = "%b %d %H:%M:%S %Y"
+    current_date_re = re.compile(
+        r'(?m)^[ \t\r]*(?P<epoch>\d{9,})[ \t\r]*$'
+    )
+    cert_expiry_re = re.compile(
+        r'notAfter=(?P<date>[A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d{4})'
+    )
+
+    for controller in controllers:
+        controller_attrs = controller.get("fabricNode", {}).get("attributes", {})
+        controller_id = controller_attrs.get("id", "N/A")
+        controller_name = controller_attrs.get("name", "N/A")
+        controller_address = controller_attrs.get("address")
+
+        if not controller_address:
+            data.append(["N/A",
+                         "APIC {} ({}): unable to determine controller address".format(controller_id, controller_name)])
+            has_error = True
+            continue
+
+        try:
+            c = Connection(controller_address)
+            c.username = username
+            c.password = password
+            c.log = LOG_FILE
+            c.connect()
+
+            c.cmd("date -u +%s; acidiag verifyapic")
+            current_date_match = current_date_re.search(c.output)
+            cert_expiry_match = cert_expiry_re.search(c.output)
+        except Exception as e:
+            data.append(["N/A",
+                         "APIC {} ({}): unable to verify factory certificate - {}".format(controller_id, controller_name, e)])
+            has_error = True
+            continue
+
+        try:
+            current_date = datetime.utcfromtimestamp(
+                int(current_date_match.group("epoch"))
+            )
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            data.append(["N/A",
+                         "APIC {} ({}): unable to determine current date".format(controller_id, controller_name)])
+            has_error = True
+            continue
+
+        try:
+            cert_expiry = datetime.strptime(" ".join(cert_expiry_match.group("date").split()), date_format)
+        except (AttributeError, ValueError):
+            data.append(["N/A",
+                         "APIC {} ({}): unable to determine factory certificate expiry date".format(controller_id, controller_name)])
+            has_error = True
+            continue
+
+        if cert_expiry <= current_date:
+            data.append(["N/A",
+                         "APIC {} ({}): factory certificate expired on {} UTC".format(controller_id, controller_name, cert_expiry)])
+            has_blocking_certificate = True
+        elif (cert_expiry - current_date).days <= 30:
+            data.append(["N/A",
+                         "APIC {} ({}): factory certificate expiring on {} UTC".format(controller_id, controller_name, cert_expiry)])
+            has_blocking_certificate = True
+
+    return {
+        "data": data,
+        "has_blocking_certificate": has_blocking_certificate,
+        "has_error": has_error,
+        "controller_inventory_unavailable": controller_inventory_unavailable,
+    }
+
+
+@check_wrapper(check_title='Certificate Expiration Check')
+def certificate_expiration_check(cversion, username, password, fabric_nodes,
+                                 factory_certificate_status=None, **kwargs):
+    result = PASS
+    headers = ["Fault Code", "Description"]
+    data = []
+    recommended_action = ""
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#certificate-expiration-check'
+
+    fault_min_versions = [
+        ("F4501", "6.0(4c)"), ("F4502", "6.0(4c)"),  # KeyRing cert expiring/expired
+        ("F4503", "6.1(1e)"), ("F4617", "6.1(1e)"),  # TP cert expired/expiring
+        ("F3081", "3.1(2f)"), ("F3082", "3.1(2f)"),  # SAML encryption cert expiring/expired
+        ("F4752", "6.1(5e)"), ("F4753", "6.1(5e)"),  # Factory certificate expired/expiring
+    ]
+    FACTORY_CERT_MIN_VERSION = "6.1(5e)"
+    has_blocking_certificate = has_error = False
+    factory_check_required = cversion.older_than(FACTORY_CERT_MIN_VERSION)
+    factory_check_unavailable = (
+        factory_check_required and not (username and password)
+    )
+    controller_inventory_unavailable = False
+
+    applicable_codes = [code for code, ver in fault_min_versions if not cversion.older_than(ver)]
+    if applicable_codes:
+        fault_filter = ",".join('eq(faultInst.code,"{}")'.format(code) for code in applicable_codes)
+        for faultInst in icurl('class', 'faultInst.json?query-target-filter=or({})'.format(fault_filter)):
+            fault_attrs = faultInst['faultInst']['attributes']
+            lifecycle_states = {
+                state.strip() for state in fault_attrs.get('lc', '').split(',')
+            }
+            if "raised" not in lifecycle_states:
+                continue
+            data.append([fault_attrs['code'], fault_attrs.get('descr', '')])
+            has_blocking_certificate = True
+
+    if factory_check_unavailable:
+        data.append([
+            "N/A",
+            "Factory certificate expiry was not checked because SSH credentials are unavailable.",
+        ])
+    elif factory_check_required:
+        if factory_certificate_status is None:
+            data.append([
+                "N/A",
+                "Factory certificate expiry could not be collected before the check ran.",
+            ])
+            has_error = True
+        else:
+            data.extend(factory_certificate_status["data"])
+            has_blocking_certificate = (
+                has_blocking_certificate
+                or factory_certificate_status["has_blocking_certificate"]
+            )
+            has_error = factory_certificate_status["has_error"]
+            controller_inventory_unavailable = factory_certificate_status[
+                "controller_inventory_unavailable"
+            ]
+
+    if data:
+        if has_blocking_certificate:
+            result = FAIL_O
+            recommended_action = (
+                'Resolve all certificate conditions before starting the upgrade. Renew expired certificates '
+                'immediately and renew certificates approaching expiry before they expire. See {} for '
+                'verification and remediation guidance.'.format(doc_url)
+            )
+
+            if has_error:
+                if controller_inventory_unavailable:
+                    verification_action = (
+                        "Factory certificate status could not be verified because no APIC controllers were "
+                        "found. Verify APIC cluster and node inventory health, then follow the manual factory "
+                        "certificate verification procedure in {}".format(doc_url)
+                    )
+                else:
+                    verification_action = (
+                        "Certificate status could not be verified on all APICs. Manually verify the affected "
+                        "APICs using the procedure in {}".format(doc_url)
+                    )
+                recommended_action = "{} {}".format(recommended_action, verification_action)
+        elif has_error:
+            result = ERROR
+            if controller_inventory_unavailable:
+                recommended_action = (
+                    "Verify APIC cluster and node inventory health, then rerun the validation. If inventory "
+                    "cannot be restored, follow the manual factory certificate verification procedure in {}"
+                    .format(doc_url)
+                )
+            else:
+                recommended_action = (
+                    "Manually verify certificate expiry for all affected nodes. "
+                    "\n\tFor APIC factory certificates, run `acidiag verifyapic` on each affected APIC."
+                )
+
+    if factory_check_unavailable:
+        if result == PASS:
+            result = MANUAL
+        manual_verification_action = (
+            "Re-run without `--api-only` using SSH credentials, or follow the manual factory certificate "
+            "verification procedure in {}".format(doc_url)
+        )
+        if recommended_action:
+            recommended_action = "{} {}".format(recommended_action, manual_verification_action)
+        else:
+            recommended_action = manual_verification_action
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title='FX3 Breakout Port Transceiver and Fec mode Compatibility Check')
+def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
+    result = PASS
+    msg = ''
+    headers = ["Pod-ID", "Node-ID", "Node Name", "Model", "Breakout Port", "Transceiver", "FEC Mode"]
+    data = []
+    recommended_action = (
+        'Disable FEC (fecMode: disable-fec) on both sides of the link for highlighted breakout interface(s) to avoid an outage during '
+        'the leaf upgrade or choose target code where bug is fixed. '
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#fx3-breakout-port-transceiver-and-fec-mode-compatibility-check'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    # Affected when upgrading from a cversion older than 5.2(8h) to a tversion
+    # newer than 5.3(1a) that is either older than 6.1(6a) or exactly 6.2(1g).
+    affected = (
+        cversion.older_than("5.2(8h)")
+        and tversion.newer_than("5.3(1a)")
+        and (tversion.older_than("6.1(6a)") or tversion.same_as("6.2(1g)"))
+    )
+    if not affected:
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    fx3_nodes = {
+        node['fabricNode']['attributes']['id']: node['fabricNode']['attributes']
+        for node in fabric_nodes
+        if 'YC-FX3' in node['fabricNode']['attributes']['model']
+        or 'TC-FX3' in node['fabricNode']['attributes']['model']
+    }
+    if not fx3_nodes:
+        return Result(result=NA, msg='No YC-FX3/TC-FX3 switches found. Skipping.', doc_url=doc_url)
+
+    brkout_ports_of_interest = {'49', '50', '51', '52'}
+    # Capture the line-card slot too so the brkoutport-1 child interface
+    # (eth<card>/<port>/1) can be built directly, without depending on
+    # ethpmFcot's DN having a subport (see below).
+    brkout_regex = node_regex + r'/sys/ch/lcslot-(?P<card>\d+)/lc/leafport-(?P<port>\d+)/brkoutport-\d+'
+
+    eqptBrkoutPs = icurl('class', 'eqptBrkoutP.json')
+    # {(node_id, port): card} for breakout-enabled ports (49-52) found on FX3 nodes
+    brkout_leg_per_port = OrderedDict()
+    for brkout in eqptBrkoutPs:
+        dn = brkout['eqptBrkoutP']['attributes'].get('dn', '')
+        m = re.search(brkout_regex, dn)
+        if not m or m.group('node') not in fx3_nodes or m.group('port') not in brkout_ports_of_interest:
+            continue
+        key = (m.group('node'), m.group('port'))
+        brkout_leg_per_port.setdefault(key, {"pod": m.group('pod'), "card": m.group('card')})
+
+    if not brkout_leg_per_port:
+        return Result(result=PASS, msg='No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
+
+    fcot_api = 'ethpmFcot.json'
+    fcot_api += '?query-target-filter=and(wcard(ethpmFcot.guiName,"CISCO-INNOLIGHT"),eq(ethpmFcot.guiCiscoEID,"QSFP-100G-SR4"))'
+    # The transceiver is physically inserted into the port cage, so APIC may
+    # report ethpmFcot's dn at the cage level (e.g. phys-[eth1/49]) rather than
+    # the breakout child (phys-[eth1/49/1]); the subport is therefore optional
+    # and, when present, intentionally ignored below.
+    fcot_regex = node_regex + r'/sys/phys-\[eth\d+/(?P<port>\d+)(?:/\d+)?\]'
+
+    def l1physif_dn(pod, node_id, intf):
+        return 'topology/pod-{}/node-{}/sys/phys-[{}]'.format(pod, node_id, intf)
+
+    # OrderedDict keeps insertion order deterministic on Python 2.7 as well,
+    # which matters since the order determines how legs are split into batches.
+    first_leg_per_port = OrderedDict()  # (node_id, port) -> {"pod", "intf", "gui_cisco_eid"}
+    ethpmFcots = icurl('class', fcot_api)
+    for fcot in ethpmFcots:
+        attrs = fcot['ethpmFcot']['attributes']
+        m = re.search(fcot_regex, attrs.get('dn', ''))
+        if not m:
+            continue
+        node_id = m.group('node')
+        port = m.group('port')
+        key = (node_id, port)
+        leg = brkout_leg_per_port.get(key)
+        if not leg or key in first_leg_per_port:
+            continue
+        # Always target the brkoutport-1 child interface, regardless of
+        # whether ethpmFcot's dn was reported at the cage or child level.
+        first_leg_per_port[key] = {
+            "pod": leg["pod"],
+            "intf": 'eth{}/{}/1'.format(leg["card"], port),
+            "gui_cisco_eid": attrs['guiCiscoEID'],
+        }
+
+    if not first_leg_per_port:
+        return Result(result=PASS, msg='No affected breakout transceivers found on ports 49-52 of YC-FX3/TC-FX3 switches.', doc_url=doc_url)
+
+    # Only flag interfaces that are admin up with FEC not disabled; use the exact
+    # instead of pulling every l1PhysIf in the fabric. APIC enforces a max of 20 filter expressions per query-target-filter
+    # filters to stay safely under that limit.
+    max_dn_filters_per_batch = 18
+    legs = list(first_leg_per_port.items())
+    fec_mode_by_dn = {}
+    for i in range(0, len(legs), max_dn_filters_per_batch):
+        batch = legs[i:i + max_dn_filters_per_batch]
+        dn_filter = ','.join(
+            'eq(l1PhysIf.dn,"{}")'.format(l1physif_dn(leg["pod"], node_id, leg["intf"]))
+            for (node_id, port), leg in batch
+        )
+        l1physif_api = (
+            'l1PhysIf.json?query-target-filter=and(ne(l1PhysIf.fecMode,"disable-fec"),'
+            'eq(l1PhysIf.adminSt,"up"),or({}))'
+        ).format(dn_filter)
+        fec_mode_by_dn.update({
+            l1['l1PhysIf']['attributes']['dn']: l1['l1PhysIf']['attributes']['fecMode']
+            for l1 in icurl('class', l1physif_api)
+        })
+
+    for (node_id, port), leg in first_leg_per_port.items():
+        dn = l1physif_dn(leg["pod"], node_id, leg["intf"])
+        fec_mode = fec_mode_by_dn.get(dn)
+        if not fec_mode:
+            continue  # FEC already disabled on this interface; not at risk
+        node_attrs = fx3_nodes[node_id]
+        data.append([
+            leg["pod"], node_id, node_attrs['name'], node_attrs['model'],
+            leg["intf"], leg["gui_cisco_eid"], fec_mode,
+        ])
+
+    if data:
+        result = FAIL_O
+        msg = 'Affected breakout transceivers with FEC not disabled found. This may cause an outage during the leaf upgrade.'
+
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="APIC OOB Connectivity check")
+def apic_oob_connectivity_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ["Node ID", "OOB IP", "Port", "Status"]
+    recommended_action = "Restore OOB management connectivity between all APICs and ensure the required HTTPS ports are reachable across the OOB network."
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity'
+    pod_policy_groups_query = 'fabricPodPGrp.json?rsp-subtree=children&rsp-subtree-class=fabricRsCommPol'
+    pod_profiles_query = 'fabricPodP.json?rsp-subtree=full'
+    default_https_query = 'uni/fabric/comm-default/https.json'
+
+    def get_port(comm_https, comm_policy_dn):
+        expected_dn = '{}/https'.format(comm_policy_dn)
+        matches = [mo for mo in comm_https
+                   if mo.get('commHttps', {}).get('attributes', {}).get('dn') == expected_dn]
+        if len(matches) != 1:
+            raise ValueError('Could not find exactly one commHttps object for {}.'.format(comm_policy_dn))
+        try:
+            port = int(matches[0]['commHttps']['attributes']['port'])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError('Could not read HTTPS port from {}.'.format(expected_dn))
+        if port < 1 or port > 65535:
+            raise ValueError('HTTPS port from {} is outside the valid range.'.format(expected_dn))
+        return port
+
+    def get_effective_ports(apics):
+        pod_policy_groups = icurl('class', pod_policy_groups_query)
+        policy_dn_by_group = {}
+        for mo in pod_policy_groups:
+            attrs = mo.get('fabricPodPGrp', {}).get('attributes', {})
+            group_dn = attrs.get('dn')
+            relations = [child['fabricRsCommPol']['attributes']
+                         for child in mo.get('fabricPodPGrp', {}).get('children', [])
+                         if 'fabricRsCommPol' in child]
+            if not group_dn or len(relations) != 1 or not relations[0].get('tDn'):
+                raise ValueError('Could not resolve the Management Access Policy for a Pod Policy Group.')
+            policy_dn_by_group[group_dn] = relations[0]['tDn']
+
+        if not policy_dn_by_group:
+            raise ValueError('No Pod Policy Groups were found.')
+
+        policy_dns = set(policy_dn_by_group.values())
+        if policy_dns == set(['uni/fabric/comm-default']):
+            default_https = icurl('mo', default_https_query)
+            port = get_port(default_https, 'uni/fabric/comm-default')
+            return dict((apic['topSystem']['attributes'].get('id', ''), port) for apic in apics)
+
+        pod_profiles = icurl('class', pod_profiles_query)
+        group_dn_by_pod = {}
+        for mo in pod_profiles:
+            for selector in mo.get('fabricPodP', {}).get('children', []):
+                if 'fabricPodS' not in selector:
+                    continue
+                selector = selector['fabricPodS']
+                selector_attrs = selector.get('attributes', {})
+                relations = [child['fabricRsPodPGrp']['attributes']
+                             for child in selector.get('children', [])
+                             if 'fabricRsPodPGrp' in child]
+                if len(relations) != 1 or not relations[0].get('tDn'):
+                    continue
+                group_dn = relations[0]['tDn']
+                if selector_attrs.get('type', '').upper() == 'ALL':
+                    pod_ids = set(re.findall(r'pod-(\d+)', ' '.join(
+                        apic['topSystem']['attributes'].get('dn', '') for apic in apics)))
+                else:
+                    pod_ids = set()
+                    for child in selector.get('children', []):
+                        if 'fabricPodBlk' not in child:
+                            continue
+                        block_attrs = child['fabricPodBlk'].get('attributes', {})
+                        try:
+                            start = int(block_attrs['from_'])
+                            end = int(block_attrs.get('to_', block_attrs['from_']))
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                        pod_ids.update(str(pod_id) for pod_id in range(start, end + 1))
+                for pod_id in pod_ids:
+                    if pod_id in group_dn_by_pod and group_dn_by_pod[pod_id] != group_dn:
+                        raise ValueError('Pod {} resolves to conflicting Pod Policy Groups.'.format(pod_id))
+                    group_dn_by_pod[pod_id] = group_dn
+
+        policy_dn_by_node = {}
+        for apic in apics:
+            attrs = apic['topSystem']['attributes']
+            pod_match = re.search(r'topology/pod-(\d+)/', attrs.get('dn', ''))
+            if not pod_match:
+                raise ValueError('Could not determine the pod for APIC {}.'.format(attrs.get('id', '')))
+            group_dn = group_dn_by_pod.get(pod_match.group(1))
+            if not group_dn or group_dn not in policy_dn_by_group:
+                raise ValueError('Could not resolve the Pod Policy Group for APIC {}.'.format(attrs.get('id', '')))
+            policy_dn_by_node[attrs.get('id', '')] = policy_dn_by_group[group_dn]
+
+        comm_https = icurl('class', 'commHttps.json')
+        active_policy_dns = set(policy_dn_by_node.values())
+        ports_by_policy = dict((policy_dn, get_port(comm_https, policy_dn)) for policy_dn in active_policy_dns)
+        ports_by_node = dict((node_id, ports_by_policy[policy_dn])
+                             for node_id, policy_dn in policy_dn_by_node.items())
+        return ports_by_node
+
+    def get_apic_oob_connectivity(apic_id_ip, ports_by_node):
+        data = []
+        has_error = False
+        has_failure = False
+        has_manual = False
+        oob_endpoints = []
+
+        for apic in apic_id_ip:
+            attrs = apic['topSystem']['attributes']
+            node_id = attrs.get('id', '')
+            port = ports_by_node[node_id]
+
+            if attrs.get('oobMgmtAddr', '0.0.0.0') != '0.0.0.0':
+                ip = attrs.get('oobMgmtAddr')
+            elif attrs.get('oobMgmtAddr6', '::') not in ('', '::', '0:0:0:0:0:0:0:0'):
+                ip = attrs.get('oobMgmtAddr6')
+            else:
+                data.append([node_id, 'N/A', str(port), 'OOB address is not reported by APIC inventory'])
+                has_manual = True
+                continue
+
+            oob_endpoints.append((node_id, ip, port))
+            try:
+                ip_formatted = '[{}]'.format(ip) if ':' in ip else ip
+                with open(os.devnull, 'wb') as devnull:
+                    if subprocess.call(
+                        ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull,
+                         'https://{}:{}'.format(ip_formatted, port)],
+                        stderr=devnull
+                    ) != 0:
+                        data.append([node_id, ip, str(port), "Unreachable"])
+                        has_failure = True
+            except Exception as e:
+                log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
+                data.append([node_id, ip, str(port), "Error"])
+                has_error = True
+
+        manual_commands = []
+        if len(oob_endpoints) > 1:
+            for source_node, _, _ in oob_endpoints:
+                for destination_node, destination_ip, destination_port in oob_endpoints:
+                    if source_node == destination_node:
+                        continue
+                    destination = '[{}]'.format(destination_ip) if ':' in destination_ip else destination_ip
+                    manual_commands.append(
+                        'On APIC node {}: curl --max-time 5 -k -s -o /dev/null https://{}:{}'.format(
+                            source_node, destination, destination_port
+                        )
+                    )
+            has_manual = True
+
+        return data, has_error, has_failure, has_manual, manual_commands
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING)
+
+    if cversion.older_than("6.0(2a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED)
+
+    apic_id_ip = icurl('class', 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")')
+    if not apic_id_ip:
+        return Result(result=ERROR, msg="APIC controller inventory could not be retrieved; cannot validate OOB connectivity.", headers=headers, recommended_action=recommended_action, doc_url=doc_url)
+
+    try:
+        ports_by_node = get_effective_ports(apic_id_ip)
+    except ValueError as e:
+        log.warning("Could not resolve effective HTTPS policy: %s", e)
+        return Result(result=ERROR, msg=str(e), headers=headers, recommended_action=recommended_action, doc_url=doc_url)
+
+    data, has_error, has_failure, has_manual, manual_commands = get_apic_oob_connectivity(apic_id_ip, ports_by_node)
+
+    msg = ''
+    if has_error:
+        result = ERROR
+    elif has_failure:
+        result = FAIL_UF
+    elif has_manual:
+        result = MANUAL
+
+    if manual_commands:
+        msg = (
+            'The automatic probes ran from the APIC executing this script. '
+            'Run the following commands from the indicated APIC nodes to validate '
+            'all inter-APIC OOB connectivity directions:\n{}'.format('\n'.join(manual_commands))
+        )
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+@check_wrapper(check_title="vnsRsCIfAtt Deprecation Check")
+def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
+    result = PASS
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vnsrscifatt-deprecation-check"
+
+    lif_dn_regex = r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)$"
+    ldeviflif_regex = r"^uni/tn-[^/]+/lDevIf-\[(?P<base>uni/tn-[^\]]+/lDevVip-[^\]]+)\]/lDevIfLIf-(?P<lif>[^/]+)$"
+    tn_regex = r"^uni/tn-([^/]+)/"
+
+    def device_dn_from_lif_match(lif_dn_match):
+        return "uni/tn-{}/lDevVip-{}".format(lif_dn_match.group("tenant"), lif_dn_match.group("device"))
+
+    def cif_name_from_lif_name(lif_name):
+        # LIF names may carry a numeric suffix for multi-connector graphs (e.g. "intf-cons-1"),
+        # so the cons/prov role must be matched explicitly rather than taking the last "-" token.
+        role_match = re.search(r"-(cons|prov)(?:-\d+)?$", lif_name)
+        if role_match:
+            return role_match.group(1)
+        return lif_name.rsplit("-", 1)[-1]
+
+    def build_row(lif_dn, lif_dn_match):
+        lif_name = lif_dn_match.group("lif") if lif_dn_match else ""
+        return [
+            lif_dn_match.group("tenant") if lif_dn_match else "",
+            lif_dn_match.group("device") if lif_dn_match else "",
+            lif_name,
+            cif_name_from_lif_name(lif_name),
+            lif_dn,
+        ]
+
+    def safe_extract_attrs(fn):
+        try:
+            return fn()
+        except (KeyError, TypeError, AttributeError):
+            return None
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+    if tversion.older_than("6.0(3d)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+    if not cversion:
+        return Result(result=MANUAL, msg="Current version not supplied. Skipping.", doc_url=doc_url)
+
+    post_cifatt_delete = cversion.same_as("6.0(3d)") or cversion.newer_than("6.0(3d)")
+    if post_cifatt_delete:
+        headers = ["Tenant", "Device Name", "Cluster Interface"]
+        recommended_action = "Please review the concrete interface attachments under the flagged device cluster interfaces and reattach them using the UI: Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
+    else:
+        headers = ["Tenant", "Device Name", "Cluster Interface", "Missing Concrete Interface", "vnsRsCIfAtt DN"]
+        recommended_action = "Please reattach concrete interfaces again using the UI (without deleting the existing attachment objects): Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → Select the respective interface from the drop-down list → Submit"
+
+    # ── Step 1: Collect LIF DNs referenced by applied service graphs ────────
+    # Build (contract_name, graph_name) -> set(tenants) from applied vnsGraphInst objects.
+    graph_keys = defaultdict(set)
+    for entry in icurl("class", 'vnsGraphInst.json?query-target-filter=and(eq(vnsGraphInst.configSt,"applied"))') or []:
+        attrs = safe_extract_attrs(lambda: (
+            entry["vnsGraphInst"]["attributes"]["configSt"].strip(),
+            entry["vnsGraphInst"]["attributes"]["ctrctDn"].strip(),
+            entry["vnsGraphInst"]["attributes"]["graphDn"].strip(),
+        ))
+        if attrs is None:
+            continue
+        config_st, contract_dn, graph_dn = attrs
+        if config_st != "applied":
+            continue
+        contract_tenant_match = re.search(tn_regex, contract_dn)
+        contract_match = re.search(r"/brc-([^/]+)$", contract_dn)
+        graph_match = re.search(r"/AbsGraph-([^/]+)$", graph_dn)
+        if contract_tenant_match and contract_match and graph_match:
+            graph_keys[(contract_match.group(1), graph_match.group(1))].add(contract_tenant_match.group(1))
+
+    if not graph_keys:
+        return Result(result=PASS, msg="No applied service graph instances found.", doc_url=doc_url)
+
+    lif_dns = set()
+    lif_source_tenants = {}    # lif_dn -> set(contract tenants) for implicit-object detection
+    dev_source_tenants = {}    # device-prefix DN -> set(contract tenants)
+
+    ldev_ctx_query = (
+        "vnsLDevCtx.json?rsp-prop-include=config-only"
+        "&rsp-subtree=full"
+        "&rsp-subtree-class=vnsLIfCtx,vnsRsLIfCtxToLIf"
+        "&rsp-subtree-include=required"
+    )
+    for entry in icurl("class", ldev_ctx_query) or []:
+        parsed = safe_extract_attrs(lambda: (
+            entry["vnsLDevCtx"],
+            entry["vnsLDevCtx"]["attributes"]["ctrctNameOrLbl"].strip(),
+            entry["vnsLDevCtx"]["attributes"]["graphNameOrLbl"].strip(),
+            entry["vnsLDevCtx"]["attributes"]["dn"].strip(),
+        ))
+        if parsed is None:
+            continue
+        ldev_ctx_mo, contract, graph, ctx_dn = parsed
+
+        ctx_tenant_match = re.search(tn_regex, ctx_dn)
+        ctx_tenant = ctx_tenant_match.group(1) if ctx_tenant_match else ""
+
+        if not contract or not graph:
+            continue
+        c_norm = contract.split("-", 1)[-1] if "-" in contract else contract
+        g_norm = graph[:-9] if graph.endswith("-imported") else graph
+        applied_tenants = set()
+        for c in (contract, c_norm):
+            for g in (graph, g_norm):
+                applied_tenants |= graph_keys.get((c, g), set())
+        # tenant "common" is shared fabric-wide, so a match on either side is enough;
+        # otherwise the applied graph's tenant must equal this context's tenant.
+        if not any(t == ctx_tenant or "common" in (t, ctx_tenant) for t in applied_tenants):
+            continue
+
+        # DFS through vnsLIfCtx children to collect vnsRsLIfCtxToLIf references
+        stack = [ldev_ctx_mo]
+        while stack:
+            current_ctx = stack.pop()
+            for child in current_ctx.get("children", []) or []:
+                if child.get("vnsLIfCtx"):
+                    stack.append(child["vnsLIfCtx"])
+                lif_relation = child.get("vnsRsLIfCtxToLIf")
+                if not lif_relation:
+                    continue
+                parsed = safe_extract_attrs(lambda: (lif_relation["attributes"].get("tCl", ""), lif_relation["attributes"]["tDn"].strip()))
+                if parsed is None:
+                    continue
+                target_class, target_dn = parsed
+                if not target_dn:
+                    continue
+
+                if target_class == "vnsLIf" or re.search(lif_dn_regex, target_dn):
+                    lif_dns.add(target_dn)
+                    lif_dn_match = re.search(lif_dn_regex, target_dn)
+                    if lif_dn_match and ctx_tenant:
+                        dev_dn = device_dn_from_lif_match(lif_dn_match)
+                        lif_source_tenants.setdefault(target_dn, set()).add(ctx_tenant)
+                        dev_source_tenants.setdefault(dev_dn, set()).add(ctx_tenant)
+                elif target_class == "vnsLDevIfLIf" or ("/lDevIf-[" in target_dn and "/lDevIfLIf-" in target_dn):
+                    ldeviflif_match = re.search(ldeviflif_regex, target_dn)
+                    if ldeviflif_match:
+                        converted = "{}/lIf-{}".format(ldeviflif_match.group("base"), ldeviflif_match.group("lif"))
+                        lif_dns.add(converted)
+                        if ctx_tenant:
+                            lif_source_tenants.setdefault(converted, set()).add(ctx_tenant)
+                            dev_source_tenants.setdefault(ldeviflif_match.group("base"), set()).add(ctx_tenant)
+
+    # Expand to all LIFs under the same device clusters
+    dev_prefixes = set()
+    for lif_dn in lif_dns:
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        if lif_dn_match:
+            dev_prefixes.add(device_dn_from_lif_match(lif_dn_match))
+
+    # One consolidated collection for vnsLIf + vnsRsCIfAtt + vnsRsCIfAttN.
+    vns_lif_with_rel_query = (
+        "vnsLIf.json?rsp-prop-include=config-only"
+        "&rsp-subtree=children"
+        "&rsp-subtree-class=vnsRsCIfAtt,vnsRsCIfAttN"
+    )
+    vns_lif_mos = icurl("class", vns_lif_with_rel_query) or []
+
+    vnsRsCIfAtts = []
+    vnsRsCIfAttNs = []
+    lifs_with_new_relation = set()
+
+    for entry in vns_lif_mos:
+        parsed = safe_extract_attrs(lambda: (entry["vnsLIf"], entry["vnsLIf"]["attributes"]["dn"].strip()))
+        if parsed is None:
+            continue
+        lif_mo, lif_dn = parsed
+
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        if not lif_dn_match:
+            continue
+        dev_dn = device_dn_from_lif_match(lif_dn_match)
+        if dev_dn not in dev_prefixes:
+            continue
+        lif_dns.add(lif_dn)
+        if dev_source_tenants.get(dev_dn):
+            lif_source_tenants.setdefault(lif_dn, set()).update(dev_source_tenants[dev_dn])
+
+        for child in lif_mo.get("children", []) or []:
+            if not isinstance(child, dict):
+                continue
+            if child.get("vnsRsCIfAtt"):
+                vnsRsCIfAtts.append(child)
+            if child.get("vnsRsCIfAttN"):
+                vnsRsCIfAttNs.append(child)
+                lifs_with_new_relation.add(lif_dn)
+
+    def format_deployed_result(active_result):
+        if active_result.result == FAIL_O:
+            if active_result.msg:
+                active_result.recommended_action = active_result.msg.rstrip(". ") + ". " + active_result.recommended_action
+            active_result.recommended_action = "Deployed interfaces (FAIL_O): " + active_result.recommended_action
+            active_result.msg = ""
+        return active_result
+
+    if not lif_dns:
+        return Result(result=PASS, msg="No deployed service graph interfaces found.", doc_url=doc_url)
+
+    # ── Step 2: Missing vnsRsCIfAttN under deployed LIFs (from consolidated data) ──
+
+    missing_rscifattn_rows = []
+    has_implicit_objects = False
+    for lif_dn in sorted(lif_dns):
+        if lif_dn in lifs_with_new_relation:
+            continue
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        missing_rscifattn_rows.append(build_row(lif_dn, lif_dn_match))
+        if post_cifatt_delete and lif_dn_match and lif_dn_match.group("tenant") == "common":
+            if any(t and t != "common" for t in lif_source_tenants.get(lif_dn, set())):
+                has_implicit_objects = True
+
+    # ── Step 3: Return results ───────────────────────────────────────────────
+
+    if post_cifatt_delete:
+        if missing_rscifattn_rows:
+            missing_rscifattn_rows.sort(key=lambda r: r[-1])
+            msg = "Graph is rendered with implicit objects" if has_implicit_objects else "vnsRsCIfAttN is missing under deployed L4-L7 cluster interfaces."
+            return format_deployed_result(Result(result=FAIL_O, msg=msg, headers=headers, data=[[r[0], r[1], r[2]] for r in missing_rscifattn_rows], recommended_action=recommended_action, doc_url=doc_url))
+        return Result(result=PASS, msg="All deployed service graph interfaces have vnsRsCIfAttN.", doc_url=doc_url)
+
+    # version not having new object path reuses relation objects collected above.
+
+    if missing_rscifattn_rows:
+        missing_rscifattn_rows.sort(key=lambda r: r[-1])
+        msg = "vnsLIf has neither vnsRsCIfAtt nor vnsRsCIfAttN. Missing concrete interface mapping can cause service graph inconsistency." if not vnsRsCIfAtts and not vnsRsCIfAttNs else ""
+        return format_deployed_result(Result(result=FAIL_O, msg=msg, headers=headers, data=missing_rscifattn_rows, recommended_action=recommended_action, doc_url=doc_url))
+
+    if not vnsRsCIfAtts and not vnsRsCIfAttNs:
+        return format_deployed_result(Result(result=FAIL_O, msg="Both vnsRsCIfAtt and vnsRsCIfAttN are missing. Reattach concrete interface mappings before upgrade.", headers=headers, data=[], recommended_action=recommended_action, doc_url=doc_url))
+
+    if not vnsRsCIfAtts:
+        return Result(result=PASS, msg="No user-configured vnsRsCIfAtt payload found.", doc_url=doc_url)
+
+    # Build new-object lookup sets in a single pass over vnsRsCIfAttNs
+    new_lif_dns = set(lifs_with_new_relation)   # LIF DNs covered by vnsRsCIfAttN (for coverage check)
+    new_dn_keys = set()   # New DNs rewritten as old-style keys (for consistency check)
+    for relation_mo in vnsRsCIfAttNs:
+        relation_dn = safe_extract_attrs(lambda: relation_mo["vnsRsCIfAttN"]["attributes"]["dn"].strip())
+        if relation_dn is None:
+            continue
+        if not relation_dn:
+            continue
+        lif_parent_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/rscIfAttN-\[", relation_dn)
+        if lif_parent_match:
+            new_lif_dns.add(lif_parent_match.group(1))
+        new_dn_keys.add(relation_dn.replace("/rscIfAttN-[", "/rscIfAtt-[", 1))
+
+    # Secondary coverage check: any deployed LIF not yet covered by a vnsRsCIfAttN
+    data = []
+    for lif_dn in sorted(lif_dns):
+        if lif_dn in new_lif_dns:
+            continue
+        lif_dn_match = re.search(lif_dn_regex, lif_dn)
+        data.append(build_row(lif_dn, lif_dn_match))
+    if data:
+        return format_deployed_result(Result(result=FAIL_O, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
+
+    # Consistency check: each old vnsRsCIfAtt must have a matching new vnsRsCIfAttN
+    data = []
+    for old_relation_mo in vnsRsCIfAtts:
+        old_dn = safe_extract_attrs(lambda: old_relation_mo["vnsRsCIfAtt"]["attributes"]["dn"].strip())
+        if old_dn is None:
+            continue
+        if not old_dn:
+            continue
+        old_lif_match = re.search(r"^(uni/tn-[^/]+/lDevVip-[^/]+/lIf-[^/]+)/", old_dn)
+        old_lif = old_lif_match.group(1) if old_lif_match else ""
+        if lif_dns and old_lif and old_lif not in lif_dns:
+            continue
+        if old_dn in new_dn_keys:
+            continue
+        old_relation_match = re.search(
+            r"uni/tn-(?P<tenant>[^/]+)/lDevVip-(?P<device>[^/]+)/lIf-(?P<lif>[^/]+)/"
+            r"rscIfAtt-\[.*?/cIf-\[(?P<cif>[^\]]+)\]\]",
+            old_dn,
+        )
+        data.append([
+            old_relation_match.group("tenant") if old_relation_match else "",
+            old_relation_match.group("device") if old_relation_match else "",
+            old_relation_match.group("lif") if old_relation_match else "",
+            old_relation_match.group("cif") if old_relation_match else "",
+            old_dn,
+        ])
+
+    data.sort(key=lambda r: r[-1])
+    if data:
+        result = FAIL_O
+
+    return format_deployed_result(Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
+
+
 @check_wrapper(check_title='vzAny Service Graph on Stretched VRF')
 def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
     result = PASS
@@ -7328,7 +8614,7 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
     unformatted_headers = ['Graph Instance DN', 'Issue']
     unformatted_data = []
     recommended_action = 'Migrate vzAny service graph configuration to NDO before upgrade using brownfield import. See documentation for detailed migration steps.'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-service-graph-stretched-vrf'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-service-graph-on-stretched-vrf'
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
@@ -7645,6 +8931,7 @@ class CheckManager:
         apic_vmm_inventory_sync_faults_check,
         apic_storage_inode_check,
         rtc_battery_voltage_low_check,
+        certificate_expiration_check,
 
         # Configurations
         vpc_paired_switches_check,
@@ -7656,6 +8943,7 @@ class CheckManager:
         l3out_overlapping_loopback_check,
         intersight_upgrade_status_check,
         isis_redis_metric_mpod_msite_check,
+        pod_ptep_routable_pool_overlap_check,
         bgp_golf_route_target_type_check,
         docker0_subnet_overlap_check,
         uplink_limit_check,
@@ -7708,6 +8996,12 @@ class CheckManager:
         n9k_c93180yc_fx3_switch_memory_check,
         stale_dbgacEpgSummaryTask_check,
         infravlan_overlap_access_policy_check,
+        port_tracking_active_fabric_port_check,
+        host_interface_policy_set_speed_check,
+        fx3_breakout_port_check,
+        vnsRsCIfAtt_deprecation_check,
+        service_ep_flag_bd_check,
+        apic_connected_port_vlan_override_check,
         vzany_svcgraph_stretched_vrf_check,
     ]
     ssh_checks = [
@@ -7725,6 +9019,7 @@ class CheckManager:
     cli_checks = [
         # General
         apic_database_size_check,
+        apic_oob_connectivity_check,
 
         # Bugs
         apic_ca_cert_validation,
@@ -7801,6 +9096,19 @@ class CheckManager:
             check_func(initialize_check=self.initialize_check)
 
     def run_checks(self, common_data):
+        common_data = dict(common_data)
+        if (
+            certificate_expiration_check in self.check_funcs
+            and common_data.get("cversion")
+            and common_data["cversion"].older_than("6.1(5e)")
+            and common_data.get("username")
+            and common_data.get("password")
+        ):
+            common_data["factory_certificate_status"] = collect_factory_certificate_status(
+                common_data["username"],
+                common_data["password"],
+                common_data.get("fabric_nodes"),
+            )
         tm = ThreadManager(
             funcs=self.check_funcs,
             common_kwargs=dict({"finalize_check": self.finalize_check}, **common_data),

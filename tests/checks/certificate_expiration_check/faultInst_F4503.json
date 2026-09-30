@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4503",
+                "severity": "critical",
+                "lc": "raised",
+                "descr": "TP Certificate THD_CA expired",
+                "dn": "uni/userext/pkiext/tp-THD_CA/fault-F4503"
+            }
+        }
+    }
+]

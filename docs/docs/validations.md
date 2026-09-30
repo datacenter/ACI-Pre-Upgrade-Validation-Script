@@ -88,6 +88,7 @@ Items                                         | Faults         | This Script    
 [VMM Inventory Partially Synced][f21]         | F0132: comp-ctrlr-operational-issues | :white_check_mark: | :no_entry_sign:
 [APIC Storage Inode Usage][f22]               | F4388: 75% - 85% -warning<br>F4389: 85% - 90% -major<br>F4390: 90% or more -critical | :white_check_mark: | :no_entry_sign:
 [Switch RTC Battery Voltage][f23]              | F2421: RTC battery voltage is low | :white_check_mark: | :no_entry_sign:
+[Certificate Expiration Check][f24]            | F4501/F4502: KeyRing expiring/expired<br>F4617/F4503: TP expiring/expired<br>F3081/F3082: SAML expiring/expired<br>F4752/F4753: Factory expiring/expired | :white_check_mark: | :no_entry_sign:
 
 [f1]: #apic-disk-space-usage
 [f2]: #standby-apic-disk-space-usage
@@ -112,6 +113,7 @@ Items                                         | Faults         | This Script    
 [f21]: #vmm-inventory-partially-synced
 [f22]: #apic-storage-inode-usage
 [f23]: #switch-rtc-battery-voltage
+[f24]: #certificate-expiration-check
 
 ### Configuration Checks
 
@@ -126,6 +128,7 @@ Items                                         | Faults         | This Script    
 [L3Out Route Map Match Rule with missing-target][c7]  | :white_check_mark: | :no_entry_sign:
 [L3Out Loopback IP Overlap with L3Out Interfaces][c8] | :white_check_mark: | :no_entry_sign:
 [ISIS Redistribution Metric for MPod/Msite][c9]       | :white_check_mark: | :no_entry_sign:
+[POD PTEP Overlap with External Routable TEP Pool][c27] | :white_check_mark: | :white_check_mark:
 [BGP Route-target Type for GOLF over L2EVPN][c10]     | :white_check_mark: | :no_entry_sign:
 [APIC Container Bridge IP Overlap with APIC TEP][c11] | :white_check_mark: | :no_entry_sign:
 [Per-Leaf Fabric Uplink Scale Validation][c12]        | :white_check_mark: | :no_entry_sign:
@@ -142,6 +145,7 @@ Items                                         | Faults         | This Script    
 [AVE End-of-life][c23]                                | :white_check_mark: | :no_entry_sign:
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 [Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
+[Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -168,6 +172,8 @@ Items                                         | Faults         | This Script    
 [c23]: #ave-end-of-life
 [c24]: #shared-service-with-vzany-consumer
 [c25]: #preferred-group-shared-service-provider
+[c26]: #host-interface-policy-set-to-auto
+[c27]: #pod-ptep-overlap-with-external-routable-tep-pool
 
 ### Defect Condition Checks
 
@@ -211,7 +217,13 @@ Items                                           | Defect       | This Script    
 [N9K-C93180YC-FX3 Switch Memory Less Than 32GB][d36] | CSCwm42741   | :white_check_mark: | :no_entry_sign:
 [Stale dbgacEpgSummaryTask Objects][d37]         | CSCwt69100   | :white_check_mark: | :no_entry_sign:
 [InfraVLAN Overlap in Access Policy VLAN Pools][d38] | CSCwt58626   | :white_check_mark: | :no_entry_sign:
-[vzany_svcgraph_stretched_vrf_check][d39]       | CSCwt14573   | :white_check_mark: | :no_entry_sign:
+[Port Tracking Active Fabric Port Zero][d39]    | CSCwp91797   | :white_check_mark: | :no_entry_sign:
+[FX3 Breakout Port Transceiver and Fec mode Compatibility Check][d40] |  CSCww67193  | :white_check_mark: | :no_entry_sign:
+[APIC OOB Connectivity][d41]                    | CSCwu91693   | :white_check_mark: | :no_entry_sign:
+[vnsRsCIfAtt Deprecation Check][d42]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
+[Service-EP Flag in BD without PBR][d43]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
+[APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
+[vzAny Service Graph on Stretched VRF][d45]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -251,7 +263,13 @@ Items                                           | Defect       | This Script    
 [d36]: #n9k-c93180yc-fx3-switch-memory-less-than-32gb
 [d37]: #stale-dbgacepgsummarytask-objects
 [d38]: #infravlan-overlap-access-policy-check
-[d39]: #vzany-service-graph-stretched-vrf
+[d39]: #port-tracking-active-fabric-port-zero
+[d40]: #fx3-breakout-port-transceiver-and-fec-mode-compatibility-check
+[d41]: #apic-oob-connectivity
+[d42]: #vnsrscifatt-deprecation-check
+[d43]: #service-ep-flag-in-bd-without-pbr
+[d44]: #apic-connected-port-vlan-override
+[d45]: #vzany-service-graph-on-stretched-vrf
 
 ## General Check Details
 
@@ -1484,6 +1502,8 @@ This fault also occurs when the MTS buffer memory usage increases beyond its thr
 
 The check calculates utilization from the available and used values reported by each fault. Both APIC `changeSet` formats are supported.
 
+For F1820 on `/mnt/ifc/log`, the check ignores the fault when its reported utilization is below 80%. CSCwc67099 can raise this fault below the intended threshold. At 80% or above, the fault blocks the upgrade. If utilization cannot be calculated, the fault remains in the output so its disk usage can be verified manually. Other F1820 partitions and F1821/F1822 faults retain their fault-based behavior.
+
 Recommended Action:
 
 1. Check `df -h` output on affected node to see the usage of the partition.
@@ -1600,6 +1620,106 @@ To recover from this fault, try the following action
 This check detects active F2421 equipment diagnostic faults whose reason is `The RTC battery voltage is low`. The RTC battery maintains the switch system clock while the switch is powered off. If the battery voltage is low, a power cycle during an upgrade can reset the clock and prevent certificate validation, which can stop the switch from rejoining the fabric.
 
 The RTC battery should be replaced before upgrading or power cycling an affected switch. Contact Cisco TAC to coordinate replacement and confirm that the fault has cleared.
+
+
+### Certificate Expiration Check
+
+ACI uses various X.509 certificates for security and authentication purposes. If these certificates expire or are about to expire, it can cause service disruptions or failures. The fabric will raise different faults depending on the certificate type.
+
+**Certificates Approaching Expiry:**
+
+* **F4501**: KeyRing X.509 Certificate expiring - This fault occurs when a custom KeyRing X.509 Certificate is going to expire in one month.
+
+* **F3081**: SAML X.509 Certificate expiring - This fault occurs when the SAML X.509 Certificate is going to expire in one month.
+
+* **F4617**: TP X.509 Certificate expiring - This fault occurs when a Trust Point X.509 Certificate is expiring.
+
+* **F4752**: Factory X.509 Certificate expiring - This fault occurs when the factory Certificate is expiring.
+
+
+**Expired Certificates:**
+
+* **F4502**: KeyRing X.509 Certificate expired - This fault occurs when a custom KeyRing X.509 Certificate has expired.
+
+* **F4503**: TP X.509 Certificate expired - This fault occurs when a Trust Point X.509 Certificate has expired.
+
+* **F3082**: SAML X.509 Certificate expired - This fault occurs when the SAML Encryption X.509 Certificate has expired.
+
+* **F4753**: Factory X.509 Certificate expired - This fault occurs when the factory Certificate has expired.
+
+
+**Recommended Actions:**
+
+Any certificate fault listed above is upgrade-blocking whenever its lifecycle contains `raised`. This includes compound lifecycle values such as `raised,soaking`; `soaking` by itself does not indicate a live fault. Resolve every live certificate fault before starting the upgrade.
+
+* For expiring certificates (F4501, F3081, F4617, F4752): Renew the certificate(s) before they expire to avoid service disruption.
+
+* For expired certificates (F4502, F4503, F3082, F4753): Renew the certificate(s) immediately to restore functionality.
+
+#### Manually verify factory certificates in API-only mode
+
+On APIC releases earlier than 6.1(5e), the F4752 and F4753 factory-certificate faults are not available. The script normally connects to each APIC over SSH and checks the factory certificate directly. When the script is run with `--api-only`, SSH credentials are unavailable, so the check reports `MANUAL` instead of treating the unevaluated certificate as a pass.
+
+If the check reports that no APIC controllers were found, verify the APIC cluster and node inventory health, then rerun the validation. If the inventory cannot be restored, manually identify and check every APIC using the procedure below; do not treat the result as a pass.
+
+To verify the factory certificate manually:
+
+1. Connect to each APIC controller over SSH. Every controller must be checked independently.
+2. Run the following commands:
+
+    ```bash
+    date -u
+    acidiag verifyapic
+    ```
+
+3. In the `Manufacturing certificate details` section, locate the `notAfter` value. For example:
+
+    ```text
+    openssl_check: Manufacturing certificate details
+    notAfter=Aug  1 06:57:40 2026 GMT
+    ```
+
+4. Compare `notAfter` with the UTC date reported by the same APIC:
+
+    * If `notAfter` has passed, the factory certificate is expired. Renew it immediately before the upgrade.
+    * If `notAfter` is within the next 30 days, the factory certificate is expiring. Renew it before starting the upgrade.
+    * If `notAfter` is more than 30 days away, the factory certificate is valid for this check.
+
+5. Repeat the procedure on every APIC. A valid certificate on one controller does not validate the other controllers.
+
+If `acidiag verifyapic` fails, or its output does not contain a readable `notAfter` value, consider the factory certificate unverified. Re-run the script with SSH credentials or resolve the command/output issue before the upgrade; do not treat the result as a pass.
+
+If a certificate requiring action is found while another APIC cannot be verified, the overall result remains `FAIL - OUTAGE WARNING!!`. Resolve the confirmed certificate condition and manually verify every APIC that reported an error.
+
+!!! example "Fault Example (F4502: Expired KeyRing Certificate)"
+    The following shows an example of an expired KeyRing certificate:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4502"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F4502
+    cause            : cert-expired
+    descr            : KeyRing Certificate THD_KEYRING expired
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4502
+    lc               : raised
+    rule             : pki-key-ring-custom-key-ring-expired
+    ```
+
+!!! example "Fault Example (F4501: Expiring KeyRing Certificate)"
+    The following shows an example of a KeyRing certificate expiring in one month:
+    ```
+    admin@apic1:~> moquery -c faultInst -f 'fault.Inst.code=="F4501"'
+    Total Objects shown: 1
+
+    # fault.Inst
+    code             : F4501
+    cause            : cert-expiring
+    descr            : KeyRing Certificate THD_KEYRING expiring in one month
+    dn               : uni/userext/pkiext/keyring-THD_KEYRING/fault-F4501
+    lc               : raised
+    rule             : pki-key-ring-custom-key-ring-expiring
+    ```
 
 
 ## Configuration Check Details
@@ -2050,7 +2170,7 @@ Note that the overlap may happen across different L3Outs. For example, the loopb
 
 
 
-### ISIS Redistribution Metric for MPod/Msite      
+### ISIS Redistribution Metric for MPod/Msite
 
 ISIS Redistribution Metric is used when a spine redistributes routes from another pod or site into local underlay network (ISIS). If this metric is not set to less than 63, traffic disruption may occur with an upgrade of spine swithces.
 
@@ -2065,7 +2185,16 @@ This script checks the ISIS Redistribution Metric via `redistribMetric` of an ob
     ```
 
 
-### BGP Route-target Type for GOLF over L2EVPN     
+### POD PTEP Overlap with External Routable TEP Pool
+
+A Multi-Pod data plane TEP (POD PTEP) can conflict with an address that APIC allocates dynamically from an external routable TEP pool. This can assign the same address to a remote leaf routable TEP and a POD PTEP, causing traffic loss.
+
+The check reads the `fvIp.addr` children of `fvPodConnP` and compares each POD PTEP with every `fabricExtRoutablePodSubnet.pool`. The `reserveAddressCount` addresses at the beginning of a pool are excluded from dynamic allocation and are valid locations for a POD PTEP. For example, with pool `192.30.30.0/24` and a reserved count of 3, `.1` through `.3` are reserved; `.4` and later addresses in the pool fail this check. With a reserved count of 0, any POD PTEP inside the pool fails.
+
+Move a conflicting POD PTEP outside the unreserved pool range, or recreate the pool with enough reserved addresses to include it. Cisco's [external routable subnet guide][85] describes how to change the subnet and its reservation.
+
+
+### BGP Route-target Type for GOLF over L2EVPN
 
 Prior to upgrading to release 4.2 or later, if you are using the ACI GOLF feature with **Explicit Route Targets**, you must ensure that all **Explicit Route Targets** point to a route-target policy explicitly configured with a `route-target` community type instead of `extended` (CSCvm23100).
 
@@ -2329,6 +2458,15 @@ Before 6.0(1g), any consumer class in a materialized cross-VRF relationship can 
 Starting with 6.0(1g), ordinary EPG-to-EPG shared service is allowed. The unsupported condition remains only when the Preferred Group provider has a materialized relationship with an L3Out or `vzAny` consumer in another VRF. Same-VRF L3Out and `vzAny` relationships are not reported. Starting with 6.1(3f), this condition may be reported through F4684.
 
 Before upgrading, use the provider and consumer DNs shown in the result to remove the provider from the Preferred Group, stop it from providing the shared-service contract, or remove the unsupported relationship. See the [ACI Policy Model][78] for additional background.
+
+
+### Host interface policy set to auto
+As detailed in the [Cisco APIC Basic Configuration Guide][79], for **Interface Speed**, use the default value, `Inherit`.
+With this value, Cisco APIC determines the interface speed based on the transceiver installed in the switch port.
+
+In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
+Changing the speed to "inherit" resolves this situation, which is also a best practice.
+Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
 
 
 ## Defect Check Details
@@ -2635,7 +2773,7 @@ Line Card
 
  - N9K-X9732C-EX
 
-If alerted, review the serial numbers reported by the check against [FN64251][39]. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
+If alerted, enter the serial numbers reported by the check in the [Field Notice Serial Number Validator][86] to check for applicable Field Notices, including FN64251. Review [FN64251][39] for details. Products shipped after December 5, 2016 are not affected and can be ignored. For products shipped on or before December 5, 2016, or with an unknown ship date, contact Cisco TAC with the reported serial numbers to confirm whether they are affected.
 
 The Field Notice identifies V01 as possibly affected, but the VID is not conclusive because some unaffected products also use V01. The VID of a working module can be obtained with the `show inventory` command; a failed module will not be recognized.
 
@@ -2659,7 +2797,7 @@ This check will count the number of relevant PBR policies across the entire ACI 
 
 ### Standby Sup Image Sync
 
-Due to [CSCwa44220][48], the Standy Supervisor Modules within Modular Chassis will be unable to successfully install switch images greater than 2 Gigs.
+Due to [CSCwa44220][48], the Standby Supervisor Modules within Modular Chassis running an affected switch release will be unable to successfully install switch images greater than 2 Gigs. The fix is present in 4.2(7t) and 5.2(4d) and later releases in those trains.
 
 If this alert is flagged then plan for an interim upgrade hop to a fixed version that is less than 2 Gigs, for example to 5.2(8i).
 
@@ -2711,7 +2849,6 @@ In ACI, there are internal objects which track the underlying transactions which
 Due to [CSCwp95515][59], upgrading to an affected version while having any `configpushShardCont` objects with a non-zero `headTx` and `tailTx: 0` can result in the Policydist process crashing if config is pushed to a PM shard matching the `dn` of the identified `configpushShardCont`.
 
 If any instances of `configpushShardCont` are flagged by this script, Cisco TAC must be contacted to identify and resolve the underlying issue before performing the upgrade.
-
 
 ### Auto Firmware Update on Switch Discovery
 
@@ -2830,9 +2967,64 @@ Due to the bug [CSCwt58626][77] , If Apic upgrade planned for target versions 6.
 To avoid this issue, modify the user VLAN pool ranges so that the InfraVLAN does not overlap with any configured block, or select a non-impacted fixed version. After upgrading to a fixed version this fault and Restriction have been removed.
 
 
+### Port Tracking Active Fabric Port Zero
+
+Due to [CSCwp91797][80], if port tracking is enabled and the number of active fabric ports that triggers port tracking (`minLink`) is zero, vPC port-channel member ports may remain down after a switch reload, upgrade, or boot. The affected physical links remain in the `initializing` state and MTS buffers may remain stuck on the leaf.
+
+The confirmed affected target releases checked by this validation are 6.0(9d) and 6.1(3f). Only fabrics containing vPC nodes are susceptible.
+
+Upgrade to a fixed release when possible. If an affected release must be used, either disable Port Tracking before upgrading each leaf, or change `minLink` from 0 to 1 only after verifying that every affected leaf has more than two operational fabric uplinks. If the issue has already occurred, disable Port Tracking, reload the affected switch, and then re-enable Port Tracking.
+
+
+### FX3 Breakout Port Transceiver and Fec mode Compatibility Check
+
+Due to bug [CSCww67193][81], the following issue occurs on YC-FX3/TC-FX3 leaf switches, downlink converted ports 49-52 support 4x breakout. If these ports are populated with a CISCO-INNOLIGHT QSFP-100G-SR4 transceiver, the interface is administratively up (`adminSt: up`), and FEC is enabled on that interface, the first breakout sub-interface (`brkoutport-1`) may fail to come back up after the leaf reboots during the upgrade.
+
+This affects upgrades from a current version older than 5.2(8h) to a target version newer than 5.3(1a) that is either older than 6.1(6a), or exactly 6.2(1g).
+
+The script reports the first breakout sub-interface (`brkoutport-1`) of the affected port. Before upgrading, disable FEC on the affected interface(s) on both sides to keep the link up or Contact Cisco TAC for guidance.
+
+
+### APIC OOB Connectivity
+
+Starting from 6.0(2), APIC firmware upgrades are triggered via an HTTPS POST request (bootx) sent to each peer APIC over its out-of-band (OOB) management interface. Due to [CSCwu91693][82], if OOB connectivity to a peer APIC is unavailable at the time this trigger is sent, that APIC does not receive it and silently fails to start the upgrade, while the remaining reachable APICs proceed normally. This results in a partially upgraded cluster with no explicit error raised at the time of failure.
+
+This check applies when the current APIC version is 6.0(2a) or later. It resolves the effective Management Access Policy for the Pod Policy Group assigned to each APIC's pod, then uses that policy's `commHttps` port. If every Pod Policy Group resolves to the default Management Access Policy, the script queries only the default `commHttps` object. It looks up Pod Profiles only when a custom policy is in use.
+
+The script runs on one APIC, so it can automatically validate only connections originating from that APIC. It attempts an HTTPS connection to every APIC with an OOB address on its effective port, using a 5-second timeout. For a multi-APIC cluster, it reports `MANUAL CHECK REQUIRED` and supplies `curl` commands for every inter-APIC source-to-destination direction; run each command on the indicated APIC node. If an APIC OOB address is not reported by the APIC inventory, the check also reports `MANUAL CHECK REQUIRED` rather than treating it as reachable. An unreachable automatic probe is reported as an upgrade-failure risk; a probe execution error is reported as an error.
+
+### vnsRsCIfAtt Deprecation Check
+
+Due to [CSCwr51759][83], after upgrading ACI to 6.0(3d) or later release, one or more L4-L7 service graph device cluster interfaces are missing their concrete interface attachment, causing the service graph to fail to render and resulting in a traffic outage for PBR/L4-L7 redirected traffic.
+
+This occurs when a deployed service graph's cluster interface (vnsLIf) concrete interface mapping is defined using the deprecated relation object vnsRsCIfAtt, and the object was never migrated to its replacement, vnsRsCIfAttN, prior to upgrading to 6.0(3d) or later.
+Because vnsRsCIfAtt is deleted during the upgrade to 6.0(3d)+, any cluster interface still relying solely on it loses its concrete interface mapping, and no equivalent vnsRsCIfAttN object exists to take its place.
+
+The check evaluates only graph instances whose `vnsGraphInst.configSt` is `applied`. It returns `FAIL - OUTAGE WARNING!!` for affected interfaces in those graphs and excludes configured-only, non-applied graph contexts. When no applied graph instances are found, the check returns `PASS`. For outage findings, the status line has no additional message; condition details and guidance appear under `Recommended Action`.
+
+Before upgrading (current version older than 6.0(3d)): Reattach the concrete interface via the APIC GUI without deleting the existing attachment object — Tenant → Services → L4-L7 → Devices → Cluster Interface → Concrete Interface → + → select the interface → Submit. This creates the new vnsRsCIfAttN object alongside the old one so the mapping survives the upgrade.
+After upgrading (current version 6.0(3d) or later), verify all concrete device interface attachments to ensure there are none missing, then reattach the concrete interface using the same UI path to recreate the missing vnsRsCIfAttN object.
+
+Starting with ACI 6.0(3d), the object model for L4-L7 service graph concrete interface attachment changed: the legacy relation object vnsRsCIfAtt (under vnsLIf) was deprecated in favor of vnsRsCIfAttN. vnsRsCIfAtt objects are removed by the switchover/upgrade to 6.0(3d) or later, but this removal is not paired with an automatic creation of the equivalent vnsRsCIfAttN object for cluster interfaces that had never been re-attached under the new object.
+
+### Service-EP Flag in BD without PBR
+
+On affected releases, [CSCwi17652][84] may enable `service-ep` for a service device that does not use policy based redirect (PBR). Because the flag affects endpoint learning, upgrading to a fixed release may change traffic behavior when the unintended flag is removed.
+
+For upgrades to 6.0(8e), 6.1(1f), or later fixed releases, this check identifies flagged service EPGs whose deployed service graph has no PBR redirect policy. It reports the leaf, service EPG, bridge domain, and graph connector for review with Cisco TAC before upgrading. A finding indicates a possible behavior change, not a certain outage. If the graph cannot be classified, the check requests manual review.
+
+
+### APIC Connected Port VLAN Override
+
+[CSCwn64461][87] concerns user VLAN configuration overriding the InfraVLAN on a leaf port connected to an APIC. This validation correlates live APIC-to-leaf LLDP adjacencies with tenant static EPG path attachments. It reports the configured VLAN, the fabric InfraVLAN, and the configuration DN for each attachment found on an APIC-connected port.
+
+This is a configuration validation for CSCwn64461, not the `F0467` `port-configured-for-apic` fault validation. It can identify the configuration while the fault is absent. Remove the listed tenant static EPG path attachment before the upgrade.
+
+This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
+
 ### vzAny Service Graph on Stretched VRF
 
-Due to [CSCwn95571][80], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
+Due to [CSCwn95571][89], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
 
 The validation uses the instantiated `vnsEPgDef` object's DN to check whether a `vnsEpgDefXlate` translation entry exists for the service graph's consumer leg. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail. If an otherwise qualifying graph has no consumer `vnsEPgDef`, or has more than one and the first leg cannot be identified unambiguously, the check reports ERROR rather than treating it as a pass.
 
@@ -2854,7 +3046,7 @@ The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant
 !!! note
     This applies to PBR service graphs (policy-based redirect) used with vzAny on stretched VRFs. Non-PBR service graphs are not affected and are not flagged.
 
-Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][79].
+Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][88].
 
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
@@ -2935,5 +3127,14 @@ Recommended action: Migrate the vzAny service graph configuration to NDO before 
 [76]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt38698
 [77]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt58626
 [78]: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/5-x/aci-fundamentals/cisco-aci-fundamentals-50x/m_policy-model.html#concept_tds_vcc_fy
-[79]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
-[80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
+[79]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-62x/provisioning-core-aci-fabric-services-62x.html#Cisco_Task_in_List_GUI.dita_45856d2e-8ddd-41bd-93f7-91207aea2061
+[80]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwp91797
+[81]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCww67193
+[82]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwu91693
+[83]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwr51759
+[84]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwi17652
+[85]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
+[86]: https://cs.co/FNSNV
+[87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
+[88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
+[89]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
