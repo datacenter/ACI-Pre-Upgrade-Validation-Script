@@ -140,7 +140,6 @@ Items                                         | Faults         | This Script    
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16] | :white_check_mark: | :no_entry_sign:
 [CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:
 [Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:
-[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:
 [HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2)
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
@@ -148,6 +147,7 @@ Items                                         | Faults         | This Script    
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 [Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
 [Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
+[Atomic Counter Configuration][c28]                   | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -167,7 +167,6 @@ Items                                         | Faults         | This Script    
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 [c17]: #cloudsec-encryption-deprecated
 [c18]: #out-of-service-ports
-[c19]: #tep-to-tep-atomic-counters-scalability
 [c20]: #https-request-throttle-rate
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
@@ -176,6 +175,7 @@ Items                                         | Faults         | This Script    
 [c25]: #preferred-group-shared-service-provider
 [c26]: #host-interface-policy-set-to-auto
 [c27]: #pod-ptep-overlap-with-external-routable-tep-pool
+[c28]: #atomic-counter-configuration
 
 ### Defect Condition Checks
 
@@ -2349,14 +2349,6 @@ While generally not recommended, there are policy bypass methods to bring up por
 A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
 
 
-### TEP-to-TEP atomic counters Scalability
-
-As documented in the [Verified Scalability Guide for Cisco APIC][38], ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policy `dbgAcPath`.
-Exceeding any scalability number documented in this guide can cause unexpected issues. In this specific scenario, exceeding the atomic counter limit has been seen to create issues with collecting techsupports and configuration exports.
-
-The script validates the count of `dbgAcPath` is less than the documented supported number. 
-
-
 ### HTTPS Request Throttle Rate
 
 ACI supports **HTTPS Request Throttle** via NGINX rate limit to prevent external API clients from consuming too much resources on APICs. This feature, which is disabled by default, is located at `Fabric > Fabric Policies > Pod > Management Access > default (or name you configured)` in the APIC GUI.
@@ -2476,6 +2468,17 @@ With this value, Cisco APIC determines the interface speed based on the transcei
 In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
 Changing the speed to "inherit" resolves this situation, which is also a best practice.
 Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
+
+
+### Atomic Counter Configuration
+
+This check evaluates atomic counter configuration in the following order:
+
+1. **Deprecation:** [Cisco states that atomic counters are no longer supported beginning with APIC 6.1(2)][90]. For a target of 6.1(2) or later, the check counts tenant atomic counter policies (`dbgacTenantSpaceCmn`) and TEP-to-TEP paths (`dbgAcPathA`). The built-in `uni/tn-common/acIpToIp-default` policy is excluded. If either count is nonzero, the check reports that cleanup is mandatory before upgrade and does not run the other two validations. The queries return counts rather than full object lists.
+2. **TEP-to-TEP scalability:** Otherwise, the check counts `dbgAcPath`. The [Verified Scalability Guide for Cisco APIC][38] documents a maximum of 1600 TEP-to-TEP atomic counter policies. A count above 1600 is reported. Exceeding this limit has been seen to interfere with tech-support collection and configuration exports.
+3. **Configuration rollback review:** The check also counts `dbgacEpToEp` policies. A nonzero count prompts manual review of endpoint references across tenants and VRFs before the maintenance window because affected configurations can prevent a successful rollback. Presence alone does not establish that a policy has unsupported references or that rollback will fail. The affected APIC release is not yet established.
+
+When a target version is not supplied, the deprecation gate cannot be evaluated. The scalability and rollback checks still run, and the result calls out the missing target version.
 
 
 ## Defect Check Details
@@ -3128,3 +3131,4 @@ The check reads only what ACI sees from its neighbors. It cannot confirm the IPN
 [87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
 [88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
 [89]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/mixed-os-support.html
+[90]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/aci-fundamentals/cisco-aci-fundamentals-61x/troubleshooting-61x.html
