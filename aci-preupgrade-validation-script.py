@@ -9255,6 +9255,11 @@ def main(_args=None):
 
     cm = CheckManager(args.api_only, args.debug_function, args.timeout, max_threads=args.max_threads)
 
+    if args.debug_function and cm.total_checks == 0:
+        raise ValueError(
+            "Unknown or unavailable debug function: {}".format(args.debug_function)
+        )
+
     if args.total_checks:
         print("Total Number of Checks: {}".format(cm.total_checks))
         return
