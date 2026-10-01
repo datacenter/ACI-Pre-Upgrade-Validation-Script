@@ -155,6 +155,13 @@ CIMC_RELEASE_NOTE_SUPPORT = {
 # END GENERATED CIMC RELEASE NOTE SUPPORT
 # regex constants
 node_regex = r'topology/pod-(?P<pod>\d+)/node-(?P<node>\d+)'
+NXOS_IPN_UNPATCHED_RELEASES = frozenset((
+    '10.5(3)', '10.5(3e)', '10.5(3o)', '10.5(3p)', '10.5(3s)',
+    '10.5(3t)', '10.5(4)', '10.5(5)', '10.6(1)', '10.6(1s)',
+    '10.6(2)', '10.6(2n)', '10.6(2s)',
+))
+NXOS_SOFTWARE_REGEX = re.compile(r'Cisco Nexus Operating System \(NX-OS\) Software', re.I)
+NXOS_VERSION_REGEX = re.compile(r'\b\d+\.\d+\(\d+[a-z]?\)', re.I)
 port_regex = node_regex + r'/sys/phys-\[(?P<port>.+)\]'
 path_regex = (
     r"topology/pod-(?P<pod>\d+)/"
@@ -2019,6 +2026,93 @@ def switch_status_check(fabric_nodes, **kwargs):
     elif not data:
         result = PASS
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
+
+
+@check_wrapper(check_title="APIC Upgrade in Mixed-Version Fabric")
+def apic_upgrade_mixed_version_check(cversion, tversion, fabric_nodes, **kwargs):
+    """Avoid starting another APIC upgrade while active switches are on another release."""
+    doc_url = ('https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/'
+               'validations/#apic-upgrade-in-mixed-version-fabric')
+    headers = ['Pod', 'Node', 'Name', 'Role', 'Current Version', 'APIC Version', 'Reason']
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+    if not cversion:
+        return Result(result=MANUAL, msg='Current APIC version not found.', doc_url=doc_url)
+    if not tversion.newer_than(cversion):
+        return Result(result=NA, msg='No APIC upgrade is planned.', doc_url=doc_url)
+
+    apic_data = []
+    switch_data = []
+    unknown_data = []
+    active_switches = 0
+    newer_switch_found = False
+
+    for node in fabric_nodes:
+        attr = node['fabricNode']['attributes']
+        role = attr.get('role', '')
+        if role not in ('controller', 'leaf', 'spine'):
+            continue
+        if role != 'controller' and attr.get('fabricSt') != 'active':
+            continue
+
+        dn = attr.get('dn', '')
+        match = re.search(node_regex, dn)
+        pod = match.group('pod') if match else '-'
+        node_id = attr.get('id', '-')
+        row = [pod, node_id, attr.get('name', '-'), role,
+               attr.get('version', ''), str(cversion), '']
+
+        if role == 'controller':
+            if row[4] and not AciVersion(row[4]).same_as(cversion):
+                row[6] = 'APICs are on different versions'
+                apic_data.append(row)
+            continue
+
+        active_switches += 1
+        if not row[4]:
+            row[6] = 'Switch version not found'
+            unknown_data.append(row)
+        else:
+            switch_version = AciVersion(row[4])
+            if not switch_version.same_as(cversion):
+                if switch_version.newer_than(cversion):
+                    row[6] = 'Switch newer than APIC'
+                    newer_switch_found = True
+                else:
+                    row[6] = 'Switch differs from APIC'
+                switch_data.append(row)
+
+    if apic_data:
+        return Result(
+            result=FAIL_UF, msg='APICs are running different versions.',
+            headers=headers, data=sorted(apic_data),
+            recommended_action='Complete or resolve the APIC cluster upgrade before starting another upgrade.',
+            doc_url=doc_url)
+
+    if switch_data:
+        if newer_switch_found:
+            msg = 'A switch is newer than the APIC, which violates mixed-version conditions.'
+        elif (int(tversion.major1), int(tversion.major2), int(tversion.maint)) < (6, 2, 1):
+            msg = 'APIC upgrade is unsupported while the fabric is in mixed-version mode.'
+        else:
+            msg = ('Enhanced Mixed Version Support may permit the current state, '
+                   'but another APIC upgrade can introduce a third version.')
+        return Result(
+            result=FAIL_UF, msg=msg, headers=headers,
+            data=sorted(switch_data + unknown_data),
+            recommended_action=('Align all active switches with the current APIC release '
+                                'before upgrading the APIC cluster.'),
+            doc_url=doc_url)
+
+    if not active_switches or unknown_data:
+        msg = ('No active leaf or spine found.' if not active_switches else
+               'One or more active switch versions could not be determined.')
+        return Result(result=MANUAL, msg=msg, headers=headers, data=sorted(unknown_data),
+                      recommended_action='Verify active switch versions before upgrading the APIC cluster.',
+                      doc_url=doc_url)
+
+    return Result(result=PASS, msg='All active switches match the APIC release.', doc_url=doc_url)
 
 
 @check_wrapper(check_title="Firmware/Maintenance Groups when crossing 4.0 Release")
@@ -3987,13 +4081,17 @@ def vpc_paired_switches_check(vpc_node_ids, fabric_nodes, **kwargs):
 
 @check_wrapper(check_title="APIC CIMC Compatibility")
 def cimc_compatibilty_check(tversion, cversion, **kwargs):
-    result = FAIL_UF
+    result = PASS
     headers = ["Node ID", "Model", "Current CIMC version", "Catalog Recommended CIMC Version", "Warning"]
     data = []
     recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
 
-    m4l4_model_affected_version_found = False
+    cimc_upgrade_required = False
+    cimc_upgrade_order_required = False
+    ordinary_cimc_upgrade_required = False
+    cimc_upgrade_optional = False
+    current_compatibility_review = False
 
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
@@ -4004,19 +4102,16 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     model = "apic" + apic_model.split('-')[2].lower()
                     current_cimc = eqptCh['eqptCh']['attributes']['cimcVersion']
                    
-                    #defect CSCwo74485 cimc compatibility check for M4/L4 model.
-                    if model in ("apicm4", "apicl4") and cversion:
-                        is_affected_apic_version = (
+                    # CSCwo74485 affects CIMC upgrades on M4/L4 APICs running these releases.
+                    affected_cimc_upgrade = (
+                        model in ("apicm4", "apicl4") and cversion
+                        and not is_firstver_gt_secondver(current_cimc, "4.3(5)")
+                        and (
                             (cversion.major1 == "5" and cversion.major2 == "3")
                             or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
                             or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
                         )
-                        if is_affected_apic_version:
-                            if not is_firstver_gt_secondver(current_cimc, "4.3(5)"):
-                                m4l4_model_affected_version_found = True
-                                nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                                data.append([nodeid, apic_model, current_cimc, "-", "-"])
-                                continue
+                    )
 
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
@@ -4035,12 +4130,67 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                         if not release_note_supported and not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
                             data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
+                            cimc_upgrade_required = True
+                            if affected_cimc_upgrade:
+                                cimc_upgrade_order_required = True
+                            else:
+                                ordinary_cimc_upgrade_required = True
+                        elif affected_cimc_upgrade:
+                            # A target-compatible CIMC needs no upgrade. Verify that it is
+                            # also supported on the currently running APIC release.
+                            current_compat_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
+                                                "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
+                            current_compat_mo = icurl('mo', current_compat_dn)
+                            if not current_compat_mo:
+                                current_compatibility_review = True
+                                nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
+                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
+                                             "Current APIC/CIMC compatibility information unavailable."])
+                                continue
+                            current_recommended_cimc = current_compat_mo[0]['compatRsSuppHw']['attributes']['cimcVersion']
+                            current_release_note_supported = current_cimc in CIMC_RELEASE_NOTE_SUPPORT.get(
+                                (cversion.simple_version, model), ()
+                            )
+                            nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
+                            if not current_release_note_supported and not is_firstver_gt_secondver(current_cimc, current_recommended_cimc):
+                                current_compatibility_review = True
+                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
+                                             "Current APIC/CIMC compatibility requires review."])
+                            else:
+                                cimc_upgrade_optional = True
+                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
+                                             "CSCwo74485 advisory"])
 
-            if not data:
-                result = PASS
+            if cimc_upgrade_required:
+                result = FAIL_UF
+            elif cimc_upgrade_optional or current_compatibility_review:
+                result = MANUAL
 
-            if m4l4_model_affected_version_found:
-                recommended_action = 'Intentionally Upgrade your APICs to a fixed target version [6.0(9e)+ or (6.1(4h)+] BEFORE upgrading CIMC to avoid hitting CSCwo74485.'
+            apic_first = ('upgrade APICs to a release fixed for CSCwo74485 '
+                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC.')
+            if cimc_upgrade_optional:
+                if cimc_upgrade_required or current_compatibility_review:
+                    recommended_action = ('For nodes marked CSCwo74485 advisory, the current CIMC is supported; '
+                                          'a CIMC upgrade is not required. If you choose to upgrade CIMC on those '
+                                          'nodes, ' + apic_first)
+                else:
+                    recommended_action = ('The current CIMC is supported; a CIMC upgrade is not required. '
+                                          'If you choose to upgrade CIMC, ' + apic_first)
+            if cimc_upgrade_order_required:
+                if cimc_upgrade_optional:
+                    recommended_action += (' For affected M4/L4 nodes below the target CIMC recommendation, '
+                                           'a CIMC upgrade is required; upgrade APICs to a CSCwo74485 fixed '
+                                           'release first, then follow the target catalog recommendation.')
+                else:
+                    recommended_action = ('The current CIMC is below the target recommendation; a CIMC upgrade is '
+                                          'required. Upgrade APICs to a release fixed for CSCwo74485 '
+                                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC, then follow the target '
+                                          'catalog recommendation.')
+            if ordinary_cimc_upgrade_required and (cimc_upgrade_optional or cimc_upgrade_order_required):
+                recommended_action += (' For other nodes below the target CIMC recommendation, check the APIC '
+                                       'model and target version release notes to plan the required CIMC upgrade.')
+            if current_compatibility_review:
+                recommended_action += ' Review the current APIC/CIMC compatibility for the flagged nodes.'
 
         except KeyError:
             return Result(result=MANUAL, msg="eqptCh does not have cimcVersion parameter on this version", headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
@@ -5898,30 +6048,71 @@ def fc_ex_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='TEP-to-TEP Atomic Counter scalability')
-def tep_to_tep_ac_counter_check(**kwargs):
-    result = NA
-    headers = ["dbgAcPath Count", "Supported Maximum"]
+@check_wrapper(check_title='Atomic Counter Configuration')
+def atomic_counter_check(tversion, **kwargs):
+    """Check deprecation before the independent scalability and rollback concerns."""
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#atomic-counter-configuration'
+    headers = ['Concern', 'Count', 'Details']
     data = []
-    recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counters-scalability'
+
+    def count_mos(query):
+        response = icurl('class', query)
+        return int(response[0]['moCount']['attributes']['count'])
+
+    if tversion and (int(tversion.major1), int(tversion.major2), int(tversion.maint)) >= (6, 1, 2):
+        # APIC also exposes an unconfigured, built-in IP-to-IP policy in tn-common.
+        tenant_api = (
+            'dbgacTenantSpaceCmn.json?query-target-filter='
+            'ne(dbgacTenantSpaceCmn.dn,"uni/tn-common/acIpToIp-default")'
+            '&rsp-subtree-include=count'
+        )
+        tenant_count = count_mos(tenant_api)
+        path_count = count_mos('dbgAcPathA.json?rsp-subtree-include=count')
+        if tenant_count or path_count:
+            if tenant_count:
+                data.append(['Deprecated tenant policies', tenant_count, 'dbgacTenantSpaceCmn'])
+            if path_count:
+                data.append(['Deprecated TEP paths', path_count, 'dbgAcPathA'])
+            return Result(
+                result=MANUAL,
+                msg='Atomic counters are no longer supported in APIC 6.1(2) and later. Cleanup is mandatory before upgrade.',
+                headers=headers,
+                data=data,
+                recommended_action='Remove configured atomic counter policies before upgrading.',
+                doc_url=doc_url,
+            )
 
     ac_limit = 1600
-    atomic_counter_api = 'dbgAcPath.json'
-    atomic_counter_api += '?rsp-subtree-include=count'
+    path_count = count_mos('dbgAcPath.json?rsp-subtree-include=count')
+    ep_to_ep_count = count_mos('dbgacEpToEp.json?rsp-subtree-include=count')
+    result = PASS if path_count else NA
+    actions = []
 
-    atomic_counter_number = icurl('class', atomic_counter_api)
-    atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
-
-    if atomic_counter_number >= ac_limit:
-        data.append([atomic_counter_number, str(ac_limit)])
-    elif atomic_counter_number > 0 and atomic_counter_number < ac_limit:
-        result = PASS
-
-    if data:
+    if path_count > ac_limit:
+        data.append(['TEP-to-TEP scalability', path_count, 'Supported maximum: {}'.format(ac_limit)])
+        actions.append('Reduce dbgAcPath policies to {} or fewer.'.format(ac_limit))
         result = FAIL_UF
 
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    if ep_to_ep_count:
+        data.append(['Configuration rollback review', ep_to_ep_count, 'dbgacEpToEp policies present'])
+        actions.append('Review endpoint-to-endpoint policy references for cross-tenant or cross-VRF configuration before upgrade.')
+        if result != FAIL_UF:
+            result = MANUAL
+
+    msg = ''
+    if not tversion:
+        msg = 'Target version not supplied; atomic counter deprecation could not be assessed.'
+        if result in (PASS, NA):
+            result = MANUAL
+
+    return Result(
+        result=result,
+        msg=msg,
+        headers=headers,
+        data=data,
+        recommended_action=' '.join(actions),
+        doc_url=doc_url,
+    )
 
 
 @check_wrapper(check_title='Nexus 950X FM or LC Might Fail to boot after reload')
@@ -8606,6 +8797,199 @@ def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
     return format_deployed_result(Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url))
 
 
+# ---- Script Execution ----
+
+
+def parse_args(args):
+    parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
+    parser.add_argument("-u", "--username", action="store", type=str, help="Username used for SSH. If not provied it will prompt for")
+    parser.add_argument("-p", "--password", action="store", type=str, help="Password used for SSH. If not provied it will prompt for")
+    parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
+    parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
+    parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
+    parser.add_argument("-a", "--api-only", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
+    parser.add_argument("-n", "--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
+    parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
+    parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
+    parser.add_argument("--timeout", action="store", nargs="?", type=int, const=-1, default=DEFAULT_TIMEOUT, help="Show default script timeout (sec) or overwrite it when a number is provided (e.g. --timeout 1200).")
+    parser.add_argument("--max-threads", action="store", type=int, default=None, help="Maximum number of check threads to run concurrently. Defaults to unlimited.")
+    parsed_args = parser.parse_args(args)
+    return parsed_args
+
+
+def init_system():
+    """
+    Initialize the script environment, create necessary directories and set up log.
+    Not required for some options such as `--version` or `--total-checks`.
+    """
+    if os.path.isdir(DIR):
+        log.info("Cleaning up previous run files in %s", DIR)
+        shutil.rmtree(DIR)
+    log.info("Creating directories %s and %s", DIR, JSON_DIR)
+    os.mkdir(DIR)
+    os.mkdir(JSON_DIR)
+    fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)s:%(lineno)-4d(%(threadName)s)] %(message)s'.format(tz)
+    logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
+
+
+def wrapup_system(no_cleanup):
+    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
+    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
+    prints("""
+    Pre-Upgrade Check Complete.
+    Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
+
+    Result output and debug info saved to below bundle for later reference.
+    Attach this bundle to Cisco TAC SRs opened to address the flagged checks.
+
+      Result Bundle: {bundle}
+""".format(bundle=bundle_loc))
+    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
+
+    # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
+    if not no_cleanup and os.path.isdir(DIR):
+        log.info('Cleaning up temporary files and directories...')
+        shutil.rmtree(DIR)
+
+
+def nxos_ipn_release_assessment(version):
+    """Classify only the NX-OS release families called out for CSCwt59437."""
+    version = version.lower()
+    if version in NXOS_IPN_UNPATCHED_RELEASES:
+        return "Listed as unpatched in CSCwt59437"
+    if version == '10.5(2)':
+        return "10.5(2) is not listed as unpatched in CSCwt59437; verify manually"
+    if re.match(r'^10\.5\([2345][a-z]?\)|^10\.6\([12][a-z]?\)', version):
+        return "Release variant is not individually listed in CSCwt59437"
+    return ""
+
+
+@check_wrapper(check_title="NX-OS IPN Multicast RPF Defect (CSCwt59437)")
+def nxos_ipn_multicast_rpf_defect_check(fabric_nodes, **kwargs):
+    """Warn from ACI-observed IPN neighbor versions; NX-OS state is not inspected."""
+    headers = ["Pod", "Spine", "Port", "IPN Neighbor", "Platform", "NX-OS Version", "Source", "Assessment"]
+    data = []
+    recommended_action = (
+        "Review CSCwt59437 on the IPN NX-OS devices before rebooting or upgrading ACI spines. "
+        "Verify the IPN software release and PIM bidirectional phantom-RP configuration on those devices; "
+        "this ACI check cannot confirm the peer configuration or multicast RPF state."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#nx-os-ipn-multicast-rpf-defect-cscwt59437"
+
+    spines = {}
+    for node in fabric_nodes:
+        attr = node.get('fabricNode', {}).get('attributes', {})
+        if attr.get('role') != 'spine' or attr.get('fabricSt') != 'active':
+            continue
+        match = re.match(r'^' + node_regex + r'$', attr.get('dn', ''))
+        if match:
+            spines[(match.group('pod'), match.group('node'))] = attr.get('name') or match.group('node')
+
+    if not spines:
+        return Result(result=MANUAL, msg="No active spine nodes found; IPN exposure cannot be assessed.",
+                      doc_url=doc_url)
+    if len(set(pod for pod, node in spines)) < 2:
+        return Result(result=NA, msg="Active spines are in one pod.", doc_url=doc_url)
+
+    ospf_dn_regex = re.compile(
+        r'^' + node_regex + r'/sys/ospf/inst-default/dom-overlay-1/if-\[(?P<interface>[^\]]+)\]/adj-'
+    )
+    ospf_ports = defaultdict(set)
+    for adjacency in icurl('class', 'ospfAdjEp.json?query-target-filter=wcard(ospfAdjEp.dn,"/dom-overlay-1/")'):
+        attr = adjacency.get('ospfAdjEp', {}).get('attributes', {})
+        match = ospf_dn_regex.match(attr.get('dn', ''))
+        if not match:
+            continue
+        spine_key = (match.group('pod'), match.group('node'))
+        if spine_key not in spines:
+            continue
+        interface = match.group('interface')
+        physical = re.match(r'^(eth\d+/\d+)(?:\.\d+)?$', interface)
+        if physical:
+            ospf_ports[spine_key].add(physical.group(1))
+        else:
+            data.append([spine_key[0], spines[spine_key], interface, '-', '-', '-', 'OSPF',
+                         'Cannot map OSPF interface to a physical LLDP/CDP port'])
+
+    if not ospf_ports and not data:
+        return Result(result=MANUAL, msg="No spine overlay OSPF adjacency found; IPN exposure cannot be assessed.",
+                      recommended_action=recommended_action, doc_url=doc_url)
+
+    neighbor_dn_regex = re.compile(
+        r'^' + node_regex + r'/sys/(?P<source>lldp|cdp)/inst/if-\[(?P<port>[^\]]+)\]/adj-'
+    )
+    neighbors = {}
+    for spine_key in sorted(ospf_ports):
+        pod, node = spine_key
+        node_dn = 'topology/pod-{}/node-{}'.format(pod, node)
+        for source in ('lldp', 'cdp'):
+            classname = source + 'AdjEp'
+            query = '{}.json?query-target-filter=wcard({}.dn,"{}/sys/{}/inst/if-")'.format(
+                classname, classname, node_dn, source)
+            for adjacency in icurl('class', query):
+                attr = adjacency.get(classname, {}).get('attributes', {})
+                match = neighbor_dn_regex.match(attr.get('dn', ''))
+                if not match or (match.group('pod'), match.group('node')) != spine_key:
+                    continue
+                port = match.group('port')
+                if port not in ospf_ports[spine_key]:
+                    continue
+                key = (pod, node, port)
+                neighbors.setdefault(key, []).append((source.upper(), attr))
+
+    for spine_key in sorted(ospf_ports):
+        pod, node = spine_key
+        for port in sorted(ospf_ports[spine_key]):
+            key = (pod, node, port)
+            observed = neighbors.get(key, [])
+            if not observed:
+                data.append([pod, spines[spine_key], port, '-', '-', '-', '-',
+                             'No LLDP/CDP neighbor data for the OSPF port'])
+                continue
+
+            findings = {}
+            advertised_versions = {}
+            for source, attr in observed:
+                platform = attr.get('platId') or '-'
+                if platform != '-' and not platform.upper().startswith('N9K-'):
+                    continue
+                description = (attr.get('sysDesc') or '') if source == 'LLDP' else (attr.get('ver') or '')
+                is_nxos = bool(NXOS_SOFTWARE_REGEX.search(description))
+                if not is_nxos and platform == '-' and description:
+                    continue
+                version_match = NXOS_VERSION_REGEX.search(description) if is_nxos else None
+                version = version_match.group(0) if version_match else '-'
+                if version != '-':
+                    advertised_versions[source] = version
+                assessment = (nxos_ipn_release_assessment(version) if version != '-' else
+                              'Neighbor software version could not be read')
+                if not assessment:
+                    continue
+                finding = findings.setdefault(version, {
+                    'neighbor': attr.get('sysName') or attr.get('devId') or attr.get('chassisIdV') or '-',
+                    'platform': platform, 'sources': set(), 'assessment': assessment,
+                })
+                finding['sources'].add(source)
+                if finding['platform'] == '-' and platform != '-':
+                    finding['platform'] = platform
+
+            for version, finding in sorted(findings.items()):
+                data.append([pod, spines[spine_key], port, finding['neighbor'], finding['platform'],
+                             version, '/'.join(sorted(finding['sources'])), finding['assessment']])
+            if len(set(advertised_versions.values())) > 1:
+                data.append([pod, spines[spine_key], port, '-', '-',
+                             ', '.join(sorted(set(advertised_versions.values()))),
+                             '/'.join(sorted(advertised_versions)),
+                             'LLDP and CDP advertise conflicting NX-OS versions'])
+
+    result = MANUAL if data else PASS
+    msg = ("Possible NX-OS IPN exposure or incomplete neighbor data; verify on the IPN devices." if data else
+           "No listed affected NX-OS release advertised by the discovered IPN neighbors.")
+    return Result(result=result, msg=msg, headers=headers, data=data,
+                  recommended_action=recommended_action, doc_url=doc_url)
+
+
+
 @check_wrapper(check_title='vzAny Service Graph on Stretched VRF')
 def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
     result = PASS
@@ -8816,61 +9200,6 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
                   recommended_action=recommended_action, doc_url=doc_url)
 
 
-# ---- Script Execution ----
-
-
-def parse_args(args):
-    parser = ArgumentParser(description="ACI Pre-Upgrade Validation Script - %s" % SCRIPT_VERSION)
-    parser.add_argument("-u", "--username", action="store", type=str, help="Username used for SSH. If not provied it will prompt for")
-    parser.add_argument("-p", "--password", action="store", type=str, help="Password used for SSH. If not provied it will prompt for")
-    parser.add_argument("-t", "--tversion", action="store", type=str, help="Upgrade Target Version. Ex. 6.2(1a)")
-    parser.add_argument("-c", "--cversion", action="store", type=str, help="Override Current Version. Ex. 6.1(1a)")
-    parser.add_argument("-d", "--debug-function", action="store", type=str, help="Name of a single function to debug. Ex. 'apic_version_md5_check'")
-    parser.add_argument("-a", "--api-only", action="store_true", help="For built-in PUV. API Checks only. Checks using SSH are skipped.")
-    parser.add_argument("-n", "--no-cleanup", action="store_true", help="Skip all file cleanup after script execution.")
-    parser.add_argument("-v", "--version", action="store_true", help="Only show the script version, then end.")
-    parser.add_argument("--total-checks", action="store_true", help="Only show the total number of checks, then end.")
-    parser.add_argument("--timeout", action="store", nargs="?", type=int, const=-1, default=DEFAULT_TIMEOUT, help="Show default script timeout (sec) or overwrite it when a number is provided (e.g. --timeout 1200).")
-    parser.add_argument("--max-threads", action="store", type=int, default=None, help="Maximum number of check threads to run concurrently. Defaults to unlimited.")
-    parsed_args = parser.parse_args(args)
-    return parsed_args
-
-
-def init_system():
-    """
-    Initialize the script environment, create necessary directories and set up log.
-    Not required for some options such as `--version` or `--total-checks`.
-    """
-    if os.path.isdir(DIR):
-        log.info("Cleaning up previous run files in %s", DIR)
-        shutil.rmtree(DIR)
-    log.info("Creating directories %s and %s", DIR, JSON_DIR)
-    os.mkdir(DIR)
-    os.mkdir(JSON_DIR)
-    fmt = '[%(asctime)s.%(msecs)03d{} %(levelname)-8s %(funcName)s:%(lineno)-4d(%(threadName)s)] %(message)s'.format(tz)
-    logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE, format=fmt, datefmt='%Y-%m-%d %H:%M:%S')
-
-
-def wrapup_system(no_cleanup):
-    subprocess.check_output(['tar', '-czf', BUNDLE_NAME, DIR])
-    bundle_loc = '/'.join([os.getcwd(), BUNDLE_NAME])
-    prints("""
-    Pre-Upgrade Check Complete.
-    Next Steps: Address all checks flagged as FAIL, ERROR or MANUAL CHECK REQUIRED
-
-    Result output and debug info saved to below bundle for later reference.
-    Attach this bundle to Cisco TAC SRs opened to address the flagged checks.
-
-      Result Bundle: {bundle}
-""".format(bundle=bundle_loc))
-    prints('==== Script Version %s FIN ====' % (SCRIPT_VERSION))
-
-    # puv integration needs to keep reading files from `JSON_DIR` under `DIR`.
-    if not no_cleanup and os.path.isdir(DIR):
-        log.info('Cleaning up temporary files and directories...')
-        shutil.rmtree(DIR)
-
-
 class CheckManager:
     """Central managing point of all checks.
     Highlevel flows:
@@ -8898,6 +9227,7 @@ class CheckManager:
         cimc_compatibilty_check,
         apic_cluster_health_check,
         switch_status_check,
+        apic_upgrade_mixed_version_check,
         ntp_status_check,
         maintp_grp_crossing_4_0_check,
         features_to_disable_check,
@@ -8953,13 +9283,13 @@ class CheckManager:
         unsupported_fec_configuration_ex_check,
         cloudsec_encryption_depr_check,
         out_of_service_ports_check,
-        tep_to_tep_ac_counter_check,
         https_throttle_rate_check,
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
         consumer_vzany_shared_services_check,
         pg_and_shared_svc_contract_check,
+        atomic_counter_check,
 
         # Bugs
         ep_announce_check,
@@ -9002,6 +9332,7 @@ class CheckManager:
         vnsRsCIfAtt_deprecation_check,
         service_ep_flag_bd_check,
         apic_connected_port_vlan_override_check,
+        nxos_ipn_multicast_rpf_defect_check,
         vzany_svcgraph_stretched_vrf_check,
     ]
     ssh_checks = [

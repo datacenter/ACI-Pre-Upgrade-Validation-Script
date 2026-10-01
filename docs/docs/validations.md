@@ -26,6 +26,7 @@ Items                                                        | This Script      
 [APIC Target version image and MD5 hash][g6]                 | :white_check_mark: | :white_check_mark: 5.2(3e)
 [APIC Cluster Status][g7]                                    | :white_check_mark: | :white_check_mark: 4.2(6)
 [Switch Fabric Membership Status][g8]                        | :white_check_mark: | :no_entry_sign:
+[APIC Upgrade in Mixed-Version Fabric][g22]                  | :white_check_mark: | :no_entry_sign:
 [NTP Status][g9]                                             | :white_check_mark: | :white_check_mark: 4.2(5)
 [Firmware/Maintenance Groups when crossing 4.0 Release][g10] | :white_check_mark: | :no_entry_sign:
 [Features that need to be disabled prior to Upgrade][g11]    | :white_check_mark: | :grey_exclamation: 5.2(c)<br>Only AppCenter Apps
@@ -61,6 +62,7 @@ Items                                                        | This Script      
 [g19]: #apic-downgrade-compatibility-when-crossing-62-release
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
+[g22]: #apic-upgrade-in-mixed-version-fabric
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -138,7 +140,6 @@ Items                                         | Faults         | This Script    
 [Unsupported FEC Configuration for N9K-C93180YC-EX][c16] | :white_check_mark: | :no_entry_sign:
 [CloudSec Encryption Deprecated][c17]                 | :white_check_mark: | :no_entry_sign:
 [Out-of-Service Ports][c18]                           | :white_check_mark: | :no_entry_sign:
-[TEP-to-TEP atomic counters Scalability][c19]         | :white_check_mark: | :no_entry_sign:
 [HTTPS Request Throttle Rate][c20]                    | :white_check_mark: | :no_entry_sign:
 [Global AES Encryption][c21]                          | :white_check_mark: | :white_check_mark: 6.1(2)
 [Service Graph BD Forceful Routing][c22]              | :white_check_mark: | :no_entry_sign:
@@ -146,6 +147,7 @@ Items                                         | Faults         | This Script    
 [Shared Service with vzAny Consumer][c24]             | :white_check_mark: | :no_entry_sign:
 [Preferred Group Shared Service Provider][c25]        | :white_check_mark: | :no_entry_sign:
 [Host interface policy set to auto][c26]              | :white_check_mark: | :no_entry_sign:
+[Atomic Counter Configuration][c28]                   | :white_check_mark: | :no_entry_sign:
 
 [c1]: #vpc-paired-leaf-switches
 [c2]: #overlapping-vlan-pool
@@ -165,7 +167,6 @@ Items                                         | Faults         | This Script    
 [c16]: #unsupported-fec-configuration-for-n9k-c93180yc-ex
 [c17]: #cloudsec-encryption-deprecated
 [c18]: #out-of-service-ports
-[c19]: #tep-to-tep-atomic-counters-scalability
 [c20]: #https-request-throttle-rate
 [c21]: #global-aes-encryption
 [c22]: #service-graph-bd-forceful-routing
@@ -174,6 +175,7 @@ Items                                         | Faults         | This Script    
 [c25]: #preferred-group-shared-service-provider
 [c26]: #host-interface-policy-set-to-auto
 [c27]: #pod-ptep-overlap-with-external-routable-tep-pool
+[c28]: #atomic-counter-configuration
 
 ### Defect Condition Checks
 
@@ -223,7 +225,8 @@ Items                                           | Defect       | This Script    
 [vnsRsCIfAtt Deprecation Check][d42]            | CSCwr51759   | :white_check_mark: | :no_entry_sign:
 [Service-EP Flag in BD without PBR][d43]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
 [APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
-[vzAny Service Graph on Stretched VRF][d45]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
+[NX-OS IPN Multicast RPF Defect][d45]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
+[vzAny Service Graph on Stretched VRF][d46]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -269,7 +272,8 @@ Items                                           | Defect       | This Script    
 [d42]: #vnsrscifatt-deprecation-check
 [d43]: #service-ep-flag-in-bd-without-pbr
 [d44]: #apic-connected-port-vlan-override
-[d45]: #vzany-service-graph-on-stretched-vrf
+[d45]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
+[d46]: #vzany-service-graph-on-stretched-vrf
 
 ## General Check Details
 
@@ -288,7 +292,7 @@ As the `compatRsSuppHw` object recommendation is strictly tied to the target sof
 
 The APIC release notes explicitly support multiple model-specific CIMC releases that may be older than the image catalog recommendation. The check uses release-note support data refreshed from Cisco documentation during script release preparation before applying the image catalog recommendation to other CIMC releases. The released validator remains standalone and does not require internet access.
 
-Due to the defect CSCwo74485, APIC-SERVER-M4/L4 systems will fail to boot correctly after upgrading CIMC firmware to version 4.3.5 or later while on Non-fixed APIC releases 5.3.x/6.0.9d/6.1(3g) and below. Upgrade the APIC software first, then proceed with the CIMC upgrade for the releases 6.0.9e/ 6.1.4h and above, will avoid this issue. Follow the software advisory for this defect [CSCwo74485][73].
+Due to defect CSCwo74485, APIC-SERVER-M4/L4 systems can fail to boot after a CIMC upgrade to 4.3(5) or later while running affected APIC releases (5.3.x, releases before 6.0(9e), and releases before 6.1(4h)). The check compares the installed CIMC against the compatibility recommendations for both the current and target APIC releases. If the installed CIMC is supported by both, no CIMC upgrade is required and the result is `MANUAL CHECK REQUIRED`: leave CIMC at its current version until the APICs have been upgraded to a fixed release. A short `CSCwo74485 advisory` label identifies those nodes in the result table; the upgrade order appears in the Recommended Action below it. If current-release compatibility cannot be confirmed, the result also requires manual review. If the target APIC release requires a CIMC upgrade, the result remains `FAIL - UPGRADE FAILURE!!`; upgrade the APIC software to a fixed release before upgrading CIMC. When other APIC models also require a CIMC upgrade, the recommended action lists their release-note guidance separately. Follow the software advisory for [CSCwo74485][73].
 
 !!! note
     Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
@@ -394,6 +398,13 @@ Check `Fabric > Inventory > Fabric Membership` in the APIC GUI to ensure that al
 **Inactive**: This means that the switch has fabric discovery issues, such as IP reachability from APICs through the ACI infra network. If your switches are currently on release 14.2(1) or later, the command `show discoveryissues` on the switch CLI will check the basic items related to switch fabric discovery for you.
 
 **Maintenance**: This means that the switch is in **Maintenance Mode** through the GIR (Graceful Insertion and Removal) operation. This implies that the switch is isolated from the fabric and does not process most of the APIC communications, including the upgrade-related communications. You must bring the switch back to the **Active** state before you can perform an upgrade. If you want to gracefully upgrade the switch by isolating the switches from the network first, consider **Graceful Upgrade** instead. See the [Graceful Upgrade or Downgrade of ACI Switches][6] section in the ACI Upgrade Guide for details.
+
+
+### APIC Upgrade in Mixed-Version Fabric
+
+Before an APIC upgrade, the script compares the current APIC release with every active leaf and spine. An active switch on a different release causes **FAIL - UPGRADE FAILURE**, and the output lists the affected nodes. Inactive switches are handled by the Switch Fabric Membership Status check. If the release of an active switch is unavailable and no mismatch is known, the result requires a manual check. Same-version runs and APIC downgrades are outside this check.
+
+[Cisco's mixed-version guidance][89] allows at most two releases in the fabric and requires APICs to run the newer release. Enhanced Mixed Version Support begins with APIC 6.2(1) and can permit the current mixed state under the documented conditions. It does not permit introducing a third release through another APIC upgrade while older switches remain. A switch newer than the APIC also violates the mixed-version conditions. Bring all active switches to the current APIC release before starting another APIC upgrade.
 
 
 ### NTP Status
@@ -2340,14 +2351,6 @@ While generally not recommended, there are policy bypass methods to bring up por
 A Switch upgrade is one such event which results in Switch Nodes receiving policy from APICs. This will push the `fabricRsOosPath` policy to the switch again, resulting in all affected ports being rought down until the matching out-of-service policy is properly removed.
 
 
-### TEP-to-TEP atomic counters Scalability
-
-As documented in the [Verified Scalability Guide for Cisco APIC][38], ACI supports a maximum of 1600 instances of TEP-to-TEP Atomic counter policy `dbgAcPath`.
-Exceeding any scalability number documented in this guide can cause unexpected issues. In this specific scenario, exceeding the atomic counter limit has been seen to create issues with collecting techsupports and configuration exports.
-
-The script validates the count of `dbgAcPath` is less than the documented supported number. 
-
-
 ### HTTPS Request Throttle Rate
 
 ACI supports **HTTPS Request Throttle** via NGINX rate limit to prevent external API clients from consuming too much resources on APICs. This feature, which is disabled by default, is located at `Fabric > Fabric Policies > Pod > Management Access > default (or name you configured)` in the APIC GUI.
@@ -2467,6 +2470,17 @@ With this value, Cisco APIC determines the interface speed based on the transcei
 In case the link speed is set to "auto", interfaces may not come up after an upgrade (stateless reboot).
 Changing the speed to "inherit" resolves this situation, which is also a best practice.
 Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
+
+
+### Atomic Counter Configuration
+
+This check evaluates atomic counter configuration in the following order:
+
+1. **Deprecation:** [Cisco states that atomic counters are no longer supported beginning with APIC 6.1(2)][90]. For a target of 6.1(2) or later, the check counts tenant atomic counter policies (`dbgacTenantSpaceCmn`) and TEP-to-TEP paths (`dbgAcPathA`). The built-in `uni/tn-common/acIpToIp-default` policy is excluded. If either count is nonzero, the check reports that cleanup is mandatory before upgrade and does not run the other two validations. The queries return counts rather than full object lists.
+2. **TEP-to-TEP scalability:** Otherwise, the check counts `dbgAcPath`. The [Verified Scalability Guide for Cisco APIC][38] documents a maximum of 1600 TEP-to-TEP atomic counter policies. A count above 1600 is reported. Exceeding this limit has been seen to interfere with tech-support collection and configuration exports.
+3. **Configuration rollback review:** The check also counts `dbgacEpToEp` policies. A nonzero count prompts manual review of endpoint references across tenants and VRFs before the maintenance window because affected configurations can prevent a successful rollback. Presence alone does not establish that a policy has unsupported references or that rollback will fail. The affected APIC release is not yet established.
+
+When a target version is not supplied, the deprecation gate cannot be evaluated. The scalability and rollback checks still run, and the result calls out the missing target version.
 
 
 ## Defect Check Details
@@ -3022,9 +3036,17 @@ This is a configuration validation for CSCwn64461, not the `F0467` `port-configu
 
 This is also independent of **InfraVLAN Overlap in Access Policy VLAN Pools** for CSCwt58626, which detects the VLAN-pool/F4701 new-EPG association condition.
 
+### NX-OS IPN Multicast RPF Defect (CSCwt59437)
+
+[CSCwt59437][88] can leave multicast RPF pointing at a local loopback after a phantom RP route changes on an NX-OS IPN device. Inter-pod overlay multicast traffic may then be dropped when ACI spines are rebooted or upgraded. The defect describes a PIM bidirectional phantom-RP setup and reports the problem with a `/32` multicast route.
+
+For a fabric with active spines in multiple pods, this check finds spine overlay OSPF adjacency interfaces, then reads LLDP and CDP information advertised on their physical ports. It reports `MANUAL CHECK REQUIRED` when an IPN neighbor advertises an NX-OS release listed as unpatched in the defect. It also requests manual review when a related release cannot be classified confidently or neighbor version data is missing or unreadable.
+
+The check reads only what ACI sees from its neighbors. It cannot confirm the IPN device's actual software, PIM configuration, or RPF state. Review the reported devices and the defect directly before an ACI spine reload or upgrade. A result without a warning means only that no listed affected release was advertised on the discovered OSPF-facing neighbors.
+
 ### vzAny Service Graph on Stretched VRF
 
-Due to [CSCwn95571][89], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
+Due to [CSCwn95571][92], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
 
 The validation uses the instantiated `vnsEPgDef` object's DN to check whether a `vnsEpgDefXlate` translation entry exists for the service graph's consumer leg. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail. If an otherwise qualifying graph has no consumer `vnsEPgDef`, or has more than one and the first leg cannot be identified unambiguously, the check reports ERROR rather than treating it as a pass.
 
@@ -3046,8 +3068,7 @@ The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant
 !!! note
     This applies to PBR service graphs (policy-based redirect) used with vzAny on stretched VRFs. Non-PBR service graphs are not affected and are not flagged.
 
-Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][88].
-
+Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][91].
 
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
@@ -3136,5 +3157,8 @@ Recommended action: Migrate the vzAny service graph configuration to NDO before 
 [85]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/getting-started/cisco-apic-getting-started-guide-62x/fabric-initialization-and-switch-discovery/change-the-external-routable-subnet.html
 [86]: https://cs.co/FNSNV
 [87]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn64461
-[88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
-[89]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
+[88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
+[89]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/mixed-os-support.html
+[90]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/aci-fundamentals/cisco-aci-fundamentals-61x/troubleshooting-61x.html
+[91]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
+[92]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
