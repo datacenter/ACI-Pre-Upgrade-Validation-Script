@@ -1,4 +1,0 @@
-interface:
-  display_name: "ACI Integration Tests"
-  short_description: "Run focused or full ACI integration pipelines"
-  default_prompt: "Use $aci-integration-tests to push this branch for a focused integration test and interpret the results."
