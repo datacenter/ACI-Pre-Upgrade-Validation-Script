@@ -8986,6 +8986,218 @@ def nxos_ipn_multicast_rpf_defect_check(fabric_nodes, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data,
                   recommended_action=recommended_action, doc_url=doc_url)
 
+
+
+@check_wrapper(check_title='vzAny Service Graph on Stretched VRF')
+def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ['Tenant', 'VRF', 'Contract', 'Graph', 'Issue']
+    data = []
+    unformatted_headers = ['Graph Instance DN', 'Issue']
+    unformatted_data = []
+    recommended_action = 'Migrate vzAny service graph configuration to NDO before upgrade using brownfield import. See documentation for detailed migration steps.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-service-graph-on-stretched-vrf'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    if not tversion.newer_than("6.1(3g)"):
+        return Result(result=PASS, msg="Target version does not trigger CSCwn95571 validation", doc_url=doc_url)
+
+    has_error = False
+
+    # Pre-6.1(4): the impacted graph is still 'applied', so scope to that state to limit load.
+    # 6.1(4)+: a later re-render can leave it failed-to-apply, so poll all states.
+    graph_subtree = '&rsp-subtree=children&rsp-subtree-class=vnsNodeInst'
+    if cversion and not cversion.newer_than("6.1(3g)"):
+        graph_query = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")' + graph_subtree
+    else:
+        graph_query = 'vnsGraphInst.json?' + graph_subtree.lstrip('&')
+
+    try:
+        graph_insts = icurl('class', graph_query)
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying service graphs: {}'.format(str(e)), doc_url=doc_url)
+
+    if not graph_insts:
+        return Result(result=PASS, msg="No service graphs found", doc_url=doc_url)
+
+    # Key by contract with a list of instances so multiple VRFs sharing one contract are all retained.
+    sg_by_contract = defaultdict(list)
+    for graph_inst_mo in graph_insts:
+        graph_inst = graph_inst_mo.get('vnsGraphInst', {})
+        gi_attrs = graph_inst.get('attributes', {})
+        gi_dn = gi_attrs.get('dn', '')
+        children = graph_inst.get('children', [])
+
+        # CSCwt14573/CSCwn95571 apply only to PBR service graphs (a node with routingMode "Redirect").
+        is_pbr = any(
+            child.get('vnsNodeInst', {}).get('attributes', {}).get('routingMode') == 'Redirect'
+            for child in children
+        )
+        if not is_pbr:
+            continue
+
+        # Skip NDO/MSC-managed graphs; their translation entries are created by NDO.
+        annotation = gi_attrs.get('absGraphAnnotation', '') or gi_attrs.get('annotation', '')
+        if 'orchestrator:msc' in annotation:
+            continue
+
+        contract_dn = gi_attrs.get('ctrctDn', '')
+        if not contract_dn:
+            has_error = True
+            unformatted_data.append([gi_dn or 'unknown', 'Service graph instance missing contract DN (ctrctDn)'])
+            continue
+
+        graph_name_match = re.search(r'-G-\[uni/tn-[^/]+/AbsGraph-([^\]]+)\]', gi_dn)
+        graph_name = graph_name_match.group(1) if graph_name_match else ''
+
+        scope_match = re.search(r'-S-\[(.*?)\]', gi_dn)
+        if not scope_match:
+            has_error = True
+            unformatted_data.append([gi_dn or contract_dn, 'Unable to parse the VRF scope from the graph instance DN'])
+            continue
+        scope_dn = scope_match.group(1)
+
+        sg_by_contract[contract_dn].append({
+            'gi_dn': gi_dn,
+            'graph_name': graph_name,
+            'scope_dn': scope_dn,
+        })
+
+    if not sg_by_contract:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No locally-managed service graphs with contracts found", doc_url=doc_url)
+
+    stretched_vrf_dns = set()
+    try:
+        fvctx_list = icurl('class', 'fvCtx.json?rsp-subtree=children&rsp-subtree-class=fvSiteAssociated&rsp-subtree-include=required')
+        for vrf_ctx_mo in fvctx_list:
+            ctx_dn = vrf_ctx_mo.get('fvCtx', {}).get('attributes', {}).get('dn', '')
+            for site_assoc_mo in vrf_ctx_mo.get('fvCtx', {}).get('children', []):
+                if 'fvSiteAssociated' not in site_assoc_mo:
+                    continue
+                for remote_id_mo in site_assoc_mo['fvSiteAssociated'].get('children', []):
+                    if 'fvRemoteId' in remote_id_mo:
+                        stretched_vrf_dns.add(ctx_dn)
+                        break
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying stretched VRFs: {}'.format(str(e)), doc_url=doc_url)
+
+    if not stretched_vrf_dns:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No stretched VRFs found", doc_url=doc_url)
+
+    # Key by (contract, VRF) so each scoped vzAny relationship is preserved.
+    vzany_on_stretched = {}
+    for rel_class in ('vzRsAnyToCons', 'vzRsAnyToProv'):
+        try:
+            rels = icurl('class', '{}.json'.format(rel_class))
+        except Exception as e:
+            has_error = True
+            unformatted_data.append(['-', 'Error querying {}: {}'.format(rel_class, str(e))])
+            continue
+        for rel in rels:
+            rel_attrs = rel.get(rel_class, {}).get('attributes', {})
+            contract_dn = rel_attrs.get('tDn', '')
+            if contract_dn not in sg_by_contract:
+                continue
+            rel_dn = rel_attrs.get('dn', '')
+            vrf_dn_match = re.match(r'(uni/tn-[^/]+/ctx-[^/]+)', rel_dn)
+            if not vrf_dn_match:
+                has_error = True
+                unformatted_data.append([rel_dn or '-', 'Unable to parse the VRF scope from the {} DN'.format(rel_class)])
+                continue
+            vrf_dn = vrf_dn_match.group(1)
+            if vrf_dn not in stretched_vrf_dns:
+                continue
+            vrf_name_match = re.search(r'ctx-([^/]+)', vrf_dn)
+            vrf_name = vrf_name_match.group(1) if vrf_name_match else vrf_dn
+            vzany_on_stretched[(contract_dn, vrf_dn)] = {'vrf_name': vrf_name}
+
+    if not vzany_on_stretched:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No vzAny service graph contracts on stretched VRFs", doc_url=doc_url)
+
+    # Use APIC's instantiated EPgDef DNs rather than inferring a node from terminal
+    # objects. TermNodeInst has no consumer type, and ConnectionInst is its sibling.
+    try:
+        epg_defs = icurl('class', 'vnsEPgDef.json?query-target-filter=eq(vnsEPgDef.name,"consumer")')
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying service graph EPg definitions: {}'.format(str(e)), doc_url=doc_url)
+
+    consumer_epg_defs = defaultdict(list)
+    for epg_def_mo in epg_defs:
+        epg_attrs = epg_def_mo.get('vnsEPgDef', {}).get('attributes', {})
+        epg_dn = epg_attrs.get('dn', '')
+        if epg_attrs.get('name') != 'consumer':
+            continue
+        graph_match = re.match(r'^(.*-S-\[[^\]]+\])/', epg_dn)
+        if graph_match:
+            consumer_epg_defs[graph_match.group(1)].append(epg_dn)
+
+    xlate_results = {}
+    for (contract_dn, vrf_dn), vrf_info in vzany_on_stretched.items():
+        contract_match = re.match(r'uni/tn-([^/]+)/brc-([^/]+)', contract_dn)
+        if not contract_match:
+            has_error = True
+            unformatted_data.append([contract_dn, 'Unable to parse the contract DN'])
+            continue
+        tenant = contract_match.group(1)
+        contract = contract_match.group(2)
+        vrf_name = vrf_info['vrf_name']
+
+        # A graph can be scoped to the VRF, its tenant, or globally (uni).
+        for sg_info in sg_by_contract.get(contract_dn, []):
+            if sg_info['scope_dn'] not in (vrf_dn, vrf_dn.rsplit('/', 1)[0], 'uni'):
+                continue
+
+            gi_dn = sg_info['gi_dn']
+            graph_name = sg_info['graph_name']
+            epg_def_dns = consumer_epg_defs.get(gi_dn, [])
+            if len(epg_def_dns) != 1:
+                has_error = True
+                unformatted_data.append([gi_dn or contract_dn,
+                                         'Expected one instantiated consumer EPgDef; found {}'.format(len(epg_def_dns))])
+                continue
+
+            epg_def_dn = epg_def_dns[0]
+            xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
+
+            # Tenant/global graph instances can match multiple stretched VRFs.
+            # Reuse the result rather than querying the same xlate for each VRF.
+            if xlate_dn not in xlate_results:
+                try:
+                    xlate_results[xlate_dn] = len(icurl('mo', '{}.json'.format(xlate_dn))) > 0
+                except Exception:
+                    xlate_results[xlate_dn] = None
+
+            if xlate_results[xlate_dn] is None:
+                has_error = True
+                data.append([tenant, vrf_name, contract, graph_name, 'Error querying vnsEpgDefXlate'])
+                continue
+
+            if not xlate_results[xlate_dn]:
+                data.append([tenant, vrf_name, contract, graph_name, 'Missing vnsEpgDefXlate for 1st node consumer leg'])
+
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data,
+                  unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                  recommended_action=recommended_action, doc_url=doc_url)
+
+
 class CheckManager:
     """Central managing point of all checks.
     Highlevel flows:
@@ -9120,7 +9332,7 @@ class CheckManager:
         service_ep_flag_bd_check,
         apic_connected_port_vlan_override_check,
         nxos_ipn_multicast_rpf_defect_check,
-
+        vzany_svcgraph_stretched_vrf_check,
     ]
     ssh_checks = [
         # General

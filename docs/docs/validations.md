@@ -228,6 +228,7 @@ Items                                           | Defect       | This Script    
 [Service-EP Flag in BD without PBR][d43]        | CSCwi17652   | :white_check_mark: | :no_entry_sign:
 [APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 [NX-OS IPN Multicast RPF Defect][d45]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
+[vzAny Service Graph on Stretched VRF][d46]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -274,6 +275,7 @@ Items                                           | Defect       | This Script    
 [d43]: #service-ep-flag-in-bd-without-pbr
 [d44]: #apic-connected-port-vlan-override
 [d45]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
+[d46]: #vzany-service-graph-on-stretched-vrf
 
 ## General Check Details
 
@@ -3048,6 +3050,32 @@ For a fabric with active spines in multiple pods, this check finds spine overlay
 
 The check reads only what ACI sees from its neighbors. It cannot confirm the IPN device's actual software, PIM configuration, or RPF state. Review the reported devices and the defect directly before an ACI spine reload or upgrade. A result without a warning means only that no listed affected release was advertised on the discovered OSPF-facing neighbors.
 
+### vzAny Service Graph on Stretched VRF
+
+Due to [CSCwn95571][92], starting from ACI 6.1(4), a new multisite validation was introduced for service graphs used with vzAny contracts on stretched VRFs. When upgrading to 6.1(4) or later, if a vzAny contract with a service graph is configured locally on the APIC (not through Nexus Dashboard Orchestrator), the service graph will fail to instantiate with faults F0758 and F1690.
+
+The validation uses the instantiated `vnsEPgDef` object's DN to check whether a `vnsEpgDefXlate` translation entry exists for the service graph's consumer leg. These entries are only created by NDO during template deployment. When the configuration is managed locally on the APIC, these entries are absent, causing the graph rendering to fail. If an otherwise qualifying graph has no consumer `vnsEPgDef`, or has more than one and the first leg cannot be identified unambiguously, the check reports ERROR rather than treating it as a pass.
+
+This check detects configurations where **all** of the following conditions are true:
+
+1. The VRF is stretched across multiple sites (has `fvSiteAssociated` with `fvRemoteId` children)
+2. vzAny is used as either consumer **or** provider on the stretched VRF
+3. The contract has a **PBR** service graph attached (a node with `routingMode` set to `Redirect`)
+4. The service graph is **not** managed by NDO/MSC (no `orchestrator:msc` annotation)
+5. No `vnsEpgDefXlate` MO exists for the graph's instantiated consumer leg
+
+When upgrading from a release earlier than 6.1(4), the impacted graph is still in the `applied` state, so the check scopes the query to applied graph instances. When the current release is already 6.1(4) or later, the graph may have failed to render, so the check evaluates graph instances in all states (a later re-render can re-expose the same condition).
+
+The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant- and globally-scoped instances are checked against each stretched VRF using the contract. The same translation entry is queried only once even when several VRFs share the graph instance.
+
+!!! note
+    The fault alone does **not** cause traffic impact for already-deployed graphs. Traffic impact only occurs if the service graph is detached and re-attached to the contract while the fault condition is present.
+
+!!! note
+    This applies to PBR service graphs (policy-based redirect) used with vzAny on stretched VRFs. Non-PBR service graphs are not affected and are not flagged.
+
+Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][91].
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3138,3 +3166,5 @@ The check reads only what ACI sees from its neighbors. It cannot confirm the IPN
 [88]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt59437
 [89]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/apic-installation-aci-upgrade-downgrade/Cisco-APIC-Installation-ACI-Upgrade-Downgrade-Guide/g-operations-allowed-during-mixed-versions-on-cisco-aci-switches/mixed-os-support.html
 [90]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/aci-fundamentals/cisco-aci-fundamentals-61x/troubleshooting-61x.html
+[91]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
+[92]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
