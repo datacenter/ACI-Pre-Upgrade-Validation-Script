@@ -20,6 +20,7 @@ Items                                                        | This Script      
 -------------------------------------------------------------|--------------------|---------------------------
 [Compatibility (Target ACI Version)][g1]                     | :white_check_mark: | :white_check_mark: 4.2(4)
 [Compatibility (CIMC Version)][g2]                           | :white_check_mark: | :white_check_mark: 4.2(4)
+[CIMC Upgrade Order (CSCwo74485)][g23]                       | :white_check_mark: | :white_check_mark:
 [Compatibility (Switch Hardware)][g3]                        | :no_entry_sign:    | :white_check_mark:
 [Compatibility (Switch Hardware Gen1)][g4]                   | :white_check_mark: | :white_check_mark: 4.2(4)
 [Compatibility (Remote Leaf Switch)][g5]                     | :white_check_mark: | :grey_exclamation: Except CSCvs16767
@@ -63,6 +64,7 @@ Items                                                        | This Script      
 [g20]: #supported-hardware-compatibility
 [g21]: #svccore-excessive-data-check
 [g22]: #apic-upgrade-in-mixed-version-fabric
+[g23]: #cimc-upgrade-order-cscwo74485
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -290,10 +292,14 @@ As the `compatRsSuppHw` object recommendation is strictly tied to the target sof
 
 The APIC release notes explicitly support multiple model-specific CIMC releases that may be older than the image catalog recommendation. The check uses release-note support data refreshed from Cisco documentation during script release preparation before applying the image catalog recommendation to other CIMC releases. The released validator remains standalone and does not require internet access.
 
-Due to defect CSCwo74485, APIC-SERVER-M4/L4 systems can fail to boot after a CIMC upgrade to 4.3(5) or later while running affected APIC releases (5.3.x, releases before 6.0(9e), and releases before 6.1(4h)). The check compares the installed CIMC against the compatibility recommendations for both the current and target APIC releases. If the installed CIMC is supported by both, no CIMC upgrade is required and the result is `MANUAL CHECK REQUIRED`: leave CIMC at its current version until the APICs have been upgraded to a fixed release. A short `CSCwo74485 advisory` label identifies those nodes in the result table; the upgrade order appears in the Recommended Action below it. If current-release compatibility cannot be confirmed, the result also requires manual review. If the target APIC release requires a CIMC upgrade, the result remains `FAIL - UPGRADE FAILURE!!`; upgrade the APIC software to a fixed release before upgrading CIMC. When other APIC models also require a CIMC upgrade, the recommended action lists their release-note guidance separately. Follow the software advisory for [CSCwo74485][73].
+The generic CIMC compatibility check determines whether the installed CIMC satisfies the target APIC release requirements.
 
 !!! note
     Older versions of CIMC may required multi-step CIMC upgrades to get to the identified target version. Refer to the [Cisco UCS Rack Server Upgrade Matrix][22] for the latest documentation on which steps are required and support given your current and target CIMC versions.
+
+### CIMC Upgrade Order (CSCwo74485)
+
+This check reports `MANUAL CHECK REQUIRED` when CIMC upgrade ordering must be reviewed. It does not decide whether a CIMC upgrade is required; when an upgrade is required, review CSCwo74485 and upgrade APIC software to a fixed release before upgrading CIMC. The check returns `N/A` for fixed APIC releases and fabrics without applicable APIC models. Follow [CSCwo74485][73] for the current affected and fixed release information rather than relying on version details embedded in this script's guidance.
 
 ### Compatibility (Switch Hardware)
 

@@ -92,12 +92,12 @@ release_note_supported_cases = [
             "5.2(8g)",
             script.PASS,
         ),
-        # The release-note exception avoids a required CIMC upgrade, but still warns about CSCwo74485.
+        # The generic compatibility check does not own CSCwo74485 upgrade-order guidance.
         (
             release_note_supported_615_outputs,
             "6.1(5e)",
             "5.3(1d)",
-            script.MANUAL,
+            script.PASS,
         ),
         # Other CIMC versions below the catalog recommendation remain unsupported.
         (
@@ -199,12 +199,10 @@ def test_release_note_supported_versions(run_check, mock_icurl):
 
 
 def m4l4_compatibility_outputs(model="M4", cimc_version="4.3(4.241063)",
-                               target_recommendation="4.0(2g)", current_recommendation="4.0(2g)"):
+                               target_recommendation="4.0(2g)"):
     model_key = "apic" + model.lower()
     target_api = ('uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-'
                   '[uni/fabric/compcat-default/ctlrhw-{}].json').format(model_key)
-    current_api = ('uni/fabric/compcat-default/ctlrfw-apic-5.3(1)/rssuppHw-'
-                   '[uni/fabric/compcat-default/ctlrhw-{}].json').format(model_key)
     return {
         eqptCh_api: [{"eqptCh": {"attributes": {
             "cimcVersion": cimc_version,
@@ -212,53 +210,23 @@ def m4l4_compatibility_outputs(model="M4", cimc_version="4.3(4.241063)",
             "dn": "topology/pod-1/node-1/sys/ch",
         }}}],
         target_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": target_recommendation}}}],
-        current_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": current_recommendation}}}],
     }
 
 
-@pytest.mark.parametrize("icurl_outputs, model", [
-    (m4l4_compatibility_outputs("M4"), "M4"),
-    (m4l4_compatibility_outputs("L4"), "L4"),
-])
-def test_cscwo74485_supported_on_current_and_target(run_check, mock_icurl, model, icurl_outputs):
+@pytest.mark.parametrize("icurl_outputs", [m4l4_compatibility_outputs()])
+def test_cscwo74485_advisory_is_not_in_generic_result(run_check, mock_icurl):
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
-    assert result.result == script.MANUAL
-    assert result.data == [["node-1", "APIC-SERVER-" + model, "4.3(4.241063)", "4.0(2g)",
-                            "CSCwo74485 advisory"]]
-    assert result.recommended_action == (
-        "The current CIMC is supported; a CIMC upgrade is not required. If you choose to "
-        "upgrade CIMC, upgrade APICs to a release fixed for CSCwo74485 "
-        "[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC."
-    )
-
-
-@pytest.mark.parametrize("icurl_outputs, expected_result, expected_action", [
-    (m4l4_compatibility_outputs(target_recommendation="4.3(5)"), script.FAIL_UF, "BEFORE upgrading CIMC"),
-    (m4l4_compatibility_outputs(current_recommendation="4.3(5)"), script.MANUAL, "Review the current APIC/CIMC"),
-    (m4l4_compatibility_outputs(cimc_version="4.3(5)"), script.PASS, "Check Release note"),
-])
-def test_cscwo74485_compatibility_boundaries(run_check, mock_icurl, expected_result, expected_action):
-    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
-    assert result.result == expected_result
-    assert expected_action in result.recommended_action
+    assert result.result == script.PASS
+    assert result.data == []
 
 
 @pytest.mark.parametrize("icurl_outputs", [m4l4_compatibility_outputs(target_recommendation="4.3(5)")])
-def test_cscwo74485_required_upgrade_action(run_check, mock_icurl):
+def test_required_upgrade_keeps_generic_action(run_check, mock_icurl):
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == script.FAIL_UF
-    assert result.recommended_action == (
-        "The current CIMC is below the target recommendation; a CIMC upgrade is required. "
-        "Upgrade APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] "
-        "BEFORE upgrading CIMC, then follow the target catalog recommendation."
-    )
-
-
-@pytest.mark.parametrize("icurl_outputs", [dict(m4l4_compatibility_outputs(), **{compatRsSuppHwM4_531_api: []})])
-def test_cscwo74485_missing_current_compatibility(run_check, mock_icurl):
-    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
-    assert result.result == script.MANUAL
-    assert result.data[0][-1] == "Current APIC/CIMC compatibility information unavailable."
+    assert result.msg == ""
+    assert result.data == [["node-1", "APIC-SERVER-M4", "4.3(4.241063)", "4.3(5)", ""]]
+    assert result.recommended_action == 'Check Release note of APIC Model/version for latest recommendations.'
 
 
 def mixed_m4l4_outputs():
@@ -274,20 +242,10 @@ def mixed_m4l4_outputs():
 
 
 @pytest.mark.parametrize("icurl_outputs", [mixed_m4l4_outputs()])
-def test_cscwo74485_required_and_optional_upgrades(run_check, mock_icurl):
+def test_generic_result_contains_only_required_upgrades(run_check, mock_icurl):
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == script.FAIL_UF
-    assert [row[0] for row in result.data] == ["node-1", "node-2"]
-    assert result.data[0][-1] == "CSCwo74485 advisory"
-    assert result.data[1][-1] == ""
-    assert result.recommended_action == (
-        "For nodes marked CSCwo74485 advisory, the current CIMC is supported; a CIMC "
-        "upgrade is not required. If you choose to upgrade CIMC on those nodes, upgrade "
-        "APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading "
-        "CIMC. For affected M4/L4 nodes below the target CIMC recommendation, a CIMC "
-        "upgrade is required; upgrade APICs to a CSCwo74485 fixed release first, then "
-        "follow the target catalog recommendation."
-    )
+    assert [row[0] for row in result.data] == ["node-2"]
 
 
 def mixed_non_bug_outputs():
@@ -304,17 +262,10 @@ def mixed_non_bug_outputs():
 
 
 @pytest.mark.parametrize("icurl_outputs", [mixed_non_bug_outputs()])
-def test_cscwo74485_advisory_with_unaffected_model_failure(run_check, mock_icurl):
+def test_mixed_model_result_contains_only_required_upgrade(run_check, mock_icurl):
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == script.FAIL_UF
-    assert [row[1] for row in result.data] == ["APIC-SERVER-M4", "APIC-SERVER-M3"]
-    assert result.recommended_action == (
-        "For nodes marked CSCwo74485 advisory, the current CIMC is supported; a CIMC "
-        "upgrade is not required. If you choose to upgrade CIMC on those nodes, upgrade "
-        "APICs to a release fixed for CSCwo74485 [6.0(9e)+ or 6.1(4h)+] BEFORE upgrading "
-        "CIMC. For other nodes below the target CIMC recommendation, check the APIC model "
-        "and target version release notes to plan the required CIMC upgrade."
-    )
+    assert [row[1] for row in result.data] == ["APIC-SERVER-M3"]
 
 
 @pytest.mark.parametrize("icurl_outputs", [
@@ -330,3 +281,19 @@ def test_unaffected_model_failure_keeps_general_action(run_check, mock_icurl):
     result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
     assert result.result == script.FAIL_UF
     assert result.recommended_action == 'Check Release note of APIC Model/version for latest recommendations.'
+
+
+@pytest.mark.parametrize("icurl_outputs", [
+    {eqptCh_api: read_data(dir, "eqptCh_newver.json"),
+     compatRsSuppHwL2_api: read_data(dir, "compatRsSuppHw_605_L2.json"),
+     compatRsSuppHwM1_api: read_data(dir, "compatRsSuppHw_empty.json")}
+])
+def test_missing_compatibility_uses_short_message_without_rows(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.0(5a)"), cversion=None)
+    assert result.result == script.MANUAL
+    assert result.data == []
+    assert result.msg == "CIMC compatibility unavailable."
+    assert result.recommended_action == (
+        "Review the APIC model and target release documentation to determine "
+        "the required CIMC version."
+    )

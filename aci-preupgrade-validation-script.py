@@ -4087,12 +4087,6 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
     recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
 
-    cimc_upgrade_required = False
-    cimc_upgrade_order_required = False
-    ordinary_cimc_upgrade_required = False
-    cimc_upgrade_optional = False
-    current_compatibility_review = False
-
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
         try:
@@ -4102,23 +4096,15 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     model = "apic" + apic_model.split('-')[2].lower()
                     current_cimc = eqptCh['eqptCh']['attributes']['cimcVersion']
                    
-                    # CSCwo74485 affects CIMC upgrades on M4/L4 APICs running these releases.
-                    affected_cimc_upgrade = (
-                        model in ("apicm4", "apicl4") and cversion
-                        and not is_firstver_gt_secondver(current_cimc, "4.3(5)")
-                        and (
-                            (cversion.major1 == "5" and cversion.major2 == "3")
-                            or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
-                            or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
-                        )
-                    )
-
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
                     if not compatMo:
-                        msg = "No compatibility information found for {}/{}".format(model, tversion.simple_version)
-                        return Result(result=MANUAL, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+                        msg = "" if data else "CIMC compatibility unavailable."
+                        recommended_action = ('Review the APIC model and target release documentation to determine '
+                                              'the required CIMC version.')
+                        return Result(result=MANUAL, msg=msg, headers=headers, data=data,
+                                      recommended_action=recommended_action, doc_url=doc_url)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
                     warning = ""
                     if compatMo and recommended_cimc:
@@ -4130,74 +4116,86 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                         if not release_note_supported and not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
                             data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
-                            cimc_upgrade_required = True
-                            if affected_cimc_upgrade:
-                                cimc_upgrade_order_required = True
-                            else:
-                                ordinary_cimc_upgrade_required = True
-                        elif affected_cimc_upgrade:
-                            # A target-compatible CIMC needs no upgrade. Verify that it is
-                            # also supported on the currently running APIC release.
-                            current_compat_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
-                                                "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
-                            current_compat_mo = icurl('mo', current_compat_dn)
-                            if not current_compat_mo:
-                                current_compatibility_review = True
-                                nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "Current APIC/CIMC compatibility information unavailable."])
-                                continue
-                            current_recommended_cimc = current_compat_mo[0]['compatRsSuppHw']['attributes']['cimcVersion']
-                            current_release_note_supported = current_cimc in CIMC_RELEASE_NOTE_SUPPORT.get(
-                                (cversion.simple_version, model), ()
-                            )
-                            nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                            if not current_release_note_supported and not is_firstver_gt_secondver(current_cimc, current_recommended_cimc):
-                                current_compatibility_review = True
-                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "Current APIC/CIMC compatibility requires review."])
-                            else:
-                                cimc_upgrade_optional = True
-                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "CSCwo74485 advisory"])
 
-            if cimc_upgrade_required:
+            if data:
                 result = FAIL_UF
-            elif cimc_upgrade_optional or current_compatibility_review:
-                result = MANUAL
-
-            apic_first = ('upgrade APICs to a release fixed for CSCwo74485 '
-                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC.')
-            if cimc_upgrade_optional:
-                if cimc_upgrade_required or current_compatibility_review:
-                    recommended_action = ('For nodes marked CSCwo74485 advisory, the current CIMC is supported; '
-                                          'a CIMC upgrade is not required. If you choose to upgrade CIMC on those '
-                                          'nodes, ' + apic_first)
-                else:
-                    recommended_action = ('The current CIMC is supported; a CIMC upgrade is not required. '
-                                          'If you choose to upgrade CIMC, ' + apic_first)
-            if cimc_upgrade_order_required:
-                if cimc_upgrade_optional:
-                    recommended_action += (' For affected M4/L4 nodes below the target CIMC recommendation, '
-                                           'a CIMC upgrade is required; upgrade APICs to a CSCwo74485 fixed '
-                                           'release first, then follow the target catalog recommendation.')
-                else:
-                    recommended_action = ('The current CIMC is below the target recommendation; a CIMC upgrade is '
-                                          'required. Upgrade APICs to a release fixed for CSCwo74485 '
-                                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC, then follow the target '
-                                          'catalog recommendation.')
-            if ordinary_cimc_upgrade_required and (cimc_upgrade_optional or cimc_upgrade_order_required):
-                recommended_action += (' For other nodes below the target CIMC recommendation, check the APIC '
-                                       'model and target version release notes to plan the required CIMC upgrade.')
-            if current_compatibility_review:
-                recommended_action += ' Review the current APIC/CIMC compatibility for the flagged nodes.'
 
         except KeyError:
-            return Result(result=MANUAL, msg="eqptCh does not have cimcVersion parameter on this version", headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+            msg = "" if data else "CIMC compatibility unavailable."
+            recommended_action = ('Review the APIC model and target release documentation to determine '
+                                  'the required CIMC version.')
+            return Result(result=MANUAL, msg=msg, headers=headers, data=data,
+                          recommended_action=recommended_action, doc_url=doc_url)
     else:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="CIMC Upgrade Order (CSCwo74485)")
+def cimc_cscwo74485_advisory_check(cversion, **kwargs):
+    headers = ["Node ID", "Model", "Current APIC version", "Current CIMC version", "Finding"]
+    data = []
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
+    recommended_action = ('If a CIMC upgrade is required, review CSCwo74485 and upgrade APIC software '
+                          'to a fixed release before upgrading CIMC.')
+    verification_action = 'Review CSCwo74485 before upgrading CIMC.'
+
+    if not cversion:
+        return Result(result=MANUAL, msg="Cannot verify CSCwo74485.",
+                      recommended_action=verification_action, doc_url=doc_url)
+
+    affected_apic_version = (
+        (cversion.major1 == "5" and cversion.major2 == "3")
+        or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
+        or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
+    )
+    if not affected_apic_version:
+        return Result(result=NA, doc_url=doc_url)
+
+    apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
+    if not apic_obj:
+        return Result(result=MANUAL, msg="Cannot verify CSCwo74485.",
+                      recommended_action=verification_action, doc_url=doc_url)
+
+    affected_node_found = False
+    for eqptCh in apic_obj:
+        attributes = eqptCh.get('eqptCh', {}).get('attributes', {})
+        dn = attributes.get('dn', '')
+        dn_parts = dn.split('/')
+        nodeid = dn_parts[2] if len(dn_parts) > 2 else "-"
+        apic_model = attributes.get('descr', '')
+        current_cimc = attributes.get('cimcVersion', '')
+        try:
+            model = "apic" + apic_model.split('-')[2].lower()
+        except (AttributeError, IndexError):
+            data.append([nodeid, apic_model or "-", str(cversion), current_cimc or "-",
+                         "Cannot verify CSCwo74485"])
+            continue
+
+        if model not in ("apicm4", "apicl4"):
+            continue
+
+        if not current_cimc:
+            data.append([nodeid, apic_model, str(cversion), "-", "Cannot verify CSCwo74485"])
+            continue
+        try:
+            upgrade_order_applies = not is_firstver_gt_secondver(current_cimc, "4.3(5)")
+        except (IndexError, TypeError):
+            data.append([nodeid, apic_model, str(cversion), current_cimc,
+                         "Cannot verify CSCwo74485"])
+            continue
+        if upgrade_order_applies:
+            affected_node_found = True
+            data.append([nodeid, apic_model, str(cversion), current_cimc,
+                         "Review CIMC upgrade order"])
+
+    if data:
+        action = recommended_action if affected_node_found else verification_action
+        return Result(result=MANUAL, headers=headers, data=data,
+                      recommended_action=action, doc_url=doc_url)
+
+    return Result(result=NA, doc_url=doc_url)
 
 
 # Subprocess Check - icurl
@@ -9013,6 +9011,7 @@ class CheckManager:
         supported_hardware_check,
         r_leaf_compatibility_check,
         cimc_compatibilty_check,
+        cimc_cscwo74485_advisory_check,
         apic_cluster_health_check,
         switch_status_check,
         apic_upgrade_mixed_version_check,
