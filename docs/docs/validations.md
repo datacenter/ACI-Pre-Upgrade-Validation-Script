@@ -2718,7 +2718,7 @@ Do not upgrade to any affected ACI software release if this check fails.
 
 ### Fabric BFD on ISIS
 
-Enabling Fabric BFD (BFD on ISIS) is not recommended. The operational benefit is minimal to none, while the potential adverse impact is significantly higher:
+Enabling Fabric BFD (BFD on ISIS) is [not recommended by Cisco](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/5x/l3-configuration/cisco-apic-layer-3-networking-configuration-guide-52x/routing-protocol-support-layer3-config-52x.html). The operational benefit is minimal to none, while the potential adverse impact is significantly higher:
 
 * In a leaf-spine fabric, ISIS peers are directly connected sub-interfaces. If a peer device goes down, the physical link also goes down, which triggers Layer-1 convergence. In such scenarios — the vast majority of failure cases — BFD provides no additional convergence benefit.
 * BFD is susceptible to false flaps when BFD packets do not receive sufficient CPU cycles (for example, during periods of high CPU utilization such as tech-support collections). False BFD flaps directly impact ISIS adjacencies, which can destabilize the entire fabric control plane.
