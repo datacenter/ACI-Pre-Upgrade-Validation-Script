@@ -26,13 +26,26 @@ def target_compat_api(model):
 
 def serialized_results():
     cversion = script.AciVersion("5.3(1d)")
-    generic = script.cimc_compatibilty_check.__wrapped__(
+    results = {}
+
+    def finalize_check(check_id, result):
+        results[check_id] = result
+
+    script.cimc_compatibilty_check(
         tversion=script.AciVersion("6.2(3f)"), cversion=cversion,
+        finalize_check=finalize_check,
     )
-    advisory = script.cimc_cscwo74485_advisory_check.__wrapped__(cversion=cversion)
+    script.cimc_cscwo74485_advisory_check(
+        cversion=cversion, finalize_check=finalize_check,
+    )
     return (
-        script.AciResult("cimc_compatibilty_check", "APIC CIMC Compatibility", generic),
-        script.AciResult(test_function, "CIMC Upgrade Order (CSCwo74485)", advisory),
+        script.AciResult(
+            "cimc_compatibilty_check", "APIC CIMC Compatibility",
+            results["cimc_compatibilty_check"],
+        ),
+        script.AciResult(
+            test_function, "CIMC Upgrade Order (CSCwo74485)", results[test_function],
+        ),
     )
 
 
