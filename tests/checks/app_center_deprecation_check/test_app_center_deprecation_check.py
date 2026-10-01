@@ -10,9 +10,9 @@ test_function = "app_center_deprecation_check"
 plugins_api = "apPlugin.json"
 
 native_impact = "App Infrastructure is removed; equivalent functionality is native in APIC 6.1(2) or later."
-native_action = "Remove the legacy App Center package before upgrade and validate the native feature after upgrade."
+native_action = "Disable the legacy App Center application before upgrade and validate the native feature after upgrade."
 removed_impact = "App Infrastructure is removed; this application functionality is unavailable after upgrade."
-removed_action = "Review operational dependencies and remove or replace the application before upgrade."
+removed_action = "Review operational dependencies, disable the application before upgrade, and identify a replacement for any required functionality."
 
 
 def plugin(dn, name, status="active"):

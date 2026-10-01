@@ -2145,8 +2145,8 @@ def app_center_deprecation_check(cversion, tversion, **kwargs):
     headers = ["Application", "Application ID", "Status", "Upgrade Impact", "Recommended Action"]
     data = []
     recommended_action = (
-        'Review every installed App Center application before upgrading. Remove legacy packages '
-        'after confirming the required replacement or native workflow.'
+        'Review every installed App Center application before upgrading. Disable legacy applications '
+        'before upgrade and confirm the required replacement or native workflow.'
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#app-center-deprecation-when-crossing-612"
 
@@ -2166,9 +2166,9 @@ def app_center_deprecation_check(cversion, tversion, **kwargs):
         'pluginContr/plugin-Cisco_ElamAssistant',
     }
     native_impact = 'App Infrastructure is removed; equivalent functionality is native in APIC 6.1(2) or later.'
-    native_action = 'Remove the legacy App Center package before upgrade and validate the native feature after upgrade.'
+    native_action = 'Disable the legacy App Center application before upgrade and validate the native feature after upgrade.'
     removed_impact = 'App Infrastructure is removed; this application functionality is unavailable after upgrade.'
-    removed_action = 'Review operational dependencies and remove or replace the application before upgrade.'
+    removed_action = 'Review operational dependencies, disable the application before upgrade, and identify a replacement for any required functionality.'
 
     ap_plugins = icurl('class', 'apPlugin.json')
     for ap_plugin in ap_plugins:

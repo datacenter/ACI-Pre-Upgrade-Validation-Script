@@ -448,7 +448,7 @@ APIC internal/default plugin objects are excluded. The following legacy App Cent
 * `Cisco_NIBASE` — Nexus Insights Cloud Connector
 * `Cisco_ElamAssistant` — ELAM Assistant
 
-Remove these legacy packages before the upgrade and validate the corresponding native functionality afterward. For every other installed application, review its operational dependencies and remove or replace it before upgrading because its App Center-hosted functionality is unavailable after the upgrade.
+Disable these legacy applications before the upgrade and validate the corresponding native functionality afterward. For every other installed application, review its operational dependencies, disable it before upgrading, and identify a replacement for any required functionality because its App Center-hosted functionality is unavailable after the upgrade.
 
 This validation is not applicable when the current APIC release is already 6.1(2) or later, because the upgrade is no longer crossing the App Infrastructure removal boundary. See the [Cisco DC App Center notice][89] and the [ELAM Assistant native functionality guide][90].
 
