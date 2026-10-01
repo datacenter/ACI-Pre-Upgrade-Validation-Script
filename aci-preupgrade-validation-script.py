@@ -9400,8 +9400,6 @@ class CheckManager:
         apic_connected_port_vlan_override_check,
         nxos_ipn_multicast_rpf_defect_check,
         vzany_svcgraph_stretched_vrf_check,
-
-        # General checks added after the preceding validations
         app_center_deprecation_check,
     ]
     ssh_checks = [
