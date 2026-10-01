@@ -41,6 +41,7 @@ Items                                                        | This Script      
 [APIC downgrade compatibility when crossing 6.2 release][g19]| :white_check_mark: | :no_entry_sign:
 [Supported Hardware Compatibility][g20]                      | :white_check_mark: | :no_entry_sign:
 [Svccore Excessive Data Check][g21]                          | :white_check_mark: | :no_entry_sign:
+[App Center deprecation when crossing 6.1(2)][g24]           | :white_check_mark: | :no_entry_sign:
 
 [g1]: #compatibility-target-aci-version
 [g2]: #compatibility-cimc-version
@@ -65,6 +66,7 @@ Items                                                        | This Script      
 [g21]: #svccore-excessive-data-check
 [g22]: #apic-upgrade-in-mixed-version-fabric
 [g23]: #cimc-upgrade-order-cscwo74485
+[g24]: #app-center-deprecation-when-crossing-612
 
 ### Fault Checks
 Items                                         | Faults         | This Script       | APIC built-in
@@ -445,10 +447,12 @@ This is applicable only when you are upgrading your Cisco APICs from pre-4.0 to 
 
 The following features must be disabled prior to upgrades or downgrades:
 
-* App Center apps
+* App Center apps, except when upgrading from a release before 6.1(2) to 6.1(2) or later
 * Maintenance Mode through Fabric > Inventory > Fabric Membership > Maintenance (GIR)
 * Config Zone
 * Rogue Endpoint (only when the running version is 14.1(x) or when upgrading to 14.1(x))
+
+When the upgrade crosses into APIC 6.1(2) or later, this check reports `App Center deprecated on 6.1(2).` instead of treating active applications as features that must be disabled. The separate App Center deprecation check reports the installed applications and their upgrade impact. Config Zone and Rogue Endpoint findings retain their existing outage-warning behavior.
 
 
 ### Switch Upgrade Group Guidelines
@@ -3076,6 +3080,20 @@ The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant
 
 Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][91].
 
+### App Center deprecation when crossing 6.1(2)
+
+Starting with APIC release 6.1(2), App Center and its applications can no longer be hosted on APIC because the APIC App Infrastructure is removed. When an upgrade crosses from a release before 6.1(2) to 6.1(2) or later, this check inventories all installed App Center applications, including inactive applications, and returns `MANUAL CHECK REQUIRED` when any are found.
+
+APIC internal/default plugin objects are excluded. The following legacy App Center packages are reported as having equivalent functionality native in APIC 6.1(2) or later:
+
+* `Cisco_PreUpgradeValidator` — Pre-Upgrade Validator
+* `Cisco_NIBASE` — Nexus Insights Cloud Connector
+* `Cisco_ElamAssistant` — ELAM Assistant
+
+Disable these legacy applications before the upgrade and validate the corresponding native functionality afterward. For every other installed application, review its operational dependencies, disable it before upgrading, and identify a replacement for any required functionality because its App Center-hosted functionality is unavailable after the upgrade.
+
+This validation is not applicable when the current APIC release is already 6.1(2) or later, because the upgrade is no longer crossing the App Infrastructure removal boundary. See the [Cisco DC App Center notice][93] and the [ELAM Assistant native functionality guide][94].
+
 [0]: https://github.com/datacenter/ACI-Pre-Upgrade-Validation-Script
 [1]: https://www.cisco.com/c/dam/en/us/td/docs/Website/datacenter/apicmatrix/index.html
 [2]: https://www.cisco.com/c/en/us/support/switches/nexus-9000-series-switches/products-release-notes-list.html
@@ -3168,3 +3186,5 @@ Recommended action: Migrate the vzAny service graph configuration to NDO before 
 [90]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/aci-fundamentals/cisco-aci-fundamentals-61x/troubleshooting-61x.html
 [91]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwt14573
 [92]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
+[93]: https://dcappcenter.cisco.com/elam-assistant.html
+[94]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/elam-assistant-user-guide/elam-assistant-user-guide/m-overview.html

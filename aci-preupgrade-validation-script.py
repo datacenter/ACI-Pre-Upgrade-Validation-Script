@@ -2169,15 +2169,31 @@ def ntp_status_check(fabric_nodes, **kargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+def crosses_app_center_deprecation(cversion, tversion):
+    """Return True when an upgrade crosses into APIC 6.1(2) or later."""
+    return bool(
+        cversion
+        and tversion
+        and cversion.older_than("6.1(2a)")
+        and not tversion.older_than("6.1(2a)")
+    )
+
+
 @check_wrapper(check_title="Features that need to be Disabled prior to Upgrade")
 def features_to_disable_check(cversion, tversion, **kwargs):
     result = FAIL_O
+    msg = ''
     headers = ["Feature", "Name", "Status", "Recommended Action"]
     data = []
     recommended_action = 'Disable the feature prior to upgrade'
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#features-that-need-to-be-disabled-prior-to-upgrade"
 
-    apPlugins = icurl('class', 'apPlugin.json?&query-target-filter=ne(apPlugin.pluginSt,"inactive")')
+    crossing_app_center_deprecation = crosses_app_center_deprecation(cversion, tversion)
+    if crossing_app_center_deprecation:
+        apPlugins = []
+        msg = 'App Center deprecated on 6.1(2).'
+    else:
+        apPlugins = icurl('class', 'apPlugin.json?&query-target-filter=ne(apPlugin.pluginSt,"inactive")')
     infraMOs = icurl('mo', 'uni/infra.json?query-target=subtree&target-subtree-class=infrazoneZone,epControlP')
     default_apps = ['IntersightDC', 'NIALite', 'NIBASE', 'ApicVision']
     default_appDNs = ['pluginContr/plugin-Cisco_' + app for app in default_apps]
@@ -2208,7 +2224,7 @@ def features_to_disable_check(cversion, tversion, **kwargs):
                 data.append(['Rogue Endpoint', name, 'Enabled', ra])
     if not data:
         result = PASS
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 @check_wrapper(check_title="Switch Upgrade Group Guidelines")
@@ -9198,6 +9214,57 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
                   recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title="App Center deprecation when crossing 6.1(2)")
+def app_center_deprecation_check(cversion, tversion, **kwargs):
+    headers = ["Application", "Application ID", "Status", "Upgrade Impact", "Recommended Action"]
+    data = []
+    recommended_action = (
+        'Review every installed App Center application before upgrading. Disable legacy applications '
+        'before upgrade and confirm the required replacement or native workflow.'
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#app-center-deprecation-when-crossing-612"
+
+    if not tversion:
+        return Result(result=NA, msg=TVER_MISSING, doc_url=doc_url)
+    if not crosses_app_center_deprecation(cversion, tversion):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    internal_app_dns = {
+        'pluginContr/plugin-Cisco_IntersightDC',
+        'pluginContr/plugin-Cisco_NIALite',
+        'pluginContr/plugin-Cisco_ApicVision',
+    }
+    native_app_dns = {
+        'pluginContr/plugin-Cisco_PreUpgradeValidator',
+        'pluginContr/plugin-Cisco_NIBASE',
+        'pluginContr/plugin-Cisco_ElamAssistant',
+    }
+    native_impact = 'App Infrastructure is removed; equivalent functionality is native in APIC 6.1(2) or later.'
+    native_action = 'Disable the legacy App Center application before upgrade and validate the native feature after upgrade.'
+    removed_impact = 'App Infrastructure is removed; this application functionality is unavailable after upgrade.'
+    removed_action = 'Review operational dependencies, disable the application before upgrade, and identify a replacement for any required functionality.'
+
+    ap_plugins = icurl('class', 'apPlugin.json')
+    for ap_plugin in ap_plugins:
+        attributes = ap_plugin['apPlugin']['attributes']
+        dn = attributes.get('dn', '')
+        if dn in internal_app_dns:
+            continue
+        name = attributes.get('name', dn)
+        plugin_status = attributes.get('pluginSt', 'unknown')
+        app_id = dn.rsplit('plugin-', 1)[-1] if 'plugin-' in dn else dn
+        if dn in native_app_dns:
+            impact = native_impact
+            action = native_action
+        else:
+            impact = removed_impact
+            action = removed_action
+        data.append([name, app_id, plugin_status, impact, action])
+
+    result = MANUAL if data else PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 class CheckManager:
     """Central managing point of all checks.
     Highlevel flows:
@@ -9333,6 +9400,7 @@ class CheckManager:
         apic_connected_port_vlan_override_check,
         nxos_ipn_multicast_rpf_defect_check,
         vzany_svcgraph_stretched_vrf_check,
+        app_center_deprecation_check,
     ]
     ssh_checks = [
         # General
