@@ -62,6 +62,11 @@ def test_args_total_checks(capsys, api_only):
     assert captured.out == expected_output, "captured.out is =\n{}".format(captured.out)
 
 
+def test_unknown_debug_function_fails_before_connecting():
+    with pytest.raises(ValueError, match="Unknown or unavailable debug function"):
+        script.main(["--debug-function", "not_a_real_check"])
+
+
 def test_main(capsys, mock_query_common_data, mock_CheckManager_get_check_funcs, expected_result_objects):
     script.main(["--no-cleanup"])
 
