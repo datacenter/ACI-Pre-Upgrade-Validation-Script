@@ -2028,6 +2028,93 @@ def switch_status_check(fabric_nodes, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action)
 
 
+@check_wrapper(check_title="APIC Upgrade in Mixed-Version Fabric")
+def apic_upgrade_mixed_version_check(cversion, tversion, fabric_nodes, **kwargs):
+    """Avoid starting another APIC upgrade while active switches are on another release."""
+    doc_url = ('https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/'
+               'validations/#apic-upgrade-in-mixed-version-fabric')
+    headers = ['Pod', 'Node', 'Name', 'Role', 'Current Version', 'APIC Version', 'Reason']
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+    if not cversion:
+        return Result(result=MANUAL, msg='Current APIC version not found.', doc_url=doc_url)
+    if not tversion.newer_than(cversion):
+        return Result(result=NA, msg='No APIC upgrade is planned.', doc_url=doc_url)
+
+    apic_data = []
+    switch_data = []
+    unknown_data = []
+    active_switches = 0
+    newer_switch_found = False
+
+    for node in fabric_nodes:
+        attr = node['fabricNode']['attributes']
+        role = attr.get('role', '')
+        if role not in ('controller', 'leaf', 'spine'):
+            continue
+        if role != 'controller' and attr.get('fabricSt') != 'active':
+            continue
+
+        dn = attr.get('dn', '')
+        match = re.search(node_regex, dn)
+        pod = match.group('pod') if match else '-'
+        node_id = attr.get('id', '-')
+        row = [pod, node_id, attr.get('name', '-'), role,
+               attr.get('version', ''), str(cversion), '']
+
+        if role == 'controller':
+            if row[4] and not AciVersion(row[4]).same_as(cversion):
+                row[6] = 'APICs are on different versions'
+                apic_data.append(row)
+            continue
+
+        active_switches += 1
+        if not row[4]:
+            row[6] = 'Switch version not found'
+            unknown_data.append(row)
+        else:
+            switch_version = AciVersion(row[4])
+            if not switch_version.same_as(cversion):
+                if switch_version.newer_than(cversion):
+                    row[6] = 'Switch newer than APIC'
+                    newer_switch_found = True
+                else:
+                    row[6] = 'Switch differs from APIC'
+                switch_data.append(row)
+
+    if apic_data:
+        return Result(
+            result=FAIL_UF, msg='APICs are running different versions.',
+            headers=headers, data=sorted(apic_data),
+            recommended_action='Complete or resolve the APIC cluster upgrade before starting another upgrade.',
+            doc_url=doc_url)
+
+    if switch_data:
+        if newer_switch_found:
+            msg = 'A switch is newer than the APIC, which violates mixed-version conditions.'
+        elif (int(tversion.major1), int(tversion.major2), int(tversion.maint)) < (6, 2, 1):
+            msg = 'APIC upgrade is unsupported while the fabric is in mixed-version mode.'
+        else:
+            msg = ('Enhanced Mixed Version Support may permit the current state, '
+                   'but another APIC upgrade can introduce a third version.')
+        return Result(
+            result=FAIL_UF, msg=msg, headers=headers,
+            data=sorted(switch_data + unknown_data),
+            recommended_action=('Align all active switches with the current APIC release '
+                                'before upgrading the APIC cluster.'),
+            doc_url=doc_url)
+
+    if not active_switches or unknown_data:
+        msg = ('No active leaf or spine found.' if not active_switches else
+               'One or more active switch versions could not be determined.')
+        return Result(result=MANUAL, msg=msg, headers=headers, data=sorted(unknown_data),
+                      recommended_action='Verify active switch versions before upgrading the APIC cluster.',
+                      doc_url=doc_url)
+
+    return Result(result=PASS, msg='All active switches match the APIC release.', doc_url=doc_url)
+
+
 @check_wrapper(check_title="Firmware/Maintenance Groups when crossing 4.0 Release")
 def maintp_grp_crossing_4_0_check(cversion, tversion, **kwargs):
     result = PASS
@@ -2138,57 +2225,6 @@ def features_to_disable_check(cversion, tversion, **kwargs):
     if not data:
         result = PASS
     return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
-
-
-@check_wrapper(check_title="App Center deprecation when crossing 6.1(2)")
-def app_center_deprecation_check(cversion, tversion, **kwargs):
-    headers = ["Application", "Application ID", "Status", "Upgrade Impact", "Recommended Action"]
-    data = []
-    recommended_action = (
-        'Review every installed App Center application before upgrading. Disable legacy applications '
-        'before upgrade and confirm the required replacement or native workflow.'
-    )
-    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#app-center-deprecation-when-crossing-612"
-
-    if not tversion:
-        return Result(result=NA, msg=TVER_MISSING, doc_url=doc_url)
-    if not crosses_app_center_deprecation(cversion, tversion):
-        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
-
-    internal_app_dns = {
-        'pluginContr/plugin-Cisco_IntersightDC',
-        'pluginContr/plugin-Cisco_NIALite',
-        'pluginContr/plugin-Cisco_ApicVision',
-    }
-    native_app_dns = {
-        'pluginContr/plugin-Cisco_PreUpgradeValidator',
-        'pluginContr/plugin-Cisco_NIBASE',
-        'pluginContr/plugin-Cisco_ElamAssistant',
-    }
-    native_impact = 'App Infrastructure is removed; equivalent functionality is native in APIC 6.1(2) or later.'
-    native_action = 'Disable the legacy App Center application before upgrade and validate the native feature after upgrade.'
-    removed_impact = 'App Infrastructure is removed; this application functionality is unavailable after upgrade.'
-    removed_action = 'Review operational dependencies, disable the application before upgrade, and identify a replacement for any required functionality.'
-
-    ap_plugins = icurl('class', 'apPlugin.json')
-    for ap_plugin in ap_plugins:
-        attributes = ap_plugin['apPlugin']['attributes']
-        dn = attributes.get('dn', '')
-        if dn in internal_app_dns:
-            continue
-        name = attributes.get('name', dn)
-        plugin_status = attributes.get('pluginSt', 'unknown')
-        app_id = dn.rsplit('plugin-', 1)[-1] if 'plugin-' in dn else dn
-        if dn in native_app_dns:
-            impact = native_impact
-            action = native_action
-        else:
-            impact = removed_impact
-            action = removed_action
-        data.append([name, app_id, plugin_status, impact, action])
-
-    result = MANUAL if data else PASS
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
 @check_wrapper(check_title="Switch Upgrade Group Guidelines")
@@ -4067,12 +4103,6 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
     recommended_action = 'Check Release note of APIC Model/version for latest recommendations.'
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
 
-    cimc_upgrade_required = False
-    cimc_upgrade_order_required = False
-    ordinary_cimc_upgrade_required = False
-    cimc_upgrade_optional = False
-    current_compatibility_review = False
-
     apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
     if apic_obj and tversion:
         try:
@@ -4082,23 +4112,15 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                     model = "apic" + apic_model.split('-')[2].lower()
                     current_cimc = eqptCh['eqptCh']['attributes']['cimcVersion']
                    
-                    # CSCwo74485 affects CIMC upgrades on M4/L4 APICs running these releases.
-                    affected_cimc_upgrade = (
-                        model in ("apicm4", "apicl4") and cversion
-                        and not is_firstver_gt_secondver(current_cimc, "4.3(5)")
-                        and (
-                            (cversion.major1 == "5" and cversion.major2 == "3")
-                            or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
-                            or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
-                        )
-                    )
-
                     compat_lookup_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + tversion.simple_version + \
                                        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
                     compatMo = icurl('mo', compat_lookup_dn)
                     if not compatMo:
-                        msg = "No compatibility information found for {}/{}".format(model, tversion.simple_version)
-                        return Result(result=MANUAL, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+                        msg = "" if data else "CIMC compatibility unavailable."
+                        recommended_action = ('Review the APIC model and target release documentation to determine '
+                                              'the required CIMC version.')
+                        return Result(result=MANUAL, msg=msg, headers=headers, data=data,
+                                      recommended_action=recommended_action, doc_url=doc_url)
                     recommended_cimc = compatMo[0]['compatRsSuppHw']['attributes']['cimcVersion']
                     warning = ""
                     if compatMo and recommended_cimc:
@@ -4110,74 +4132,86 @@ def cimc_compatibilty_check(tversion, cversion, **kwargs):
                         if not release_note_supported and not is_firstver_gt_secondver(current_cimc, recommended_cimc):
                             nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
                             data.append([nodeid, apic_model, current_cimc, recommended_cimc, warning])
-                            cimc_upgrade_required = True
-                            if affected_cimc_upgrade:
-                                cimc_upgrade_order_required = True
-                            else:
-                                ordinary_cimc_upgrade_required = True
-                        elif affected_cimc_upgrade:
-                            # A target-compatible CIMC needs no upgrade. Verify that it is
-                            # also supported on the currently running APIC release.
-                            current_compat_dn = "uni/fabric/compcat-default/ctlrfw-apic-" + cversion.simple_version + \
-                                                "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-" + model + "].json"
-                            current_compat_mo = icurl('mo', current_compat_dn)
-                            if not current_compat_mo:
-                                current_compatibility_review = True
-                                nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "Current APIC/CIMC compatibility information unavailable."])
-                                continue
-                            current_recommended_cimc = current_compat_mo[0]['compatRsSuppHw']['attributes']['cimcVersion']
-                            current_release_note_supported = current_cimc in CIMC_RELEASE_NOTE_SUPPORT.get(
-                                (cversion.simple_version, model), ()
-                            )
-                            nodeid = eqptCh['eqptCh']['attributes']['dn'].split('/')[2]
-                            if not current_release_note_supported and not is_firstver_gt_secondver(current_cimc, current_recommended_cimc):
-                                current_compatibility_review = True
-                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "Current APIC/CIMC compatibility requires review."])
-                            else:
-                                cimc_upgrade_optional = True
-                                data.append([nodeid, apic_model, current_cimc, recommended_cimc,
-                                             "CSCwo74485 advisory"])
 
-            if cimc_upgrade_required:
+            if data:
                 result = FAIL_UF
-            elif cimc_upgrade_optional or current_compatibility_review:
-                result = MANUAL
-
-            apic_first = ('upgrade APICs to a release fixed for CSCwo74485 '
-                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC.')
-            if cimc_upgrade_optional:
-                if cimc_upgrade_required or current_compatibility_review:
-                    recommended_action = ('For nodes marked CSCwo74485 advisory, the current CIMC is supported; '
-                                          'a CIMC upgrade is not required. If you choose to upgrade CIMC on those '
-                                          'nodes, ' + apic_first)
-                else:
-                    recommended_action = ('The current CIMC is supported; a CIMC upgrade is not required. '
-                                          'If you choose to upgrade CIMC, ' + apic_first)
-            if cimc_upgrade_order_required:
-                if cimc_upgrade_optional:
-                    recommended_action += (' For affected M4/L4 nodes below the target CIMC recommendation, '
-                                           'a CIMC upgrade is required; upgrade APICs to a CSCwo74485 fixed '
-                                           'release first, then follow the target catalog recommendation.')
-                else:
-                    recommended_action = ('The current CIMC is below the target recommendation; a CIMC upgrade is '
-                                          'required. Upgrade APICs to a release fixed for CSCwo74485 '
-                                          '[6.0(9e)+ or 6.1(4h)+] BEFORE upgrading CIMC, then follow the target '
-                                          'catalog recommendation.')
-            if ordinary_cimc_upgrade_required and (cimc_upgrade_optional or cimc_upgrade_order_required):
-                recommended_action += (' For other nodes below the target CIMC recommendation, check the APIC '
-                                       'model and target version release notes to plan the required CIMC upgrade.')
-            if current_compatibility_review:
-                recommended_action += ' Review the current APIC/CIMC compatibility for the flagged nodes.'
 
         except KeyError:
-            return Result(result=MANUAL, msg="eqptCh does not have cimcVersion parameter on this version", headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+            msg = "" if data else "CIMC compatibility unavailable."
+            recommended_action = ('Review the APIC model and target release documentation to determine '
+                                  'the required CIMC version.')
+            return Result(result=MANUAL, msg=msg, headers=headers, data=data,
+                          recommended_action=recommended_action, doc_url=doc_url)
     else:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="CIMC Upgrade Order (CSCwo74485)")
+def cimc_cscwo74485_advisory_check(cversion, **kwargs):
+    headers = ["Node ID", "Model", "Current APIC version", "Current CIMC version", "Finding"]
+    data = []
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#compatibility-cimc-version'
+    recommended_action = ('If a CIMC upgrade is required, review CSCwo74485 and upgrade APIC software '
+                          'to a fixed release before upgrading CIMC.')
+    verification_action = 'Review CSCwo74485 before upgrading CIMC.'
+
+    if not cversion:
+        return Result(result=MANUAL, msg="Cannot verify CSCwo74485.",
+                      recommended_action=verification_action, doc_url=doc_url)
+
+    affected_apic_version = (
+        (cversion.major1 == "5" and cversion.major2 == "3")
+        or (cversion.major1 == "6" and cversion.major2 == "0" and cversion.older_than("6.0(9e)"))
+        or (cversion.major1 == "6" and cversion.major2 == "1" and cversion.older_than("6.1(4h)"))
+    )
+    if not affected_apic_version:
+        return Result(result=NA, doc_url=doc_url)
+
+    apic_obj = icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")')
+    if not apic_obj:
+        return Result(result=MANUAL, msg="Cannot verify CSCwo74485.",
+                      recommended_action=verification_action, doc_url=doc_url)
+
+    affected_node_found = False
+    for eqptCh in apic_obj:
+        attributes = eqptCh.get('eqptCh', {}).get('attributes', {})
+        dn = attributes.get('dn', '')
+        dn_parts = dn.split('/')
+        nodeid = dn_parts[2] if len(dn_parts) > 2 else "-"
+        apic_model = attributes.get('descr', '')
+        current_cimc = attributes.get('cimcVersion', '')
+        try:
+            model = "apic" + apic_model.split('-')[2].lower()
+        except (AttributeError, IndexError):
+            data.append([nodeid, apic_model or "-", str(cversion), current_cimc or "-",
+                         "Cannot verify CSCwo74485"])
+            continue
+
+        if model not in ("apicm4", "apicl4"):
+            continue
+
+        if not current_cimc:
+            data.append([nodeid, apic_model, str(cversion), "-", "Cannot verify CSCwo74485"])
+            continue
+        try:
+            upgrade_order_applies = not is_firstver_gt_secondver(current_cimc, "4.3(5)")
+        except (IndexError, TypeError):
+            data.append([nodeid, apic_model, str(cversion), current_cimc,
+                         "Cannot verify CSCwo74485"])
+            continue
+        if upgrade_order_applies:
+            affected_node_found = True
+            data.append([nodeid, apic_model, str(cversion), current_cimc,
+                         "Review CIMC upgrade order"])
+
+    if data:
+        action = recommended_action if affected_node_found else verification_action
+        return Result(result=MANUAL, headers=headers, data=data,
+                      recommended_action=action, doc_url=doc_url)
+
+    return Result(result=NA, doc_url=doc_url)
 
 
 # Subprocess Check - icurl
@@ -6028,30 +6062,71 @@ def fc_ex_model_check(tversion, fabric_nodes, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
-@check_wrapper(check_title='TEP-to-TEP Atomic Counter scalability')
-def tep_to_tep_ac_counter_check(**kwargs):
-    result = NA
-    headers = ["dbgAcPath Count", "Supported Maximum"]
+@check_wrapper(check_title='Atomic Counter Configuration')
+def atomic_counter_check(tversion, **kwargs):
+    """Check deprecation before the independent scalability and rollback concerns."""
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#atomic-counter-configuration'
+    headers = ['Concern', 'Count', 'Details']
     data = []
-    recommended_action = 'Assess and cleanup dbgAcPath policies to drop below the supported maximum'
-    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#tep-to-tep-atomic-counters-scalability'
+
+    def count_mos(query):
+        response = icurl('class', query)
+        return int(response[0]['moCount']['attributes']['count'])
+
+    if tversion and (int(tversion.major1), int(tversion.major2), int(tversion.maint)) >= (6, 1, 2):
+        # APIC also exposes an unconfigured, built-in IP-to-IP policy in tn-common.
+        tenant_api = (
+            'dbgacTenantSpaceCmn.json?query-target-filter='
+            'ne(dbgacTenantSpaceCmn.dn,"uni/tn-common/acIpToIp-default")'
+            '&rsp-subtree-include=count'
+        )
+        tenant_count = count_mos(tenant_api)
+        path_count = count_mos('dbgAcPathA.json?rsp-subtree-include=count')
+        if tenant_count or path_count:
+            if tenant_count:
+                data.append(['Deprecated tenant policies', tenant_count, 'dbgacTenantSpaceCmn'])
+            if path_count:
+                data.append(['Deprecated TEP paths', path_count, 'dbgAcPathA'])
+            return Result(
+                result=MANUAL,
+                msg='Atomic counters are no longer supported in APIC 6.1(2) and later. Cleanup is mandatory before upgrade.',
+                headers=headers,
+                data=data,
+                recommended_action='Remove configured atomic counter policies before upgrading.',
+                doc_url=doc_url,
+            )
 
     ac_limit = 1600
-    atomic_counter_api = 'dbgAcPath.json'
-    atomic_counter_api += '?rsp-subtree-include=count'
+    path_count = count_mos('dbgAcPath.json?rsp-subtree-include=count')
+    ep_to_ep_count = count_mos('dbgacEpToEp.json?rsp-subtree-include=count')
+    result = PASS if path_count else NA
+    actions = []
 
-    atomic_counter_number = icurl('class', atomic_counter_api)
-    atomic_counter_number = int(atomic_counter_number[0]['moCount']['attributes']['count'])
-
-    if atomic_counter_number >= ac_limit:
-        data.append([atomic_counter_number, str(ac_limit)])
-    elif atomic_counter_number > 0 and atomic_counter_number < ac_limit:
-        result = PASS
-
-    if data:
+    if path_count > ac_limit:
+        data.append(['TEP-to-TEP scalability', path_count, 'Supported maximum: {}'.format(ac_limit)])
+        actions.append('Reduce dbgAcPath policies to {} or fewer.'.format(ac_limit))
         result = FAIL_UF
 
-    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    if ep_to_ep_count:
+        data.append(['Configuration rollback review', ep_to_ep_count, 'dbgacEpToEp policies present'])
+        actions.append('Review endpoint-to-endpoint policy references for cross-tenant or cross-VRF configuration before upgrade.')
+        if result != FAIL_UF:
+            result = MANUAL
+
+    msg = ''
+    if not tversion:
+        msg = 'Target version not supplied; atomic counter deprecation could not be assessed.'
+        if result in (PASS, NA):
+            result = MANUAL
+
+    return Result(
+        result=result,
+        msg=msg,
+        headers=headers,
+        data=data,
+        recommended_action=' '.join(actions),
+        doc_url=doc_url,
+    )
 
 
 @check_wrapper(check_title='Nexus 950X FM or LC Might Fail to boot after reload')
@@ -8927,6 +9002,269 @@ def nxos_ipn_multicast_rpf_defect_check(fabric_nodes, **kwargs):
     return Result(result=result, msg=msg, headers=headers, data=data,
                   recommended_action=recommended_action, doc_url=doc_url)
 
+
+
+@check_wrapper(check_title='vzAny Service Graph on Stretched VRF')
+def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
+    result = PASS
+    headers = ['Tenant', 'VRF', 'Contract', 'Graph', 'Issue']
+    data = []
+    unformatted_headers = ['Graph Instance DN', 'Issue']
+    unformatted_data = []
+    recommended_action = 'Migrate vzAny service graph configuration to NDO before upgrade using brownfield import. See documentation for detailed migration steps.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#vzany-service-graph-on-stretched-vrf'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    if not tversion.newer_than("6.1(3g)"):
+        return Result(result=PASS, msg="Target version does not trigger CSCwn95571 validation", doc_url=doc_url)
+
+    has_error = False
+
+    # Pre-6.1(4): the impacted graph is still 'applied', so scope to that state to limit load.
+    # 6.1(4)+: a later re-render can leave it failed-to-apply, so poll all states.
+    graph_subtree = '&rsp-subtree=children&rsp-subtree-class=vnsNodeInst'
+    if cversion and not cversion.newer_than("6.1(3g)"):
+        graph_query = 'vnsGraphInst.json?query-target-filter=eq(vnsGraphInst.configSt,"applied")' + graph_subtree
+    else:
+        graph_query = 'vnsGraphInst.json?' + graph_subtree.lstrip('&')
+
+    try:
+        graph_insts = icurl('class', graph_query)
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying service graphs: {}'.format(str(e)), doc_url=doc_url)
+
+    if not graph_insts:
+        return Result(result=PASS, msg="No service graphs found", doc_url=doc_url)
+
+    # Key by contract with a list of instances so multiple VRFs sharing one contract are all retained.
+    sg_by_contract = defaultdict(list)
+    for graph_inst_mo in graph_insts:
+        graph_inst = graph_inst_mo.get('vnsGraphInst', {})
+        gi_attrs = graph_inst.get('attributes', {})
+        gi_dn = gi_attrs.get('dn', '')
+        children = graph_inst.get('children', [])
+
+        # CSCwt14573/CSCwn95571 apply only to PBR service graphs (a node with routingMode "Redirect").
+        is_pbr = any(
+            child.get('vnsNodeInst', {}).get('attributes', {}).get('routingMode') == 'Redirect'
+            for child in children
+        )
+        if not is_pbr:
+            continue
+
+        # Skip NDO/MSC-managed graphs; their translation entries are created by NDO.
+        annotation = gi_attrs.get('absGraphAnnotation', '') or gi_attrs.get('annotation', '')
+        if 'orchestrator:msc' in annotation:
+            continue
+
+        contract_dn = gi_attrs.get('ctrctDn', '')
+        if not contract_dn:
+            has_error = True
+            unformatted_data.append([gi_dn or 'unknown', 'Service graph instance missing contract DN (ctrctDn)'])
+            continue
+
+        graph_name_match = re.search(r'-G-\[uni/tn-[^/]+/AbsGraph-([^\]]+)\]', gi_dn)
+        graph_name = graph_name_match.group(1) if graph_name_match else ''
+
+        scope_match = re.search(r'-S-\[(.*?)\]', gi_dn)
+        if not scope_match:
+            has_error = True
+            unformatted_data.append([gi_dn or contract_dn, 'Unable to parse the VRF scope from the graph instance DN'])
+            continue
+        scope_dn = scope_match.group(1)
+
+        sg_by_contract[contract_dn].append({
+            'gi_dn': gi_dn,
+            'graph_name': graph_name,
+            'scope_dn': scope_dn,
+        })
+
+    if not sg_by_contract:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No locally-managed service graphs with contracts found", doc_url=doc_url)
+
+    stretched_vrf_dns = set()
+    try:
+        fvctx_list = icurl('class', 'fvCtx.json?rsp-subtree=children&rsp-subtree-class=fvSiteAssociated&rsp-subtree-include=required')
+        for vrf_ctx_mo in fvctx_list:
+            ctx_dn = vrf_ctx_mo.get('fvCtx', {}).get('attributes', {}).get('dn', '')
+            for site_assoc_mo in vrf_ctx_mo.get('fvCtx', {}).get('children', []):
+                if 'fvSiteAssociated' not in site_assoc_mo:
+                    continue
+                for remote_id_mo in site_assoc_mo['fvSiteAssociated'].get('children', []):
+                    if 'fvRemoteId' in remote_id_mo:
+                        stretched_vrf_dns.add(ctx_dn)
+                        break
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying stretched VRFs: {}'.format(str(e)), doc_url=doc_url)
+
+    if not stretched_vrf_dns:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No stretched VRFs found", doc_url=doc_url)
+
+    # Key by (contract, VRF) so each scoped vzAny relationship is preserved.
+    vzany_on_stretched = {}
+    for rel_class in ('vzRsAnyToCons', 'vzRsAnyToProv'):
+        try:
+            rels = icurl('class', '{}.json'.format(rel_class))
+        except Exception as e:
+            has_error = True
+            unformatted_data.append(['-', 'Error querying {}: {}'.format(rel_class, str(e))])
+            continue
+        for rel in rels:
+            rel_attrs = rel.get(rel_class, {}).get('attributes', {})
+            contract_dn = rel_attrs.get('tDn', '')
+            if contract_dn not in sg_by_contract:
+                continue
+            rel_dn = rel_attrs.get('dn', '')
+            vrf_dn_match = re.match(r'(uni/tn-[^/]+/ctx-[^/]+)', rel_dn)
+            if not vrf_dn_match:
+                has_error = True
+                unformatted_data.append([rel_dn or '-', 'Unable to parse the VRF scope from the {} DN'.format(rel_class)])
+                continue
+            vrf_dn = vrf_dn_match.group(1)
+            if vrf_dn not in stretched_vrf_dns:
+                continue
+            vrf_name_match = re.search(r'ctx-([^/]+)', vrf_dn)
+            vrf_name = vrf_name_match.group(1) if vrf_name_match else vrf_dn
+            vzany_on_stretched[(contract_dn, vrf_dn)] = {'vrf_name': vrf_name}
+
+    if not vzany_on_stretched:
+        if has_error:
+            return Result(result=ERROR, headers=headers, data=data,
+                          unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                          recommended_action=recommended_action, doc_url=doc_url)
+        return Result(result=PASS, msg="No vzAny service graph contracts on stretched VRFs", doc_url=doc_url)
+
+    # Use APIC's instantiated EPgDef DNs rather than inferring a node from terminal
+    # objects. TermNodeInst has no consumer type, and ConnectionInst is its sibling.
+    try:
+        epg_defs = icurl('class', 'vnsEPgDef.json?query-target-filter=eq(vnsEPgDef.name,"consumer")')
+    except Exception as e:
+        return Result(result=ERROR, msg='Error querying service graph EPg definitions: {}'.format(str(e)), doc_url=doc_url)
+
+    consumer_epg_defs = defaultdict(list)
+    for epg_def_mo in epg_defs:
+        epg_attrs = epg_def_mo.get('vnsEPgDef', {}).get('attributes', {})
+        epg_dn = epg_attrs.get('dn', '')
+        if epg_attrs.get('name') != 'consumer':
+            continue
+        graph_match = re.match(r'^(.*-S-\[[^\]]+\])/', epg_dn)
+        if graph_match:
+            consumer_epg_defs[graph_match.group(1)].append(epg_dn)
+
+    xlate_results = {}
+    for (contract_dn, vrf_dn), vrf_info in vzany_on_stretched.items():
+        contract_match = re.match(r'uni/tn-([^/]+)/brc-([^/]+)', contract_dn)
+        if not contract_match:
+            has_error = True
+            unformatted_data.append([contract_dn, 'Unable to parse the contract DN'])
+            continue
+        tenant = contract_match.group(1)
+        contract = contract_match.group(2)
+        vrf_name = vrf_info['vrf_name']
+
+        # A graph can be scoped to the VRF, its tenant, or globally (uni).
+        for sg_info in sg_by_contract.get(contract_dn, []):
+            if sg_info['scope_dn'] not in (vrf_dn, vrf_dn.rsplit('/', 1)[0], 'uni'):
+                continue
+
+            gi_dn = sg_info['gi_dn']
+            graph_name = sg_info['graph_name']
+            epg_def_dns = consumer_epg_defs.get(gi_dn, [])
+            if len(epg_def_dns) != 1:
+                has_error = True
+                unformatted_data.append([gi_dn or contract_dn,
+                                         'Expected one instantiated consumer EPgDef; found {}'.format(len(epg_def_dns))])
+                continue
+
+            epg_def_dn = epg_def_dns[0]
+            xlate_dn = "uni/tn-{}/mscGraphXlateCont/epgDefXlate-[{}]".format(tenant, epg_def_dn)
+
+            # Tenant/global graph instances can match multiple stretched VRFs.
+            # Reuse the result rather than querying the same xlate for each VRF.
+            if xlate_dn not in xlate_results:
+                try:
+                    xlate_results[xlate_dn] = len(icurl('mo', '{}.json'.format(xlate_dn))) > 0
+                except Exception:
+                    xlate_results[xlate_dn] = None
+
+            if xlate_results[xlate_dn] is None:
+                has_error = True
+                data.append([tenant, vrf_name, contract, graph_name, 'Error querying vnsEpgDefXlate'])
+                continue
+
+            if not xlate_results[xlate_dn]:
+                data.append([tenant, vrf_name, contract, graph_name, 'Missing vnsEpgDefXlate for 1st node consumer leg'])
+
+    if has_error:
+        result = ERROR
+    elif data:
+        result = FAIL_O
+    return Result(result=result, headers=headers, data=data,
+                  unformatted_headers=unformatted_headers, unformatted_data=unformatted_data,
+                  recommended_action=recommended_action, doc_url=doc_url)
+
+
+@check_wrapper(check_title="App Center deprecation when crossing 6.1(2)")
+def app_center_deprecation_check(cversion, tversion, **kwargs):
+    headers = ["Application", "Application ID", "Status", "Upgrade Impact", "Recommended Action"]
+    data = []
+    recommended_action = (
+        'Review every installed App Center application before upgrading. Disable legacy applications '
+        'before upgrade and confirm the required replacement or native workflow.'
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#app-center-deprecation-when-crossing-612"
+
+    if not tversion:
+        return Result(result=NA, msg=TVER_MISSING, doc_url=doc_url)
+    if not crosses_app_center_deprecation(cversion, tversion):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    internal_app_dns = {
+        'pluginContr/plugin-Cisco_IntersightDC',
+        'pluginContr/plugin-Cisco_NIALite',
+        'pluginContr/plugin-Cisco_ApicVision',
+    }
+    native_app_dns = {
+        'pluginContr/plugin-Cisco_PreUpgradeValidator',
+        'pluginContr/plugin-Cisco_NIBASE',
+        'pluginContr/plugin-Cisco_ElamAssistant',
+    }
+    native_impact = 'App Infrastructure is removed; equivalent functionality is native in APIC 6.1(2) or later.'
+    native_action = 'Disable the legacy App Center application before upgrade and validate the native feature after upgrade.'
+    removed_impact = 'App Infrastructure is removed; this application functionality is unavailable after upgrade.'
+    removed_action = 'Review operational dependencies, disable the application before upgrade, and identify a replacement for any required functionality.'
+
+    ap_plugins = icurl('class', 'apPlugin.json')
+    for ap_plugin in ap_plugins:
+        attributes = ap_plugin['apPlugin']['attributes']
+        dn = attributes.get('dn', '')
+        if dn in internal_app_dns:
+            continue
+        name = attributes.get('name', dn)
+        plugin_status = attributes.get('pluginSt', 'unknown')
+        app_id = dn.rsplit('plugin-', 1)[-1] if 'plugin-' in dn else dn
+        if dn in native_app_dns:
+            impact = native_impact
+            action = native_action
+        else:
+            impact = removed_impact
+            action = removed_action
+        data.append([name, app_id, plugin_status, impact, action])
+
+    result = MANUAL if data else PASS
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 class CheckManager:
     """Central managing point of all checks.
     Highlevel flows:
@@ -8952,12 +9290,13 @@ class CheckManager:
         supported_hardware_check,
         r_leaf_compatibility_check,
         cimc_compatibilty_check,
+        cimc_cscwo74485_advisory_check,
         apic_cluster_health_check,
         switch_status_check,
+        apic_upgrade_mixed_version_check,
         ntp_status_check,
         maintp_grp_crossing_4_0_check,
         features_to_disable_check,
-        app_center_deprecation_check,
         switch_group_guideline_check,
         mini_aci_6_0_2_check,
         post_upgrade_cb_check,
@@ -9010,13 +9349,13 @@ class CheckManager:
         unsupported_fec_configuration_ex_check,
         cloudsec_encryption_depr_check,
         out_of_service_ports_check,
-        tep_to_tep_ac_counter_check,
         https_throttle_rate_check,
         aes_encryption_check,
         service_bd_forceful_routing_check,
         ave_eol_check,
         consumer_vzany_shared_services_check,
         pg_and_shared_svc_contract_check,
+        atomic_counter_check,
 
         # Bugs
         ep_announce_check,
@@ -9060,7 +9399,10 @@ class CheckManager:
         service_ep_flag_bd_check,
         apic_connected_port_vlan_override_check,
         nxos_ipn_multicast_rpf_defect_check,
+        vzany_svcgraph_stretched_vrf_check,
 
+        # General checks added after the preceding validations
+        app_center_deprecation_check,
     ]
     ssh_checks = [
         # General
@@ -9193,6 +9535,11 @@ def main(_args=None):
         return
 
     cm = CheckManager(args.api_only, args.debug_function, args.timeout, max_threads=args.max_threads)
+
+    if args.debug_function and cm.total_checks == 0:
+        raise ValueError(
+            "Unknown or unavailable debug function: {}".format(args.debug_function)
+        )
 
     if args.total_checks:
         print("Total Number of Checks: {}".format(cm.total_checks))
