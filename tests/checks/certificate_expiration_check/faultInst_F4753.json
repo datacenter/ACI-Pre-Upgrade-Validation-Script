@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4753",
+                "severity": "critical",
+                "lc": "raised",
+                "descr": "Factory certificate expired",
+                "dn": "topology/pod-1/node-1/sys/ch/fault-F4753"
+            }
+        }
+    }
+]

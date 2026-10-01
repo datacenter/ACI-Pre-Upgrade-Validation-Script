@@ -1,0 +1,10 @@
+[
+    {
+        "vzRsSubjGraphAtt": {
+            "attributes": {
+                "dn": "uni/tn-Tenant1/brc-Contract1/subj-Subject1/rsSubjGraphAtt",
+                "tDn": "uni/tn-Tenant1/GraphInst/node"
+            }
+        }
+    }
+]

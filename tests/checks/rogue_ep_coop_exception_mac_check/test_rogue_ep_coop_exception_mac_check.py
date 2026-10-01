@@ -20,6 +20,12 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
 @pytest.mark.parametrize(
     "icurl_outputs, tversion, cversion, expected_result, expected_data",
     [
+        # tversion missing
+        ({}, None, "5.2(3e)", script.MANUAL, []),
+        # cversion missing
+        ({}, "5.2(3e)", None, script.MANUAL, []),
+        # cversion and tversion missing
+        ({}, None, None, script.MANUAL, []),
         # NA cases (not affected)
         # tversion (affected source)
         ({}, "5.3(2f)", "5.2(3e)", script.NA, []),  # cversion (affected source)
@@ -66,14 +72,14 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "5.2(3e)",
             script.FAIL_O,
-            [[5, "N/A"]],
+            [["5", "N/A"]],
         ),
         (
             {exception_mac_api: read_data(dir, "rogue_mac_response.json")},
             "6.1(3g)",
             "5.2(3e)",
             script.FAIL_O,
-            [[5, "N/A"]],
+            [["5", "N/A"]],
         ),
         # Affected (post-APIC upgrade, pre-switch upgrade) cases
         # tversion == cversion (affected target), no exception MACs
@@ -121,7 +127,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 31 found out of 32"]],
+            [["5", "only 31 found out of 32"]],
         ),
         (
             {
@@ -131,7 +137,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 31 found out of 32"]],
+            [["5", "only 31 found out of 32"]],
         ),
         (
             {
@@ -141,7 +147,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 27 found out of 32"]],
+            [["5", "only 27 found out of 32"]],
         ),
         (
             {
@@ -151,7 +157,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 27 found out of 32"]],
+            [["5", "only 27 found out of 32"]],
         ),
         (
             {
@@ -161,7 +167,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 1 found out of 32"]],
+            [["5", "only 1 found out of 32"]],
         ),
         (
             {
@@ -171,7 +177,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 1 found out of 32"]],
+            [["5", "only 1 found out of 32"]],
         ),
         (
             {
@@ -181,7 +187,7 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.0(3e)",
             "6.0(3e)",
             script.FAIL_O,
-            [[5, "only 0 found out of 32"]],
+            [["5", "only 0 found out of 32"]],
         ),
         (
             {
@@ -191,12 +197,15 @@ presListener_api += '?query-target-filter=and(eq(presListener.lstDn,"exceptcont"
             "6.1(3g)",
             "6.1(3g)",
             script.FAIL_O,
-            [[5, "only 0 found out of 32"]],
+            [["5", "only 0 found out of 32"]],
         ),
     ],
 )
 def test_rogue_ep_coop_exception_mac_check(run_check, mock_icurl, tversion, cversion, expected_result, expected_data):
     """Test rogue_ep_coop_exception_mac_check with various scenarios."""
-    result = run_check(cversion=script.AciVersion(cversion), tversion=script.AciVersion(tversion) if tversion else None)
+    result = run_check(
+        cversion=script.AciVersion(cversion) if cversion else None,
+        tversion=script.AciVersion(tversion) if tversion else None,
+    )
     assert result.result == expected_result
     assert result.data == expected_data

@@ -1,0 +1,24 @@
+[
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-101",
+                "id": "101",
+                "name": "leaf101",
+                "model": "N9K-C93180YC-FX3",
+                "role": "leaf"
+            }
+        }
+    },
+    {
+        "fabricNode": {
+            "attributes": {
+                "dn": "topology/pod-1/node-102",
+                "id": "102",
+                "name": "leaf102",
+                "model": "N9K-C9364C",
+                "role": "leaf"
+            }
+        }
+    }
+]

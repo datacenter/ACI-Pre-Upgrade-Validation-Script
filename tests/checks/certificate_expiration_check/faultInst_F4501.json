@@ -1,0 +1,13 @@
+[
+    {
+        "faultInst": {
+            "attributes": {
+                "code": "F4501",
+                "severity": "major",
+                "lc": "raised",
+                "descr": "KeyRing Certificate THD_KEYRING expiring",
+                "dn": "uni/userext/pkiext/keyring-THD_KEYRING/fault-F4501"
+            }
+        }
+    }
+]

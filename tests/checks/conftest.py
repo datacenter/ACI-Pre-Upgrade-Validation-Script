@@ -121,7 +121,11 @@ def mock_run_cmd(monkeypatch, cmd_outputs):
             log.error("Command `%s` not found in test data", cmd)
             return ""
         if details.get("CalledProcessError"):
-            raise CalledProcessError(127, cmd)
+            raise CalledProcessError(
+                details.get("returncode", 127),
+                cmd,
+                output=details.get("error_output"),
+            )
 
         splitlines = details.get("splitlines", False)
         output = details.get("output")
