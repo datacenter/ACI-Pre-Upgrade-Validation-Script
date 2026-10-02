@@ -507,9 +507,6 @@ The post-upgrade callback may fail due to a software defect, or due to an inappr
 
 This validation checks whether the number of objects for the existing and newly created classes are the same.
 
-!!! note
-    For IPSLA, the script compares the number of unique distinguished names (DNs) returned by the `fvIPSLAMonitoringPol` and `fvSlaDef` class queries. Duplicate DNs can inflate both `rsp-subtree-include=count` and the number of entries in a plain REST response, causing a false outage warning. When checking these classes manually, compare unique DNs from complete class listings rather than count-filter totals. A mismatch in unique object counts still requires investigation by Cisco TAC.
-
 !!! tip
     This validation **must** be performed after an APIC upgrade but before a switch upgrade.
     
