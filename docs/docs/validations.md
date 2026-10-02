@@ -2481,6 +2481,8 @@ In case the link speed is set to "auto", interfaces may not come up after an upg
 Changing the speed to "inherit" resolves this situation, which is also a best practice.
 Only policies referenced by an interface policy group are reported. The associated group identifies where the host interface policy is consumed.
 
+On APIC releases whose `fabricHIfPol.speed` enum does not include `auto`, such as 4.2(7u), APIC rejects the filter with error code 301. The check reports **N/A** with `Current APIC does not support fabricHIfPol.speed="auto".` Other API errors continue to report **ERROR**.
+
 
 ### Atomic Counter Configuration
 

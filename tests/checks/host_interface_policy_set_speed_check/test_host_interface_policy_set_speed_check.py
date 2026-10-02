@@ -83,3 +83,67 @@ def test_policy_group_types(run_check, mock_icurl, icurl_outputs):
             "Spine Access",
         ],
     ]
+
+
+@pytest.mark.parametrize(
+    "code, text, expected_result",
+    [
+        # Captured from APIC 4.2(7u): speed exists, but auto is not in its enum.
+        (
+            "301",
+            "Incorrect filter format for fabricHIfPol.speed, value 'auto' is not valid",
+            script.NA,
+        ),
+        # Other errors must not be classified as an unsupported auto speed.
+        (
+            "121",
+            "Prop 'speed' not found in class 'fabricHIfPol' property table",
+            script.ERROR,
+        ),
+        (
+            "301",
+            "Incorrect filter format for fabricHIfPol.speed, value 'invalid' is not valid",
+            script.ERROR,
+        ),
+        (
+            "301",
+            "Incorrect filter format for fabricHIfPol.autoNeg, value 'auto' is not valid",
+            script.ERROR,
+        ),
+        (
+            "500",
+            "Incorrect filter format for fabricHIfPol.speed, value 'auto' is not valid",
+            script.ERROR,
+        ),
+        (
+            "400",
+            "Request failed, unresolved class for fabricHIfPol",
+            script.ERROR,
+        ),
+        (
+            "503",
+            "Unable to deliver the message, Resolve timeout",
+            script.ERROR,
+        ),
+        ("500", "Internal server error", script.ERROR),
+        ("403", "Forbidden", script.ERROR),
+    ],
+)
+def test_api_errors(run_check, mock_icurl, icurl_outputs, code, text, expected_result):
+    icurl_outputs[host_interface_policy_api] = {
+        "totalCount": "1",
+        "imdata": [{"error": {"attributes": {"code": code, "text": text}}}],
+    }
+    result = run_check(
+        cversion=script.AciVersion("4.2(7u)"),
+        sw_cversion=script.AciVersion("4.2(7w)"),
+        tversion=script.AciVersion("6.0(9d)"),
+    )
+
+    assert result.result == expected_result
+    assert result.data == []
+    if expected_result == script.NA:
+        assert result.msg == 'Current APIC does not support fabricHIfPol.speed="auto".'
+        assert result.doc_url.endswith("/#host-interface-policy-set-to-auto")
+    else:
+        assert result.msg.startswith("Unexpected Error:")
