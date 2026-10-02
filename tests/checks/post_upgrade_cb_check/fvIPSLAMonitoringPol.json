@@ -1,0 +1,26 @@
+[
+  {
+    "fvIPSLAMonitoringPol": {
+      "attributes": {
+        "dn": "uni/tn-common/ipslaMonitoringPol-default",
+        "name": "default"
+      }
+    }
+  },
+  {
+    "fvIPSLAMonitoringPol": {
+      "attributes": {
+        "dn": "uni/tn-example-a/ipslaMonitoringPol-monitor",
+        "name": "monitor"
+      }
+    }
+  },
+  {
+    "fvIPSLAMonitoringPol": {
+      "attributes": {
+        "dn": "uni/tn-example-b/ipslaMonitoringPol-monitor",
+        "name": "monitor"
+      }
+    }
+  }
+]

@@ -5103,21 +5103,34 @@ def post_upgrade_cb_check(cversion, tversion, **kwargs):
         if skip_current_mo:
             continue
         created_by_mo = new_mo_dict[new_mo]['CreatedBy']
-        api = "{}.json?rsp-subtree-include=count"
-        if new_mo == "compatSwitchHw":
-            # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
-            api += '&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
+        if new_mo == "fvSlaDef":
+            # Duplicate IPSLA DNs can inflate both moCount and plain class responses.
+            # icurl must finish pagination before counting unique DNs (issue #344).
+            new_mo_count = len(set(
+                mo[new_mo]['attributes']['dn']
+                for mo in icurl('class', '{}.json'.format(new_mo))
+            ))
+            created_by_mo_count = len(set(
+                mo[created_by_mo]['attributes']['dn']
+                for mo in icurl('class', '{}.json'.format(created_by_mo))
+            ))
+        else:
+            api = "{}.json?rsp-subtree-include=count"
+            if new_mo == "compatSwitchHw":
+                # Expected to see suppBit in 32 or 64. Zero 32 means a failed postUpgradeCb.
+                api += '&query-target-filter=eq(compatSwitchHw.suppBit,"32")'
 
-        temp_new_mo_count = icurl("class", api.format(new_mo))
-        new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+            temp_new_mo_count = icurl("class", api.format(new_mo))
+            new_mo_count = int(temp_new_mo_count[0]['moCount']['attributes']['count'])
+            if created_by_mo:
+                temp_createdby_mo_count = icurl('class', api.format(created_by_mo))
+                created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
+
         if created_by_mo == "":
             if new_mo_count == 0:
                 data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
-        else:
-            temp_createdby_mo_count = icurl('class', api.format(created_by_mo))
-            created_by_mo_count = int(temp_createdby_mo_count[0]['moCount']['attributes']['count'])
-            if created_by_mo_count != new_mo_count:
-                data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
+        elif created_by_mo_count != new_mo_count:
+            data.append([new_mo, new_mo_dict[new_mo]["Impact"]])
 
     if data:
         result = FAIL_O
