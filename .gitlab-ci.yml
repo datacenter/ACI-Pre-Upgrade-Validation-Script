@@ -4,10 +4,12 @@
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   INTEGRATION_RUN_ID: "$CI_PROJECT_ID-$CI_PIPELINE_ID-$CI_JOB_ID"
+  INTEGRATION_RUNNER_REF: "main"
 
 stages:
   - unit_test
   - integration_test
+  - publish_results
 
 test:py27:
   stage: unit_test
@@ -80,7 +82,7 @@ test:py38:
     - source venv38-integration/bin/activate
     - cd tests
     - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/requirements.txt/raw?ref=main" -o requirements.txt'
-    - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/runner.py/raw?ref=main" -o runner.py'
+    - 'curl --fail --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/runner.py/raw?ref=$INTEGRATION_RUNNER_REF" -o runner.py'
     - pip install -r requirements.txt
   artifacts:
     when: always
@@ -88,6 +90,7 @@ test:py38:
     paths:
       - $CI_PROJECT_DIR/tests/*.log
       - $CI_PROJECT_DIR/tests/*.tgz
+      - $CI_PROJECT_DIR/tests/fabric-results/
   cache:
     key:
       files:
@@ -100,6 +103,15 @@ test:py38:
     max: 1
     when: runner_system_failure
 
+# Version overrides are omitted when publishing the actual-version snapshot.
+.version_override_template: &version_override_template
+  <<: *integration_template
+  rules:
+    - if: '$PUBLISH_ACTUAL_RESULTS == "true"'
+      when: never
+    - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG'
+      when: on_success
+
 # =============================================================================
 # Integration Test - Actual Fabric Versions
 # =============================================================================
@@ -107,13 +119,42 @@ test:integration:actual-current-version:
   <<: *integration_template
   script:
     - 'curl --header "PRIVATE-TOKEN: $integration_repo_token" "$repo_url/test_fabrics.yaml/raw?ref=main" -o test_fabrics.yaml'
-    - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key
+    - |
+      if [ "$PUBLISH_ACTUAL_RESULTS" = "true" ]; then
+        if [ -n "$INTEGRATION_CHECK" ]; then
+          echo "PUBLISH_ACTUAL_RESULTS requires a full run; unset INTEGRATION_CHECK."
+          exit 1
+        fi
+        python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k "$decode_key" --results-dir fabric-results
+      else
+        python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k "$decode_key"
+      fi
+
+publish:actual-version-results:
+  stage: publish_results
+  image: python:3.8.10-slim
+  resource_group: aci_results_publication
+  dependencies:
+    - test:integration:actual-current-version
+  rules:
+    - if: '$PUBLISH_ACTUAL_RESULTS == "true"'
+      when: always
+    - when: never
+  before_script:
+    - echo 'ACQUIRE {http::proxy "$apt_proxy"}' >> /etc/apt/apt.conf
+    - echo -e "$apt_source" > /etc/apt/sources.list
+    - apt update
+    - apt install -y git ca-certificates
+  script:
+    - python3 -m unittest discover -s ci/tests -p 'test_*.py'
+    - python3 ci/publish_integration_results.py tests/fabric-results
+  timeout: 10m
 
 # =============================================================================
 # Integration Tests - 5.x Internal Upgrades
 # =============================================================================
 test:integration:5.2.4d-to-5.2.8f:
-  <<: *integration_template
+  <<: *version_override_template
   variables:
     FABRIC_CVERSION: "5.2(4d)"
     FABRIC_TVERSION: "5.2(8f)"
@@ -125,7 +166,7 @@ test:integration:5.2.4d-to-5.2.8f:
 # Integration Tests - 5.x to 6.0.x Upgrades
 # =============================================================================
 test:integration:5.2.4d-to-6.0.2h:
-  <<: *integration_template
+  <<: *version_override_template
   variables:
     FABRIC_CVERSION: "5.2(4d)"
     FABRIC_TVERSION: "6.0(2h)"
@@ -134,7 +175,7 @@ test:integration:5.2.4d-to-6.0.2h:
     - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
 
 test:integration:5.2.6e-to-6.0.5a:
-  <<: *integration_template
+  <<: *version_override_template
   variables:
     FABRIC_CVERSION: "5.2(6e)"
     FABRIC_TVERSION: "6.0(5a)"
@@ -146,7 +187,7 @@ test:integration:5.2.6e-to-6.0.5a:
 # Integration Tests - 5.x to 6.1.x Upgrades
 # =============================================================================
 test:integration:5.2.8d-to-6.1.1f:
-  <<: *integration_template
+  <<: *version_override_template
   variables:
     FABRIC_CVERSION: "5.2(8d)"
     FABRIC_TVERSION: "6.1(1f)"
@@ -155,7 +196,7 @@ test:integration:5.2.8d-to-6.1.1f:
     - python3 runner.py -f ../aci-preupgrade-validation-script.py -i test_fabrics.yaml -k $decode_key --cversion "$FABRIC_CVERSION" --tversion "$FABRIC_TVERSION"
 
 test:integration:5.3.2d-to-6.1.4h:
-  <<: *integration_template
+  <<: *version_override_template
   variables:
     FABRIC_CVERSION: "5.3(2d)"
     FABRIC_TVERSION: "6.1(4h)"
@@ -167,7 +208,7 @@ test:integration:5.3.2d-to-6.1.4h:
 # Integration Tests - 6.x Internal Upgrades
 # =============================================================================
 test:integration:6.0.2a-to-6.1.4h:
-  <<: *integration_template
+  <<: *version_override_template
   variables:
     FABRIC_CVERSION: "6.0(2a)"
     FABRIC_TVERSION: "6.1(4h)"
