@@ -66,10 +66,23 @@ def validate_source(manifest, environment):
 def validator_result(report):
     """Read the validator's summary; keep check errors distinct from FAIL findings."""
     result = {"status": "not_available", "error_count": None, "fail_count": None,
-              "error_checks": [], "fail_checks": []}
+              "error_checks": [], "fail_checks": [], "source_version": None,
+              "target_version": None, "target_version_status": "not_available"}
     if not report.is_file():
         return result
     text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", report.read_text(encoding="utf-8", errors="replace"))
+    # Read the run header, not firmware candidates or versions in check details.
+    header = re.split(r"^\[Check\s+\d+/\d+\]", text, maxsplit=1, flags=re.MULTILINE)[0]
+    version = r"(\d+\.\d+\([0-9A-Za-z_.-]+\))"
+    sources = re.findall(r"^Current APIC Version\.\.\.\s*" + version + r"\s*$", header, re.MULTILINE)
+    targets = re.findall(r'^You have chosen version "' + version + r'"\s*$', header, re.MULTILINE)
+    no_firmware = bool(re.search(r"^No Firmware Detected!", header, re.MULTILINE))
+    result["source_version"] = sources[0] if len(sources) == 1 else None
+    result["target_version_status"] = "unknown"
+    if len(targets) == 1 and not no_firmware:
+        result.update(target_version=targets[0], target_version_status="selected")
+    elif not targets and no_firmware:
+        result["target_version_status"] = "not_selected"
     lines = text.splitlines()
     starts = [index for index, line in enumerate(lines)
               if re.match(r"^\[Check\s+\d+/\d+\]", line)]
@@ -115,15 +128,26 @@ def count_link(result, category, folder=""):
     return str(count)
 
 
+def version_cell(result, category):
+    value = result[category + "_version"]
+    if value:
+        return markdown_label(value)
+    if result["status"] == "not_available":
+        return "Not available"
+    if category == "target" and result["target_version_status"] == "not_selected":
+        return "Not selected (no firmware)"
+    return "Unknown"
+
+
 def fabric_readme(fabric, manifest, errors, result, links):
     lines = [
         "# " + markdown_label(fabric["name"]), "",
         "- GitLab pipeline: {}".format(manifest["source_pipeline_id"]),
         "- Script commit: `{}`".format(manifest["source_commit"]),
         "- Run date: {}".format(manifest.get("created_at", "")), "",
-        "| Integration / collection | Validator check errors | Validator check FAILs |",
-        "| --- | --- | --- |",
-        "| {} | {} | {} |".format("Failed" if errors else "Completed", count_link(result, "error"), count_link(result, "fail")), "",
+        "| Source version | Target version | Integration / collection | Validator check errors | Validator check FAILs |",
+        "| --- | --- | --- | --- | --- |",
+        "| {} | {} | {} | {} | {} |".format(version_cell(result, "source"), version_cell(result, "target"), "Failed" if errors else "Completed", count_link(result, "error"), count_link(result, "fail")), "",
         "Files: " + " · ".join(links), "",
     ]
     if errors:
@@ -186,8 +210,9 @@ def prepare_snapshot(source, destination, environment):
         (output / "README.md").write_text(fabric_readme(fabric, manifest, errors, result, local_links), encoding="utf-8")
         links.insert(0, "[summary]({}/README.md)".format(quote(folder)))
         rows.append(
-            "| [{}]({}/README.md) | {} | {} | {} | {} |".format(
+            "| [{}]({}/README.md) | {} | {} | {} | {} | {} | {} |".format(
                 markdown_label(fabric["name"]), quote(folder),
+                version_cell(result, "source"), version_cell(result, "target"),
                 "Failed" if errors else "Completed",
                 count_link(result, "error", folder), count_link(result, "fail", folder),
                 " · ".join(links),
@@ -223,6 +248,10 @@ def prepare_snapshot(source, destination, environment):
         "Validator check errors (`ERROR !!`) and validator check FAILs (`FAIL`) are shown separately; "
         "completed does not mean upgrade-ready. Missing or unrecognized summaries are not counted as zero.",
         "",
+        "Source version is the current APIC version recorded in the validator log. "
+        "Target version is the selected APIC version recorded in that same run; "
+        "no firmware means no target was selected. Versions are unavailable when no log was collected.",
+        "",
     ]
     if validator_errors:
         readme.extend(["### Fabrics with validator check errors", ""])
@@ -232,8 +261,8 @@ def prepare_snapshot(source, destination, environment):
             for fabric in validator_errors)
         readme.append("")
     readme.extend([
-        "| Fabric | Integration / collection | Validator check errors | Validator check FAILs | Files |",
-        "| --- | --- | --- | --- | --- |",
+        "| Fabric | Source version | Target version | Integration / collection | Validator check errors | Validator check FAILs | Files |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ])
     readme.extend(rows)
     readme.extend(

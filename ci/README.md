@@ -38,6 +38,10 @@ The root README shows totals for integration failures, validator check errors
 (`ERROR !!`), and validator check FAILs (`FAIL`), plus separate per-fabric columns.
 It highlights fabrics with check errors and links to the affected checks. Each
 fabric's README shows its source pipeline, commit, run date, and result details.
+Both summaries include source and target version columns parsed from the log:
+the current APIC version and the selected target APIC version. If no firmware
+was detected, the target is explicitly not selected. Missing logs show versions
+as unavailable; missing or conflicting version headers show unknown values.
 `error.txt` is reserved for integration execution or collection failures and
 includes this provenance even when a repeated failure has identical diagnostics.
 An unavailable or unrecognized validator summary is shown explicitly and is
