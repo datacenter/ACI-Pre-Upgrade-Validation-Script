@@ -1,0 +1,26 @@
+[
+  {
+    "fvSlaDef": {
+      "attributes": {
+        "dn": "uni/tn-common/slaDefPol-default",
+        "name": "default"
+      }
+    }
+  },
+  {
+    "fvSlaDef": {
+      "attributes": {
+        "dn": "uni/tn-example-a/slaDefPol-monitor",
+        "name": "monitor"
+      }
+    }
+  },
+  {
+    "fvSlaDef": {
+      "attributes": {
+        "dn": "uni/tn-example-b/slaDefPol-monitor",
+        "name": "monitor"
+      }
+    }
+  }
+]
