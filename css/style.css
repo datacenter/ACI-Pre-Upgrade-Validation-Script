@@ -1,0 +1,9 @@
+/* enlarge the size of the logo icon
+ * to match the height of the header */
+.md-header__button.md-logo {
+  margin: 0;
+  padding: 0;
+}
+.md-header__button.md-logo img {
+  height: unset;
+}
