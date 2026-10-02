@@ -120,6 +120,50 @@ class PublicationTests(unittest.TestCase):
         snapshot = self.prepare()
         self.assertIn("Unknown", (snapshot / "fabric-a/README.md").read_text())
 
+    def test_versions_use_current_apic_and_selected_target_from_run_header(self):
+        report = self.source / "fabric-a/results.log"
+        original = report.read_bytes()
+        report.write_bytes(
+            b"Script Version v4.3.0\n"
+            b"\x1b[32mCurrent APIC Version...6.1(5e)\x1b[0m\n"
+            b"Lowest Switch Version...6.0(7e)\n"
+            b"[1]: aci-apic-dk9.4.2.7u.bin\n"
+            b'You have chosen version "5.3(2a)"\n' + original
+        )
+        snapshot = self.prepare()
+        result = json.loads((snapshot / "manifest.json").read_text())["fabrics"][0]["validator_result"]
+        self.assertEqual(result["source_version"], "6.1(5e)")
+        self.assertEqual(result["target_version"], "5.3(2a)")
+        self.assertEqual(result["target_version_status"], "selected")
+        for readme in (snapshot / "README.md", snapshot / "fabric-a/README.md"):
+            self.assertIn("| 6.1(5e) | 5.3(2a) | Completed |", readme.read_text())
+        self.assertEqual((snapshot / "fabric-a/results.log").read_bytes(), report.read_bytes())
+
+    def test_versions_distinguish_no_firmware_from_missing_or_conflicting_headers(self):
+        report = self.source / "fabric-a/results.log"
+        summary = report.read_text()
+        report.write_text("Current APIC Version...1.2(3.456)\n"
+                          "No Firmware Detected!  Please Upload APIC Firmware and re-run the script.\n" + summary)
+        snapshot = self.prepare()
+        result = publisher.validator_result(report)
+        self.assertEqual(result["source_version"], "1.2(3.456)")
+        self.assertIsNone(result["target_version"])
+        self.assertEqual(result["target_version_status"], "not_selected")
+        self.assertIn("Not selected (no firmware)", (snapshot / "README.md").read_text())
+        for header in (
+            "",
+            'You have chosen version "6.0(9e)"\nYou have chosen version "6.1(6g)"\n',
+            'You have chosen version "6.0(9e)"\nNo Firmware Detected!\n',
+        ):
+            report.write_text(header + summary)
+            result = publisher.validator_result(report)
+            self.assertEqual(result["target_version_status"], "unknown")
+            self.assertEqual(publisher.version_cell(result, "target"), "Unknown")
+        report.unlink()
+        result = publisher.validator_result(report)
+        self.assertEqual(publisher.version_cell(result, "source"), "Not available")
+        self.assertEqual(publisher.version_cell(result, "target"), "Not available")
+
     def test_identical_connection_failure_has_new_per_fabric_provenance(self):
         for filename in publisher.FILES:
             (self.source / "fabric-a" / filename).unlink()
