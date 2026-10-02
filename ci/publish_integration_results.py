@@ -63,6 +63,83 @@ def validate_source(manifest, environment):
             raise ValueError("Results provenance mismatch: " + field)
 
 
+def validator_result(report):
+    """Read the validator's summary; keep check errors distinct from FAIL findings."""
+    result = {"status": "not_available", "error_count": None, "fail_count": None,
+              "error_checks": [], "fail_checks": []}
+    if not report.is_file():
+        return result
+    text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", report.read_text(encoding="utf-8", errors="replace"))
+    lines = text.splitlines()
+    starts = [index for index, line in enumerate(lines)
+              if re.match(r"^\[Check\s+\d+/\d+\]", line)]
+    for position, start in enumerate(starts):
+        end = starts[position + 1] if position + 1 < len(starts) else len(lines)
+        name = re.sub(r"^\[Check\s+\d+/\d+\]\s*", "", lines[start]).split("...", 1)[0].strip()
+        # Some checks print several lines before their final result marker.
+        for line in lines[start:end]:
+            if re.search(r"ERROR\s*!!\s*$", line):
+                result["error_checks"].append({"check": name, "line": start + 1})
+                break
+            if re.search(r"FAIL - (?:OUTAGE WARNING|UPGRADE FAILURE)!!\s*$", line):
+                result["fail_checks"].append({"check": name, "line": start + 1})
+                break
+    summaries = text.split("=== Summary Result ===")
+    result["status"] = "unknown"
+    if len(summaries) != 2:
+        return result
+    errors = re.findall(r"^ERROR\s*!!\s*:\s*(\d+)\s*$", summaries[1], re.MULTILINE)
+    failures = re.findall(r"^FAIL - (?:OUTAGE WARNING|UPGRADE FAILURE)!!\s*:\s*(\d+)\s*$", summaries[1], re.MULTILINE)
+    if len(errors) != 1 or len(failures) != 2:
+        return result
+    error_count, fail_count = int(errors[0]), sum(map(int, failures))
+    if error_count != len(result["error_checks"]) or fail_count != len(result["fail_checks"]):
+        return result
+    result.update(error_count=error_count, fail_count=fail_count,
+                  status="check_errors" if error_count else "check_fails" if fail_count else "no_errors_or_fail_findings")
+    return result
+
+
+def markdown_label(value):
+    return value.replace("|", "\\|").replace("\n", " ").replace("\r", " ").replace("[", "\\[").replace("]", "\\]")
+
+
+def count_link(result, category, folder=""):
+    count = result[category + "_count"]
+    if count is None:
+        return "Not available" if result["status"] == "not_available" else "Unknown"
+    checks = result[category + "_checks"]
+    if count and checks:
+        prefix = quote(folder) + "/" if folder else ""
+        return "[{}]({}results.log#L{})".format(count, prefix, checks[0]["line"])
+    return str(count)
+
+
+def fabric_readme(fabric, manifest, errors, result, links):
+    lines = [
+        "# " + markdown_label(fabric["name"]), "",
+        "- GitLab pipeline: {}".format(manifest["source_pipeline_id"]),
+        "- Script commit: `{}`".format(manifest["source_commit"]),
+        "- Run date: {}".format(manifest.get("created_at", "")), "",
+        "| Integration / collection | Validator check errors | Validator check FAILs |",
+        "| --- | --- | --- |",
+        "| {} | {} | {} |".format("Failed" if errors else "Completed", count_link(result, "error"), count_link(result, "fail")), "",
+        "Files: " + " · ".join(links), "",
+    ]
+    if errors:
+        lines.extend(["## Integration test failures", ""])
+        lines.extend("- " + markdown_label(error) for error in errors)
+        lines.append("")
+    if result["status"] == "unknown":
+        lines.extend(["The validator summary is missing or could not be reconciled with its check results. Review the log; unknown does not mean zero errors.", ""])
+    for title, category in (("Validator check errors", "error"), ("Validator check FAILs", "fail")):
+        if result[category + "_checks"]:
+            lines.extend(["## " + title, ""])
+            lines.extend("- [{}](results.log#L{})".format(markdown_label(check["check"]), check["line"]) for check in result[category + "_checks"])
+            lines.append("")
+    return "\n".join(lines)
+
+
 def prepare_snapshot(source, destination, environment):
     source, destination = Path(source), Path(destination)
     manifest = read_manifest(source)
@@ -97,20 +174,33 @@ def prepare_snapshot(source, destination, environment):
             errors.append("Integration failed without additional diagnostics.")
         if errors:
             (output / "error.txt").write_text(
-                "\n".join(errors) + "\n", encoding="utf-8"
+                "Integration test failure\nPipeline: {}\nScript commit: {}\nRun date: {}\n\n{}\n".format(
+                    manifest["source_pipeline_id"], manifest["source_commit"],
+                    manifest.get("created_at", ""), "\n".join(errors)), encoding="utf-8"
             )
             links.append("[error.txt]({}/error.txt)".format(quote(folder)))
-        label = fabric["name"].replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+        result = validator_result(output / "results.log")
+        fabric.update(integration_status="failed" if errors else "completed",
+                      integration_errors=errors, validator_result=result)
+        local_links = [link.replace("(" + quote(folder) + "/", "(") for link in links]
+        (output / "README.md").write_text(fabric_readme(fabric, manifest, errors, result, local_links), encoding="utf-8")
+        links.insert(0, "[summary]({}/README.md)".format(quote(folder)))
         rows.append(
-            "| {} | {} | {} |".format(
-                label,
-                "Integration failure" if errors else "Completed",
+            "| [{}]({}/README.md) | {} | {} | {} | {} |".format(
+                markdown_label(fabric["name"]), quote(folder),
+                "Failed" if errors else "Completed",
+                count_link(result, "error", folder), count_link(result, "fail", folder),
                 " · ".join(links),
             )
         )
     (destination / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    fabrics = manifest["fabrics"]
+    integration_failures = sum(fabric["integration_status"] == "failed" for fabric in fabrics)
+    validator_errors = [fabric for fabric in fabrics if fabric["validator_result"]["error_count"]]
+    check_fails = [fabric for fabric in fabrics if fabric["validator_result"]["fail_count"]]
+    unavailable = sum(fabric["validator_result"]["status"] in ("unknown", "not_available") for fabric in fabrics)
     readme = [
         "# ACI PUV Integration Results",
         "",
@@ -122,12 +212,29 @@ def prepare_snapshot(source, destination, environment):
         "- Actual-version job: {}".format(manifest.get("source_job_id", "")),
         "- Run date: {}".format(manifest.get("created_at", "")),
         "",
-        "Completed means the run and artifact collection finished. Review the "
-        "validator report for readiness findings and check errors.",
+        "## Run summary",
         "",
-        "| Fabric | Run status | Files |",
-        "| --- | --- | --- |",
+        "- Integration / collection failures: **{} / {} fabrics**".format(integration_failures, len(fabrics)),
+        "- Validator check errors: **{}** across **{} fabric{}**".format(sum(fabric["validator_result"]["error_count"] for fabric in validator_errors), len(validator_errors), "" if len(validator_errors) == 1 else "s"),
+        "- Validator check FAILs: **{} FAILs across {} fabrics**".format(sum(fabric["validator_result"]["fail_count"] for fabric in check_fails), len(check_fails)),
+        "- Validator summaries unavailable or unknown: **{} fabrics** (excluded from validator totals)".format(unavailable),
+        "",
+        "Integration / collection status describes execution and artifact collection. "
+        "Validator check errors (`ERROR !!`) and validator check FAILs (`FAIL`) are shown separately; "
+        "completed does not mean upgrade-ready. Missing or unrecognized summaries are not counted as zero.",
+        "",
     ]
+    if validator_errors:
+        readme.extend(["### Fabrics with validator check errors", ""])
+        readme.extend("- [{}]({}/README.md): **{} check error{}**".format(
+            markdown_label(fabric["name"]), quote(fabric["directory"]), fabric["validator_result"]["error_count"],
+            "" if fabric["validator_result"]["error_count"] == 1 else "s")
+            for fabric in validator_errors)
+        readme.append("")
+    readme.extend([
+        "| Fabric | Integration / collection | Validator check errors | Validator check FAILs | Files |",
+        "| --- | --- | --- | --- | --- |",
+    ])
     readme.extend(rows)
     readme.extend(
         [

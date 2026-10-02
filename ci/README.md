@@ -31,11 +31,20 @@ another existing branch. The destination may be GitHub or GitHub Enterprise.
 Each fabric folder contains the actual validator report as `results.log`, the
 unchanged bundle as `results.tgz`, and `error.txt` for execution or collection
 failures. Lossy-group connection warnings are included even when the integration
-job succeeds. Validator readiness findings and check errors remain in the report.
+job succeeds. Validator check FAILs and check errors remain in the report.
 No console transcript is substituted for a missing validator report.
 
-The root README indexes the snapshot, and `manifest.json` records source
-provenance and per-fabric completion. Later publications remove the preceding
+The root README shows totals for integration failures, validator check errors
+(`ERROR !!`), and validator check FAILs (`FAIL`), plus separate per-fabric columns.
+It highlights fabrics with check errors and links to the affected checks. Each
+fabric's README shows its source pipeline, commit, run date, and result details.
+`error.txt` is reserved for integration execution or collection failures and
+includes this provenance even when a repeated failure has identical diagnostics.
+An unavailable or unrecognized validator summary is shown explicitly and is
+excluded from validator totals; it is never treated as zero errors or a pass.
+
+`manifest.json` records source provenance, per-fabric completion, integration
+diagnostics, and separate validator error/finding counts and check links. Later publications remove the preceding
 snapshot's fabric folders and stale errors while preserving repository metadata.
 Publications are serialized; older pipeline results cannot replace newer results
 from the same source project. Missing or invalid artifacts and GitHub push

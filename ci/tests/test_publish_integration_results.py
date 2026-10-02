@@ -53,7 +53,13 @@ class PublicationTests(unittest.TestCase):
         }
         folder = self.source / "fabric-a"
         folder.mkdir()
-        (folder / "results.log").write_bytes(b"validator report with FAIL findings\n")
+        (folder / "results.log").write_bytes(
+            b"[Check 1/2] NTP Status... FAIL - UPGRADE FAILURE!!\n"
+            b"=== Summary Result ===\n"
+            b"FAIL - OUTAGE WARNING!! : 0\n"
+            b"FAIL - UPGRADE FAILURE!! : 1\n"
+            b"ERROR !! : 0\n"
+        )
         (folder / "results.tgz").write_bytes(b"unchanged bundle")
         self.write_manifest()
 
@@ -75,6 +81,62 @@ class PublicationTests(unittest.TestCase):
             (self.source / "fabric-a/results.log").read_bytes(),
         )
         self.assertFalse((snapshot / "fabric-a/error.txt").exists())
+        result = json.loads((snapshot / "manifest.json").read_text())["fabrics"][0]
+        self.assertEqual(result["integration_status"], "completed")
+        self.assertEqual(result["validator_result"]["error_count"], 0)
+        self.assertEqual(result["validator_result"]["fail_count"], 1)
+
+    def test_check_errors_are_separate_and_linked_without_integration_error_file(self):
+        (self.source / "fabric-a/results.log").write_text(
+            "[Check 1/2] APIC Database Size... ERROR !!\n"
+            "[Check 2/2] APIC OOB Connectivity... diagnostic commands\n"
+            "command output FAIL - UPGRADE FAILURE!!\n"
+            "=== Summary Result ===\n"
+            "FAIL - OUTAGE WARNING!! : 0\n"
+            "FAIL - UPGRADE FAILURE!! : 1\n"
+            "ERROR !! : 1\n"
+        )
+        snapshot = self.prepare()
+        record = json.loads((snapshot / "manifest.json").read_text())["fabrics"][0]
+        self.assertEqual(record["integration_status"], "completed")
+        self.assertEqual(record["validator_result"]["status"], "check_errors")
+        self.assertEqual(record["validator_result"]["error_count"], 1)
+        self.assertEqual(record["validator_result"]["fail_count"], 1)
+        self.assertFalse((snapshot / "fabric-a/error.txt").exists())
+        self.assertIn("results.log#L1", (snapshot / "fabric-a/README.md").read_text())
+        self.assertIn("results.log#L2", (snapshot / "fabric-a/README.md").read_text())
+        self.assertIn("Validator check errors: **1** across **1 fabric**", (snapshot / "README.md").read_text())
+
+    def test_unknown_validator_summary_does_not_claim_zero_errors(self):
+        for report in (
+            "[Check 1/2] Example... ERROR !!\n",
+            "[Check 1/2] Example... ERROR !!\n=== Summary Result ===\n"
+            "ERROR !! : 0\nFAIL - OUTAGE WARNING!! : 0\nFAIL - UPGRADE FAILURE!! : 0\n",
+        ):
+            (self.source / "fabric-a/results.log").write_text(report)
+            result = publisher.validator_result(self.source / "fabric-a/results.log")
+            self.assertEqual(result["status"], "unknown")
+            self.assertIsNone(result["error_count"])
+        snapshot = self.prepare()
+        self.assertIn("Unknown", (snapshot / "fabric-a/README.md").read_text())
+
+    def test_identical_connection_failure_has_new_per_fabric_provenance(self):
+        for filename in publisher.FILES:
+            (self.source / "fabric-a" / filename).unlink()
+        self.manifest["fabrics"][0].update(status="failed", errors=["Socket Timeout Error"])
+        self.write_manifest()
+        first = self.prepare()
+        self.environment["CI_PIPELINE_ID"] = "457"
+        self.manifest["source_pipeline_id"] = "457"
+        self.write_manifest()
+        second = self.root / "second"
+        publisher.prepare_snapshot(self.source, second, self.environment)
+        for filename in ("README.md", "error.txt"):
+            self.assertNotEqual((first / "fabric-a" / filename).read_bytes(),
+                                (second / "fabric-a" / filename).read_bytes())
+        record = json.loads((second / "manifest.json").read_text())["fabrics"][0]
+        self.assertEqual(record["integration_status"], "failed")
+        self.assertEqual(record["validator_result"]["status"], "not_available")
 
     def test_optional_auth_failure_has_folder_and_error_without_fake_log(self):
         self.manifest["fabrics"].append(
