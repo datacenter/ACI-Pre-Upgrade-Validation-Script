@@ -20,7 +20,7 @@ podProfiles = 'fabricPodP.json?rsp-subtree=full'
 defaultHttps = 'uni/fabric/comm-default/https.json'
 
 # headers returned only when the check reaches its final return (early MANUAL/NA/ERROR returns have no headers)
-HEADERS = ["Node ID", "OOB IP", "Port", "Status"]
+HEADERS = ["Source APIC", "Destination APIC", "OOB IP", "Port", "Status", "Command"]
 
 DEFAULT_POLICY_OUTPUTS = {
     podPolicyGroups: [
@@ -309,21 +309,77 @@ def test_logic(run_check, mock_icurl, monkeypatch, icurl_outputs, cversion, tver
     )
     assert result.result == expected_result
     assert result.headers == expected_headers
-    assert result.data == expected_data
+    probe_rows = [row for row in result.data if row[4] != "Manual check required"]
+    assert probe_rows == [["Executing APIC"] + row + ["-"] for row in expected_data]
     assert idx[0] == len(curl_exit_codes)
 
 
-def test_manual_mesh_commands(run_check, mock_icurl, monkeypatch, icurl_outputs):
-    icurl_outputs[topSystem] = read_data(dir, "topSystem_3apics_oob.json")
-    icurl_outputs.update(copy.deepcopy(DEFAULT_POLICY_OUTPUTS))
+@pytest.mark.parametrize("inventory, ips, port", [
+    ("topSystem_3apics_oob.json", ["10.30.10.189", "10.30.10.191", "10.30.10.193"], "443"),
+    ("topSystem_3apics_oob.json", ["10.30.10.189", "10.30.10.191", "10.30.10.193"], "8443"),
+    ("topSystem_3apics_oob_ipv6.json", ["2001:db8::1", "2001:db8::2", "2001:db8::3"], "443"),
+])
+@pytest.mark.parametrize("probe_status, expected_result", [
+    ("reachable", script.MANUAL),
+    ("unreachable", script.FAIL_UF),
+    ("error", script.ERROR),
+])
+def test_manual_mesh_commands(run_check, mock_icurl, monkeypatch, icurl_outputs,
+                              inventory, ips, port, probe_status, expected_result):
+    icurl_outputs[topSystem] = read_data(dir, inventory)
+    policies = custom_policy_outputs(port) if port != "443" else DEFAULT_POLICY_OUTPUTS
+    icurl_outputs.update(copy.deepcopy(policies))
 
-    monkeypatch.setattr(script.subprocess, "call", lambda *args, **kwargs: 0)
+    def probe(*args, **kwargs):
+        if probe_status == "error":
+            raise OSError("curl unavailable")
+        return 28 if probe_status == "unreachable" else 0
+
+    monkeypatch.setattr(script.subprocess, "call", probe)
 
     result = run_check(
         cversion=script.AciVersion("6.0(2a)"),
         tversion=script.AciVersion("6.0(3a)"),
     )
 
-    assert result.result == script.MANUAL
-    assert "On APIC node 1: curl --max-time 5 -k -s -o /dev/null https://10.30.10.191:443" in result.msg
-    assert "On APIC node 3: curl --max-time 5 -k -s -o /dev/null https://10.30.10.191:443" in result.msg
+    destinations = ["[{}]".format(ip) if ":" in ip else ip for ip in ips]
+    commands = ["curl --max-time 5 -k -s -o /dev/null https://{}:{}".format(ip, port)
+                for ip in destinations]
+    expected_commands = [
+        ["1", "2", ips[1], port, "Manual check required", commands[1]],
+        ["1", "3", ips[2], port, "Manual check required", commands[2]],
+        ["2", "1", ips[0], port, "Manual check required", commands[0]],
+        ["2", "3", ips[2], port, "Manual check required", commands[2]],
+        ["3", "1", ips[0], port, "Manual check required", commands[0]],
+        ["3", "2", ips[1], port, "Manual check required", commands[1]],
+    ]
+    expected_probes = []
+    if probe_status != "reachable":
+        status = "Error" if probe_status == "error" else "Unreachable"
+        expected_probes = [
+            ["Executing APIC", "1", ips[0], port, status, "-"],
+            ["Executing APIC", "2", ips[1], port, status, "-"],
+            ["Executing APIC", "3", ips[2], port, status, "-"],
+        ]
+
+    assert result.result == expected_result
+    assert result.msg == ""
+    assert result.headers == HEADERS
+    assert result.data == expected_probes + expected_commands
+    assert "Run each command on its Source APIC" in result.recommended_action
+
+    aci_result = script.AciResult(test_function, "APIC OOB Connectivity check", result)
+    assert aci_result.failureDetails["header"] == HEADERS
+    assert aci_result.failureDetails["data"] == [
+        dict(zip(HEADERS, row)) for row in result.data
+    ]
+
+    output = []
+    monkeypatch.setattr(script, "prints", output.append)
+    script.print_result(116, 117, "APIC OOB Connectivity check", **result.as_dict())
+    status_line = output[0].splitlines()[0]
+    assert status_line.endswith(expected_result)
+    assert "curl" not in status_line
+    assert "Source APIC" in output[0]
+    assert "Destination APIC" in output[0]
+    assert output[0].count("curl --max-time") == 6
