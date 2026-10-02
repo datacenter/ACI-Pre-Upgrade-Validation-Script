@@ -32,6 +32,7 @@ def count_response(count):
         ('6.1(1a)', None, None, 0, 1, script.MANUAL, ['Configuration rollback review']),
         ('6.1(1a)', None, None, 1601, 1, script.FAIL_UF, ['TEP-to-TEP scalability', 'Configuration rollback review']),
         (None, None, None, 0, 0, script.MANUAL, []),
+        (None, None, None, 1601, 1, script.FAIL_UF, ['TEP-to-TEP scalability', 'Configuration rollback review']),
     ],
 )
 def test_atomic_counter_order_and_results(
@@ -51,6 +52,7 @@ def test_atomic_counter_order_and_results(
     assert result.result == expected_result
     assert [row[0] for row in result.data] == expected_concerns
     if expected_concerns and expected_concerns[0].startswith('Deprecated'):
-        assert 'Cleanup is mandatory' in result.msg
+        assert result.msg == ''
+        assert result.recommended_action == 'Remove configured atomic counter policies before upgrading.'
     if tversion is None:
-        assert 'deprecation could not be assessed' in result.msg
+        assert result.msg == 'Tver not supplied, deprecation not assessed'

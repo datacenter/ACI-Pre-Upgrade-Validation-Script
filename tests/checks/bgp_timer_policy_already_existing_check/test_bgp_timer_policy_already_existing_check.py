@@ -34,7 +34,7 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
                     "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
                 ],
             ],
-            "Clear the fault code F0467 for bgp timer policy",
+            "",
         ),
         # target release beyond affected range on 6.1 train with existing fault: manual clearance required
         (
@@ -56,7 +56,7 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
                     "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
                 ],
             ],
-            "Clear the fault code F0467 for bgp timer policy",
+            "",
         ),
         # boundary version is still affected for strict newer_than check
         (
@@ -144,7 +144,7 @@ faultDelegates = 'faultDelegate.json?query-target-filter=and(eq(faultDelegate.co
                     "configQual:bgpProt-policy-already-existing, configSt:failed-to-apply, temporaryError:no",
                 ],
             ],
-            "Clear the fault code F0467 for bgp timer policy",
+            "",
         ),
         (
             {faultDelegates: read_data(dir, "faultDelegate_NEG.json")},

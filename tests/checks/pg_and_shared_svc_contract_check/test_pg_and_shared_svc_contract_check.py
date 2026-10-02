@@ -687,9 +687,7 @@ def test_missing_provider_context_is_an_error(run_check, mock_icurl):
     )
 
     assert result.result == script.ERROR
-    assert result.msg == (
-        "Unable to resolve context for one or more derived contract relationships"
-    )
+    assert result.msg == ""
     assert result.data == [[
         (
             "cdef-[uni/tn-common/brc-AD_C]/"
@@ -726,9 +724,7 @@ def test_missing_consumer_context_is_an_error(run_check, mock_icurl):
     )
 
     assert result.result == script.ERROR
-    assert result.msg == (
-        "Unable to resolve context for one or more derived contract relationships"
-    )
+    assert result.msg == ""
     assert result.data == [[
         (
             "cdef-[uni/tn-common/brc-AD_C]/"

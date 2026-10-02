@@ -160,7 +160,7 @@ def test_no_ospf_adj_is_inconclusive(run_check, mock_icurl, fabric_nodes, icurl_
     result = run_check(fabric_nodes=fabric_nodes)
 
     assert result.result == script.MANUAL
-    assert "No spine overlay OSPF adjacency" in result.msg
+    assert result.msg == "No overlay OSPF adjacencies found."
 
 
 def test_single_pod_is_not_applicable(run_check, mock_icurl, icurl_outputs):

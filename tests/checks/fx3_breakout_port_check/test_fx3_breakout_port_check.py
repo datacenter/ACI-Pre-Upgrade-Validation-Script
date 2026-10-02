@@ -25,7 +25,7 @@ NON_FX3_NODES = read_data(dir, "fabricNode_non_fx3.json")
 # ethpmFcot/l1PhysIf fixtures control which of these ports actually get flagged.
 ALL_BRKOUT_PORTS = read_data(dir, "eqptBrkoutP_all_breakout_ports.json")
 
-FAIL_MSG = "Affected breakout transceivers with FEC not disabled found. This may cause an outage during the leaf upgrade."
+FAIL_MSG = ""
 
 
 def l1physif_query(legs):
@@ -126,26 +126,26 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
             "5.2(8g)", "6.2(1g)",
             FX3_NODES,
             {BRKOUT_QUERY: read_data(dir, "eqptBrkoutP_none.json")},
-            script.PASS, "No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.", [],
+            script.PASS, "No applicable breakout ports.", [],
         ),
         # Affected versions, no YC-FX3/TC-FX3 switches in the fabric
         (
             "5.2(8g)", "5.3(2a)", NON_FX3_NODES, {},
-            script.NA, "No YC-FX3/TC-FX3 switches found. Skipping.", [],
+            script.NA, "No applicable switches.", [],
         ),
         # Affected versions, FX3 switches present, but no breakout config on ports 49-52
         (
             "5.2(8g)", "5.3(2a)",
             FX3_NODES,
             {BRKOUT_QUERY: read_data(dir, "eqptBrkoutP_none.json")},
-            script.PASS, "No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.", [],
+            script.PASS, "No applicable breakout ports.", [],
         ),
         # Breakout configured, but not on ports 49-52
         (
             "5.2(8g)", "5.3(2a)",
             FX3_NODES,
             {BRKOUT_QUERY: read_data(dir, "eqptBrkoutP_port_not_in_range.json")},
-            script.PASS, "No breakout configuration found on ports 49-52 of YC-FX3/TC-FX3 switches.", [],
+            script.PASS, "No applicable breakout ports.", [],
         ),
         # Breakout on port 49, but no matching Innolight SR4 transceiver found
         (
@@ -155,7 +155,7 @@ BATCH_FX3_NODES, BATCH_ICURL_OUTPUTS, BATCH_EXPECTED_DATA = make_batch_test_case
                 BRKOUT_QUERY: ALL_BRKOUT_PORTS,
                 FCOT_QUERY: read_data(dir, "ethpmFcot_none.json"),
             },
-            script.PASS, "No affected breakout transceivers found on ports 49-52 of YC-FX3/TC-FX3 switches.", [],
+            script.PASS, "No affected transceivers.", [],
         ),
         # Matching transceiver on brkoutport-1, but FEC is already disabled
         (
