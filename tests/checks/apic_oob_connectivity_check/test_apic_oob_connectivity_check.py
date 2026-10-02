@@ -19,7 +19,7 @@ podPolicyGroups = 'fabricPodPGrp.json?rsp-subtree=children&rsp-subtree-class=fab
 podProfiles = 'fabricPodP.json?rsp-subtree=full'
 defaultHttps = 'uni/fabric/comm-default/https.json'
 
-# headers returned only when the check reaches its final return (early MANUAL/NA/ERROR returns have no headers)
+# Policy errors and final results share the existing connectivity columns.
 HEADERS = ["Source APIC", "Destination APIC", "OOB IP", "Port", "Status", "Command"]
 
 DEFAULT_POLICY_OUTPUTS = {
@@ -236,7 +236,7 @@ def custom_policy_outputs(port="8443"):
             [],
             script.ERROR,
             HEADERS,
-            [],
+            [["-", "-", "-", "ERR"]],
         ),
         # IPv6 OOB local probes pass, with manual mesh commands required.
         (
@@ -312,6 +312,19 @@ def test_logic(run_check, mock_icurl, monkeypatch, icurl_outputs, cversion, tver
     probe_rows = [row for row in result.data if row[4] != "Manual check required"]
     assert probe_rows == [["Executing APIC"] + row + ["-"] for row in expected_data]
     assert idx[0] == len(curl_exit_codes)
+    if expected_data == [["-", "-", "-", "ERR"]]:
+        assert result.msg == ""
+        assert "Verify the Management Access Policy and HTTPS port settings" in result.recommended_action
+        aci_result = script.AciResult(test_function, "APIC OOB Connectivity check", result)
+        assert aci_result.failureDetails["data"] == [dict(zip(HEADERS, probe_rows[0]))]
+        assert aci_result.recommended_action == result.recommended_action
+        output = []
+        monkeypatch.setattr(script, "prints", output.append)
+        script.print_result(116, 117, "APIC OOB Connectivity check", **result.as_dict())
+        status_line, table_and_action = output[0].split("\n", 1)
+        assert "ERR" in table_and_action
+        assert result.recommended_action in table_and_action
+        assert "curl --max-time" not in output[0]
 
 
 @pytest.mark.parametrize("inventory, ips, port", [
@@ -367,6 +380,11 @@ def test_manual_mesh_commands(run_check, mock_icurl, monkeypatch, icurl_outputs,
     assert result.headers == HEADERS
     assert result.data == expected_probes + expected_commands
     assert "Run each command on its Source APIC" in result.recommended_action
+    if expected_result == script.MANUAL:
+        assert result.recommended_action.startswith("Check OOB management connectivity")
+        assert "Restore" not in result.recommended_action
+    elif expected_result == script.FAIL_UF:
+        assert result.recommended_action.startswith("Restore OOB management connectivity")
 
     aci_result = script.AciResult(test_function, "APIC OOB Connectivity check", result)
     assert aci_result.failureDetails["header"] == HEADERS

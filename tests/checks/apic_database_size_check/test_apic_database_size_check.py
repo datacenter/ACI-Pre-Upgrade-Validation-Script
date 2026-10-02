@@ -386,7 +386,7 @@ def test_missing_mitmocounters_returns_error(
     result = run_check(cversion=script.AciVersion("6.0(8f)"))
 
     assert result.result == script.ERROR
-    assert result.msg == "Unable to collect APIC database object counters"
+    assert result.msg == ""
     assert result.headers == ["APIC ID", "DME", "Collection Error"]
     assert len(result.data) == 4
     assert all(row[2] == expected_error for row in result.data)

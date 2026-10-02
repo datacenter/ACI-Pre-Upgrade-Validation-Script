@@ -61,7 +61,8 @@ def test_mismatch_fails_at_every_target(run_check, target, message):
              fabric_node(201, 'spine', 'n9000-16.1(4h)')]
     result = run_mixed_check(run_check, nodes, target=target)
     assert result.result == script.FAIL_UF
-    assert message in result.msg
+    assert result.msg == ""
+    assert message in result.recommended_action
     assert result.data == [
         ['1', '101', 'leaf101', 'leaf', 'n9000-15.2(8f)', '6.1(4h)',
          'Switch differs from APIC']]
@@ -77,7 +78,8 @@ def test_every_mismatched_node_is_reported(run_check):
     assert result.result == script.FAIL_UF
     assert [row[1] for row in result.data] == ['101', '102', '202']
     assert result.data[1][6] == 'Switch newer than APIC'
-    assert 'newer than the APIC' in result.msg
+    assert result.msg == ''
+    assert 'newer than the APIC' in result.recommended_action
 
 
 def test_apic_versions_must_agree(run_check):
@@ -86,7 +88,8 @@ def test_apic_versions_must_agree(run_check):
              fabric_node(101, 'leaf', 'n9000-16.1(4h)')]
     result = run_mixed_check(run_check, nodes)
     assert result.result == script.FAIL_UF
-    assert 'APICs' in result.msg
+    assert result.msg == ''
+    assert 'APIC cluster upgrade' in result.recommended_action
     assert result.data[0][1] == '1'
 
 
