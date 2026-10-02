@@ -1,0 +1,403 @@
+import os
+import copy
+import pytest
+import logging
+import importlib
+from helpers.utils import read_data
+
+script = importlib.import_module("aci-preupgrade-validation-script")
+
+log = logging.getLogger(__name__)
+dir = os.path.dirname(os.path.abspath(__file__))
+
+test_function = "apic_oob_connectivity_check"
+
+# icurl queries
+topSystem = 'topSystem.json?query-target-filter=eq(topSystem.role,"controller")'
+commHttps = "commHttps.json"
+podPolicyGroups = 'fabricPodPGrp.json?rsp-subtree=children&rsp-subtree-class=fabricRsCommPol'
+podProfiles = 'fabricPodP.json?rsp-subtree=full'
+defaultHttps = 'uni/fabric/comm-default/https.json'
+
+# Policy errors and final results share the existing connectivity columns.
+HEADERS = ["Source APIC", "Destination APIC", "OOB IP", "Port", "Status", "Command"]
+
+DEFAULT_POLICY_OUTPUTS = {
+    podPolicyGroups: [
+        {
+            "fabricPodPGrp": {
+                "attributes": {"dn": "uni/fabric/funcprof/podpgrp-default"},
+                "children": [
+                    {"fabricRsCommPol": {"attributes": {"tDn": "uni/fabric/comm-default"}}}
+                ]
+            }
+        }
+    ],
+    defaultHttps: [
+        {"commHttps": {"attributes": {"dn": "uni/fabric/comm-default/https", "port": "443"}}}
+    ],
+}
+
+
+def custom_policy_outputs(port="8443"):
+    outputs = {
+        podPolicyGroups: [
+            {
+                "fabricPodPGrp": {
+                    "attributes": {"dn": "uni/fabric/funcprof/podpgrp-default"},
+                    "children": [
+                        {"fabricRsCommPol": {"attributes": {"tDn": "uni/fabric/comm-default"}}}
+                    ]
+                }
+            },
+            {
+                "fabricPodPGrp": {
+                    "attributes": {"dn": "uni/fabric/funcprof/podpgrp-custom"},
+                    "children": [
+                        {"fabricRsCommPol": {"attributes": {"tDn": "uni/fabric/comm-custom"}}}
+                    ]
+                }
+            },
+        ],
+        podProfiles: [
+            {
+                "fabricPodP": {
+                    "attributes": {"dn": "uni/fabric/podprof-default"},
+                    "children": [
+                        {
+                            "fabricPodS": {
+                                "attributes": {"type": "ALL"},
+                                "children": [
+                                    {"fabricRsPodPGrp": {"attributes": {"tDn": "uni/fabric/funcprof/podpgrp-custom"}}}
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        commHttps: [
+            {"commHttps": {"attributes": {"dn": "uni/fabric/comm-default/https", "port": "443"}}},
+            {"commHttps": {"attributes": {"dn": "uni/fabric/comm-custom/https", "port": port}}},
+        ],
+    }
+    return outputs
+
+
+@pytest.mark.parametrize(
+    "icurl_outputs, cversion, tversion, curl_exit_codes, expected_result, expected_headers, expected_data",
+    [
+        # tversion not provided -> MANUAL
+        (
+            {topSystem: [], commHttps: []},
+            "6.0(2a)",
+            None,
+            [],
+            script.MANUAL,
+            [],
+            [],
+        ),
+        # Current version < 6.0(2a), even when the target is newer -> NA
+        (
+            {topSystem: [], commHttps: []},
+            "5.2(7f)",
+            "6.0(3a)",
+            [],
+            script.NA,
+            [],
+            [],
+        ),
+        # tversion = 6.0(1h), immediately below the 6.0(2a) gate -> NA
+        (
+            {topSystem: [], commHttps: []},
+            "6.0(1h)",
+            "6.0(1h)",
+            [],
+            script.NA,
+            [],
+            [],
+        ),
+        # Current version >= 6.0(2a), no controller nodes found -> ERROR
+        (
+            {topSystem: [], commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [],
+            script.ERROR,
+            HEADERS,
+            [],
+        ),
+        # Missing OOB inventory must be investigated manually, not treated as reachable.
+        (
+            {topSystem: read_data(dir, "topSystem_no_oob.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [],
+            script.MANUAL,
+            HEADERS,
+            [["1", "N/A", "443", "OOB address is not reported by APIC inventory"]],
+        ),
+        # The local APIC probe passes, but a multi-APIC mesh requires manual peer probes.
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 0, 0],
+            script.MANUAL,
+            HEADERS,
+            [],
+        ),
+        # Default-policy local probes pass, but the peer mesh still requires manual probes.
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                commHttps: read_data(dir, "commHttps_default_port.json"),
+            },
+            "6.2(1g)",
+            "6.2(2a)",
+            [0, 0, 0],
+            script.MANUAL,
+            HEADERS,
+            [],
+        ),
+        # A custom Pod Policy Group resolves each APIC to port 8443; peer probes are manual.
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                "_policy_outputs": custom_policy_outputs(),
+            },
+            "6.2(1g)",
+            "6.2(2a)",
+            [0, 0, 0],
+            script.MANUAL,
+            HEADERS,
+            [],
+        ),
+        # commHttps is resolved regardless of its pre-6.x availability; peer probes are manual.
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                "_policy_outputs": custom_policy_outputs(),
+            },
+            "6.2(1f)",
+            "6.2(2a)",
+            [0, 0, 0],
+            script.MANUAL,
+            HEADERS,
+            [],
+        ),
+        # tversion >= 6.0(2a), one APIC unreachable on port 443 (exit 28) -> FAIL_UF
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 28, 0],
+            script.FAIL_UF,
+            HEADERS,
+            [["2", "10.30.10.191", "443", "Unreachable"]],
+        ),
+        # Default policy port 443, one APIC unreachable (exit 7) -> FAIL_UF
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+            },
+            "6.2(1g)",
+            "6.2(2a)",
+            [0, 7, 0],
+            script.FAIL_UF,
+            HEADERS,
+            [["2", "10.30.10.191", "443", "Unreachable"]],
+        ),
+        # Custom policy port 8443, all APICs unreachable -> FAIL_UF
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                "_policy_outputs": custom_policy_outputs(),
+            },
+            "6.2(1g)",
+            "6.2(2a)",
+            [28, 28, 28],
+            script.FAIL_UF,
+            HEADERS,
+            [
+                ["1", "10.30.10.189", "8443", "Unreachable"],
+                ["2", "10.30.10.191", "8443", "Unreachable"],
+                ["3", "10.30.10.193", "8443", "Unreachable"],
+            ],
+        ),
+        # Resolved commHttps with an invalid port value -> ERROR
+        (
+            {
+                topSystem: read_data(dir, "topSystem_3apics_oob.json"),
+                "_policy_outputs": custom_policy_outputs("invalid"),
+            },
+            "6.2(1g)",
+            "6.2(2a)",
+            [],
+            script.ERROR,
+            HEADERS,
+            [["-", "-", "-", "ERR"]],
+        ),
+        # IPv6 OOB local probes pass, with manual mesh commands required.
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_ipv6.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 0, 0],
+            script.MANUAL,
+            HEADERS,
+            [],
+        ),
+        # IPv6 OOB, one APIC unreachable (exit 28) -> FAIL_UF
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_ipv6.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 28, 0],
+            script.FAIL_UF,
+            HEADERS,
+            [["2", "2001:db8::2", "443", "Unreachable"]],
+        ),
+        # Both IPv4 and IPv6 configured: IPv4 is used, with manual mesh commands required.
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_both.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 0, 0],
+            script.MANUAL,
+            HEADERS,
+            [],
+        ),
+        # Both IPv4 and IPv6 configured, one unreachable -> FAIL_UF (IPv4 should be used)
+        (
+            {topSystem: read_data(dir, "topSystem_3apics_oob_both.json"), commHttps: []},
+            "6.0(2a)",
+            "6.0(3a)",
+            [0, 28, 0],
+            script.FAIL_UF,
+            HEADERS,
+            [["2", "10.30.10.191", "443", "Unreachable"]],
+        ),
+    ],
+)
+def test_logic(run_check, mock_icurl, monkeypatch, icurl_outputs, cversion, tversion, curl_exit_codes, expected_result, expected_headers, expected_data):
+    policy_outputs = icurl_outputs.pop("_policy_outputs", DEFAULT_POLICY_OUTPUTS)
+    for query, output in policy_outputs.items():
+        icurl_outputs[query] = copy.deepcopy(output)
+    idx = [0]
+
+    def mock_subprocess_call(cmd, stderr=None):
+        assert cmd[:7] == ['curl', '--max-time', '5', '-k', '-s', '-o', os.devnull]
+        assert stderr is not None
+        url = cmd[-1]
+        assert url.startswith('https://')
+        host = url[len('https://'):].rsplit(':', 1)[0]
+        if ':' in host:
+            assert host.startswith('[') and host.endswith(']'), (
+                "IPv6 address in curl URL must be wrapped in square brackets, got: {}".format(url)
+            )
+        if idx[0] >= len(curl_exit_codes):
+            raise AssertionError("Unexpected curl invocation: {}".format(url))
+        code = curl_exit_codes[idx[0]]
+        idx[0] += 1
+        return code
+
+    monkeypatch.setattr(script.subprocess, "call", mock_subprocess_call)
+    result = run_check(
+        cversion=script.AciVersion(cversion),
+        tversion=script.AciVersion(tversion) if tversion else None,
+    )
+    assert result.result == expected_result
+    assert result.headers == expected_headers
+    probe_rows = [row for row in result.data if row[4] != "Manual check required"]
+    assert probe_rows == [["Executing APIC"] + row + ["-"] for row in expected_data]
+    assert idx[0] == len(curl_exit_codes)
+    if expected_data == [["-", "-", "-", "ERR"]]:
+        assert result.msg == ""
+        assert "Verify the Management Access Policy and HTTPS port settings" in result.recommended_action
+        aci_result = script.AciResult(test_function, "APIC OOB Connectivity check", result)
+        assert aci_result.failureDetails["data"] == [dict(zip(HEADERS, probe_rows[0]))]
+        assert aci_result.recommended_action == result.recommended_action
+        output = []
+        monkeypatch.setattr(script, "prints", output.append)
+        script.print_result(116, 117, "APIC OOB Connectivity check", **result.as_dict())
+        status_line, table_and_action = output[0].split("\n", 1)
+        assert "ERR" in table_and_action
+        assert result.recommended_action in table_and_action
+        assert "curl --max-time" not in output[0]
+
+
+@pytest.mark.parametrize("inventory, ips, port", [
+    ("topSystem_3apics_oob.json", ["10.30.10.189", "10.30.10.191", "10.30.10.193"], "443"),
+    ("topSystem_3apics_oob.json", ["10.30.10.189", "10.30.10.191", "10.30.10.193"], "8443"),
+    ("topSystem_3apics_oob_ipv6.json", ["2001:db8::1", "2001:db8::2", "2001:db8::3"], "443"),
+])
+@pytest.mark.parametrize("probe_status, expected_result", [
+    ("reachable", script.MANUAL),
+    ("unreachable", script.FAIL_UF),
+    ("error", script.ERROR),
+])
+def test_manual_mesh_commands(run_check, mock_icurl, monkeypatch, icurl_outputs,
+                              inventory, ips, port, probe_status, expected_result):
+    icurl_outputs[topSystem] = read_data(dir, inventory)
+    policies = custom_policy_outputs(port) if port != "443" else DEFAULT_POLICY_OUTPUTS
+    icurl_outputs.update(copy.deepcopy(policies))
+
+    def probe(*args, **kwargs):
+        if probe_status == "error":
+            raise OSError("curl unavailable")
+        return 28 if probe_status == "unreachable" else 0
+
+    monkeypatch.setattr(script.subprocess, "call", probe)
+
+    result = run_check(
+        cversion=script.AciVersion("6.0(2a)"),
+        tversion=script.AciVersion("6.0(3a)"),
+    )
+
+    destinations = ["[{}]".format(ip) if ":" in ip else ip for ip in ips]
+    commands = ["curl --max-time 5 -k -s -o /dev/null https://{}:{}".format(ip, port)
+                for ip in destinations]
+    expected_commands = [
+        ["1", "2", ips[1], port, "Manual check required", commands[1]],
+        ["1", "3", ips[2], port, "Manual check required", commands[2]],
+        ["2", "1", ips[0], port, "Manual check required", commands[0]],
+        ["2", "3", ips[2], port, "Manual check required", commands[2]],
+        ["3", "1", ips[0], port, "Manual check required", commands[0]],
+        ["3", "2", ips[1], port, "Manual check required", commands[1]],
+    ]
+    expected_probes = []
+    if probe_status != "reachable":
+        status = "Error" if probe_status == "error" else "Unreachable"
+        expected_probes = [
+            ["Executing APIC", "1", ips[0], port, status, "-"],
+            ["Executing APIC", "2", ips[1], port, status, "-"],
+            ["Executing APIC", "3", ips[2], port, status, "-"],
+        ]
+
+    assert result.result == expected_result
+    assert result.msg == ""
+    assert result.headers == HEADERS
+    assert result.data == expected_probes + expected_commands
+    assert "Run each command on its Source APIC" in result.recommended_action
+    if expected_result == script.MANUAL:
+        assert result.recommended_action.startswith("Check OOB management connectivity")
+        assert "Restore" not in result.recommended_action
+    elif expected_result == script.FAIL_UF:
+        assert result.recommended_action.startswith("Restore OOB management connectivity")
+
+    aci_result = script.AciResult(test_function, "APIC OOB Connectivity check", result)
+    assert aci_result.failureDetails["header"] == HEADERS
+    assert aci_result.failureDetails["data"] == [
+        dict(zip(HEADERS, row)) for row in result.data
+    ]
+
+    output = []
+    monkeypatch.setattr(script, "prints", output.append)
+    script.print_result(116, 117, "APIC OOB Connectivity check", **result.as_dict())
+    status_line = output[0].splitlines()[0]
+    assert status_line.endswith(expected_result)
+    assert "curl" not in status_line
+    assert "Source APIC" in output[0]
+    assert "Destination APIC" in output[0]
+    assert output[0].count("curl --max-time") == 6

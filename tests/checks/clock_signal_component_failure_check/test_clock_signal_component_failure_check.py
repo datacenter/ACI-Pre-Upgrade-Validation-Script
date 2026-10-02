@@ -67,4 +67,4 @@ def test_logic(run_check, mock_icurl, expected_result, expected_serials):
         assert "V01 Version ID (VID) is only possibly affected" in result.recommended_action
         assert all(serial in result.recommended_action for serial in expected_serials)
         assert "chat interface" not in result.recommended_action
-        assert "Serial Number Validation tool" not in result.recommended_action
+        assert "https://cs.co/FNSNV" in result.recommended_action

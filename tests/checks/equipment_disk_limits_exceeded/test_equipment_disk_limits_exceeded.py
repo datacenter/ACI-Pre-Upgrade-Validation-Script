@@ -59,3 +59,38 @@ def test_logic(
     assert result.unformatted_data == expected_unformatted_data
     for row in result.data:
         assert isinstance(row[3], str)
+
+
+@pytest.mark.parametrize(
+    "code, partition, change_set, expected_result, expected_percent",
+    [
+        ("F1820", "log", "avail:4900, used:5100", script.PASS, None),
+        ("F1820", "log", "avail (New: 2040), used (New: 7960)", script.PASS, None),
+        ("F1820", "log", "avail:2000, used:8000", script.FAIL_UF, "80"),
+        ("F1820", "cfg", "avail:4900, used:5100", script.FAIL_UF, "51"),
+        ("F1821", "log", "avail:4900, used:5100", script.FAIL_UF, "51"),
+        ("F1822", "log", "avail:4900, used:5100", script.FAIL_UF, "51"),
+        ("F1820", "log", "avail:4900, used:invalid", script.FAIL_UF, "NA"),
+        ("F1820", "log", "avail:0, used:0", script.FAIL_UF, "NA"),
+    ],
+)
+def test_cosmetic_log_fault_threshold(
+    run_check, mock_icurl, icurl_outputs, code, partition, change_set, expected_result, expected_percent
+):
+    dn = "topology/pod-1/node-101/sys/eqptcapacity/fspartition-ifc:{}/fault-{}".format(partition, code)
+    description = "Disk usage for /mnt/ifc/{} is above normal".format(partition)
+    icurl_outputs[f182x_api] = [{"faultInst": {"attributes": {
+        "changeSet": change_set,
+        "code": code,
+        "descr": description,
+        "dn": dn,
+    }}}]
+
+    result = run_check()
+
+    assert result.result == expected_result
+    if expected_percent is None:
+        assert result.data == []
+    else:
+        assert result.data == [["1", "101", code, expected_percent, description]]
+    assert result.unformatted_data == []

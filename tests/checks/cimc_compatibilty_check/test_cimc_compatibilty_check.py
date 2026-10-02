@@ -23,6 +23,8 @@ compatRsSuppHwL4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[
 compatRsSuppHwM4_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
 compatRsSuppHwL3_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl3].json'
 compatRsSuppHwM3_api = 'uni/fabric/compcat-default/ctlrfw-apic-6.1(5)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm3].json'
+compatRsSuppHwM4_531_api = 'uni/fabric/compcat-default/ctlrfw-apic-5.3(1)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm4].json'
+compatRsSuppHwL4_531_api = 'uni/fabric/compcat-default/ctlrfw-apic-5.3(1)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicl4].json'
 
 release_note_supported_615_outputs = {
     eqptCh_api: read_data(dir, "eqptCh_615_supported_423e.json"),
@@ -30,18 +32,16 @@ release_note_supported_615_outputs = {
     compatRsSuppHwM3_api: read_data(dir, "compatRsSuppHw_615_M5.json"),
     compatRsSuppHwL4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
     compatRsSuppHwM4_api: read_data(dir, "compatRsSuppHw_615_M6.json"),
+    compatRsSuppHwL4_531_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.0(2g)"}}}],
+    compatRsSuppHwM4_531_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.0(2g)"}}}],
 }
-
-release_note_model_data = {
-    "apicl3": ("APIC-SERVER-L3", compatRsSuppHwL3_api, "compatRsSuppHw_615_M5.json"),
-    "apicm3": ("APIC-SERVER-M3", compatRsSuppHwM3_api, "compatRsSuppHw_615_M5.json"),
-    "apicl4": ("APIC-SERVER-L4", compatRsSuppHwL4_api, "compatRsSuppHw_615_M6.json"),
-    "apicm4": ("APIC-SERVER-M4", compatRsSuppHwM4_api, "compatRsSuppHw_615_M6.json"),
-}
-
 
 def release_note_supported_outputs(model, cimc_version):
-    apic_model, compat_api, compat_fixture = release_note_model_data[model]
+    apic_model = "APIC-SERVER-{}".format(model[4:].upper())
+    compat_api = (
+        "uni/fabric/compcat-default/ctlrfw-apic-6.1(5)"
+        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-{}].json".format(model)
+    )
     return {
         eqptCh_api: [
             {
@@ -55,7 +55,16 @@ def release_note_supported_outputs(model, cimc_version):
                 }
             }
         ],
-        compat_api: read_data(dir, compat_fixture),
+        compat_api: [
+            {
+                "compatRsSuppHw": {
+                    "attributes": {
+                        "cimcVersion": "9.9(9z)",
+                        "dn": compat_api[:-5],
+                    }
+                }
+            }
+        ],
     }
 
 
@@ -76,12 +85,19 @@ release_note_supported_cases = [
             "5.2(8g)",
             script.PASS,
         ),
-        # The release-note exception must not bypass the CSCwo74485 upgrade ordering check.
+        # Issue #435: CIMC 4.1(1g) is release-note supported on APIC-L3/M3.
+        (
+            release_note_supported_outputs("apicl3", "4.1(1g)"),
+            "6.1(5e)",
+            "5.2(8g)",
+            script.PASS,
+        ),
+        # The generic compatibility check does not own CSCwo74485 upgrade-order guidance.
         (
             release_note_supported_615_outputs,
             "6.1(5e)",
             "5.3(1d)",
-            script.FAIL_UF,
+            script.PASS,
         ),
         # Other CIMC versions below the catalog recommendation remain unsupported.
         (
@@ -180,3 +196,104 @@ def test_release_note_supported_versions(run_check, mock_icurl):
         cversion=script.AciVersion("5.2(8g)"),
     )
     assert result.result == script.PASS
+
+
+def m4l4_compatibility_outputs(model="M4", cimc_version="4.3(4.241063)",
+                               target_recommendation="4.0(2g)"):
+    model_key = "apic" + model.lower()
+    target_api = ('uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-'
+                  '[uni/fabric/compcat-default/ctlrhw-{}].json').format(model_key)
+    return {
+        eqptCh_api: [{"eqptCh": {"attributes": {
+            "cimcVersion": cimc_version,
+            "descr": "APIC-SERVER-" + model,
+            "dn": "topology/pod-1/node-1/sys/ch",
+        }}}],
+        target_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": target_recommendation}}}],
+    }
+
+
+@pytest.mark.parametrize("icurl_outputs", [m4l4_compatibility_outputs()])
+def test_cscwo74485_advisory_is_not_in_generic_result(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.PASS
+    assert result.data == []
+
+
+@pytest.mark.parametrize("icurl_outputs", [m4l4_compatibility_outputs(target_recommendation="4.3(5)")])
+def test_required_upgrade_keeps_generic_action(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert result.msg == ""
+    assert result.data == [["node-1", "APIC-SERVER-M4", "4.3(4.241063)", "4.3(5)", ""]]
+    assert result.recommended_action == 'Check Release note of APIC Model/version for latest recommendations.'
+
+
+def mixed_m4l4_outputs():
+    outputs = m4l4_compatibility_outputs()
+    l4_outputs = m4l4_compatibility_outputs("L4", target_recommendation="4.3(5)")
+    l4_node = l4_outputs[eqptCh_api][0]
+    l4_node["eqptCh"]["attributes"]["dn"] = "topology/pod-1/node-2/sys/ch"
+    outputs[eqptCh_api].append(l4_node)
+    for key, value in l4_outputs.items():
+        if key != eqptCh_api:
+            outputs[key] = value
+    return outputs
+
+
+@pytest.mark.parametrize("icurl_outputs", [mixed_m4l4_outputs()])
+def test_generic_result_contains_only_required_upgrades(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert [row[0] for row in result.data] == ["node-2"]
+
+
+def mixed_non_bug_outputs():
+    outputs = m4l4_compatibility_outputs()
+    outputs[eqptCh_api].append({"eqptCh": {"attributes": {
+        "cimcVersion": "4.0(1a)",
+        "descr": "APIC-SERVER-M3",
+        "dn": "topology/pod-1/node-2/sys/ch",
+    }}})
+    m3_api = ('uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-'
+              '[uni/fabric/compcat-default/ctlrhw-apicm3].json')
+    outputs[m3_api] = [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.3(2.250016)"}}}]
+    return outputs
+
+
+@pytest.mark.parametrize("icurl_outputs", [mixed_non_bug_outputs()])
+def test_mixed_model_result_contains_only_required_upgrade(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert [row[1] for row in result.data] == ["APIC-SERVER-M3"]
+
+
+@pytest.mark.parametrize("icurl_outputs", [
+    {eqptCh_api: [{"eqptCh": {"attributes": {
+        "cimcVersion": "4.0(1a)",
+        "descr": "APIC-SERVER-M3",
+        "dn": "topology/pod-1/node-2/sys/ch",
+    }}}],
+     'uni/fabric/compcat-default/ctlrfw-apic-6.2(3)/rssuppHw-[uni/fabric/compcat-default/ctlrhw-apicm3].json':
+         [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.3(2.250016)"}}}]}
+])
+def test_unaffected_model_failure_keeps_general_action(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.2(3f)"), cversion=script.AciVersion("5.3(1d)"))
+    assert result.result == script.FAIL_UF
+    assert result.recommended_action == 'Check Release note of APIC Model/version for latest recommendations.'
+
+
+@pytest.mark.parametrize("icurl_outputs", [
+    {eqptCh_api: read_data(dir, "eqptCh_newver.json"),
+     compatRsSuppHwL2_api: read_data(dir, "compatRsSuppHw_605_L2.json"),
+     compatRsSuppHwM1_api: read_data(dir, "compatRsSuppHw_empty.json")}
+])
+def test_missing_compatibility_uses_short_message_without_rows(run_check, mock_icurl):
+    result = run_check(tversion=script.AciVersion("6.0(5a)"), cversion=None)
+    assert result.result == script.MANUAL
+    assert result.data == []
+    assert result.msg == "CIMC compatibility unavailable."
+    assert result.recommended_action == (
+        "Review the APIC model and target release documentation to determine "
+        "the required CIMC version."
+    )

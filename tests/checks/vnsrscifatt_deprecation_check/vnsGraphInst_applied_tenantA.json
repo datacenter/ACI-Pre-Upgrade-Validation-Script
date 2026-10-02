@@ -1,0 +1,11 @@
+[
+  {
+    "vnsGraphInst": {
+      "attributes": {
+        "configSt": "applied",
+        "ctrctDn": "uni/tn-tenantA/brc-svc-graph",
+        "graphDn": "uni/tn-tenantA/AbsGraph-webfw"
+      }
+    }
+  }
+]

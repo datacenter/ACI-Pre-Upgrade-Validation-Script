@@ -1,0 +1,18 @@
+[
+    {
+        "vnsGraphInst": {
+            "attributes": {
+                "dn": "uni/tn-Tenant1/GraphInst_C-[uni/tn-Tenant1/brc-Contract1]-G-[uni/tn-Tenant1/AbsGraph-Graph1]",
+                "configSt": "applied",
+                "ctrctDn": "uni/tn-Tenant1/brc-Contract1"
+            },
+            "children": [
+                {
+                    "vnsNodeInst": {
+                        "attributes": {"routingMode": "Redirect"}
+                    }
+                }
+            ]
+        }
+    }
+]

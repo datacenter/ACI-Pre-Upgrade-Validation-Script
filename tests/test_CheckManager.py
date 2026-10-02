@@ -166,6 +166,8 @@ class TestCheckManager:
         (True, CheckManager.api_checks[0].__name__, 1),
         (False, CheckManager.ssh_checks[0].__name__, 1),
         (True, CheckManager.ssh_checks[0].__name__, 0),  # api_only for non-api check = 0
+        (False, script.apic_oob_connectivity_check.__name__, 1),
+        (True, script.apic_oob_connectivity_check.__name__, 0),
     ],
 )
 def test_total_checks(api_only, debug_function, expected_total):

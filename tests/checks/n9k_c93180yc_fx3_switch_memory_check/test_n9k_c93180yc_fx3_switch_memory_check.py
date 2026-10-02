@@ -40,7 +40,7 @@ def make_fx3_nodes(count):
             [],
             {},
             script.NA,
-            'No N9K-C93180YC-FX3 switches found. Skipping.',
+            'No applicable switches.',
             [],
         ),
         # Non-N9K-C93180YC-FX3 node (N9K-C9508)
@@ -48,7 +48,7 @@ def make_fx3_nodes(count):
             read_data(dir, "fabricNode_N9K-C9508.json"),
             {},
             script.NA,
-            'No N9K-C93180YC-FX3 switches found. Skipping.',
+            'No applicable switches.',
             [],
         ),
         # N9K-C93180YC-FX3 node with >=32GB memory - API returns empty (filtered by lt)
@@ -98,11 +98,7 @@ def make_fx3_nodes(count):
                 proc_mem_query: read_data(dir, "procMemUsage_lt32gb.json"),
             },
             script.FAIL_O,
-            (
-                'N9K-C93180YC-FX3 requires a minimum of 32GB RAM for proper operation in ACI mode. '
-                'One or more switches with less than 32GB of memory may experience service instability. '
-                'Upgrade the switch memory to at least 32GB.'
-            ),
+            '',
             [["101", "leaf101", "N9K-C93180YC-FX3", "16.0"]],
         ),
     ],
