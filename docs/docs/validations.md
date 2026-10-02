@@ -2389,6 +2389,15 @@ When **Global AES Encryption** is not enabled, this script alerts users in two d
 * When it is not enabled and the target version is 6.1(2) or later, this check is flagged as `UPGRADE FAILURE`.
 * When it is not enabled and the target version is older than 6.1(2), this check is flagged as `MANUAL CHECK REQUIRED` to encourage users to follow the best practice to enable it (and take a configuration back again before the upgrade).
 
+This check reads `strongEncryptionEnabled` from `pkiExportEncryptionKey` at `uni/exportcryptkey`. A missing object is flagged as `MANUAL CHECK REQUIRED` because encryption status cannot be confirmed. A missing or unexpected encryption attribute is flagged as `ERROR`.
+
+The check also reports the policy name, completion time, and age of the latest successful configuration export in retained APIC `configJob` history. It filters for `type="export"` and `operSt="success"`, sorts by `lastStepTime` descending, and reads only the first job. Export history is informational and does not change the AES result or impose a backup age threshold. `configExportP.triggerTime` is not used because it does not reliably reflect scheduled export runs. If there is no successful export in retained history, or history cannot be read, the check reports that explicitly. An export completion record does not establish that the backup file is still available or usable.
+
+!!! warning "Keep the AES encryption passphrase available"
+    Ensure the AES encryption passphrase is known or saved in a known, secure location. It cannot be retrieved from APIC. AES-encrypted configuration exports cannot be restored without the original passphrase. This check cannot verify that the customer knows or has saved the passphrase.
+
+This check reads configuration and export history only; it does not trigger, collect, or download a configuration export.
+
 
 
 ### Service Graph BD Forceful Routing

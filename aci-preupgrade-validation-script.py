@@ -6436,21 +6436,41 @@ def equipment_disk_limits_exceeded(**kwargs):
     )
 
 
+def _config_export_age(timestamp):
+    """Calculate export age in UTC, including on APICs running Python 2.7."""
+    match = re.match(r'^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$', timestamp)
+    if not match:
+        raise ValueError("Invalid export completion timestamp")
+    completed = datetime.strptime(match.group(1), '%Y-%m-%dT%H:%M:%S')
+    offset = match.group(2)
+    if offset != 'Z':
+        hours, minutes = int(offset[1:3]), int(offset[4:6])
+        if hours > 23 or minutes > 59:
+            raise ValueError("Invalid export completion timezone")
+        delta = timedelta(hours=hours, minutes=minutes)
+        completed = completed - delta if offset[0] == '+' else completed + delta
+    age = datetime.utcnow() - completed
+    if age.total_seconds() < 0:
+        return "In the future (check APIC clock)"
+    return '{}d {}h {}m'.format(age.days, age.seconds // 3600, age.seconds % 3600 // 60)
+
+
 @check_wrapper(check_title='Global AES Encryption')
 def aes_encryption_check(tversion, **kwargs):
-    result = FAIL_UF
-    headers = ["Target Version", "Global AES Encryption", "Impact"]
-    data = []
+    headers = ["Target Version", "Global AES Encryption", "Impact", "Export Policy", "Last Successful Export", "Export Age"]
     recommended_action = (
-        "\n\tEnable Global AES Encryption before upgrading your APIC (and take a configuration backup)."
-        "\n\tGlobal AES Encryption ensures that all configurations are included in the backup securely."
+        "\n\tEnsure Global AES Encryption is enabled before upgrading your APIC and a current configuration backup is available."
+        "\n\tGlobal AES Encryption allows secure properties to be included in configuration backups."
+        "\n\tWARNING: Ensure the AES encryption passphrase is known or saved in a known, secure location."
+        " It cannot be retrieved from APIC. AES-encrypted configuration exports cannot be restored"
+        " without the original passphrase. This check cannot verify that the customer knows or has saved it."
     )
     doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#global-aes-encryption"
 
     if not tversion:
         return Result(result=MANUAL, msg=TVER_MISSING)
 
-    if tversion.newer_than("6.1(2a)"):
+    if not tversion.older_than("6.1(2a)"):
         impact = "Upgrade Failure"
         result = FAIL_UF
         recommended_action += "\n\tUpgrade to 6.1(2) or later will fail when it is not enabled."
@@ -6460,11 +6480,44 @@ def aes_encryption_check(tversion, **kwargs):
 
     cryptkeys = icurl("mo", "uni/exportcryptkey.json")
     if not cryptkeys:
-        data = [[str(tversion), "Object Not Found", impact]]
-    elif cryptkeys[0]["pkiExportEncryptionKey"]["attributes"]["strongEncryptionEnabled"] != "yes":
-        data = [[str(tversion), "Disabled", impact]]
+        result = MANUAL
+        encryption = "Object Not Found"
+        impact = "Unable to confirm encryption status"
     else:
-        result = PASS
+        enabled = cryptkeys[0]["pkiExportEncryptionKey"]["attributes"].get("strongEncryptionEnabled")
+        if enabled == "yes":
+            result = PASS
+            encryption, impact = "Enabled", "-"
+        elif enabled == "no":
+            encryption = "Disabled"
+        else:
+            result = ERROR
+            encryption = "Unknown"
+            impact = "Missing or unexpected strongEncryptionEnabled value"
+
+    policy, completed, age = "-", "No successful export found in retained history", "-"
+    export_query = (
+        'configJob.json?query-target-filter=and(eq(configJob.type,"export"),eq(configJob.operSt,"success"))'
+        '&order-by=configJob.lastStepTime|desc'
+    )
+    try:
+        # icurl() fetches every page. Only the first job is needed here.
+        exports = _icurl("class", export_query, page=0, page_size=1)
+        if int(exports["totalCount"]) > 0 and not exports["imdata"]:
+            raise ValueError("Export history response empty despite nonzero totalCount")
+        if exports["imdata"]:
+            attributes = exports["imdata"][0]["configJob"]["attributes"]
+            completed = attributes["lastStepTime"]
+            age = _config_export_age(completed)
+            policy_match = re.search(r'/jobs-\[uni/fabric/configexp-(.+)\]/run-', attributes["dn"])
+            policy = policy_match.group(1) if policy_match else "Unknown"
+    except Exception:
+        log.warning("Unable to determine the latest successful configuration export", exc_info=True)
+        policy, completed, age = "-", "Unable to determine latest successful export", "-"
+    # Keep informational export details visible in APIC JSON even for PASS,
+    # whose failureDetails table is omitted by AciResult.
+    recommended_action += "\n\tExport history (informational): {} (policy: {}; age: {}).".format(completed, policy, age)
+    data = [[str(tversion), encryption, impact, policy, completed, age]]
 
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
