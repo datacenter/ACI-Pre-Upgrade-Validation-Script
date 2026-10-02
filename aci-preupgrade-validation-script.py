@@ -8337,7 +8337,7 @@ def fx3_breakout_port_check(cversion, tversion, fabric_nodes, **kwargs):
 @check_wrapper(check_title="APIC OOB Connectivity check")
 def apic_oob_connectivity_check(cversion, tversion, **kwargs):
     result = PASS
-    headers = ["Node ID", "OOB IP", "Port", "Status"]
+    headers = ["Source APIC", "Destination APIC", "OOB IP", "Port", "Status", "Command"]
     recommended_action = "Restore OOB management connectivity between all APICs and ensure the required HTTPS ports are reachable across the OOB network."
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#apic-oob-connectivity'
     pod_policy_groups_query = 'fabricPodPGrp.json?rsp-subtree=children&rsp-subtree-class=fabricRsCommPol'
@@ -8449,7 +8449,7 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
             elif attrs.get('oobMgmtAddr6', '::') not in ('', '::', '0:0:0:0:0:0:0:0'):
                 ip = attrs.get('oobMgmtAddr6')
             else:
-                data.append([node_id, 'N/A', str(port), 'OOB address is not reported by APIC inventory'])
+                data.append(['Executing APIC', node_id, 'N/A', str(port), 'OOB address is not reported by APIC inventory', '-'])
                 has_manual = True
                 continue
 
@@ -8462,11 +8462,11 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                          'https://{}:{}'.format(ip_formatted, port)],
                         stderr=devnull
                     ) != 0:
-                        data.append([node_id, ip, str(port), "Unreachable"])
+                        data.append(['Executing APIC', node_id, ip, str(port), "Unreachable", '-'])
                         has_failure = True
             except Exception as e:
                 log.error("Exception checking OOB connectivity for node %s: %s", node_id, e)
-                data.append([node_id, ip, str(port), "Error"])
+                data.append(['Executing APIC', node_id, ip, str(port), "Error", '-'])
                 has_error = True
 
         manual_commands = []
@@ -8476,11 +8476,13 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
                     if source_node == destination_node:
                         continue
                     destination = '[{}]'.format(destination_ip) if ':' in destination_ip else destination_ip
-                    manual_commands.append(
-                        'On APIC node {}: curl --max-time 5 -k -s -o /dev/null https://{}:{}'.format(
-                            source_node, destination, destination_port
+                    manual_commands.append([
+                        source_node, destination_node, destination_ip, str(destination_port),
+                        'Manual check required',
+                        'curl --max-time 5 -k -s -o /dev/null https://{}:{}'.format(
+                            destination, destination_port
                         )
-                    )
+                    ])
             has_manual = True
 
         return data, has_error, has_failure, has_manual, manual_commands
@@ -8503,7 +8505,6 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
 
     data, has_error, has_failure, has_manual, manual_commands = get_apic_oob_connectivity(apic_id_ip, ports_by_node)
 
-    msg = ''
     if has_error:
         result = ERROR
     elif has_failure:
@@ -8512,12 +8513,14 @@ def apic_oob_connectivity_check(cversion, tversion, **kwargs):
         result = MANUAL
 
     if manual_commands:
-        msg = (
+        data.extend(manual_commands)
+        recommended_action += (
+            ' '
             'The automatic probes ran from the APIC executing this script. '
-            'Run the following commands from the indicated APIC nodes to validate '
-            'all inter-APIC OOB connectivity directions:\n{}'.format('\n'.join(manual_commands))
+            'Run each command on its Source APIC to validate '
+            'all inter-APIC OOB connectivity directions.'
         )
-    return Result(result=result, msg=msg, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 @check_wrapper(check_title="vnsRsCIfAtt Deprecation Check")
 def vnsRsCIfAtt_deprecation_check(tversion, cversion, **kwargs):
