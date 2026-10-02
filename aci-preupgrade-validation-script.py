@@ -1715,7 +1715,10 @@ def _icurl_error_handler(imdata):
         if "not found in class" in imdata[0]['error']['attributes']['text']:
             raise OldVerPropNotFound('Your current ACI version does not have requested property')
         elif "Incorrect filter format for" in imdata[0]['error']['attributes']['text']:
-            raise OldVerPropNotFound('Your current ACI version does not have requested value for the property in the filter')
+            error = OldVerPropNotFound('Your current ACI version does not have requested value for the property in the filter')
+            # Let callers identify a specific unsupported enum value.
+            error.api_error = imdata[0]['error']['attributes']
+            raise error
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
@@ -7979,7 +7982,19 @@ def host_interface_policy_set_speed_check(tversion, **kwargs):
     host_interface_policy_api = 'fabricHIfPol.json'
     host_interface_policy_api += '?query-target-filter=and(eq(fabricHIfPol.speed,"auto"))'
     host_interface_policy_api += '&rsp-subtree=children&rsp-subtree-class=fabricRtHIfPol'
-    host_interface_policies = icurl('class', host_interface_policy_api)
+    try:
+        host_interface_policies = icurl('class', host_interface_policy_api)
+    except OldVerPropNotFound as error:
+        api_error = getattr(error, 'api_error', {})
+        # Older APIC schemas, including 4.2(7u), do not allow speed="auto".
+        if (api_error.get('code') != '301' or
+                api_error.get('text') != "Incorrect filter format for fabricHIfPol.speed, value 'auto' is not valid"):
+            raise
+        return Result(
+            result=NA,
+            msg='Current APIC does not support fabricHIfPol.speed="auto".',
+            doc_url=doc_url,
+        )
     if host_interface_policies:
         for host_interface_policy in host_interface_policies:
             if "children" in host_interface_policy["fabricHIfPol"]:
