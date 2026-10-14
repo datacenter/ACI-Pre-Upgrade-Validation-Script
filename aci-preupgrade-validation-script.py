@@ -5008,22 +5008,32 @@ def access_untagged_check(**kwargs):
     doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations#access-untagged-port-config'
 
     faultInsts = icurl('class', 'faultInst.json?&query-target-filter=wcard(faultInst.changeSet,"native-or-untagged-encap-failure")')
-    fault_dn_regex = r"topology/pod-(?P<podid>\d+)/node-(?P<nodeid>[^/]+)/[^/]+/[^/]+/uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/epg-(?P<epg_name>[^/]+)\]/[^/]+/stpathatt-\[(?P<port>.+)\]/nwissues/fault-F0467"
+    fault_dn_regex = (
+        r"^topology/pod-(?P<podid>\d+)/node-\d+/[^/]+/[^/]+/"
+        r"uni/epp/fv-\[uni/tn-(?P<tenant>[^/]+)/ap-(?P<app_profile>[^/]+)/"
+        r"epg-(?P<epg_name>[^\]]+)\]/node-(?P<nodeid>\d+)/"
+        r"(?P<fex>ext)?stpathatt-\[(?P<port>[^\]]+)\]"
+        r"(?:-extchid-(?P<fexid>\d+))?/nwissues/fault-F0467$"
+    )
 
     if faultInsts:
         fc = faultInsts[0]['faultInst']['attributes']['code']
         for faultInst in faultInsts:
             m = re.search(fault_dn_regex, faultInst['faultInst']['attributes']['dn'])
+            if m and bool(m.group('fex')) != bool(m.group('fexid')):
+                m = None
             if m:
                 podid = m.group('podid')
                 nodeid = m.group('nodeid')
                 port = m.group('port')
+                if m.group('fexid'):
+                    port = '{} on FEX {}'.format(port, m.group('fexid'))
                 tenant = m.group('tenant')
                 app_profile = m.group('app_profile')
                 epg_name = m.group('epg_name')
                 data.append([fc, podid, nodeid, port, tenant, app_profile, epg_name, recommended_action])
             else:
-                unformatted_data.append(fc, faultInst['faultInst']['attributes']['descr'], recommended_action)
+                unformatted_data.append([fc, faultInst['faultInst']['attributes']['descr'], recommended_action])
 
     if not data and not unformatted_data:
         result = PASS
