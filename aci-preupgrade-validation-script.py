@@ -1745,7 +1745,7 @@ def _icurl(apitype, query, page=0, page_size=100000):
     return data
 
 
-def icurl(apitype, query, page_size=100000):
+def _icurl_all_pages(apitype, query, page_size=100000):
     total_imdata = []
     total_cnt = 999999
     page = 0
@@ -1760,6 +1760,24 @@ def icurl(apitype, query, page_size=100000):
         total_cnt = int(data['totalCount'])
         page += 1
     return total_imdata
+
+
+_icurl_cache = {}
+_icurl_locks = {}
+_icurl_locks_lock = threading.Lock()
+
+
+def icurl(apitype, query, page_size=100000):
+    # Checks run in parallel threads and several issue identical queries. Successful
+    # results are cached for the run; a per-query lock makes concurrent callers of the
+    # same query wait for the first one instead of all hitting the APIC at once.
+    cache_key = (apitype, query, page_size)
+    with _icurl_locks_lock:
+        key_lock = _icurl_locks.setdefault(cache_key, threading.Lock())
+    with key_lock:
+        if cache_key not in _icurl_cache:
+            _icurl_cache[cache_key] = _icurl_all_pages(apitype, query, page_size)
+        return _icurl_cache[cache_key]
 
 
 def run_cmd(cmd, splitlines=True):
