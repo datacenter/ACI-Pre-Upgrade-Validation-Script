@@ -36,11 +36,11 @@ release_note_supported_615_outputs = {
     compatRsSuppHwM4_531_api: [{"compatRsSuppHw": {"attributes": {"cimcVersion": "4.0(2g)"}}}],
 }
 
-def release_note_supported_outputs(model, cimc_version):
+def release_note_supported_outputs(model, cimc_version, target_version="6.1(5)"):
     apic_model = "APIC-SERVER-{}".format(model[4:].upper())
     compat_api = (
-        "uni/fabric/compcat-default/ctlrfw-apic-6.1(5)"
-        "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-{}].json".format(model)
+        "uni/fabric/compcat-default/ctlrfw-apic-{}".format(target_version)
+        + "/rssuppHw-[uni/fabric/compcat-default/ctlrhw-{}].json".format(model)
     )
     return {
         eqptCh_api: [
@@ -69,7 +69,7 @@ def release_note_supported_outputs(model, cimc_version):
 
 
 release_note_supported_cases = [
-    release_note_supported_outputs(model, cimc_version)
+    release_note_supported_outputs(model, cimc_version, target)
     for (target, model), cimc_versions in script.CIMC_RELEASE_NOTE_SUPPORT.items()
     if target == "6.1(5)"
     for cimc_version in cimc_versions
@@ -90,6 +90,13 @@ release_note_supported_cases = [
             release_note_supported_outputs("apicl3", "4.1(1g)"),
             "6.1(5e)",
             "5.2(8g)",
+            script.PASS,
+        ),
+        # Issue #484: CIMC 4.2(2a) is release-note supported on APIC-M3 for 6.1(6).
+        (
+            release_note_supported_outputs("apicm3", "4.2(2a)", "6.1(6)"),
+            "6.1(6g)",
+            "6.0(9e)",
             script.PASS,
         ),
         # The generic compatibility check does not own CSCwo74485 upgrade-order guidance.
