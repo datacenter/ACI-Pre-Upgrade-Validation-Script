@@ -21,6 +21,13 @@ documentation prose, punctuation, capitalization, or other presentation text.
 For wording-only changes, run the existing relevant tests without creating or
 modifying test coverage for the wording.
 
+## Manual result messaging
+
+For a `MANUAL` result, populate `msg` only as a short heads-up when neither
+`data` nor `recommended_action` is provided. When a result includes data or
+needs explanation or remediation guidance, leave `msg` empty and put the full
+explanation and action in `recommended_action`.
+
 ## Documentation links
 
 Never put link destinations directly in documentation prose. Use the
