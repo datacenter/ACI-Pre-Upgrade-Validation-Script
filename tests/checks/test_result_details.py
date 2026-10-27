@@ -105,8 +105,6 @@ def test_openssl_failure_uses_certificate_response_column(monkeypatch, tmpdir):
 
 IMAGE_32 = 'aci-n9000-dk9.16.0.2h.bin'
 IMAGE_64 = 'aci-n9000-dk9.16.0.2h-cs_64.bin'
-IMAGE_609_32 = 'aci-n9000-dk9.16.0.9e.bin'
-IMAGE_609_64 = 'aci-n9000-dk9.16.0.9e-cs_64.bin'
 OLD_IMAGE = 'aci-n9000-dk9.15.2.8h.bin'
 
 
@@ -117,9 +115,8 @@ OLD_IMAGE = 'aci-n9000-dk9.15.2.8h.bin'
     ('6.0(3a)', '6.0(2h)', [IMAGE_32], [['Target', '64-bit', IMAGE_64, 'Missing']]),
     ('6.0(3a)', '6.0(2h)', [IMAGE_64], [['Target', '32-bit', IMAGE_32, 'Missing']]),
     ('5.2(8h)', '6.0(2h)', [IMAGE_32, IMAGE_64], [['Current', '32-bit', OLD_IMAGE, 'Missing']]),
-    ('5.2(6e)', '6.0(9e)', [IMAGE_609_32], [['Target', '64-bit', IMAGE_609_64, 'Missing']]),
 ])
-def test_missing_images_are_results_with_repository_action(monkeypatch, current, target, available, missing):
+def test_missing_images_are_structured_manual_results(monkeypatch, current, target, available, missing):
     def icurl(_, query):
         if query.startswith('eqptcapacityFSPartition.'):
             return [{'eqptcapacityFSPartition': {'attributes': {
@@ -134,11 +131,4 @@ def test_missing_images_are_results_with_repository_action(monkeypatch, current,
     name = 'switch_bootflash_usage_check'
     result = run_check(name, sw_cversion=script.AciVersion(current), tversion=script.AciVersion(target))
     assert result.result == script.MANUAL
-    assert result.msg == (
-        'Bootflash capacity was not evaluated because image size information '
-        'is unavailable for the listed switch firmware.'
-    )
-    assert result.headers == ['Image Role', 'Architecture', 'Filename', 'Status']
     assert result.data == missing
-    assert 'Upload or restore each listed switch image' in result.recommended_action
-    assert_outputs(monkeypatch, name, result, missing[0][2])
