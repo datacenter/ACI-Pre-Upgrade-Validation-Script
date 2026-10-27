@@ -2352,11 +2352,16 @@ def switch_bootflash_usage_check(sw_cversion, tversion, **kwargs):
     def missing_images(image_rows):
         return Result(
             result=MANUAL,
+            msg=(
+                "Bootflash capacity was not evaluated because image size information "
+                "is unavailable for the listed switch firmware."
+            ),
             headers=["Image Role", "Architecture", "Filename", "Status"],
             data=[row + ["Missing"] for row in image_rows],
             recommended_action=(
-                "Make the listed images available in the Firmware Repository, "
-                "then rerun this check."
+                "Upload or restore each listed switch image in the APIC Firmware Repository. "
+                "For ACI 6.0(2)+ targets, both 32-bit and 64-bit (-cs_64) switch images "
+                "are required. Wait for repository synchronization, then rerun this check."
             ),
             doc_url=doc_url,
         )
