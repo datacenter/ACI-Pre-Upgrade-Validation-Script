@@ -1,0 +1,20 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "code": "F0467",
+        "descr": "Configuration failed for uni/tn-TENANT-A/ap-APP-A/epg-EPG-A node 101 eth1/10 due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TENANT-A/ap-APP-A/epg-EPG-A]/node-101/stpathatt-[eth1/10]/nwissues/fault-F0467"
+      }
+    }
+  },
+  {
+    "faultInst": {
+      "attributes": {
+        "code": "F0467",
+        "descr": "Configuration failed for uni/tn-TENANT-B/ap-APP-B/epg-EPG-B node 102 eth1/20 on FEX 110 due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "dn": "topology/pod-2/node-102/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TENANT-B/ap-APP-B/epg-EPG-B]/node-102/extstpathatt-[eth1/20]-extchid-110/nwissues/fault-F0467"
+      }
+    }
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "faultInst": {
+      "attributes": {
+        "code": "F0467",
+        "descr": "Configuration failed for a synthetic attachment due to Only One Native or Untagged Encap Allowed on Interface, debug message: ",
+        "dn": "topology/pod-1/node-101/local/svc-policyelem-id-0/uni/epp/fv-[uni/tn-TENANT-C/ap-APP-C/epg-EPG-C]/node-101/unknownpathatt-[PATH-C]/nwissues/fault-F0467"
+      }
+    }
+  }
+]
