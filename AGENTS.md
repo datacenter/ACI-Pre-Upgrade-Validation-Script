@@ -20,3 +20,9 @@ update tests for user-facing wording, messages, recommended actions,
 documentation prose, punctuation, capitalization, or other presentation text.
 For wording-only changes, run the existing relevant tests without creating or
 modifying test coverage for the wording.
+
+## Documentation links
+
+Never put link destinations directly in documentation prose. Use the
+document's existing numbered reference-link system, adding the next appropriate
+reference definition when a new destination is needed.

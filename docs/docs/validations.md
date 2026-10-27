@@ -694,7 +694,7 @@ The ACI Pre-Upgrade Validation script uses APIC API data to compare each switch'
 
 The calculation generally reserves twice the applicable target image size. This accounts for space used by the downloaded image and additional space needed while the image is extracted. For an upgrade that crosses the 6.0(2) image boundary, the calculation accounts for both the 32-bit and 64-bit target images and the space recovered when the current image is removed.
 
-The calculation requires size information for every listed current or target switch image. For 6.0(2)+ targets, both the 32-bit and 64-bit (`-cs_64`) images must be in the APIC Firmware Repository; see [6.0(2)+ requires 32 and 64 bit switch images](#602-requires-32-and-64-bit-switch-images). If an image is missing, the check requires manual review because `/bootflash` capacity was not evaluated, not because insufficient space was detected.
+The calculation requires size information for every listed current or target switch image. For 6.0(2)+ targets, both the 32-bit and 64-bit (`-cs_64`) images must be in the APIC Firmware Repository; see [6.0(2)+ requires 32 and 64 bit switch images][g16]. If an image is missing, the check requires manual review because `/bootflash` capacity was not evaluated, not because insufficient space was detected.
 
 Switches that have already downloaded the target image are still checked because image extraction and later upgrade stages can require additional space. Because the downloaded image is already reflected in the switch's available-space value, the check evaluates only the remaining space required to complete the upgrade.
 
