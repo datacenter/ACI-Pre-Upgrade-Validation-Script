@@ -1816,6 +1816,8 @@ def _icurl_error_handler(imdata):
             raise error
         elif "unresolved class for" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
+        elif "Unknown class" in imdata[0]['error']['attributes']['text']:
+            raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "not found" in imdata[0]['error']['attributes']['text']:
             raise OldVerClassNotFound('Your current ACI version does not have requested class')
         elif "Unable to deliver the message, Resolve timeout" in imdata[0]['error']['attributes']['text']:
@@ -7002,9 +7004,7 @@ def service_ep_flag_bd_check(cversion, tversion, **kwargs):
             candidate_context_dns.add(ldev_dns[0] + "/lIfCtx-c-Any")
     ctx_items, oversized_contexts = query_dns(
         "vnsLIfCtx", candidate_context_dns,
-        "&query-target=self&rsp-subtree=children"
-        "&rsp-subtree-class=vnsRsLIfCtxToBD,"
-        "vnsRsLIfCtxToSvcRedirectPol,vnsRsLIfCtxToRemoteSvcRedirectPol")
+        "&query-target=self&rsp-subtree=children")
     contexts = {}
     for item in ctx_items:
         ctx = item.get("vnsLIfCtx", {})
