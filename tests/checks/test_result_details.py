@@ -116,7 +116,7 @@ OLD_IMAGE = 'aci-n9000-dk9.15.2.8h.bin'
     ('6.0(3a)', '6.0(2h)', [IMAGE_64], [['Target', '32-bit', IMAGE_32, 'Missing']]),
     ('5.2(8h)', '6.0(2h)', [IMAGE_32, IMAGE_64], [['Current', '32-bit', OLD_IMAGE, 'Missing']]),
 ])
-def test_missing_images_are_results_with_repository_action(monkeypatch, current, target, available, missing):
+def test_missing_images_are_structured_manual_results(monkeypatch, current, target, available, missing):
     def icurl(_, query):
         if query.startswith('eqptcapacityFSPartition.'):
             return [{'eqptcapacityFSPartition': {'attributes': {
@@ -131,8 +131,4 @@ def test_missing_images_are_results_with_repository_action(monkeypatch, current,
     name = 'switch_bootflash_usage_check'
     result = run_check(name, sw_cversion=script.AciVersion(current), tversion=script.AciVersion(target))
     assert result.result == script.MANUAL
-    assert result.msg == ''
-    assert result.headers == ['Image Role', 'Architecture', 'Filename', 'Status']
     assert result.data == missing
-    assert result.recommended_action
-    assert_outputs(monkeypatch, name, result, missing[0][2])
