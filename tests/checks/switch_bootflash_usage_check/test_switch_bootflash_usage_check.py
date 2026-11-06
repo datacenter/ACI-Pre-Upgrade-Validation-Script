@@ -11,6 +11,28 @@ dir = os.path.dirname(os.path.abspath(__file__))
 
 test_function = "switch_bootflash_usage_check"
 
+@pytest.fixture
+def run_check(run_check, icurl_outputs):
+    """Provide per-node inventory for the existing homogeneous-version cases."""
+    def run(**kwargs):
+        if 'fabric_nodes' not in kwargs:
+            nodes = []
+            running = []
+            for partition in icurl_outputs.get(partitions, []):
+                dn = partition['eqptcapacityFSPartition']['attributes']['dn'].split('/sys/')[0]
+                nodes.append({'fabricNode': {'attributes': {
+                    'dn': dn, 'role': 'leaf', 'version': str(kwargs.get('sw_cversion') or ''),
+                }}})
+                running.append({'firmwareRunning': {'attributes': {
+                    'dn': dn + '/sys/fwstatuscont/running',
+                    'ksFile': 'aci-n9000-dk9.16.0.3a-cs_64.bin',
+                }}})
+            kwargs['fabric_nodes'] = nodes
+            icurl_outputs.setdefault('firmwareRunning.json', running)
+        return run_check(**kwargs)
+    return run
+
+
 # icurl queries
 partitions = "eqptcapacityFSPartition.json"
 partitions += '?query-target-filter=eq(eqptcapacityFSPartition.path,"/bootflash")'
@@ -432,3 +454,86 @@ def test_logic(run_check, mock_icurl, sw_cversion, tversion, expected_result):
         tversion=script.AciVersion(tversion) if tversion else None,
     )
     assert result.result == expected_result
+
+
+def node_inventory(pod, node, version, image):
+    dn = 'topology/pod-{}/node-{}'.format(pod, node)
+    return (
+        {'fabricNode': {'attributes': {'dn': dn, 'role': 'leaf', 'version': version}}},
+        {'firmwareRunning': {'attributes': {'dn': dn + '/sys/fwstatuscont/running', 'ksFile': image}}},
+    )
+
+
+def bootflash(pod, node, available_mb):
+    return {'eqptcapacityFSPartition': {'attributes': {
+        'dn': 'topology/pod-{}/node-{}/sys/eqptcapacity/fspartition-bootflash'.format(pod, node),
+        'avail': str(int(available_mb * 1024)), 'used': '0',
+    }}}
+
+
+@pytest.mark.parametrize('icurl_outputs', [{}])
+@pytest.mark.parametrize('insufficient', [False, True])
+def test_issue_493_mixed_versions_current_image_absent(run_check, mock_icurl, icurl_outputs, insufficient):
+    inventory = [node_inventory(1, node, '16.0(9c)', 'aci-n9000-dk9.16.0.9c-cs_64.bin')
+                 for node in range(1109, 1115)]
+    icurl_outputs.update({
+        partitions: [bootflash(1, node, 1 if insufficient else available) for node, available in zip(
+            range(1109, 1115), [6490.13, 6491.29, 6489.39, 6501.6, 6489.37, 6489.61])],
+        'maintUpgJob.json?query-target-filter=and(eq(maintUpgJob.dnldStatus,"downloaded"),eq(maintUpgJob.desiredVersion,"n9000-16.1(6g)"))': [],
+        firmware: [
+            {'firmwareFirmware': {'attributes': {'isoname': name, 'size': str(int(size * 1024 ** 2))}}}
+            for name, size in [('aci-n9000-dk9.15.3.2e.bin', 1995.57),
+                               ('aci-n9000-dk9.16.1.6g.bin', 2560.78),
+                               ('aci-n9000-dk9.16.1.6g-cs_64.bin', 2694.73)]
+        ],
+        'firmwareRunning.json': [running for _, running in inventory],
+    })
+    result = run_check(sw_cversion=script.AciVersion('5.3(2e)'),
+                       tversion=script.AciVersion('6.1(6g)'),
+                       fabric_nodes=[node for node, _ in inventory])
+    assert result.result == (script.FAIL_UF if insufficient else script.PASS)
+    assert result.data == ([["1", str(node), "1.0", "5389.46"] for node in range(1109, 1115)]
+                           if insufficient else [])
+
+
+@pytest.mark.parametrize('missing', [None, 'version', 'architecture', 'architecture_with_failure'])
+@pytest.mark.parametrize('icurl_outputs', [{}])
+def test_per_node_architecture_and_missing_inventory(run_check, mock_icurl, icurl_outputs, missing):
+    # Repeated node IDs across pods must retain their own version/architecture.
+    node32, running32 = node_inventory(1, 101, '16.0(2a)', 'aci-n9000-dk9.16.0.2a.bin')
+    node64, running64 = node_inventory(2, 101, '16.0(9c)', 'aci-n9000-dk9.16.0.9c-cs_64.bin')
+    if missing == 'version':
+        node64['fabricNode']['attributes']['version'] = None
+    elif missing in ('architecture', 'architecture_with_failure'):
+        running64['firmwareRunning']['attributes']['ksFile'] = None
+    icurl_outputs.update({
+        partitions: [bootflash(1, 101, 1 if missing == 'architecture_with_failure' else 4000),
+                     bootflash(2, 101, 4000)],
+        download_sts_602: [], firmware: firmware_dual_602,
+        'firmwareRunning.json': [running32, running64],
+    })
+    result = run_check(sw_cversion=script.AciVersion('5.3(2e)'),
+                       tversion=script.AciVersion('6.0(2h)'), fabric_nodes=[node32, node64])
+    if missing:
+        assert result.result == (script.FAIL_UF if missing == 'architecture_with_failure' else script.MANUAL)
+        assert result.data == ([['1', '101', '1.0', '3814.7']] if missing == 'architecture_with_failure' else [])
+        assert [row[:2] for row in result.unformatted_data] == [['2', '101']]
+    else:
+        assert result.result == script.FAIL_UF
+        assert result.data == [['2', '101', '4000.0', '5722.05']]
+
+
+@pytest.mark.parametrize('icurl_outputs', [{}])
+def test_architecture_specific_requirement_and_predownload_pod_join(run_check, mock_icurl, icurl_outputs):
+    inventory = [node_inventory(pod, 101, '16.0(9c)', image) for pod, image in [
+        (1, 'aci-n9000-dk9.16.0.9c.bin'), (2, 'aci-n9000-dk9.16.0.9c-cs_64.bin')]]
+    icurl_outputs.update({
+        partitions: [bootflash(1, 101, 1), bootflash(2, 101, 1)],
+        download_sts_602: maintUpgJob_node_101_downloaded,
+        firmware: firmware_dual_602,
+        'firmwareRunning.json': [running for _, running in inventory],
+    })
+    result = run_check(sw_cversion=script.AciVersion('6.0(9c)'),
+                       tversion=script.AciVersion('6.0(2h)'), fabric_nodes=[node for node, _ in inventory])
+    assert result.result == script.FAIL_UF
+    assert result.data == [['1', '101', '1.0', '1907.35'], ['2', '101', '1.0', '5722.05']]
