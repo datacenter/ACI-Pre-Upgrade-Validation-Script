@@ -156,6 +156,20 @@ def test_icurl(mock_icurl, apitype, query, expected_result):
             ],
             script.OldVerClassNotFound,
         ),
+        # Unsupported rsp-subtree-class on APIC 5.2.
+        (
+            [
+                {
+                    "error": {
+                        "attributes": {
+                            "code": "12",
+                            "text": "Unknown class vnsRsLIfCtxToRemoteSvcRedirectPol",
+                        }
+                    }
+                }
+            ],
+            script.OldVerClassNotFound,
+        ),
         # Query timeout (90 sec) - pre-4.1
         (
             [

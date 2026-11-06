@@ -100,7 +100,8 @@ def run_case(monkeypatch, run_check, payload, leaf_version="5.2(8h)",
             return [item for item in payload["node_relations"]
                     if item["vnsRsNodeInstToLDevCtx"]["attributes"]["dn"] in dns]
         if query.startswith("vnsLIfCtx.json?"):
-            assert "rsp-subtree-class=" in query
+            assert "rsp-subtree=children" in query
+            assert "rsp-subtree-class=" not in query
             dns = requested_dns(query)
             return [item for item in payload["contexts"]
                     if item["vnsLIfCtx"]["attributes"]["dn"] in dns]
