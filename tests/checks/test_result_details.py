@@ -121,7 +121,7 @@ def test_missing_images_are_structured_manual_results(monkeypatch, current, targ
         if query.startswith('eqptcapacityFSPartition.'):
             return [{'eqptcapacityFSPartition': {'attributes': {
                 'dn': 'topology/pod-1/node-101/sys/eqptcapacity/fspartition-bootflash', 'avail': '1'}}}]
-        if query.startswith('maintUpgJob.'):
+        if query.startswith(('maintUpgJob.', 'firmwareRunning.')):
             return []
         assert query.startswith('firmwareFirmware.')
         return [{'firmwareFirmware': {'attributes': {'isoname': name, 'size': '2000000000'}}}
@@ -129,6 +129,11 @@ def test_missing_images_are_structured_manual_results(monkeypatch, current, targ
 
     monkeypatch.setattr(script, 'icurl', icurl)
     name = 'switch_bootflash_usage_check'
-    result = run_check(name, sw_cversion=script.AciVersion(current), tversion=script.AciVersion(target))
+    result = run_check(
+        name, sw_cversion=script.AciVersion(current), tversion=script.AciVersion(target),
+        fabric_nodes=[{'fabricNode': {'attributes': {
+            'dn': 'topology/pod-1/node-101', 'role': 'leaf', 'version': current,
+        }}}],
+    )
     assert result.result == script.MANUAL
     assert result.data == missing
