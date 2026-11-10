@@ -40,14 +40,13 @@ jobs:
 
   test-py27:
     runs-on: ubuntu-latest
-    container: python:2.7.11-wheezy
+    container: python:2.7.18-buster
     defaults:
       run:
         shell: bash
 
     steps:
-      # glibc on python:2.7.11 is too old for newer actions/checkout
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Install dependencies
         # pip 21.0 does not support py2 but the default pip in this container
         # is too old and fails. Hence the pip version must be 20.3.4.
