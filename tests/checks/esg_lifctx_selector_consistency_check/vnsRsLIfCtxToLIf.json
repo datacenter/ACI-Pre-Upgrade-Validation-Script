@@ -1,0 +1,66 @@
+[
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-FW/lIf-external"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-FW/lIf-internal"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e2-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-FW/lIf-external"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e2-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-FW/lIf-internal"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e3-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-FW/lIf-external"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e3-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-FW/lIf-internal"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-lbCtrct-g-LBGraph-n-LB/lIfCtx-c-consumer/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-LB/lIf-external"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-lbCtrct-g-LBGraph-n-LB/lIfCtx-c-provider/rsLIfCtxToLIf",
+        "tDn": "uni/tn-coke/lDevVip-LB/lIf-internal"
+      }
+    }
+  }
+]

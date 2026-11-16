@@ -1,0 +1,74 @@
+[
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWExtBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWIntBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e2-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWExtBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e2-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWIntBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e3-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWExtBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-webCtrct_e3-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWIntBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-lbCtrct-g-LBGraph-n-LB/lIfCtx-c-consumer/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWExtBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-lbCtrct-g-LBGraph-n-LB/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-LBIntBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-coke/ldevCtx-c-l3Ctrct-g-L3Graph-n-FW/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-coke/BD-FWExtBD"
+      }
+    }
+  }
+]

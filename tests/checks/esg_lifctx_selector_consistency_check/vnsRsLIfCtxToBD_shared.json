@@ -1,0 +1,34 @@
+[
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct1-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToBD",
+        "tDn": "uni/tn-common/BD-SharedExtBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct1-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-common/BD-SharedIntBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct2-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToBD",
+        "tDn": "uni/tn-common/BD-SharedExtBD"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToBD": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct2-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToBD",
+        "tDn": "uni/tn-common/BD-SharedIntBD"
+      }
+    }
+  }
+]

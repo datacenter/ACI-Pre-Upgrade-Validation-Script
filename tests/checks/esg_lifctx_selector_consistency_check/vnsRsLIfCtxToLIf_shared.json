@@ -1,0 +1,34 @@
+[
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct1-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToLIf",
+        "tDn": "uni/tn-common/lDevVip-SharedFW/lIf-external"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct1-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToLIf",
+        "tDn": "uni/tn-common/lDevVip-SharedFW/lIf-internal"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct2-g-WebGraph-n-FW/lIfCtx-c-consumer/rsLIfCtxToLIf",
+        "tDn": "uni/tn-common/lDevVip-SharedFW/lIf-external"
+      }
+    }
+  },
+  {
+    "vnsRsLIfCtxToLIf": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ldevCtx-c-sharedCtrct2-g-WebGraph-n-FW/lIfCtx-c-provider/rsLIfCtxToLIf",
+        "tDn": "uni/tn-common/lDevVip-SharedFW/lIf-internal"
+      }
+    }
+  }
+]

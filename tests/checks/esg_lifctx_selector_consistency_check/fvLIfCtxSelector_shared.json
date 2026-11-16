@@ -1,0 +1,10 @@
+[
+  {
+    "fvLIfCtxSelector": {
+      "attributes": {
+        "dn": "uni/tn-tnA/ap-sap/esg-svcA/lifctxselector-[uni/tn-tnA/ldevCtx-c-sharedCtrct1-g-WebGraph-n-FW/lIfCtx-c-consumer]",
+        "matchLIfCtxDn": "uni/tn-tnA/ldevCtx-c-sharedCtrct1-g-WebGraph-n-FW/lIfCtx-c-consumer"
+      }
+    }
+  }
+]
