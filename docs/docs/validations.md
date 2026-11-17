@@ -231,6 +231,7 @@ Items                                           | Defect       | This Script    
 [APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 [NX-OS IPN Multicast RPF Defect][d45]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
 [vzAny Service Graph on Stretched VRF][d46]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
+[CIMC IPMI Stall and APIC Identity][d47]         | CSCwe61589   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -278,6 +279,7 @@ Items                                           | Defect       | This Script    
 [d44]: #apic-connected-port-vlan-override
 [d45]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
 [d46]: #vzany-service-graph-on-stretched-vrf
+[d47]: #cimc-ipmi-stall-and-apic-identity-cscwe61589
 
 ## General Check Details
 
@@ -3093,6 +3095,24 @@ The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant
 
 Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][91].
 
+### CIMC IPMI Stall and APIC Identity (CSCwe61589)
+
+Due to [CSCwe61589][95], the IPMI stack of an APIC's CIMC can get into a restart loop (`I2C Controller 5 software FIFO is full`, `Restarting IPMI Stack->Reason: VKCS UnResponsive`). While this condition persists, the APIC may read an incorrect product name and serial number from the hardware at boot, for example the UCS PID `UCSC-C220-M5` or the default `123456789`. An APIC that boots in this state during an upgrade generates its certificate from the incorrect identity and cannot join the cluster, so the cluster upgrade gets stuck. Cisco TAC support is then required to work around the problem and complete the upgrade.
+
+The check evaluates each APIC for two independent conditions:
+
+1. **CIMC version.** On APIC M3/L3 (UCS C220 M5) and M4/L4 (UCS C225 M6), the CIMC version is compared with the releases that include the fix: 4.2(3g), 4.3(2.230207) and later. CIMC 4.0 and 4.1 have no fixed release. An affected CIMC version alone returns `MANUAL CHECK REQUIRED`, because it does not mean the condition is occurring now. APIC M2/L2 (UCS M4) are not evaluated for the CIMC version.
+2. **APIC identity.** The PID, serial number and product name from `acidiag show cimc` are checked on every APIC model. The identity is incorrect when any of them is empty, when the serial number is a default value or a product ID, when the product name is not an APIC model, or when the PID and the product name differ.
+
+An incorrect identity together with an affected CIMC version is the CSCwe61589 condition, and returns `FAIL - UPGRADE FAILURE!!`. An incorrect identity without an affected CIMC version returns `MANUAL CHECK REQUIRED` because it is not attributed to this defect. A valid-looking serial number that differs from the APIC inventory also returns `MANUAL CHECK REQUIRED`, because that can have other causes. If the identity cannot be retrieved (SSH failure or unexpected output), the check returns `MANUAL CHECK REQUIRED` instead of passing.
+
+!!! note
+    * `acidiag show cimc` is not available in older APIC releases. When the command is not available, only the CIMC version is checked and the check does not report a failure for the unavailable command.
+    * The check connects to every APIC with SSH, so it is not run with the API-only option.
+    * `acidiag show cimc` reflects what the APIC read at boot. A correct result does not guarantee that the next reboot reads the identity correctly while the CIMC is still affected. A CIMC that is currently in the restart loop cannot be detected from the APIC with the `admin` user, because `ipmitool` and `dmidecode` require root.
+
+Recommended action: Upgrade CIMC to a release that includes the fix for [CSCwe61589][95] before upgrading the APIC. Until then, restart the CIMC before rebooting any APIC if it shows symptoms of CSCwe61589. To confirm whether the condition is occurring, collect the CIMC technical support from the CIMC itself and search the `obfl/obfl-log` files for `I2C Controller 5 software FIFO is full` together with `Restarting IPMI Stack->Reason: VKCS UnResponsive`.
+
 ### App Center deprecation when crossing 6.1(2)
 
 Starting with APIC release 6.1(2), App Center and its applications can no longer be hosted on APIC because the APIC App Infrastructure is removed. When an upgrade crosses from a release before 6.1(2) to 6.1(2) or later, this check inventories all installed App Center applications, including inactive applications, and returns `MANUAL CHECK REQUIRED` when any are found.
@@ -3201,3 +3221,4 @@ This validation is not applicable when the current APIC release is already 6.1(2
 [92]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
 [93]: https://dcappcenter.cisco.com/elam-assistant.html
 [94]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/elam-assistant-user-guide/elam-assistant-user-guide/m-overview.html
+[95]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwe61589
