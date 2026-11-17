@@ -4361,6 +4361,195 @@ def cimc_cscwo74485_advisory_check(cversion, **kwargs):
     return Result(result=NA, doc_url=doc_url)
 
 
+def cimc_cscwe61589_is_affected(cimc_version):
+    """
+    Return True/False whether the CIMC version is affected by CSCwe61589, or None if the version
+    string cannot be parsed.
+
+    CIMC versions come in two formats depending on the release train:
+      - `<major>.<minor>(<patch><letter>)`, e.g. 4.2(3g)
+      - `<major>.<minor>(<patch>.<build>)`, e.g. 4.3(2.230207)
+
+    Fixed versions: 4.2(3g), 4.3(2.230207), 6.0(1.250127) and later. 4.0 and 4.1 have no fixed release.
+    """
+    m = re.match(r'^(\d+)\.(\d+)\((\d+)(?:\.(\d+)|([a-z]*))\)$', (cimc_version or '').strip())
+    if not m:
+        return None
+    major, minor, patch = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    build = int(m.group(4)) if m.group(4) else None
+    letter = m.group(5) or ''
+
+    if (major, minor) < (4, 0):
+        return False
+    if (major, minor) < (4, 2):
+        return True
+    if (major, minor) == (4, 2):
+        return (patch, letter) < (3, 'g')
+    if (major, minor) == (4, 3):
+        if patch < 2:
+            return True
+        if patch == 2 and build is not None:
+            return build < 230207
+        return False
+    if (major, minor) == (6, 0) and patch == 1 and build is not None:
+        return build < 250127
+    return False
+
+
+def parse_acidiag_show_cimc(output):
+    """
+    Parse `acidiag show cimc` output (available in 6.1(3) and later) and return a dict.
+
+        ==================== CIMC DETAILS ====================
+        PID : APIC-SERVER-M4
+        Serial Number : WZP00000001
+        Product Name : APIC-SERVER-M4
+        ...
+    """
+    fields = {}
+    for line in (output or '').splitlines():
+        m = re.match(r'^\s*(PID|Serial Number|Product Name|CIMC Version)\s*:\s*(.*?)\s*$', line)
+        if m:
+            fields[m.group(1)] = m.group(2)
+    return fields
+
+
+def cimc_cscwe61589_identity_findings(fields, inventory_serial=None):
+    """
+    Return (definitive, review) lists of findings for the APIC identity reported by `acidiag show cimc`.
+
+    CSCwe61589 makes the APIC read an incorrect product name/serial number at boot, e.g. the UCS PID
+    `UCSC-C220-M5` or the default `123456789` as the serial number. Those are definitive findings.
+    A serial number that merely differs from the APIC inventory (eqptCh) can happen for other reasons
+    and is reported for review only.
+    """
+    definitive = []
+    review = []
+    pid = fields.get('PID', '')
+    serial = fields.get('Serial Number', '')
+    product = fields.get('Product Name', '')
+    default_values = ('123456789', 'default string')
+
+    for label, value in (('PID', pid), ('Serial Number', serial), ('Product Name', product)):
+        if not value:
+            definitive.append('{} is empty'.format(label))
+    if serial and (serial.lower() in default_values or re.match(r'^(UCS[CB]?-|APIC-)', serial, re.I)):
+        definitive.append('Serial Number is not a serial number ({})'.format(serial))
+    if product and not product.upper().startswith('APIC-SERVER'):
+        definitive.append('Product Name is not an APIC model ({})'.format(product))
+    if pid and product and pid != product:
+        definitive.append('PID ({}) differs from Product Name ({})'.format(pid, product))
+    if not definitive and serial and inventory_serial and serial != inventory_serial:
+        review.append('Serial Number ({}) differs from APIC inventory ({})'.format(serial, inventory_serial))
+    return definitive, review
+
+
+def cimc_cscwe61589_get_identity(apic_addr, username, password):
+    """
+    Run `acidiag show cimc` on the APIC and return (fields, error).
+      - (dict, None): identity retrieved
+      - (None, None): the command does not exist on this APIC release
+      - (None, str): the identity could not be retrieved
+    """
+    if not apic_addr:
+        return None, "no APIC address"
+    try:
+        c = Connection(apic_addr)
+        c.username = username
+        c.password = password
+        c.log = LOG_FILE
+        c.connect()
+        c.cmd("acidiag show cimc")
+    except Exception as e:
+        return None, str(e)
+    fields = parse_acidiag_show_cimc(c.output)
+    if fields:
+        return fields, None
+    if re.search(r'invalid choice|unrecognized arguments|usage:', c.output, re.I):
+        return None, None
+    return None, "unexpected `acidiag show cimc` output"
+
+
+# Connection Based Check
+@check_wrapper(check_title="CIMC IPMI Stall and APIC Identity (CSCwe61589)")
+def cimc_cscwe61589_check(cversion, username, password, fabric_nodes, **kwargs):
+    result = PASS
+    headers = ["Node ID", "APIC Name", "Model", "CIMC Version", "Finding"]
+    data = []
+    msg = ""
+    recommended_action = (
+        'Upgrade CIMC to a version that includes the fix for CSCwe61589 before upgrading the APIC. '
+        'Until then, restart the CIMC before rebooting any APIC if it shows symptoms of CSCwe61589.'
+    )
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#cimc-ipmi-stall-and-apic-identity-cscwe61589'
+
+    apics = [node for node in fabric_nodes if node["fabricNode"]["attributes"]["role"] == "controller"]
+    if not apics:
+        return Result(result=ERROR, msg="No APIC records found.", doc_url=doc_url)
+
+    chassis = {}
+    for eqptCh in icurl('class', 'eqptCh.json?query-target-filter=wcard(eqptCh.descr,"APIC")'):
+        attr = eqptCh.get('eqptCh', {}).get('attributes', {})
+        node = re.search(r'/node-(\d+)/', attr.get('dn', ''))
+        if node:
+            chassis[node.group(1)] = attr
+
+    fail_found = False
+    identity_unsupported = 0
+    for apic in apics:
+        attr = apic["fabricNode"]["attributes"]
+        apic_id = attr["id"]
+        apic_name = attr["name"]
+        apic_addr = attr.get("address")
+        ch = chassis.get(apic_id, {})
+        apic_model = ch.get("descr", "")
+        current_cimc = ch.get("cimcVersion", "")
+        row = [apic_id, apic_name, apic_model or "-", current_cimc or "-"]
+
+        findings = []
+
+        # Part A: CIMC version. APIC M3/L3 (UCS C220 M5) and M4/L4 (UCS C225 M6) can be affected.
+        # APIC M2/L2 (UCS M4) are outside the mechanism of the defect.
+        cimc_affected = False
+        if apic_model.upper().endswith(("-M3", "-L3", "-M4", "-L4")):
+            affected = cimc_cscwe61589_is_affected(current_cimc)
+            if affected is None:
+                findings.append("Cannot verify the CIMC version")
+            elif affected:
+                cimc_affected = True
+                findings.append("CIMC version is affected (fixed in 4.2(3g), 4.3(2.230207), or later)")
+
+        # Part B: APIC identity reported by `acidiag show cimc` (not available in older releases).
+        fields, error = cimc_cscwe61589_get_identity(apic_addr, username, password)
+        if error:
+            findings.append("Cannot verify the APIC identity: " + error)
+        elif fields is None:
+            identity_unsupported += 1
+        else:
+            incorrect, review = cimc_cscwe61589_identity_findings(fields, ch.get("ser"))
+            if incorrect:
+                findings.append("Incorrect APIC identity: " + "; ".join(incorrect))
+                if cimc_affected:
+                    # An incorrect identity together with an affected CIMC is the CSCwe61589 condition.
+                    fail_found = True
+                else:
+                    findings.append("CIMC version is not known to be affected by CSCwe61589")
+            else:
+                findings.extend(review)
+
+        if findings:
+            data.append(row + ["; ".join(findings)])
+
+    if fail_found:
+        result = FAIL_UF
+    elif data:
+        result = MANUAL
+    elif identity_unsupported:
+        msg = "`acidiag show cimc` is not available on this APIC release. Only the CIMC version was checked."
+    return Result(result=result, msg=msg, headers=headers, data=data,
+                  recommended_action=recommended_action, doc_url=doc_url)
+
+
 # Subprocess Check - icurl
 @check_wrapper(check_title="Intersight Device Connector upgrade status")
 def intersight_upgrade_status_check(**kwargs):
@@ -9690,6 +9879,7 @@ class CheckManager:
         # Bugs
         observer_db_size_check,
         multipod_modular_spine_bootscript_check,
+        cimc_cscwe61589_check,
     ]
     cli_checks = [
         # General
