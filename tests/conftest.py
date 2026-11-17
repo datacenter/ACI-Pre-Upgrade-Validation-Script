@@ -119,6 +119,7 @@ def mock_icurl(monkeypatch, icurl_outputs):
         return data
 
     monkeypatch.setattr(script, "_icurl", _mock_icurl)
+    monkeypatch.setattr(script, "_icurl_cache", {})
 
 
 @pytest.fixture
