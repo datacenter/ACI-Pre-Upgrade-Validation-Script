@@ -231,6 +231,7 @@ Items                                           | Defect       | This Script    
 [APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 [NX-OS IPN Multicast RPF Defect][d45]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
 [vzAny Service Graph on Stretched VRF][d46]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
+[SPAN Destination Port with EPG Usage][d47]      | CSCvz62374   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -278,6 +279,7 @@ Items                                           | Defect       | This Script    
 [d44]: #apic-connected-port-vlan-override
 [d45]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
 [d46]: #vzany-service-graph-on-stretched-vrf
+[d47]: #span-destination-port-with-epg-usage
 
 ## General Check Details
 
@@ -3093,6 +3095,16 @@ The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant
 
 Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][91].
 
+### SPAN Destination Port with EPG Usage
+
+Starting with switch release 16.1(3), local SPAN destination and EPG/L3Out/infra VLAN deployment are mutually exclusive on a physical port ([CSCvz62374][95]). An upgrade or reload can change which configuration is deployed, affecting traffic or SPAN monitoring on a port with both configurations.
+
+This check applies to target versions 6.1(3) and later (switch 16.1(3) and later). It reports single-port destinations referenced by enabled access SPAN sessions when the port's `l1PhysIf.usage` contains `epg`, including destinations configured but not currently deployed. Port-channel, vPC, FEX, CPU and fabric SPAN destinations are excluded.
+
+The check uses reported interface usage and cannot detect EPG configurations that have not deployed, including EPG deployment blocked by SPAN or awaiting on-demand deployment. Missing interface objects are skipped; a pass means no conflict was found among the available objects.
+
+Remove either the SPAN destination configuration or the EPG/L3Out/infra VLAN deployment from each listed port before upgrading the switch.
+
 ### App Center deprecation when crossing 6.1(2)
 
 Starting with APIC release 6.1(2), App Center and its applications can no longer be hosted on APIC because the APIC App Infrastructure is removed. When an upgrade crosses from a release before 6.1(2) to 6.1(2) or later, this check inventories all installed App Center applications, including inactive applications, and returns `MANUAL CHECK REQUIRED` when any are found.
@@ -3201,3 +3213,4 @@ This validation is not applicable when the current APIC release is already 6.1(2
 [92]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
 [93]: https://dcappcenter.cisco.com/elam-assistant.html
 [94]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/elam-assistant-user-guide/elam-assistant-user-guide/m-overview.html
+[95]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCvz62374

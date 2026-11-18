@@ -1,0 +1,41 @@
+{
+    "spanSrcGrp.json?query-target-filter=eq(spanSrcGrp.adminSt,\"enabled\")": [
+        {
+            "spanSrcGrp": {
+                "attributes": {
+                    "dn": "uni/infra/srcgrp-Source1"
+                }
+            }
+        }
+    ],
+    "spanSpanLbl.json": [
+        {
+            "spanSpanLbl": {
+                "attributes": {
+                    "dn": "uni/infra/srcgrp-Source1/spanlbl-Destination1",
+                    "name": "Destination1"
+                }
+            }
+        }
+    ],
+    "spanRsDestPathEp.json": [
+        {
+            "spanRsDestPathEp": {
+                "attributes": {
+                    "dn": "uni/infra/destgrp-Destination1/dest-Destination1/rsdestPathEp",
+                    "tDn": "topology/pod-1/paths-101/pathep-[eth1/10]"
+                }
+            }
+        }
+    ],
+    "topology/pod-1/node-101/sys/phys-[eth1/10].json": [
+        {
+            "l1PhysIf": {
+                "attributes": {
+                    "usage": "epg,span",
+                    "spanMode": "span-dest"
+                }
+            }
+        }
+    ]
+}
