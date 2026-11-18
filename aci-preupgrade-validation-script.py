@@ -9542,6 +9542,66 @@ def app_center_deprecation_check(cversion, tversion, **kwargs):
     return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='SPAN Destination Port with EPG Usage')
+def span_destination_epg_conflict_check(tversion, **kwargs):
+    result = PASS
+    headers = ["Pod", "Node", "Port", "SPAN Destination Group", "SPAN Mode", "Usage"]
+    data = []
+    recommended_action = 'Remove the SPAN destination configuration or the EPG/L3Out/infra VLAN deployment from each listed port before upgrading the switch.'
+    doc_url = 'https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#span-destination-port-with-epg-usage'
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    if tversion.older_than("6.1(3a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    src_grp_api = 'spanSrcGrp.json?query-target-filter=eq(spanSrcGrp.adminSt,"enabled")'
+    src_groups = icurl('class', src_grp_api)
+    enabled_src_groups = set(src_group['spanSrcGrp']['attributes']['dn'] for src_group in src_groups)
+    active_dest_groups = set()
+    if not enabled_src_groups:
+        return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    span_labels = icurl('class', 'spanSpanLbl.json')
+    for span_label in span_labels:
+        attributes = span_label['spanSpanLbl']['attributes']
+        match = re.match(r'^(uni/infra/srcgrp-[^/]+)/spanlbl-', attributes['dn'])
+        if match and match.group(1) in enabled_src_groups:
+            active_dest_groups.add(attributes['name'])
+
+    if not active_dest_groups:
+        return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+    destinations = {}
+    dest_paths = icurl('class', 'spanRsDestPathEp.json')
+    for dest_path in dest_paths:
+        attributes = dest_path['spanRsDestPathEp']['attributes']
+        group_match = re.match(r'^uni/infra/destgrp-([^/]+)/', attributes['dn'])
+        path_match = re.match(
+            r'^topology/pod-(\d+)/paths-(\d+)/pathep-\[(eth\d+/\d+(?:/\d+)?)\]$',
+            attributes['tDn']
+        )
+        if not group_match or not path_match or group_match.group(1) not in active_dest_groups:
+            continue
+        destinations.setdefault(path_match.groups(), set()).add(group_match.group(1))
+
+    for (pod, node, port), groups in sorted(destinations.items()):
+        phys_if_api = 'topology/pod-{}/node-{}/sys/phys-[{}].json'.format(pod, node, port)
+        phys_ifs = icurl('mo', phys_if_api)
+        for phys_if in phys_ifs:
+            attributes = phys_if['l1PhysIf']['attributes']
+            usage = [value.strip() for value in attributes.get('usage', '').split(',')]
+            if 'epg' in usage:
+                data.append([pod, node, port, ', '.join(sorted(groups)),
+                             attributes.get('spanMode', ''), attributes.get('usage', '')])
+
+    if data:
+        result = FAIL_O
+
+    return Result(result=result, headers=headers, data=data, recommended_action=recommended_action, doc_url=doc_url)
+
+
 class CheckManager:
     """Central managing point of all checks.
     Highlevel flows:
@@ -9678,6 +9738,7 @@ class CheckManager:
         nxos_ipn_multicast_rpf_defect_check,
         vzany_svcgraph_stretched_vrf_check,
         app_center_deprecation_check,
+        span_destination_epg_conflict_check,
     ]
     ssh_checks = [
         # General
