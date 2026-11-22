@@ -231,6 +231,7 @@ Items                                           | Defect       | This Script    
 [APIC Connected Port VLAN Override][d44]        | CSCwn64461   | :white_check_mark: | :no_entry_sign:
 [NX-OS IPN Multicast RPF Defect][d45]            | CSCwt59437   | :white_check_mark: | :no_entry_sign:
 [vzAny Service Graph on Stretched VRF][d46]      | CSCwt14573   | :white_check_mark: | :no_entry_sign:
+[ESG Service EPG Selector Consistency][d47]      | CSCwv51642   | :white_check_mark: | :no_entry_sign:
 
 [d1]: #ep-announce-compatibility
 [d2]: #eventmgr-db-size-defect-susceptibility
@@ -278,6 +279,7 @@ Items                                           | Defect       | This Script    
 [d44]: #apic-connected-port-vlan-override
 [d45]: #nx-os-ipn-multicast-rpf-defect-cscwt59437
 [d46]: #vzany-service-graph-on-stretched-vrf
+[d47]: #esg-service-epg-selector-consistency
 
 ## General Check Details
 
@@ -3093,6 +3095,28 @@ The graph instance may be scoped to a VRF, a tenant, or globally (`uni`). Tenant
 
 Recommended action: Migrate the vzAny service graph configuration to NDO before upgrade using brownfield import. NDO 4.2(3e) or later is required for vzAny PBR support on stretched VRFs. This is tracked under [CSCwt14573][91].
 
+### ESG Service EPG Selector Consistency
+
+A Service EPG is the connector (`vnsLIfCtx`) of a device selection policy (`vnsLDevCtx`). An Endpoint Security Group (ESG) can select a Service EPG with a Service EPG selector (`fvLIfCtxSelector`), so that the service device interface uses the pcTag of the ESG. Service EPGs that use the same L4-L7 device (`vnsLDevVip`) and the same bridge domain are deployed with one pcTag, even when they belong to different contracts or service graphs. APIC therefore requires all of them to be selected by the same ESG, or by none. Otherwise, it raises faults F1690 (`lifctx-should-have-same-esg`) and F0758 on the service graph instance. A graph instance with these faults goes to `failed-to-apply`, and further changes for that graph are not deployed to the switches until the faults are resolved.
+
+APIC performs this validation for a device selection policy whose two Service EPGs are both attached to a BD. Due to [CSCwv51642][95], releases before 6.3(1) validate only the provider-side Service EPG, so a consumer-side Service EPG with a different ESG than another Service EPG on the same device and BD is accepted. Starting with 6.3(1), the consumer-side Service EPG is validated as well, and changing an ESG selector re-renders every graph that uses the same device and BD. After upgrading to 6.3(1) or later, the next re-render of such a graph raises the faults. The re-render can be triggered by post-upgrade processing or by a later configuration change.
+
+When the target version is 6.3(1) or later, this check reports each service graph whose consumer-side Service EPG has a different ESG selection than another Service EPG on the same device and BD, for example an ESG on one Service EPG and no ESG on another. The other Service EPG can belong to another graph, including a graph that uses a device and BD shared from tenant `common`. The check also runs when the current version is already 6.3(1) or later, because an affected graph stays `applied` until it is re-rendered.
+
+The following are not reported because APIC raises no new fault for them after the upgrade:
+
+* A mismatch on provider-side Service EPGs only. These are already validated before 6.3(1).
+* A device selection policy with a Service EPG that is not attached to a BD, such as an L3Out connector. APIC does not validate it.
+* Service EPGs of imported devices (`vnsLDevIf`). APIC does not validate them.
+
+Recommended action: Before upgrading, add the same ESG Service EPG selector to every Service EPG that uses the reported device and BD, or remove the ESG selector from all of them. Afterwards, confirm that the service graphs are `applied` without F1690 or F0758.
+
+See "Service EPG selector for endpoint security groups (ESGs)" in [ACI PBR Service Graph Whitepaper][51] for the requirement that all the Service EPGs in the same device using the same BD are mapped to the same ESG.
+
+!!! note
+    A reported graph that is already `applied` keeps its current deployment until it is re-rendered. The faults are raised at the re-render, which can occur during post-upgrade processing or with a later configuration change.
+
+
 ### App Center deprecation when crossing 6.1(2)
 
 Starting with APIC release 6.1(2), App Center and its applications can no longer be hosted on APIC because the APIC App Infrastructure is removed. When an upgrade crosses from a release before 6.1(2) to 6.1(2) or later, this check inventories all installed App Center applications, including inactive applications, and returns `MANUAL CHECK REQUIRED` when any are found.
@@ -3201,3 +3225,4 @@ This validation is not applicable when the current APIC release is already 6.1(2
 [92]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwn95571
 [93]: https://dcappcenter.cisco.com/elam-assistant.html
 [94]: https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/all/elam-assistant-user-guide/elam-assistant-user-guide/m-overview.html
+[95]: https://bst.cloudapps.cisco.com/bugsearch/bug/CSCwv51642

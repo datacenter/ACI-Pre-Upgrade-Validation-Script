@@ -1,0 +1,10 @@
+[
+  {
+    "fvLIfCtxSelector": {
+      "attributes": {
+        "dn": "uni/tn-coke/ap-sap/esg-svc/lifctxselector-[uni/tn-coke/ldevCtx-c-l3Ctrct-g-L3Graph-n-FW/lIfCtx-c-provider]",
+        "matchLIfCtxDn": "uni/tn-coke/ldevCtx-c-l3Ctrct-g-L3Graph-n-FW/lIfCtx-c-provider"
+      }
+    }
+  }
+]

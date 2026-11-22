@@ -9491,6 +9491,139 @@ def vzany_svcgraph_stretched_vrf_check(cversion, tversion, **kwargs):
                   recommended_action=recommended_action, doc_url=doc_url)
 
 
+@check_wrapper(check_title='ESG Service EPG Selector Consistency')
+def esg_lifctx_selector_consistency_check(cversion, tversion, **kwargs):
+    """Report graphs that fail to apply after 6.3(1) because of the consumer-side ESG validation (CSCwv51642).
+
+    Terms: LIfCtx = vnsLIfCtx (Service EPG, a connector of a device selection policy vnsLDevCtx).
+    LIfCtxs on the same vnsLDevVip and BD share one pcTag and must be selected by the same ESG or none.
+
+    Queries (3 flat class queries, no subtree or per-object queries):
+        fvLIfCtxSelector  dn=<ESG DN>/lifctxselector-[<LIfCtx DN>], matchLIfCtxDn=<LIfCtx DN>
+        vnsRsLIfCtxToBD   dn=<LIfCtx DN>/rsLIfCtxToBD,  tDn=<BD DN>
+        vnsRsLIfCtxToLIf  dn=<LIfCtx DN>/rsLIfCtxToLIf, tDn=<vnsLDevVip DN>/lIf-<name> (or an imported vnsLDevIf LIf)
+    All relations are derived from these DNs with string operations.
+
+    Data structures (L = number of LIfCtxs, S = number of selectors, D = number of device selection policies):
+        lifctx_esgs      {LIfCtx DN: set(ESG DN)}          from fvLIfCtxSelector, O(S)
+        lifctx_bd        {LIfCtx DN: BD DN}                from vnsRsLIfCtxToBD, O(L)
+        lifctx_ldev      {LIfCtx DN: vnsLDevVip DN}        from vnsRsLIfCtxToLIf, O(L); imported devices skipped
+        ldevctx_lifctxs  {vnsLDevCtx DN: [LIfCtx DN]}      from vnsRsLIfCtxToLIf, O(L); parent DN of each LIfCtx
+        groups           {(vnsLDevVip DN, BD DN): [LIfCtx DN]}  LIfCtxs sharing one pcTag, O(L)
+
+    Walk: for each device selection policy (D, sorted), take its first two LIfCtxs by name. If both have a BD,
+    compare the first (consumer-side) one with every LIfCtx in its (device, BD) group. Each lookup is a dict
+    access. Total O(S + L + D log D + sum of the group sizes of the consumer-side LIfCtxs); the last term is
+    D * G in the worst case, where G is the number of LIfCtxs on one device and BD.
+    """
+    result = PASS
+    headers = ["Tenant", "Contract", "Service Graph", "Node", "Connector", "Device", "Bridge Domain", "ESG", "Other ESGs on Device/BD"]
+    data = []
+    unformatted_headers = ["DN of vnsLIfCtx", "Device", "Bridge Domain", "ESG", "Other ESGs on Device/BD"]
+    unformatted_data = []
+    recommended_action = (
+        "Before upgrading, select every Service EPG (vnsLIfCtx) that uses the listed device and BD with the same ESG, "
+        "or remove the ESG selector from all of them."
+    )
+    doc_url = "https://datacenter.github.io/ACI-Pre-Upgrade-Validation-Script/validations/#esg-service-epg-selector-consistency"
+
+    if not tversion:
+        return Result(result=MANUAL, msg=TVER_MISSING, doc_url=doc_url)
+
+    # The ESG Service EPG selector exists from 5.2(4), and consumer-side LIfCtxs are validated from 6.3(1)
+    # (CSCwv51642). Current versions 6.3(1) or later are checked too: an affected graph stays applied until
+    # it is re-rendered, and the upgrade can trigger the re-render.
+    if cversion.older_than("5.2(4a)") or tversion.older_than("6.3(1a)"):
+        return Result(result=NA, msg=VER_NOT_AFFECTED, doc_url=doc_url)
+
+    # Step 1: lifctx_esgs {LIfCtx DN: set(ESG DN)}. The ESG DN is the selector DN up to "/lifctxselector-".
+    # Without any selector there is nothing to compare, so the other two queries are skipped.
+    lifctx_esgs = defaultdict(set)
+    for selector in icurl("class", "fvLIfCtxSelector.json"):
+        attrs = selector["fvLIfCtxSelector"]["attributes"]
+        lifctx_dn = attrs.get("matchLIfCtxDn", "")
+        esg_dn = attrs["dn"].split("/lifctxselector-", 1)[0]
+        if lifctx_dn:
+            lifctx_esgs[lifctx_dn].add(esg_dn)
+    if not lifctx_esgs:
+        return Result(result=PASS, msg="No ESG Service EPG selectors found.", doc_url=doc_url)
+
+    # Step 2: lifctx_bd {LIfCtx DN: BD DN}. LIfCtxs without a BD (for example an L3Out connector) are absent.
+    lifctx_bd = {}
+    for rs in icurl("class", "vnsRsLIfCtxToBD.json"):
+        attrs = rs["vnsRsLIfCtxToBD"]["attributes"]
+        lifctx_bd[attrs["dn"].rsplit("/rsLIfCtxToBD", 1)[0]] = attrs.get("tDn", "")
+
+    # Step 3: lifctx_ldev {LIfCtx DN: vnsLDevVip DN} and ldevctx_lifctxs {vnsLDevCtx DN: [LIfCtx DN]}.
+    # Every LIfCtx has an LIf, so ldevctx_lifctxs lists all LIfCtxs of a device selection policy, also those
+    # without a BD. APIC only compares LIfCtxs whose vnsLIf belongs to a vnsLDevVip, so LIfs of imported
+    # devices (vnsLDevIf) are left out of lifctx_ldev.
+    lifctx_ldev = {}
+    ldevctx_lifctxs = defaultdict(list)
+    for rs in icurl("class", "vnsRsLIfCtxToLIf.json"):
+        attrs = rs["vnsRsLIfCtxToLIf"]["attributes"]
+        lifctx_dn = attrs["dn"].rsplit("/rsLIfCtxToLIf", 1)[0]
+        ldevctx_lifctxs[lifctx_dn.rsplit("/lIfCtx-", 1)[0]].append(lifctx_dn)
+        m = re.match(r"(uni/tn-[^/]+/lDevVip-[^/]+)/lIf-", attrs.get("tDn", ""))
+        if m:
+            lifctx_ldev[lifctx_dn] = m.group(1)
+
+    # Step 4: groups {(vnsLDevVip DN, BD DN): [LIfCtx DN]}. LIfCtxs on the same device and BD share one pcTag,
+    # so APIC requires the same ESG for all of them. This mirrors APIC's walk of fvRtLIfCtxToBD on the BD,
+    # filtered to the same vnsLDevVip.
+    groups = defaultdict(list)
+    for lifctx_dn, bd_dn in lifctx_bd.items():
+        ldev_dn = lifctx_ldev.get(lifctx_dn)
+        if bd_dn and ldev_dn:
+            groups[(ldev_dn, bd_dn)].append(lifctx_dn)
+
+    def esg_names(esg_dns):
+        return ", ".join(sorted(e.split("/esg-", 1)[-1] for e in esg_dns)) or "-"
+
+    # Step 5: APIC validates the first two LIfCtxs (by name) of a device context, only when both have a BD.
+    # Before CSCwv51642 it validated only the second (provider-side) one. Report graphs whose first
+    # (consumer-side) LIfCtx has a different ESG than another LIfCtx on the same device and BD, which can
+    # belong to any graph and be a consumer or a provider. others = ESG names of the differing LIfCtxs.
+    lifctx_regex = r"uni/tn-(?P<tn>[^/]+)/ldevCtx-c-(?P<contract>.+?)-g-(?P<graph>.+?)-n-(?P<node>.+?)/lIfCtx-c-(?P<conn>.+)$"
+    for ldevctx_dn in sorted(ldevctx_lifctxs):
+        first_two = sorted(ldevctx_lifctxs[ldevctx_dn])[:2]
+        if len(first_two) < 2 or not all(lifctx_bd.get(dn) for dn in first_two):
+            continue
+        lifctx_dn = first_two[0]
+        ldev_dn = lifctx_ldev.get(lifctx_dn)
+        if not ldev_dn:
+            continue
+        bd_dn = lifctx_bd[lifctx_dn]
+        esgs = frozenset(lifctx_esgs.get(lifctx_dn, ()))
+        others = sorted(set(
+            esg_names(lifctx_esgs.get(dn, ())) for dn in groups[(ldev_dn, bd_dn)]
+            if frozenset(lifctx_esgs.get(dn, ())) != esgs
+        ))
+        if not others:
+            continue
+        device = ldev_dn.split("/lDevVip-", 1)[1]
+        bd_m = re.match(r"uni/tn-([^/]+)/BD-(.+)$", bd_dn)
+        bd = "{}:{}".format(bd_m.group(1), bd_m.group(2)) if bd_m else bd_dn
+        m = re.match(lifctx_regex, lifctx_dn)
+        if not m:
+            unformatted_data.append([lifctx_dn, device, bd, esg_names(esgs), "; ".join(others)])
+            continue
+        data.append([m.group("tn"), m.group("contract"), m.group("graph"), m.group("node"), m.group("conn"),
+                     device, bd, esg_names(esgs), "; ".join(others)])
+
+    if data or unformatted_data:
+        result = FAIL_O
+    return Result(
+        result=result,
+        headers=headers,
+        data=data,
+        unformatted_headers=unformatted_headers,
+        unformatted_data=unformatted_data,
+        recommended_action=recommended_action,
+        doc_url=doc_url,
+    )
+
+
 @check_wrapper(check_title="App Center deprecation when crossing 6.1(2)")
 def app_center_deprecation_check(cversion, tversion, **kwargs):
     headers = ["Application", "Application ID", "Status", "Upgrade Impact", "Recommended Action"]
@@ -9677,6 +9810,7 @@ class CheckManager:
         apic_connected_port_vlan_override_check,
         nxos_ipn_multicast_rpf_defect_check,
         vzany_svcgraph_stretched_vrf_check,
+        esg_lifctx_selector_consistency_check,
         app_center_deprecation_check,
     ]
     ssh_checks = [
